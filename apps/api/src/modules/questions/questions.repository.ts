@@ -217,6 +217,57 @@ const SAMPLE_MAX = 50_000
 /** Ids per `eligibleAmong` statement (one bind parameter array, chunked only for very long lists). */
 const AMONG_CHUNK = 5000
 
+/** The slice of a Prisma client `unservableReasonsOf` needs (the client and the transaction client both have it). */
+export interface UnservableDb {
+  $queryRaw<T = unknown>(query: Prisma.Sql): Prisma.PrismaPromise<T>
+}
+
+/** Why the LIVE version of one question must not be shown as it is (see `unservableReasonsOf`). */
+export interface UnservableReasons {
+  /** The version carries the `legacy_image_unresolved` import hold (a picture lost in the import). Part of `mediaUnresolved`. */
+  held: boolean
+  /** A picture or stimulus of the question or its group cannot be shown (includes the import hold). */
+  mediaUnresolved: boolean
+  /** A `stimulus_missing` / `figure_only` flag nobody dismissed. */
+  flagged: boolean
+  /** The source paper is taken down. */
+  takenDown: boolean
+  /** The question is withdrawn (`is_active` false). */
+  inactive: boolean
+  /** A published (non-jana) paper places the question: decision 56 keeps it served at its pinned version. */
+  pinned: boolean
+}
+
+/**
+ * M2: the ONE predicate of "this live version cannot be shown as it is", per question id, from the draw's own SQL macros (D91), so the draws, the
+ * by-id readers, the fixed sets and the paper builder never keep a second definition. A plain function over a database handle (no Nest DI): the
+ * migration calls it too. Ids with no row or no live version are absent from the result (the callers' own status checks decide those).
+ */
+export async function unservableReasonsOf(db: UnservableDb, ids: readonly string[]): Promise<Map<string, UnservableReasons>> {
+  const keys = [...new Set(ids)].flatMap((id) => {
+    const k = bi(id)
+    return k === null ? [] : [k]
+  })
+  const out = new Map<string, UnservableReasons>()
+  for (let i = 0; i < keys.length; i += AMONG_CHUNK) {
+    const rows = await db.$queryRaw<{ id: bigint; held: boolean; media_bad: boolean; flagged: boolean; taken_down: boolean; inactive: boolean; pinned: boolean }[]>(Prisma.sql`
+      SELECT q.id,
+             coalesce(jsonb_typeof(v.import_issues) = 'array' AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb, false) AS held,
+             NOT ${MEDIA_RESOLVED_SQL} AS media_bad,
+             NOT ${NOT_FLAGGED_SQL} AS flagged,
+             NOT ${NOT_SOURCE_TAKEN_DOWN_SQL} AS taken_down,
+             NOT q.is_active AS inactive,
+             EXISTS (SELECT 1 FROM paper_placements pl
+                       JOIN paper_sections ps ON ps.id = pl.paper_section_id
+                       JOIN papers p ON p.id = ps.paper_id
+                      WHERE pl.question_id = q.id AND p.status = 'published' AND p.kind <> 'jana') AS pinned
+        FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE q.id = ANY(${keys.slice(i, i + AMONG_CHUNK)}::bigint[])`)
+    for (const r of rows) out.set(idToString(r.id), { held: r.held, mediaUnresolved: r.media_bad, flagged: r.flagged, takenDown: r.taken_down, inactive: r.inactive, pinned: r.pinned })
+  }
+  return out
+}
+
 /**
  * SQL of the shape filters (`QuestionFilter.mcqShape`, `singleMcqLeaf`): a version-id array computed ONCE, set-based, over the
  * candidates the cheap conditions kept (`candidates` is a full `SELECT v.id AS vid ...` statement). Per-row shape predicates
@@ -649,19 +700,17 @@ export class QuestionsRepository {
    * `legacy_image_unresolved` import hold). The by-id reads (`getMany`) apply none of these, so a reader that serves ids it did not draw
    * (history, Ulang Kaji, remedial, kuiz group members) removes this set. Same macros as the draw (`scope` with `learnerVisible`), never a
    * second definition (D91). Does not check status, level or visibility: the caller's own eligibility does.
+   *
+   * M2 / KP-15 options (default = the draw's rule, as before): `flags: false` leaves flagged and taken-down questions out of the answer (decision 56: a published
+   * paper keeps serving its pinned version; unresolved media and the import hold still count); `inactive: true` adds a withdrawn question unless a published
+   * paper pins it. The caller of a FIXED set (a teacher's mission, assigned remedial, a question set, a published paper) uses the same answer to show a
+   * placeholder instead of dropping the question; an automatic draw drops it.
    */
-  async unservableAmong(ids: readonly string[]): Promise<Set<string>> {
-    const keys = [...new Set(ids)].flatMap((id) => {
-      const k = bi(id)
-      return k === null ? [] : [k]
-    })
+  async unservableAmong(ids: readonly string[], opts: { flags?: boolean; inactive?: boolean } = {}): Promise<Set<string>> {
+    const flags = opts.flags !== false
     const out = new Set<string>()
-    for (let i = 0; i < keys.length; i += AMONG_CHUNK) {
-      const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-        SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-         WHERE q.id = ANY(${keys.slice(i, i + AMONG_CHUNK)}::bigint[])
-           AND NOT (${NOT_FLAGGED_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${MEDIA_RESOLVED_SQL})`
-      for (const r of rows) out.add(idToString(r.id))
+    for (const [id, r] of await unservableReasonsOf(this.db, ids)) {
+      if (r.mediaUnresolved || (flags && (r.flagged || r.takenDown)) || (opts.inactive === true && r.inactive && !r.pinned)) out.add(id)
     }
     return out
   }
@@ -1585,6 +1634,13 @@ export class QuestionsRepository {
       SELECT q.id, v.stimulus_flag AS flag FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
        WHERE q.id IN (${Prisma.join(keys)}) AND v.status = 'approved' AND v.stimulus_flag IS NOT NULL AND v.flag_dismissed_at IS NULL`
     for (const r of rows) out.set(idToString(r.id), r.flag as 'stimulus_missing' | 'figure_only' | 'stem_duplicated')
+    return out
+  }
+
+  /** KP-15: the ids among `ids` whose LIVE version carries the `legacy_image_unresolved` import hold (the one predicate, `unservableReasonsOf`). */
+  async heldAmong(ids: readonly string[]): Promise<Set<string>> {
+    const out = new Set<string>()
+    for (const [id, r] of await unservableReasonsOf(this.db, ids)) if (r.held) out.add(id)
     return out
   }
 

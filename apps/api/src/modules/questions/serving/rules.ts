@@ -241,11 +241,17 @@ function simulasiPaperReasons(f: ServabilityFacts): ServabilityReason[] {
   const activity = 'simulasi_paper' as const
   if (f.live === null) return [reason(f.latest.version.status === 'archived' ? 'archived' : 'not_approved', activity)]
   if (!SERVABLE_STATUSES.includes(f.live.version.status)) return [reason('not_approved', activity)]
+  // M2: a picture that cannot be shown (an unresolved stimulus or the `legacy_image_unresolved` import hold) is never served, pinned or not: the pupil would
+  // sit the paper without it. A withdrawn (inactive) question is refused too unless a published paper already pins it (decision 56 below).
+  if (!f.live.isActive && !f.onPublishedPaper) return [reason('withdrawn', activity)]
   // Decision 56 (FR-ADM-G7.3 lists papers, the lead chose A): a published paper PINS its version and the bridge serves that pinned version, so the stimulus flag
   // does NOT exclude a question here (`flagReasons` is deliberately not called). Only the missing-key check applies: a leaf with no key cannot be marked.
   const keys = keyReasons(f.live, activity)
   if (keys.length > 0) return keys
-  return [...bridgeReasons(f, activity, f.live), ...(f.onPublishedPaper ? [] : [reason('not_on_published_paper', activity)])]
+  const bridge = bridgeReasons(f, activity, f.live)
+  // The bridge's own refusal (it names the cause, e.g. an empty stimulus) comes first; a picture that cannot be shown and the bridge does not refuse is the media reason.
+  const media = bridge.length > 0 ? [] : mediaReasons(f, activity)
+  return [...bridge, ...media, ...(f.onPublishedPaper ? [] : [reason('not_on_published_paper', activity)])]
 }
 
 function activityReasons(f: ServabilityFacts, activity: ServabilityActivity, surfaces: readonly ServabilityActivity[]): ServabilityReason[] {

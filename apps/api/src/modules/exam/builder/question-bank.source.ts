@@ -260,6 +260,9 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     })
     // Secondary-only (R1-B21): Darjah (and PKSK) members leave the group; a group left with no member is absent.
     const members = await this.servableCurrent(groups.flatMap((g) => g.questions.map((m) => m.id)))
+    // m-7: a sibling whose LATEST version is archived is retired from the group and is not a member to place (the exemption `groupGapCountSql` makes). Without it the
+    // group could never be placed: the archived member is refused and a group is never split.
+    const retired = await this.latestArchived(groups.flatMap((g) => g.questions.map((m) => m.id)))
     // One file lookup for the pictures of every group of the call (not one per group).
     const tokens = await this.tokensOf(groups.flatMap((g) => g.stimuli.map((s) => s.stimulus)))
     for (const g of groups) {
@@ -267,10 +270,19 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       // A group with nothing to display (audio only, or empty) has no `stimulus` and `stimuli: []`.
       const shown = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
       const [stimulus, ...rest] = shown
-      const questionIds = g.questions.filter((m) => members.has(m.id)).map((m) => m.id.toString())
+      const questionIds = g.questions.filter((m) => members.has(m.id) && !retired.has(m.id)).map((m) => m.id.toString())
       if (questionIds.length > 0) out.set(g.id.toString(), { id: g.id.toString(), ...(stimulus ? { stimulus } : {}), stimuli: stimulus ? [stimulus, ...rest] : [], questionIds })
     }
     return out
+  }
+
+  /** m-7: of `ids`, the questions whose latest version is archived (the same `wl.status = 'archived'` test as `groupGapCountSql`). */
+  private async latestArchived(ids: readonly bigint[]): Promise<Set<bigint>> {
+    if (ids.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+       WHERE q.id = ANY(${[...new Set(ids)]}::bigint[]) AND v.status = 'archived'`
+    return new Set(rows.map((r) => r.id))
   }
 
   /**

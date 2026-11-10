@@ -241,6 +241,9 @@ export class RegroupService {
     for (const id of wanted) if (!facts.has(id)) throw ApiError.of('NOT_FOUND')
     for (const id of wanted) if (facts.get(id)?.pksk === true) throw fail({ [id === figureId ? 'figureQuestionId' : 'memberQuestionIds']: M.membersInvalid })
     for (const id of memberIds) if (facts.get(id)?.groupId != null) throw conflict(M.memberTaken)
+    // m-6: a member that a published paper places cannot be moved into a group: the paper would carry one member of a group whose others are not on it (groups are
+    // never split, D90), the same refusal as the figure question below and the same list `retireGroup` reports.
+    if ((await this.repo.publishedPapersPlacing(memberIds)).length > 0) throw conflict(M.conflict)
     const memberSubjects = new Set(memberIds.map((id) => facts.get(id)?.subjectId ?? ''))
     if (memberSubjects.size > 1) throw fail({ memberQuestionIds: M.memberMixed })
     if (figureId !== undefined && !memberSubjects.has(facts.get(figureId)?.subjectId ?? '')) throw fail({ figureQuestionId: M.memberMixed })

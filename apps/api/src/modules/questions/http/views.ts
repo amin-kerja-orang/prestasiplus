@@ -106,6 +106,7 @@ function flatBase(q: QuestionView) {
     updatedAt: toMytTimestamp(q.updatedAt),
     // S1-T07 (API-Q-12): the stored flag unless dismissed ("Bukan masalah").
     flags: q.openFlags ?? [],
+    ...(q.imageHeld === true ? { imageHeld: true } : {}),
     usage: c.usage,
     parts: partsOf(q),
     numberLabel: v.numberLabel,

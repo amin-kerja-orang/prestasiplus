@@ -219,6 +219,8 @@ export interface QuestionView extends QuestionRecord {
   chapterName?: string | null
   /** S1-T07 (D12): the open stimulus flag of the LIVE approved version, as `flags[]` on the wire. Absent = none. */
   openFlags?: ('stimulus_missing' | 'figure_only' | 'stem_duplicated')[]
+  /** KP-15: the live version carries the `legacy_image_unresolved` import hold. Absent = no hold. */
+  imageHeld?: boolean
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */

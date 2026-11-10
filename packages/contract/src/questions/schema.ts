@@ -341,6 +341,8 @@ export const QuestionSchema = z
     numberLabel: z.string().nullable().optional(),
     /** S1-T07 (API-Q-12, DM-05): the open stimulus flags; empty or absent = none. */
     flags: z.array(StimulusFlagSchema).optional(),
+    /** KP-15: the live version carries the `legacy_image_unresolved` import hold (its picture was lost in the import). Present (true) only then; the Studio shows a banner. */
+    imageHeld: z.boolean().optional(),
     /** DM-56 Rujukan buku teks (null = none). */
     textbookRef: QuestionTextbookRefSchema.nullable().optional(),
     /** DM-58: why an admin sent the question back from Semakan to Draf; with the status `draft` it is the chip "Ditolak". Null otherwise. */

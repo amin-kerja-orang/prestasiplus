@@ -179,6 +179,7 @@ export function mapBe09Question(
   group: StimulusGroupRecord | null,
   labels: CurriculumLabels,
   media: BridgeMedia = NO_MEDIA,
+  placeholder = false,
 ): Be09QuestionBundle {
   const v = record.version
   const qid = record.id
@@ -214,7 +215,8 @@ export function mapBe09Question(
   const groupFields = record.groupId ? { groupId: groupWireId(record.groupId) } : {}
   const stemFields = {
     ...(stemImage ? { stemImage } : {}),
-    ...(own.length > 0 ? { stimuli: own.map((o) => o.def) } : {}),
+    // KP-15: a question of a published paper (a fixed set) whose picture is held or cannot be shown stays in its place; the pupil sees a placeholder first.
+    ...(own.length > 0 || placeholder ? { stimuli: [...(placeholder ? [pictureTiadaDef(qid)] : []), ...own.map((o) => o.def)] } : {}),
   }
   const groupBundle =
     group && stimulus
@@ -328,6 +330,15 @@ function stimuliOf(qid: string, group: StimulusGroupRecord, media: BridgeMedia):
     )
   return group.stimuli.map((s) => stimulusDefOf(qid, s as WideStimulus, media))
 }
+
+/** KP-15: what stands in for a picture that is held or missing (a plain passage, so every screen renders it). */
+export const pictureTiadaDef = (qid: string): StimulusDef => ({
+  id: `qb-gambar-tiada-${qid}`,
+  kind: 'passage',
+  label: 'Gambar tiada',
+  alt: 'Gambar tiada',
+  text: 'Gambar untuk soalan ini tiada buat masa ini. Soalan ini masih dikira dalam markah.',
+})
 
 const isStimulusKind = (k: string): k is StimulusKind =>
   (STIMULUS_KINDS as readonly string[]).includes(k)

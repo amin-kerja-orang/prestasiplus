@@ -15,7 +15,7 @@ import type { QuestionPart } from '@pp/contract'
 import { directionOf, scriptOf } from '../../questions/projection'
 import type { QuestionRecord } from '../../questions/types'
 import type { PracticeQuestion } from '../ports'
-import type { PracticeMedia } from './practice-media'
+import { placeholderStimulus, type PracticeMedia } from './practice-media'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
 type McqLeaf = Extract<Leaf, { mode: 'mcq' }>
@@ -61,7 +61,7 @@ export function servableMcq(record: QuestionRecord, { allowStimulus = false }: S
 export function toPracticeQuestion(
   record: QuestionRecord,
   contributor: PracticeQuestion['contributor'],
-  { allowStimulus = false, group = null, media = null }: ServableOptions & { group?: PracticeQuestion['stimulusGroup'] | null; media?: PracticeMedia | null } = {},
+  { allowStimulus = false, group = null, media = null, placeholder = false }: ServableOptions & { group?: PracticeQuestion['stimulusGroup'] | null; media?: PracticeMedia | null; placeholder?: boolean } = {},
 ): PracticeQuestion | null {
   const m = servableMcq(record, { allowStimulus })
   if (!m.ok) return null
@@ -94,7 +94,12 @@ export function toPracticeQuestion(
     ...(v.visibility === 'teacher_private' && v.referenceUrl ? { referenceUrl: v.referenceUrl } : {}),
     // Only on a surface that allows it (S1-T06): today's output keeps exactly its fields.
     ...(allowStimulus && v.stemImageId != null ? { stemImageId: v.stemImageId } : {}),
-    ...(allowStimulus && media !== null && media.stimuli.length > 0 ? { stimuli: media.stimuli } : {}),
+    // KP-15: a question of a fixed set whose picture is missing or held keeps its place and shows a placeholder first (any surface).
+    ...(placeholder
+      ? { stimuli: [placeholderStimulus(record.id), ...(allowStimulus && media !== null ? media.stimuli : [])] }
+      : allowStimulus && media !== null && media.stimuli.length > 0
+        ? { stimuli: media.stimuli }
+        : {}),
     ...(allowStimulus && record.groupId !== null && group != null ? { groupId: record.groupId, groupPosition: record.groupPosition, stimulusGroup: group } : {}),
   }
 }

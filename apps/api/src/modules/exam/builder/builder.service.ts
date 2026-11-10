@@ -100,7 +100,9 @@ import {
   type StandardBlueprint,
 } from './exam-core.adapter'
 import { checkPaperDetailed, normalizeUnits, reorderUnits, unitMarksOf, unitsOf, addUnit, removeUnit, type CheckIssue, type PaperCheck } from './paper-check'
-import { PaperImportGroupSplitError, PaperImportPublishedError, PaperImportQuestionError, PaperImportSectionLimitError } from './import-errors'
+import { PaperImportBlockedError, PaperImportGroupSplitError, PaperImportPublishedError, PaperImportQuestionError, PaperImportSectionLimitError } from './import-errors'
+import { PLACEMENT_BLOCK_TEXT, placementBlockers } from './placement-blockers'
+import { unservableReasonsOf } from '../../questions/questions.repository'
 import { blockerView, toBlockers, type BlockerDraft } from './blockers'
 import { isScaledPaper, shortageToWire, standardForPaper, violationLines } from './standard'
 import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionOrigin, type BuilderQuestionRef } from './ports'
@@ -109,6 +111,8 @@ type Info = ReadonlyMap<string, BuilderQuestionInfo>
 
 /** Terbit waits on the question rows of a concurrent edit or delete (FOR SHARE) and reads the bank inside: more than Prisma's 5 s default (else a P2028 is a 500). */
 const PUBLISH_TX = { timeout: 20_000, maxWait: 10_000 } as const
+/** KP-14: the audit reason of `publishLegacyV2`. */
+export const LEGACY_V2_PUBLISH_REASON = 'Kertas diterbitkan di V2 (KP-14): status soalan asal dikekalkan'
 const MAX_KERTAS = 32767
 
 /** The suffix the auto title carries while the paper is a Draf. Terbit drops it from an auto title and from nothing else. */
@@ -937,7 +941,24 @@ export class BuilderService {
     }
   }
 
-  private async publishInTransaction(actor: AuditActor, rawId: string, rawBody?: unknown): Promise<BijakBuilderPublishResult> {
+  /**
+   * KP-14 (migration only, NOT an HTTP route): Terbit of a paper that V2 had published. The questions it places keep the status V2 gave them (draft, archived,
+   * inactive) and are never changed here. It runs the same `evaluate` and `collectBlockers` as `publish`, then drops ONLY the lines whose cause is the question's
+   * status, `is_active`, or a held / unresolved picture: NOT_PUBLISHED, and the NOT_SERVABLE / UNKNOWN_QUESTION / INELIGIBLE lines that name such a question (the pool and
+   * the attempt path leave those out). Every other blocker still refuses (duplicates, groups, counts, marks, NO_KEY, ...), and a remaining overridable one is lifted like the audited
+   * Terbit override. Each placed question is pinned at the version in force (live, else latest) with its marks frozen. A held or unresolved picture is served with the KP-15 placeholder.
+   * Writes the audited override row (reason `LEGACY_V2_PUBLISH_REASON`). Idempotent: a paper that is already Terbit is `ok`.
+   */
+  async publishLegacyV2(actor: AuditActor, rawId: string): Promise<BijakBuilderPublishResult> {
+    try {
+      return await this.publishInTransaction(actor, rawId, undefined, true)
+    } catch (err) {
+      if (!(err instanceof ApiError) && isOverloadError(err)) throw ApiError.of('RATE_LIMITED', { retryAfter: 5 })
+      throw err
+    }
+  }
+
+  private async publishInTransaction(actor: AuditActor, rawId: string, rawBody?: unknown, legacy = false): Promise<BijakBuilderPublishResult> {
     const id = parseId(rawId)
     // The body is parsed first so a bad body does not cost the bank reads below; its 422 is still raised only after the paper is known to exist.
     let request: ReturnType<typeof BijakBuilderPublishRequestSchema.parse> | undefined
@@ -964,15 +985,32 @@ export class BuilderService {
       const { reports, unreadable } = await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
-      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper), await this.unschemedOf(paper))
+      const all = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper), await this.unschemedOf(paper))
+      // KP-14: a V2-published paper drops the lines caused by the status / is_active / held picture of its questions (see `publishLegacyV2`).
+      const dropped: string[] = []
+      let blockers = all
+      if (legacy) {
+        const reasons = await unservableReasonsOf(this.prisma.client, placedNow)
+        const cause = new Set(
+          placedNow.filter((qid) => {
+            const info = ev.info.get(qid)
+            const r = reasons.get(qid)
+            return (info !== undefined && !isServableStatus(info.status)) || r?.inactive === true || r?.mediaUnresolved === true
+          }),
+        )
+        const byCause = (b: (typeof all)[number]): boolean =>
+          b.code === 'NOT_PUBLISHED' || (['NOT_SERVABLE', 'UNKNOWN_QUESTION', 'INELIGIBLE'].includes(b.code) && b.questionId !== undefined && cause.has(b.questionId))
+        blockers = all.filter((b) => !byCause(b))
+        dropped.push(...all.filter(byCause).map((b) => b.message))
+      }
       const errors = blockers.map((b) => b.message)
       const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
       const view = blockerView(blockers)
       const review = structural.notes.length > 0 ? { notes: structural.notes, blueprintNeedsReview: true } : {}
       // R1-T34 (V2 `studio.paper.published_override`): only the blueprint-conformance blockers (incl. a contract that is not Disahkan) can be overridden, with a reason, audited.
       // S3-T01: under a Disahkan contract nothing can (`canOverride` is false), so the exception path stays for Spec and Draf contracts.
-      const override = request.override === true && view.canOverride
-      if (errors.length > 0 && !override) return { ok: false, errors, ...view, ...review }
+      const override = legacy ? dropped.length > 0 || overridable.length > 0 : request.override === true && view.canOverride
+      if (errors.length > 0 && !(override && view.canOverride)) return { ok: false, errors, ...view, ...review }
       if (paper.status === 'published') return { ok: true, errors: [], ...review }
       // Pin every placed question (all members of a group) at the version in force and freeze its marks.
       for (const s of paper.sections)
@@ -1007,12 +1045,14 @@ export class BuilderService {
         ...(override ? { override: true } : {}),
       })
       if (override) {
+        const lifted = [...dropped, ...overridable]
         await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_PUBLISHED_OVERRIDE, paper.id, {
-          reason: request.reason,
-          overridden: overridable.slice(0, 50),
-          count: overridable.length,
+          reason: legacy ? LEGACY_V2_PUBLISH_REASON : request.reason,
+          overridden: (legacy ? lifted : overridable).slice(0, 50),
+          count: (legacy ? lifted : overridable).length,
+          ...(legacy ? { legacyV2: true } : {}),
         })
-        return { ok: true, errors: [], overridden: overridable, ...review }
+        return { ok: true, errors: [], overridden: legacy ? lifted : overridable, ...review }
       }
       return { ok: true, errors: [], ...review }
     }, PUBLISH_TX)
@@ -1274,11 +1314,15 @@ export class BuilderService {
       if (!q) throw invalid(MESSAGES.invalidQuestion)
       const g = st.groupOf(q.id)
       const members = g ? st.membersOf(g) : [q.id]
+      // M2: the same rule as every other placement writer (`placementBlockers`): a held or unresolved picture, or a withdrawn question no published paper pins.
+      const blocked = await placementBlockers(this.prisma.client, members)
       const reasonOf = (id: string): string | null => {
         const m = st.info.get(id)
         if (!m) return PLACE.notFound
         if (m.subject !== bijakSubject) return PLACE.otherSubject
-        return isServableStatus(m.status) ? null : this.statusText(m.status)
+        if (!isServableStatus(m.status)) return this.statusText(m.status)
+        const block = blocked.get(id)
+        return block === undefined ? null : PLACEMENT_BLOCK_TEXT[block]
       }
       for (const id of members) {
         const reason = reasonOf(id)
@@ -1782,6 +1826,7 @@ export class BuilderService {
         await this.repo.replacePlacements(
           section.id,
           placements.map((pl) => ({ questionId: pl.questionId, pinnedVersionNo: info.get(idToString(pl.questionId))?.versionNo ?? pl.pinnedVersionNo, numberLabel: pl.numberLabel })),
+          { enforce: false },
         )
       }
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_CREATED, newId, { from: null, to: 'draf', copyOf: idToString(source.id) })
@@ -2012,6 +2057,13 @@ export class BuilderService {
     const ids = [...new Set([...onPaper, ...fresh.flatMap((g) => g.placements.map((pl) => pl.questionId.toString()))])]
     const st = await this.structure(ids)
     for (const g of fresh) for (const pl of g.placements) if (!st.info.has(pl.questionId.toString())) throw new PaperImportQuestionError(pl.questionId.toString())
+    // M2: a question that cannot be placed (`placementBlockers`) refuses the import before anything is written.
+    const newIds = fresh.flatMap((g) => g.placements.map((pl) => pl.questionId.toString()))
+    const blockedIds = await placementBlockers(this.prisma.client, newIds)
+    for (const id of newIds) {
+      const block = blockedIds.get(id)
+      if (block !== undefined) throw new PaperImportBlockedError(id, PLACEMENT_BLOCK_TEXT[block])
+    }
 
     // A group may sit in one Bahagian only, counting the members already on the paper. Members not in this import are not pulled in.
     const present = new Set(ids)

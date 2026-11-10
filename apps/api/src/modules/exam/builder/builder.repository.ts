@@ -1,8 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection, Prisma } from '../../../db/generated/client'
+import { BIJAK_BUILDER_PLACEMENT_LINES as PLACE } from '@pp/contract'
+
+import { ApiError } from '../../../common/errors/api-error'
 import { PrismaService } from '../../../db/prisma.service'
 import { storedReferenceImages, writableReferenceSheet } from '../reference-images'
+import { PLACEMENT_BLOCK_TEXT, placementBlockers } from './placement-blockers'
 
 export type PaperTree = Paper & { sections: (PaperSection & { placements: PaperPlacement[] })[] }
 export type BlueprintWithSections = Blueprint & { sections: BlueprintSection[] }
@@ -251,10 +255,23 @@ export class BuilderRepository {
    * Replaces the placements of one section (positions 1..n). The Nombor soalan of R1-T48 survives a replace: `numberLabel` is the given one,
    * else the one the question already had in this section.
    */
-  async replacePlacements(sectionId: bigint, placements: readonly { questionId: bigint; pinnedVersionNo: number; numberLabel?: string | null }[]): Promise<void> {
+  async replacePlacements(
+    sectionId: bigint,
+    placements: readonly { questionId: bigint; pinnedVersionNo: number; numberLabel?: string | null }[],
+    options: { enforce?: boolean } = {},
+  ): Promise<void> {
     const kept = new Map(
       (await this.prisma.client.paperPlacement.findMany({ where: { paperSectionId: sectionId }, select: { questionId: true, numberLabel: true } })).map((r) => [r.questionId.toString(), r.numberLabel]),
     )
+    // M2: a question that is NEW in this section must pass `placementBlockers` (one rule for every writer). Ones already there are never re-judged, so removing or
+    // reordering stays possible. `enforce: false` is for a copy of an existing paper (the publish check judges it).
+    if (options.enforce !== false) {
+      // "New" = on no section of this paper yet: moving a question between Bahagian is not a new placement.
+      const onPaper = new Set(
+        (await this.prisma.client.paperPlacement.findMany({ where: { section: { paper: { sections: { some: { id: sectionId } } } } }, select: { questionId: true } })).map((r) => r.questionId.toString()),
+      )
+      await this.assertPlaceable(placements.map((p) => p.questionId.toString()).filter((id) => !kept.has(id) && !onPaper.has(id)))
+    }
     await this.prisma.client.paperPlacement.deleteMany({ where: { paperSectionId: sectionId } })
     if (placements.length === 0) return
     await this.prisma.client.paperPlacement.createMany({
@@ -267,6 +284,16 @@ export class BuilderRepository {
         marksOverride: null,
       })),
     })
+  }
+
+  /** M2: refuses (422) the first question of `ids` that cannot be placed (`placementBlockers`). */
+  private async assertPlaceable(ids: readonly string[]): Promise<void> {
+    if (ids.length === 0) return
+    const blocked = await placementBlockers(this.prisma.client, ids)
+    for (const id of ids) {
+      const code = blocked.get(id)
+      if (code !== undefined) throw ApiError.of('VALIDATION_ERROR', { message: PLACE.notServable(id, PLACEMENT_BLOCK_TEXT[code]) })
+    }
   }
 
   /** R1-T48 "Tambah bahagian": appends an admin-added Bahagian (rule Jawab Semua; its counts follow its placements). Also the one Bahagian of a new Kertas Subjektif (S3-T06). */
@@ -370,6 +397,7 @@ export class BuilderRepository {
   /** Appends placements at the end of a section (positions continue from `firstPosition`); nothing already there is touched. */
   async appendPlacements(sectionId: bigint, firstPosition: number, placements: readonly { questionId: bigint; pinnedVersionNo: number; numberLabel: string | null }[]): Promise<void> {
     if (placements.length === 0) return
+    await this.assertPlaceable(placements.map((p) => p.questionId.toString()))
     await this.prisma.client.paperPlacement.createMany({
       data: placements.map((p, i) => ({ paperSectionId: sectionId, questionId: p.questionId, pinnedVersionNo: p.pinnedVersionNo, position: firstPosition + i, numberLabel: p.numberLabel, marksOverride: null })),
     })

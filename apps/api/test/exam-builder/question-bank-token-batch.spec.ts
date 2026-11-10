@@ -24,7 +24,8 @@ function makeSource() {
     stimulusGroup: { findMany: groupFindMany },
     file: { findMany: fileFindMany },
     // servableLatest: every member question is secondary-level and not PKSK
-    $queryRaw: vi.fn(() => Promise.resolve(Array.from({ length: GROUPS }, (_, n) => ({ id: BigInt(1000 + n) })))),
+    // (the second read, the members whose latest version is archived (m-7), finds none)
+    $queryRaw: vi.fn().mockResolvedValueOnce(Array.from({ length: GROUPS }, (_, n) => ({ id: BigInt(1000 + n) }))).mockResolvedValue([]),
   }
   const records = Array.from({ length: GROUPS }, (_, n) => ({
     id: String(1000 + n),

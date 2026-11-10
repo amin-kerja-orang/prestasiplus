@@ -18,6 +18,22 @@ export interface PracticeMedia {
   optionUrls: ReadonlyMap<string, string>
 }
 
+/**
+ * KP-15: what a pupil sees in place of a picture that is missing or held (a question in a FIXED set: a teacher's mission, an assigned remedial test, a
+ * question set). A plain `passage` stimulus, so the existing wire and screens render it; the question keeps its place and its marks.
+ */
+export const PICTURE_PLACEHOLDER_LABEL = 'Gambar tiada'
+export const PICTURE_PLACEHOLDER_TEXT = 'Gambar untuk soalan ini tiada buat masa ini. Soalan ini masih dikira dalam markah.'
+export const placeholderStimulus = (questionId: string): PracticeQuizStimulus => ({
+  id: `${questionId}-gambar-tiada`,
+  kind: 'passage',
+  label: PICTURE_PLACEHOLDER_LABEL,
+  alt: PICTURE_PLACEHOLDER_LABEL,
+  text: PICTURE_PLACEHOLDER_TEXT,
+})
+/** The media of a placeholder question that has none it can show. */
+export const PLACEHOLDER_MEDIA: PracticeMedia = { stimuli: [], optionUrls: new Map() }
+
 /** The internal file ids a question needs a public token for: group and own stimulus pictures, option pictures. */
 export function mediaFileIds(record: QuestionRecord, group: StimulusGroupRecord | null, own: ReadonlyMap<string, OwnStimulus>): string[] {
   const out = new Set<string>(optionImageIds(record))

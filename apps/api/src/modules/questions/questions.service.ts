@@ -1076,6 +1076,11 @@ export class QuestionsService {
         await this.repo.isSpmBound(subjectId, levelId),
       )
       const fields = GATES.approve(data)
+      // m-5 (follow-up): the same group-without-stimulus approve gate as `gateFields`; the shortcut must not skip it.
+      if (n.stimulusGroupId) {
+        const group = (await this.repo.groupsByIds([n.stimulusGroupId]))[0]
+        Object.assign(fields, groupStimulusGateFields(n.stimulusGroupId, group?.stimuli.length ?? 0))
+      }
       if (Object.keys(fields).length > 0) throw fail(fields)
     }
     const creator = parse(actor.userId)
@@ -1497,8 +1502,10 @@ export class QuestionsService {
     )
     const tokens = fileIds.size === 0 ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
     const liveFlags = await this.repo.openLiveFlags(records.map((r) => r.id))
+    const held = await this.repo.heldAmong(records.map((r) => r.id))
     return records.map((r) => ({
       ...r,
+      ...(held.has(r.id) ? { imageHeld: true } : {}),
       openFlags: liveFlags.has(r.id) ? [liveFlags.get(r.id) as 'stimulus_missing' | 'figure_only' | 'stem_duplicated'] : [],
       subject: (r.version.subjectId && refs.subjects.get(r.version.subjectId)) || null,
       level: (r.version.educationLevelId && refs.levels.get(r.version.educationLevelId)) || null,

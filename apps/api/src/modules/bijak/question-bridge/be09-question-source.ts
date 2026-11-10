@@ -160,6 +160,8 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
       ),
     ])
     const media = await this.mediaOf(records, groups)
+    // KP-15: a pinned (published paper) question whose picture is held or unresolved is served with a placeholder, never dropped (flags stay as decision 56 says).
+    const placeholders = pinned.length > 0 ? await this.questions.unservableAmong(pinned, { flags: false }) : new Set<string>()
     for (const record of records) {
       try {
         const group = record.groupId ? (groups.get(record.groupId) ?? null) : null
@@ -168,6 +170,7 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
           group,
           labels.get(labelKey(record)) as CurriculumLabels,
           media,
+          placeholders.has(record.id),
         )
         out.set(record.id, { bundle, groupId: bundle.question.groupId ?? null })
       } catch (e) {

@@ -37,6 +37,7 @@ import StudioGroupEditor from '../components/studio/StudioGroupEditor.vue'
 import StudioImageField from '../components/studio/StudioImageField.vue'
 import StudioLeafEditor from '../components/studio/StudioLeafEditor.vue'
 import StudioRichTextField from '../components/studio/StudioRichTextField.vue'
+import StudioPictureBanner from '../components/studio/StudioPictureBanner.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStatusBar from '../components/studio/StudioStatusBar.vue'
 import { backspaceAtCaret, insertAtCaret, type KeyboardMode } from '../lib/arabic-keyboard'
@@ -77,6 +78,8 @@ const session = useSessionStore()
 const flash = useFlash()
 
 const edit = computed(() => props.id !== undefined)
+// KP-15: the open flags and the import hold of the question read, for the missing-picture notice.
+const pictureFlags = ref<{ flags: readonly string[]; held: boolean }>({ flags: [], held: false })
 const draft = ref<StudioDraft>(blankDraft())
 const subjects = ref<{ id: string; name: string }[]>([])
 const levels = ref<{ id: string; name: string }[]>([])
@@ -269,6 +272,7 @@ async function load(): Promise<void> {
       draft.value = h.draft
       unsupported.value = h.unsupported
       status.value = q.status
+      pictureFlags.value = { flags: q.flags ?? [], held: q.imageHeld === true }
       await readGate(props.id)
       // S2-T03: the V2 `/preview` path arrives here with `?pratonton=1`.
       if (route.query.pratonton === '1') previewOpen.value = true
@@ -392,6 +396,8 @@ async function save(): Promise<void> {
       <DsCallout v-if="unsupported.length > 0" tone="warning" title="Soalan ini belum boleh disunting di Studio" data-testid="studio-unsupported">
         <DsText v-for="u in unsupported" :key="u" variant="body">{{ u }}</DsText>
       </DsCallout>
+
+      <StudioPictureBanner v-if="edit" :flags="pictureFlags.flags" :image-held="pictureFlags.held" />
 
       <DsCluster gap="sm">
         <UButton type="button" color="neutral" variant="soft" data-testid="studio-preview-open" @click="previewOpen = true">Pratonton</UButton>

@@ -235,10 +235,14 @@ export class PracticeStartPlanner {
   }
 
   /** The questions among `ids` that are eligible now, at their live version, in the order of `ids`. */
-  private async serve(ids: readonly string[], activity?: PracticeDrillActivity, allowPrivate = false): Promise<PracticeQuestion[]> {
+  /**
+   * `fixedSet` (KP-15): the ids are a set a person chose (a teacher's mission, an assigned remedial test, a question set): a question whose picture is missing or held
+   * keeps its place with a placeholder instead of being dropped. Every other caller is an automatic draw (history top-up, Ulang Kaji, Ramalan, self-practice) and drops it.
+   */
+  private async serve(ids: readonly string[], activity?: PracticeDrillActivity, allowPrivate = false, fixedSet = false): Promise<PracticeQuestion[]> {
     const unique = [...new Set(ids)]
     // `activity` is the drill surface (S1-T06): only a drill whose surface allows it serves figures and whole groups; the rest stay text-only.
-    const live = await this.ports.questions.live(unique, activity, { allowPrivate })
+    const live = await this.ports.questions.live(unique, activity, { allowPrivate, ...(fixedSet ? { fixedSet } : {}) })
     const out: PracticeQuestion[] = []
     for (const id of unique) {
       const q = live.get(id)
@@ -392,7 +396,7 @@ export class PracticeStartPlanner {
     if (open) return { ...plan, missionId: req.missionId, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
     // DM-42: the one mode that may serve a personal question (the assignment draw only adds the mission owner's).
-    const served = await this.serve(res.questionIds, undefined, true)
+    const served = await this.serve(res.questionIds, undefined, true, true)
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: res.subjectId,
@@ -412,7 +416,7 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, remedialTestId: req.remedialTestId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds, 'bab')
+    const served = await this.serve(res.questionIds, 'bab', false, true)
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, { subjectId: res.subjectId, remedialTestId: req.remedialTestId, served })
   }
@@ -425,7 +429,7 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, questionSetId: req.questionSetId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds, 'bab')
+    const served = await this.serve(res.questionIds, 'bab', false, true)
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: res.subjectId ?? served[0]?.subjectId ?? null,

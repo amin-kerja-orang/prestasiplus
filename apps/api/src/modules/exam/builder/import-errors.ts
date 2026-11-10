@@ -2,7 +2,7 @@
  * Typed refusals of `BuilderService.importDraftPaper` (S1-T10). They are plain errors, not HTTP ones: the S1 service decides the status
  * (`PaperImportGroupSplitError` -> 422 `fields.items`, `PaperImportPublishedError` -> 409, the others -> 422/500 as it sees fit).
  */
-export type PaperImportErrorCode = 'GROUP_SPLIT' | 'PAPER_PUBLISHED' | 'QUESTION_NOT_FOUND' | 'SECTION_LIMIT'
+export type PaperImportErrorCode = 'GROUP_SPLIT' | 'PAPER_PUBLISHED' | 'QUESTION_NOT_FOUND' | 'QUESTION_NOT_SERVABLE' | 'SECTION_LIMIT'
 
 export abstract class PaperImportError extends Error {
   abstract readonly code: PaperImportErrorCode
@@ -40,5 +40,16 @@ export class PaperImportSectionLimitError extends PaperImportError {
   readonly code = 'SECTION_LIMIT'
   constructor(readonly limit: number) {
     super(`a paper holds at most ${String(limit)} sections`)
+  }
+}
+
+/** M2: a question of the input cannot be placed (a held or unresolved picture, a withdrawn question no published paper pins; see `placementBlockers`). */
+export class PaperImportBlockedError extends PaperImportError {
+  readonly code = 'QUESTION_NOT_SERVABLE'
+  constructor(
+    readonly questionId: string,
+    readonly reason: string,
+  ) {
+    super(`question ${questionId} cannot be placed on a paper: ${reason}`)
   }
 }

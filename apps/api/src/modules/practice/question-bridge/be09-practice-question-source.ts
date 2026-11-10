@@ -13,7 +13,7 @@ import { UsersRepository } from '../../users'
 import type { PracticeDrillActivity, PracticeQuestion, PracticeQuestionSource, PracticeSelection } from '../ports'
 import { PRACTICE_GROUP_SURFACES, versionKey } from '../ports'
 import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practice-mapping'
-import { mediaFileIds, practiceMediaOf, type PracticeMedia } from './practice-media'
+import { mediaFileIds, PLACEHOLDER_MEDIA, practiceMediaOf, type PracticeMedia } from './practice-media'
 
 const DRILLS: readonly PracticeDrillActivity[] = ['latih_tubi_spm', 'databank', 'bab']
 
@@ -164,18 +164,24 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return out
   }
 
-  async live(ids: readonly string[], activity?: PracticeDrillActivity, opts: { allowPrivate?: boolean } = {}): Promise<ReadonlyMap<string, PracticeQuestion>> {
+  /**
+   * `opts.fixedSet` (KP-15) is for a set a person chose (a teacher's mission, an assigned remedial test, a question set): a question whose picture is missing or held
+   * (`unservableAmong`, the draw's own rule) STAYS in its place and carries a placeholder; an automatic draw (history, Ulang Kaji, Ramalan) leaves `fixedSet` off and drops it.
+   */
+  async live(ids: readonly string[], activity?: PracticeDrillActivity, opts: { allowPrivate?: boolean; fixedSet?: boolean } = {}): Promise<ReadonlyMap<string, PracticeQuestion>> {
     const allowPrivate = opts.allowPrivate === true
+    const fixedSet = opts.fixedSet === true
     const wanted = [...new Set(ids)].filter(isIdString)
     if (wanted.length === 0) return new Map()
     if (this.allows(activity)) {
       // S1-T06: figures and whole groups. A member of a group with a member that cannot be served is dropped with the whole group.
-      const { records, groups, media } = await this.servableRecords(wanted, allowPrivate)
-      return this.mapServable([...records.values()], (r) => r.id, true, groups, media)
+      const { records, groups, media, placeholders } = await this.servableRecords(wanted, allowPrivate, fixedSet)
+      return this.mapServable([...records.values()], (r) => r.id, true, groups, media, placeholders)
     }
     const loaded = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r)))
     // M1: a by-id read applies no flag / import-hold / media rule; the draw does, so a flagged question (history, Ulang Kaji, remedial) is not served here either.
     const blocked = await this.questions.unservableAmong(loaded.map((r) => r.id))
+    if (fixedSet) return this.mapAll(loaded, (r) => r.id, false, new Map(), blocked)
     return this.mapAll(loaded.filter((r) => !blocked.has(r.id)), (r) => r.id)
   }
 
@@ -218,7 +224,11 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
    * kept only when its WHOLE group is: every eligible member of the group must pass the shape check and the group must hold a
    * stimulus (the same rule as `wholeGroups` in SQL, plus the per-record shape), else the whole group is out.
    */
-  private async servableRecords(ids: readonly string[], allowPrivate = false): Promise<{ records: Map<string, QuestionRecord>; groups: Map<string, GroupUnit>; media: Map<string, PracticeMedia | null> }> {
+  private async servableRecords(
+    ids: readonly string[],
+    allowPrivate = false,
+    fixedSet = false,
+  ): Promise<{ records: Map<string, QuestionRecord>; groups: Map<string, GroupUnit>; media: Map<string, PracticeMedia | null>; placeholders: Set<string> }> {
     const records = new Map<string, QuestionRecord>()
     const groups = new Map<string, GroupUnit>()
     const loaded: QuestionRecord[] = []
@@ -238,14 +248,14 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
       for (const g of defs) {
         const eligibleMembers = g.questionIds.flatMap((id) => (have.has(id) ? [have.get(id) as QuestionRecord] : []))
         const members = eligibleMembers.filter((m) => this.check(m, true))
-        if (g.stimuli.length > 0 && members.length > 0 && members.length === eligibleMembers.length && !eligibleMembers.some((m) => blocked.has(m.id))) {
+        if (g.stimuli.length > 0 && members.length > 0 && members.length === eligibleMembers.length && (fixedSet || !eligibleMembers.some((m) => blocked.has(m.id)))) {
           groups.set(g.id, { group: { ...g, questionIds: members.map((m) => m.id) }, members })
         }
       }
     }
     for (const r of loaded) {
       if (r.groupId !== null && !groups.has(r.groupId)) continue
-      if (blocked.has(r.id)) continue
+      if (blocked.has(r.id) && !fixedSet) continue
       if (this.check(r, true)) records.set(r.id, r)
     }
     // T-C13 (D105, D90): what a question must SHOW (rajah, figure, option pictures) has to be showable, else it is not served: the draw,
@@ -253,6 +263,13 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     const judged = new Map(records)
     for (const u of groups.values()) for (const m of u.members) judged.set(m.id, m)
     const media = await this.mediaOf([...judged.values()], groups)
+    // KP-15: in a fixed set a question that cannot show its picture (the flag / hold rule, or media that cannot be shown) is kept with a placeholder.
+    const placeholders = new Set<string>()
+    if (fixedSet) {
+      for (const id of records.keys()) if (blocked.has(id) || media.get(id) == null) placeholders.add(id)
+      for (const id of placeholders) if (media.get(id) == null) media.set(id, PLACEHOLDER_MEDIA)
+      return { records, groups, media, placeholders }
+    }
     for (const id of [...records.keys()]) if (media.get(id) == null) records.delete(id)
     for (const [gid, u] of [...groups]) {
       if (u.members.some((m) => media.get(m.id) == null)) {
@@ -260,7 +277,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
         for (const [id, r] of [...records]) if (r.groupId === gid) records.delete(id)
       }
     }
-    return { records, groups, media }
+    return { records, groups, media, placeholders }
   }
 
   /** The `drawUnits` candidates of a window of ids: servable singles and the members of complete groups, each with its group size. */
@@ -309,12 +326,14 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return m.ok
   }
 
-  private mapAll(records: QuestionRecord[], keyOf: (r: QuestionRecord) => string, allowStimulus = false, groups: ReadonlyMap<string, GroupUnit> = new Map()): Promise<Map<string, PracticeQuestion>> {
+  private mapAll(records: QuestionRecord[], keyOf: (r: QuestionRecord) => string, allowStimulus = false, groups: ReadonlyMap<string, GroupUnit> = new Map(), placeholders: ReadonlySet<string> = new Set()): Promise<Map<string, PracticeQuestion>> {
     return this.mapServable(
       records.filter((r) => this.check(r, allowStimulus)),
       keyOf,
       allowStimulus,
       groups,
+      undefined,
+      placeholders,
     )
   }
 
@@ -333,6 +352,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     allowStimulus: boolean,
     groups: ReadonlyMap<string, GroupUnit>,
     known?: ReadonlyMap<string, PracticeMedia | null>,
+    placeholders: ReadonlySet<string> = new Set(),
   ): Promise<Map<string, PracticeQuestion>> {
     const contributors = await this.contributorsOf(servable)
     const media = known ?? (allowStimulus ? await this.mediaOf(servable, groups) : new Map<string, PracticeMedia | null>())
@@ -340,7 +360,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     for (const r of servable) {
       const group = r.groupId === null ? null : (groups.get(r.groupId)?.group ?? null)
       const m = media.get(r.id) ?? null
-      const q = allowStimulus && m === null ? null : toPracticeQuestion(r, r.createdById ? (contributors.get(r.createdById) ?? null) : null, { allowStimulus, group, media: m })
+      const q = allowStimulus && m === null ? null : toPracticeQuestion(r, r.createdById ? (contributors.get(r.createdById) ?? null) : null, { allowStimulus, group, media: m, placeholder: placeholders.has(r.id) })
       if (q) out.set(keyOf(r), q)
     }
     return out

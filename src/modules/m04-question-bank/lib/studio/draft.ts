@@ -414,6 +414,8 @@ export interface WireQuestion {
   parts?: unknown[]
   tag?: { unitId: string | null; spIds: string[]; tp: number | null }
   stimulusGroup?: { id: string } | null
+  flags?: readonly string[]
+  imageHeld?: boolean
   explanation?: string | null
   explanationEn?: string | null
   scriptType?: ScriptType

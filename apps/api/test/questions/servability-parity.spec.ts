@@ -427,7 +427,9 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(reports.get(made.archivedOnPaper!)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons[0]!.message).toBe('Diarkibkan — pulihkan ke draf dahulu.')
     expect(reasonsOf('archivedLive', 'simulasi_paper')).toEqual(['archived'])
     // Every startable question that is on no published paper is reported with exactly that reason.
-    for (const id of startable) if (!onPaper.has(id)) expect(reports.get(id)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons.map((r) => r.code)).toEqual(['not_on_published_paper'])
+    // M2: a withdrawn (inactive) question that no published paper pins is `withdrawn` (a new paper must not take it up); the others are exactly `not_on_published_paper`.
+    const inactive = new Set((await q(`select id::text id from questions where not is_active`)).map((r) => r.id))
+    for (const id of startable) if (!onPaper.has(id)) expect(reports.get(id)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons.map((r) => r.code)).toEqual([inactive.has(id) ? 'withdrawn' : 'not_on_published_paper'])
   })
 
   it('R1E2E-05b own stimuli: servability agrees with the bridge for every own-stimulus case, with the bridge reason when refused', async () => {
