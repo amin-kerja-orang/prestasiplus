@@ -4,7 +4,7 @@
  * the same 11 routes (E2E-M03-52, AC-31.1) lives in `qa-g5-sweep.spec.ts`.
  */
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import { TIMEOUT_FACTOR } from './timeout-factor'
@@ -43,102 +43,50 @@ test.describe('QA G5 admin menu entries', { tag: [moduleTag(3), '@qa'] }, () => 
   test.use({ mockInit: { latency: 0 } })
   test.setTimeout(120_000 * TIMEOUT_FACTOR)
 
-  test('E2E-M03-48 sidebar (>=1024): group KURIKULUM open with 3 links; active item per screen', async ({
+  /** The Portal Pentadbiran menu: the sidebar from lg, the drawer behind the menu button below it. */
+  async function openNav(page: Page): Promise<Locator> {
+    if (!isDesktopShell(page)) await byId(page, 'pentadbiran-menu-button').click()
+    const nav = page.locator('[data-testid="pentadbiran-nav"]:visible')
+    await expect(nav).toBeVisible()
+    return nav
+  }
+
+  test('E2E-M03-48 menu: the Kurikulum group lists 3 links; the matching item is active per screen', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
-    test.skip(!isDesktopShell(page), 'sidebar is desktop only; the Lagi menu is tested below')
     await loginAs(ADMIN)
     for (const [name, path, activeId] of ROUTES) {
       await gotoApp(path)
-      const group = page.locator('[data-group-key="kurikulum"]')
-      await expect(group, name).toBeVisible()
-      const label = await group.locator('button span').first().evaluate((el) => (el as HTMLElement).innerText)
-      expect(label.trim(), `${name} group label`).toBe('KURIKULUM')
+      const nav = await openNav(page)
       for (const [, text, href] of LINKS) {
-        const link = group.locator(`a[href="${href}"]`)
+        const link = nav.locator(`a[href="${href}"]`).first()
         await expect(link, `${name} ${text}`).toBeVisible()
         await expect(link).toContainText(text)
       }
-      const active = group.locator('a.active')
-      await expect(active, `${name} active item`).toHaveCount(1)
-      await expect(active).toHaveAttribute('data-nav-id', activeId)
-      // The group sits under the PENGURUSAN section header.
-      await expect(byId(page, 'shell-admin-nav').locator('[data-nav-id="sec-pengurusan"]')).toContainText(
-        'PENGURUSAN',
+      const activeHref = LINKS.find(([id]) => id === activeId)![2]
+      const active = nav.locator(
+        `a[href="${LINKS.map(([, , h]) => h).join('"][aria-current="page"], a[href="')}"][aria-current="page"]`,
       )
+      await expect(active, `${name} active item`).toHaveCount(1)
+      await expect(active).toHaveAttribute('href', activeHref)
+      if (!isDesktopShell(page)) await page.keyboard.press('Escape')
     }
   })
 
-  test('E2E-M03-48 sidebar: group toggle closes and reopens and is saved in localStorage admin_sidebar', async ({
+  test('E2E-M03-48 menu: the links are reachable (below 1024 through the menu button)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
-    test.skip(!isDesktopShell(page), 'sidebar is desktop only')
     await loginAs(ADMIN)
     await gotoApp('/admin/subjects')
-    const group = page.locator('[data-group-key="kurikulum"]')
-    const links = group.locator('a[href="/admin/curriculum"]')
-    await expect(links).toBeVisible()
-    await group.locator('button').click()
-    await expect(links).toBeHidden()
-    const saved = await page.evaluate(() => localStorage.getItem('admin_sidebar'))
-    expect(JSON.parse(saved ?? '{}')).toMatchObject({ kurikulum: false })
-    await group.locator('button').click()
-    await expect(links).toBeVisible()
-    expect(JSON.parse((await page.evaluate(() => localStorage.getItem('admin_sidebar'))) ?? '{}')).toMatchObject({
-      kurikulum: true,
-    })
-  })
-
-  test('E2E-M03-48 "Lagi" menu (<1024): section KURIKULUM with the same 3 links', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
-    test.skip(isDesktopShell(page), 'the Lagi menu exists below 1024 px only')
-    await loginAs(ADMIN)
-    await gotoApp('/admin/subjects')
-    // The desktop sidebar is not rendered / not visible below lg.
-    await expect(byId(page, 'shell-admin-sidebar')).toBeHidden()
-    const bottom = byId(page, 'shell-admin-bottom-nav')
-    await expect(bottom).toBeVisible()
-    await bottom.getByText('Lagi').click()
-    const lagi = byId(page, 'shell-admin-lagi')
-    await expect(lagi).toBeVisible()
-    const heading = lagi.locator('[data-lagi-heading="Kurikulum"]')
-    await expect(heading).toHaveCount(1)
-    expect(await heading.evaluate((el) => (el as HTMLElement).innerText)).toBe('KURIKULUM')
-    for (const [, text, href] of LINKS) {
-      const link = lagi.locator(`a[href="${href}"]`)
-      await expect(link, text).toBeVisible()
-      await expect(link).toContainText(text)
-    }
-    // The links are reachable: tap "Tahap Pendidikan".
-    await lagi.locator('a[href="/admin/education-levels"]').click()
+    const nav = await openNav(page)
+    await nav.locator('a[href="/admin/education-levels"]').first().click()
     await expect(page).toHaveURL(/\/admin\/education-levels$/)
-    await expect(byId(page, 'levels-count')).toBeVisible()
-  })
-
-  test('E2E-M03-48 Lagi: the matching item is active on S1, S6 and S9', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
-    test.skip(isDesktopShell(page), 'the Lagi menu exists below 1024 px only')
-    await loginAs(ADMIN)
-    for (const [path, href] of [
-      ['/admin/curriculum', '/admin/curriculum'],
-      ['/admin/subjects', '/admin/subjects'],
-      ['/admin/education-levels', '/admin/education-levels'],
-    ]) {
-      await gotoApp(path!)
-      await byId(page, 'shell-admin-bottom-nav').getByText('Lagi').click()
-      const lagi = byId(page, 'shell-admin-lagi')
-      await expect(lagi.locator(`a[href="${href!}"]`), path).toHaveClass(/active/)
-    }
+    // The count is lifted into the shell header (pentadbiran-subtitle) and kept as a hidden span.
+    await expect(byId(page, 'levels-count')).toHaveText(/^Jumlah: \d+ tahap$/)
   })
 })
 
@@ -157,7 +105,7 @@ test.describe('QA G5 route guards', { tag: [moduleTag(3), '@qa'] }, () => {
   })
 
   for (const who of ['pelajar@demo.test', 'guru@demo.test'] as const) {
-    test(`E2E-M03-50 ${who} is kept out of all 11 admin routes and lands on its own page (AC-29.2)`, async ({
+    test(`E2E-M03-50 ${who} is refused with the in-place 403 page on all 11 admin routes (AC-29.2)`, async ({
       page,
       loginAs,
       gotoApp,
@@ -165,10 +113,11 @@ test.describe('QA G5 route guards', { tag: [moduleTag(3), '@qa'] }, () => {
       await loginAs(who)
       for (const [name, path] of ROUTES) {
         await gotoApp(path)
+        // Route guard default onForbidden '403': the refusal renders in place (URL kept, no redirect
+        // to a role landing) as the DS 403 error page; the role is logged in, so never sent to /login.
+        await expect(page.locator('[data-ds="error-page"][data-code="403"]'), name).toBeVisible()
         const url = new URL(page.url())
-        expect(url.pathname, `${name}: ${who} must not stay on an admin route`).not.toMatch(
-          /^\/admin\/(curriculum|subjects|education-levels)/,
-        )
+        expect(url.pathname, `${name}: ${who} is refused in place`).toBe(path.split('?')[0])
         expect(url.pathname, `${name}: ${who} is logged in, not sent to login`).not.toBe('/login')
         // None of the M03 admin pages rendered.
         await expect(page.getByTestId('curriculum-page'), name).toHaveCount(0)
