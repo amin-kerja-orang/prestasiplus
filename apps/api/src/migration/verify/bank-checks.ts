@@ -230,6 +230,13 @@ const JUDGED_ELSEWHERE: ReadonlySet<string> = new Set([
 const judgedElsewhere = (key: string): boolean => JUDGED_ELSEWHERE.has(key)
 
 /**
+ * Ceiling of the `question_files` rejects (distinct V2 picture paths the pass could not use). Only the file system can say which paths are unusable, so
+ * the ceiling is a documented constant, not a computed count: the real V2 load has 2 such paths (they hold 38 questions); 10 leaves a small margin.
+ * A run where many pictures fail (a wrong files-dir, a bad checksum list) goes over it and fails verify instead of passing as 'judged elsewhere'.
+ */
+export const PICTURE_REJECT_CEILING = 10
+
+/**
  * Every reject key (`entity|reason|column`) that verify explains: the computed expectations plus the keys judged by the text or the file.
  * The single source for the checks below and for the list that `docs/ops/sql/smoke-readonly.sql` X3 mirrors.
  */
@@ -268,8 +275,9 @@ export const STANDALONE_ENTITIES = [
  * Rejects of the standalone loaders (latest apply run of each), by reason. Each reason that V2 data alone explains has its own check: the expected
  * count is computed from the archive (the rows V2 holds that the loader must refuse) and compared with the reject rows. The rest (a stem that
  * parses to nothing, a page image the content check refuses, and the picture files of `question_files`) is added to the expectation as counted:
- * those are judged by the text or the file system, and every such reject carries its reason and column in `etl_rejects`. A reject with any other
- * reason (an unknown subject, level or status) has no expectation: it is listed as unexplained and the total is only reported, never passed.
+ * those are judged by the text or the file system, and every such reject carries its reason and column in `etl_rejects`. The picture rejects have a
+ * ceiling (`PICTURE_REJECT_CEILING`, a documented constant: the file system cannot be asked cheaply); above it they are unexplained and the check fails. A reject with any other
+ * reason (an unknown subject, level or status) has no expectation: it is listed as unexplained and the check fails (unless the run allowlist accepts it).
  */
 export async function standaloneRejects({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
   const counts = await rejectCounts(pool, source, STANDALONE_ENTITIES)
@@ -305,11 +313,15 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
   let unexplained = 0
   const rest: string[] = []
   const accepted = acceptedRejectKeys(process.env)
+  const pictureRejects = [...counts].filter(([k]) => k.startsWith('question_files|')).reduce((sum, [, n]) => sum + n, 0)
   for (const [key, n] of [...counts].sort(([a], [b]) => (a < b ? -1 : 1))) {
     if (computed.has(key)) continue
     const [entity, reason, column] = key.split('|')
     const label = `${entity} ${reason}${column ? `/${column}` : ''}: ${n}`
-    if (judgedElsewhere(key)) {
+    if (judgedElsewhere(key) && key.startsWith('question_files|') && pictureRejects > PICTURE_REJECT_CEILING) {
+      unexplained += n
+      rest.push(`${label} (UNEXPLAINED: ${pictureRejects} picture paths rejected, above the ceiling of ${PICTURE_REJECT_CEILING})`)
+    } else if (judgedElsewhere(key)) {
       counted += n
       rest.push(`${label} (judged by the text or the file, counted as is)`)
     } else if ((accepted.get(key) ?? -1) >= n) {
