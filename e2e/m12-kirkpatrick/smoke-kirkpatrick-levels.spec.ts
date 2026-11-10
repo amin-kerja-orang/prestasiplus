@@ -66,8 +66,8 @@ const TEXT = { useInnerText: true } as const
 
 async function header(page: Page, [tab, title, subtitle]: readonly [string, string, string]) {
   await expectTabTitle(page, tab)
-  await expect(page.getByTestId('shell-admin-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-admin-subtitle')).toHaveText(subtitle)
+  await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText(title)
+  await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(subtitle)
 }
 
 /** S5 renders 946 prediction rows from one response: wait for its content with a larger budget. */
@@ -131,7 +131,7 @@ test.describe('M12 S4 T3 Tingkah Laku (admin)', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(`${S4}?school_id=8080`)
     await header(page, TITLES.s4)
-    await expect(page.getByTestId('shell-admin-header')).toBeVisible()
+    await expect(page.getByTestId('pentadbiran-header')).toBeVisible()
     await expectTabs(page, BASE, 'behavior')
     await expect(page.getByTestId('kirk-tab-behavior')).toHaveClass(/bg-indigo-600/)
     await expectNoHorizontalScroll(page)
@@ -873,8 +873,8 @@ test.describe('M12 S6 Rantaian Impak (admin)', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(`${S6}?school_id=8080`)
     await expectTabTitle(page, 'Rantaian Impak')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Rantaian Impak')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveText(
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Rantaian Impak')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
       'Rantaian impak Kirkpatrick — 4 tahap keberkesanan',
     )
     await expect(page.getByTestId('kirk-tabs')).toHaveCount(0)
@@ -1180,10 +1180,10 @@ test.describe('M12 S8 student detail (admin)', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(S8(4664))
     await expectTabTitle(page, 'Kirkpatrick — Pelajar Demo 004664')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText(
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText(
       'Kirkpatrick — Pelajar Demo 004664',
     )
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
     await expect(page.getByTestId('pel-name')).toHaveText('Pelajar Demo 004664')
     await expect(page.getByTestId('pel-school')).toContainText('· Tingkatan 5')
     const back = page.getByTestId('pel-back')
@@ -1376,7 +1376,7 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru/kirkpatrick/behavior')
     await header(page, TITLES.s4)
-    await expect(page.getByTestId('shell-admin-header')).toBeVisible()
+    await expect(page.getByTestId('pentadbiran-header')).toBeVisible()
     await expect(stats(page)).toHaveText(['4,158', '946', '20991', '306,133', '82.8%', '53.1%'])
     await expect(page.getByTestId('kirk-tab-results')).toHaveAttribute(
       'href',
@@ -1393,7 +1393,7 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
     await header(page, TITLES.s5)
     await expect(stats(page)).toHaveText(['4.30', '96.7%', '52', '82.8%', '946', '4378'])
     await spaGo(page, '/guru/kirkpatrick/chain')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Rantaian Impak T1 → T4')
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Rantaian Impak T1 → T4')
     await expect(page.getByTestId('chain-back')).toHaveAttribute('href', '/guru/kirkpatrick')
     await spaGo(page, '/guru/kirkpatrick/interventions')
     await header(page, TITLES.s7Guru)
@@ -1411,7 +1411,7 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru/kirkpatrick/behavior')
     await expect(page.getByTestId('beh-school-row').first()).toBeVisible()
-    await expect(page.getByTestId('shell-admin-nav').locator('.active')).toHaveText(
+    await expect(page.getByTestId('pentadbiran-nav').locator('[aria-current="page"]')).toHaveText(
       'T3: Tingkah Laku',
     )
   })
@@ -1423,7 +1423,7 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
       await loginAs(GURU)
       await gotoApp('/guru/kirkpatrick/behavior')
       await header(page, TITLES.s4)
-      await expect(page.getByTestId('shell-admin-header')).toBeVisible()
+      await expect(page.getByTestId('pentadbiran-header')).toBeVisible()
       await expect(stats(page)).toHaveText(['4,158', '946', '20991', '306,133', '82.8%', '53.1%'])
       await expectNoHorizontalScroll(page)
 

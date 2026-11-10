@@ -61,8 +61,8 @@ const TEXT = { useInnerText: true } as const
 
 async function header(page: Page, [tab, title, subtitle]: readonly [string, string, string]) {
   await expectTabTitle(page, tab)
-  await expect(page.getByTestId('shell-admin-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-admin-subtitle')).toHaveText(subtitle)
+  await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText(title)
+  await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(subtitle)
 }
 
 /** The distinct left edges of `items` (columns of a grid). */
@@ -116,8 +116,8 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     ] as const) {
       await gotoApp(path)
       await header(page, titles)
-      await expect(page.getByTestId('shell-admin-header')).toBeVisible()
-      if (isDesktopShell(page)) await expect(page.getByTestId('shell-admin-sidebar')).toBeVisible()
+      await expect(page.getByTestId('pentadbiran-header')).toBeVisible()
+      if (isDesktopShell(page)) await expect(page.getByTestId('pentadbiran-sidebar')).toBeVisible()
       await expectNoHorizontalScroll(page)
     }
   })
@@ -779,7 +779,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     ])
     if (isDesktopShell(page)) {
       // FR-M12-04 / DV-M12-12: the item of the current view is active in the sidebar on the twin too.
-      await expect(page.getByTestId('shell-admin-sidebar').locator('a.active')).toContainText(
+      await expect(page.getByTestId('pentadbiran-sidebar').locator('a[aria-current="page"]')).toContainText(
         'T1: Reaksi',
       )
     }
@@ -860,7 +860,7 @@ test.describe('M12 S1-S3: guru (provisional, SRS §9 Q-M12-1)', MODULE, () => {
       await loginAs(GURU)
       await gotoApp('/guru/kirkpatrick')
       await header(page, TITLES.s1Guru)
-      await expect(page.getByTestId('shell-admin-header')).toBeVisible()
+      await expect(page.getByTestId('pentadbiran-header')).toBeVisible()
       await expectLevels(page, S1_PLATFORM)
       await expect(page.getByTestId('kirk-level-t3')).toHaveAttribute(
         'href',
@@ -916,10 +916,10 @@ test.describe(
         await loginAs(SCHOOL_ADMIN)
         await gotoApp(ALIAS)
         await expectTabTitle(page, TITLES.s1[0])
-        await expect(page.getByTestId('shell-user-title')).toHaveText(TITLES.s1[1])
-        await expect(page.getByTestId('shell-user-subtitle')).toHaveText(TITLES.s1[2])
+        await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText(TITLES.s1[1])
+        await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText(TITLES.s1[2])
         await expect(page.getByTestId('kirk-overview-page')).toBeVisible()
-        await expect(page.getByTestId('shell-admin-header')).toHaveCount(0)
+        await expect(page.getByTestId('pentadbiran-header')).toHaveCount(0)
 
         // Data forced to the own school: account 8 belongs to SMK DEMO (900001, a fixture school). Its population
         // counts (T4/T5, teachers) show; active students and sessions stay 0 (no M05 sessions for the fixture).
