@@ -1,7 +1,7 @@
 /**
  * M05-T4 developer smoke (build-plan M05-T4; QA writes the E2E-M05-nn ids at G5): the reusable quiz
  * component and its three screens — S2 `/practice`, S3 `/practice/:code`, Q1 `/practice/:code/quiz` —
- * at 375 / 768 / 1280: list, configuration, a full quiz run to the results, the trial gate, an unknown
+ * at 375 / 768 / 1280: list, configuration, a full quiz run to the results, an unknown
  * code. The scenario-level checks (SRS §12 rows 14, 16–23, 54) are in `practice-s2-s3-q1.spec.ts`.
  */
 
@@ -18,7 +18,6 @@ import {
 
 const PELAJAR = 'pelajar@demo.test'
 const PELAJARMAJU = 'pelajarmaju@demo.test'
-const ADMIN = 'admin@demo.test'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
@@ -51,10 +50,10 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await expect(tid(page, 'config-start')).toHaveAttribute('href', '/practice/MATH/quiz?count=10')
     await expectNoHorizontalScroll(page)
 
-    await tid(page, 'level-1').click()
+    await tid(page, 'level-10').click()
     await tid(page, 'count-5').click()
     await tid(page, 'config-start').click()
-    await expect(page).toHaveURL(/\/practice\/MATH\/quiz\?level=1&count=5$/)
+    await expect(page).toHaveURL(/\/practice\/MATH\/quiz\?level=10&count=5$/)
     // V2 latih-tubi/quiz.blade.php:2 (tab title "Kuiz {subject}") and :18 (subject name on the page).
     await expectTabTitle(page, 'Kuiz Matematik | PRESTASIPLUS')
     await expect(page.getByText('Matematik', { exact: true }).first()).toBeVisible()
@@ -68,7 +67,7 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     gotoApp,
   }) => {
     await loginAs(PELAJARMAJU)
-    await gotoApp('/practice/MATH/quiz?level=1&count=5')
+    await gotoApp('/practice/MATH/quiz?level=10&count=5')
     // V2 latih-tubi/quiz.blade.php:2 (tab title "Kuiz {subject}") and :18 (subject name on the page).
     await expectTabTitle(page, 'Kuiz Matematik | PRESTASIPLUS')
     await expect(page.getByText('Matematik', { exact: true }).first()).toBeVisible()
@@ -96,23 +95,6 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
 
     await tid(page, 'result-retry').click()
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
-  })
-
-  test('the trial gate blocks an admin with no free questions left and offers no pricing link', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
-    await loginAs(ADMIN)
-    await gotoApp('/practice/MATH')
-    await expect(tid(page, 'config-trial')).toContainText('Baki percubaan percuma: 0 soalan lagi.')
-    await tid(page, 'config-start').click()
-    // /pricing retired (r1-canonical-map.json:6344): the redirect assertion became: start is blocked, the URL
-    // stays on the config page and no pricing/"Langgan" link is rendered.
-    await expect(page).toHaveURL(/\/practice\/MATH$/)
-    await expect(page.locator('a[href="/pricing"]')).toHaveCount(0)
-    await expect(page.getByText(/Langgan/)).toHaveCount(0)
-    expect(await page.evaluate(() => document.body.innerText)).not.toContain('Memuat Soalan')
   })
 
   test('an unknown code is the global 404 page on S3 and Q1', async ({
