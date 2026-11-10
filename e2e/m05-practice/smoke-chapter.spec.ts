@@ -29,7 +29,7 @@ async function openChapterIds(page: Page): Promise<string[]> {
 }
 
 /** Layout default subtitle when the page sets none (V2 pelajar/layout.blade.php:462; the teacher shell greets by name). */
-const DEFAULT_SUBTITLE = { pelajar: 'Selamat datang kembali', guru: /^Selamat datang, .+ 👩‍🏫$/ } as const
+const DEFAULT_SUBTITLE = { pelajar: 'Selamat datang kembali', guru: 'Selamat datang, Guru Demo 👩‍🏫' } as const
 
 test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
@@ -48,9 +48,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
       await expectTabTitle(page, 'Soalan by Chapter | PRESTASIPLUS')
       await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
       await expect(tid(page, 'pembelajaran-subtitle')).toHaveText(DEFAULT_SUBTITLE[label])
-      await expect(tid(page, 'chapter-index-page').getByRole('heading', { level: 1 })).toHaveText(
-        'Soalan by Chapter',
-      )
+      // The shell prints the only h1 (asserted above); V2 bab.blade.php:10 had a second page h1, not kept in V3.
       await expect(tid(page, 'chapter-random')).toHaveAttribute('href', '/practice')
       await expect(tid(page, 'chapter-subject-grid').locator('> li > a')).toHaveCount(2)
       await expectNoHorizontalScroll(page)
@@ -59,7 +57,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH(\?level=[^&]+)?$/)
       await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
       await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
-      await expect(tid(page, 'pembelajaran-subtitle')).toHaveText(DEFAULT_SUBTITLE[label])
+      await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-subject-name')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-level-select').locator('option')).toHaveCount(4)
       await expect(tid(page, 'chapter-list').locator('[data-state=locked]')).toHaveCount(0)
