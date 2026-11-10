@@ -108,6 +108,7 @@ test.describe('M03 S6 subject list', MODULE, () => {
     await openSubjects(page, gotoApp)
     await expectTabTitle(page, 'Subjek | PRESTASIPLUS')
     await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Subjek')
+    await expect.soft(page.getByRole('heading', { name: 'Senarai Subjek', level: 2 })).toBeVisible() // V2 subjects.blade.php h2
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 31 subjek')
     const add = page.getByTestId('subjects-add')
     await expect(add).toHaveText('Tambah')
@@ -141,11 +142,11 @@ test.describe('M03 S6 subject list', MODULE, () => {
     await expect(page.getByRole('menuitem', { name: 'Padam', exact: true })).toBeVisible()
     await page.keyboard.press('Escape')
 
-    // The colour hex shows from 2xl (v2 restyle: swatch only below it) and the "soalan" word after the
-    // question number too; the "Soalan" column header names the figure at every width.
+    // Below sm: swatch only and the question number only; from sm the hex and the word "soalan" show too
+    // (V2 subjects.blade.php: hidden sm:inline). The v2 restyle hides them below 2xl: stays red until the app is fixed.
     const hex = subjectRow(page, 27).getByTestId('subject-color-hex')
     const questions = subjectRow(page, 3).getByTestId('subject-questions')
-    if (viewportWidth(page) < 1536) {
+    if (isMobileWidth(page)) {
       await expect(hex).toBeHidden()
       await expect
         .poll(() => questions.evaluate((el) => (el as HTMLElement).innerText.trim()))
@@ -307,7 +308,7 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
     const code = page.getByTestId('subject-code')
     await expect(code).toHaveAttribute('placeholder', 'cth: MATH01')
     await expect(code).toHaveAttribute('maxlength', '20')
-    // v2 restyle: the code input no longer shows the text upper-cased (CSS); the upper-case conversion is checked on save.
+    expect.soft(await code.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase') // V2 subjects/create.blade.php: input class uppercase
     await expect(page.getByText('Kod akan ditukar ke huruf besar automatik')).toBeVisible()
     await expect(page.getByTestId('subject-icon-input')).toHaveValue('fas fa-book')
     await expect(page.getByTestId('subject-icon-input')).toHaveAttribute(
@@ -328,7 +329,7 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
 
     // Typing displays upper-case; the picker mirrors into the read-only text.
     await code.fill('math02')
-    await expect(code).toHaveValue('math02')
+    expect.soft(await code.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
     await page.getByTestId('subject-color').fill('#00ff00')
     await expect(page.getByTestId('subject-color-text')).toHaveValue('#00ff00')
 
@@ -488,6 +489,7 @@ test.describe('M03 S9 level list', MODULE, () => {
     await openLevels(page, gotoApp)
     await expectTabTitle(page, 'Tahap Pendidikan | PRESTASIPLUS')
     await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Tahap Pendidikan')
+    await expect.soft(page.getByRole('heading', { name: 'Senarai Tahap Pendidikan', level: 2 })).toBeVisible() // V2 education-levels.blade.php h2
     // 5 levels: the Tingkatan levels only; the 6 Darjah levels are hidden (D72).
     await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 5 tahap')
     const add = page.getByTestId('levels-add')
@@ -521,7 +523,7 @@ test.describe('M03 S9 level list', MODULE, () => {
     await expect(t1).toContainText('T1')
     await expect(t1.getByTestId('level-stage')).toHaveText('Menengah Rendah')
     await expect(t1).toContainText('KSSM')
-    await expect(t1.getByTestId('level-questions')).toHaveText('@@T1Q@@ soalan')
+    await expect(t1.getByTestId('level-questions')).toHaveText('19455 soalan') // ACTIVE_BY_LEVEL[7] = Q-ACTIVE(Tingkatan 1), src/modules/m04-question-bank/mock/data/tables.ts:953-965 (D11)
     await expect(t1.getByTestId('level-subjects')).toHaveText('15 subjek')
     await expect(levelRow(page, 10).getByTestId('level-stage')).toHaveText('Menengah Atas')
     await expect(rowEdit(t1)).toHaveAttribute('href', '/admin/education-levels/7/edit')
@@ -633,7 +635,7 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
     const code = page.getByTestId('level-code')
     await expect(code).toHaveAttribute('placeholder', 'cth: T1')
     await expect(code).toHaveAttribute('maxlength', '10')
-    // v2 restyle: the code input no longer shows the text upper-cased (CSS); the upper-case conversion is checked on save.
+    expect.soft(await code.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase') // V2 reference: uppercase code input
     await expect(page.getByText('Kod akan ditukar ke huruf besar automatik')).toBeVisible()
     await expect(page.locator('[data-testid=level-stage] option')).toHaveText([
       '-- Pilih Peringkat --',
