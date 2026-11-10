@@ -6,6 +6,7 @@
 
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle } from '../support'
+import { navbarTitle } from './shell'
 
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
@@ -19,8 +20,8 @@ test.describe('M27 Part B class link (school admin 900001)', () => {
   test('own-school class 2001 renders the class page', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/kelas/2001')
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
-    await expectTabTitle(page, '5 MARIKH - Kimia — Dashboard Kelas')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('5 MARIKH - Kimia')
+    await expectTabTitle(page, '5 MARIKH - Kimia — Dashboard Kelas | PRESTASIPLUS')
+    await expect(navbarTitle(page)).toHaveText('5 MARIKH - Kimia')
     await expect(page.getByTestId('hc-on')).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
