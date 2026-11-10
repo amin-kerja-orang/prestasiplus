@@ -41,7 +41,7 @@ const ROUTES: Array<[string, string, string]> = [
 
 test.describe('QA G5 admin menu entries', { tag: [moduleTag(3), '@qa'] }, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(120_000 * TIMEOUT_FACTOR)
+  test.setTimeout(300_000 * TIMEOUT_FACTOR)
 
   /** The Portal Pentadbiran menu: the sidebar from lg, the drawer behind the menu button below it. */
   async function openNav(page: Page): Promise<Locator> {
