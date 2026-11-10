@@ -399,7 +399,7 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await byId(page, 'users-bulk-cancel').click()
     await expect(byId(page, 'users-bulk-modal')).toHaveCount(0)
     await expect(byId(page, 'users-stat-student').getByTestId('users-stat-value')).toHaveText(
-      '4533',
+      '4,533',
     )
 
     await gotoApp('/admin/users?role=admin')

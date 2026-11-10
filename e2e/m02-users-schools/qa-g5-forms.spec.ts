@@ -152,13 +152,13 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
 
     await gotoApp('/admin/users/create')
     await pickRole(page, 'student')
-    await byId(page, 'std-school-search').fill('bangi')
+    // FR-M02-102 (V2 SchoolSearchController lists inactive schools last; the V3 contract leaves them out):
+    // control first - the picker works and offers active schools, then the deactivated one is not among them.
+    await byId(page, 'std-school-search').fill('SMK')
     await expect(byId(page, 'std-school-result').first()).toBeVisible()
-    for (const text of await byId(page, 'std-school-result').allInnerTexts()) {
-      expect(text.startsWith(name)).toBe(false)
-    }
     await byId(page, 'std-school-search').fill(name)
-    await expect(byId(page, 'std-school-dropdown').getByText(name, { exact: false })).toHaveCount(0)
+    await page.waitForTimeout(800) // 300 ms debounce plus the request
+    await expect(byId(page, 'std-school-result').filter({ hasText: name })).toHaveCount(0)
   })
 
   test('E2E-M02-17: parent search shows a loading indicator, then at most 15 rows with class / school badges', async ({
