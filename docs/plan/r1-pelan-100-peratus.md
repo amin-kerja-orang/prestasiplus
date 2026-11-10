@@ -54,7 +54,7 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 
 ### Aliran A — Deploy dan infrastruktur
 
-| ID | Tugas | Pemilik | Bergantung | Anggaran (hari) | Status | Bukti |
+| ID | Tugas | Pemilik | Bergantung | Anggaran (jam ejen) | Status | Bukti |
 |---|---|---|---|---|---|---|
 | T-A1 | Larian berasingan `test/support/tickets.spec.ts` dan `test/conformance/run.spec.ts`; baiki regresi sebenar (tiket, `/rph`, semakan esei) | backend-developer | — | 0.5 | ✅ | dae94516f: tickets 34/34, conformance 430/430 (bendera ciri + peranan smoke) |
 | T-A2 | Larian penuh ujian backend dalam bekas Linux (elak artifak Windows pada `test/migration/*`, `answer-store-writers`); senaraikan setiap kegagalan tinggal dengan punca | devops-engineer | — | 0.5 | ⛔ | Pelari Linux siap (deploy/test); larian fokus 116 fail; suite penuh perlu mesin lapang → dijalankan di G-100 |
@@ -68,7 +68,7 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 
 ### Aliran B — Data V2 (ganti penuh)
 
-| ID | Tugas | Pemilik | Bergantung | Anggaran (hari) | Status | Bukti |
+| ID | Tugas | Pemilik | Bergantung | Anggaran (jam ejen) | Status | Bukti |
 |---|---|---|---|---|---|---|
 | T-B1 | Rebase ETL ke skema HEAD: `be:lint:migration`, `test/migration/*` hijau (dalam Linux), kemas kini langkah battle/permainan dan model yang berubah sejak `cb7332d0b`; raptai sintetik saiz `medium` | backend-developer | T-A2 | 1.5 | ✅ | ETL pada skema HEAD; raptai penuh dari DB kosong + verify + muat kedua idempoten; semakan fungsi V3 lulus; peraturan anonimiser 81 lajur; pelari Linux menjalankan semua spec staging/keselamatan; baki 9 kegagalan dalam kerja T-B9a |
 | T-B2 | Tambah ~10 jadual produksi V2 yang tiada dalam spec staging (senarai dari skema produksi, baca sahaja) | backend-developer | T-B1 | 0.5 | ✅ | spec staging 134 jadual (89+45), +7 jadual (6 Laravel runtime + school_battle_rankings); staging_cloud.sql dan fixture tiny dijana semula |
@@ -79,15 +79,15 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | T-B6 | Kandungan: baiki tolakan artikel (92), nota (10), tiket (3); salin fail kandungan (banner, artikel, nota, audio) dengan manifest `SHA256SUMS` | backend-developer | T-B4 | 1 | 🔄 | |
 | T-B7 | Kelas guru (20 tidak layak), sesi/jawapan/dompet yatim (227 / 1,965 / 527), headcount (12): muat atau rekod sebab yang dipersetujui | backend-developer | T-B4 | 1 | 🔄 | |
 | T-B8 | Gamifikasi: `gifts` (50) dan tebusan (7) dengan nilai KP-6; semak semula langkah dompet, lejar, streak, pencapaian | backend-developer | T-B4 | 0.5 | 🔄 | |
-| T-B9 | Bank soalan: 1,801 tolakan diluluskan; stimulus (1,931) dan gambar rajah (perlu akses baca storan fail V2, item K3); soalan berstruktur (4,061 / 10,296 sub) dan subjektif (2,015); diarkib/draf ikut KP-5; semua boleh dibaiki dalam skrin V3 (Regroup, Soalan tanpa Bab, Audit Rajah). **Wajib (PO, D90/D105): baiki kecacatan V2 — soalan ke-2 dan seterusnya yang merujuk rajah sama tiada rajah; rajah yang terasing menjadi "soalan" sendiri. ETL mesti mengesan dan menukar rajah terasing kepada rangsangan kumpulan, dan memautkan setiap soalan "Rajah n" kepada rangsangan yang sama; yang tidak dapat dipastikan masuk senarai kerja Audit Rajah/Regroup** | solution-architect (reka bentuk) + backend-developer | T-B4 | 11 | 🔄 | |
-| T-B10 | Bijak SPM: peta dan muat 60 set ramalan, 175 `exam_papers`, 36 blueprint ke model kertas/kontrak/blueprint V3 (atau keputusan bina semula ikut KP-5) | solution-architect + backend-developer | T-B9 | 2.5 | 🔄 | |
-| T-B13 | Kertas Subjektif V2 (254 dokumen, 7,424 halaman gambar) dibawa ke V3 dengan skrin admin + murid seperti V2; kertas yang diterbitkan dalam V2 kekal diterbitkan dalam V3 | backend-developer | T-B10 | 2 | 🔄 | |
+| T-B9 | Bank soalan: 1,801 tolakan diluluskan; stimulus (1,931) dan gambar rajah (perlu akses baca storan fail V2, item K3); soalan berstruktur (4,061 / 10,296 sub) dan subjektif (2,015); diarkib/draf ikut KP-5; semua boleh dibaiki dalam skrin V3 (Regroup, Soalan tanpa Bab, Audit Rajah). **Wajib (PO, D90/D105): baiki kecacatan V2 — soalan ke-2 dan seterusnya yang merujuk rajah sama tiada rajah; rajah yang terasing menjadi "soalan" sendiri. ETL mesti mengesan dan menukar rajah terasing kepada rangsangan kumpulan, dan memautkan setiap soalan "Rajah n" kepada rangsangan yang sama; yang tidak dapat dipastikan masuk senarai kerja Audit Rajah/Regroup** | solution-architect (reka bentuk) + backend-developer | T-B4 | 4 | 🔄 | |
+| T-B10 | Bijak SPM: peta dan muat 60 set ramalan, 175 `exam_papers`, 36 blueprint ke model kertas/kontrak/blueprint V3 (atau keputusan bina semula ikut KP-5) | solution-architect + backend-developer | T-B9 | 1 | 🔄 | |
+| T-B13 | Kertas Subjektif V2 (254 dokumen, 7,424 halaman gambar) dibawa ke V3 dengan skrin admin + murid seperti V2; kertas yang diterbitkan dalam V2 kekal diterbitkan dalam V3 | backend-developer | T-B10 | 3 | 🔄 | |
 | T-B11 | Raptai penuh lokal: DB kosong → migrate HEAD → seed rujukan → `migrate:all --apply` → `migrate:verify` → larian kedua (0 perubahan); catat masa setiap langkah; laporan recon V2 lawan V3 setiap entiti | devops-engineer + backend-developer | T-A3, T-B5..B10 | 1 | ⬜ | |
 | T-B12 | Ujian asap atas data dimigrasi: log masuk setiap peranan (akaun sampel), latihan, keputusan, kelas guru, admin sekolah, Bijak SPM, soalan rajah bergambar | qa-engineer | T-B11 | 0.5 | ⬜ | |
 
 ### Aliran C — Ciri
 
-| ID | Tugas | Pemilik | Bergantung | Anggaran (hari) | Status | Bukti |
+| ID | Tugas | Pemilik | Bergantung | Anggaran (jam ejen) | Status | Bukti |
 |---|---|---|---|---|---|---|
 | T-C1 | Pautan menu Hadiah/Tebusan dan Permainan (PG-06, PG-11) ke laluan yang sudah wujud | frontend-developer | — | 0.25 | ✅ | cab9d1a88: PG-01..06, PG-10, PG-11 berpautan; peta kanonik --check lulus |
 | T-C2 | UI admin Gamifikasi: Overview, Tier Config (baca sahaja), Cabaran (baca sahaja), Pelajar, Transaksi, Kawalan Reward; atas endpoint sedia ada (`admin/gamification`, `reward-control`); tajuk dan label ikut V2 | frontend-developer | — | 2 | ✅ | cab9d1a88: 6 skrin baca sahaja ikut V2; 39 ujian + shell 37 lulus; 375/768/1536 tiada skrol mendatar |
@@ -108,7 +108,7 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 
 ### Gerbang G-100 (Fasa 4)
 
-| ID | Tugas | Pemilik | Bergantung | Anggaran (hari) | Status | Bukti |
+| ID | Tugas | Pemilik | Bergantung | Anggaran (jam ejen) | Status | Bukti |
 |---|---|---|---|---|---|---|
 | T-Q1 | Audit penuh setiap peranan pada 375 / 768 / 1280 atas salinan lokal data V2 (tiga lorong browser) | qa-engineer ×3 | T-B12, T-C* | 1 | ⬜ | |
 | T-Q2 | Suite E2E penuh hijau | qa-engineer | T-C9 | 0.5 | ⬜ | |
@@ -164,3 +164,4 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | 2026-11-10 | DevOps: A3, A5, A6, A8 ✅ (f04e4cf95); A2 menunggu mesin lapang. B4 ✅ (dalam B3). B1: raptai penuh + semakan fungsi V3 lulus (log masuk bcrypt V2 → argon2, latihan, kelas, kandungan); kecacatan stem berganda pada muatan soalan → dibaiki dalam T-B9a. Dimulakan: T-A4/A7 (skrip bina semula berpengawal + runsheet + bab auto T1–T3), T-B5..B8 (pengguna, kandungan, kelas, hadiah) atas data sebenar, T-B13 (Kertas Subjektif V2 + kertas diterbitkan). |
 | 2026-11-10 | T-C13 ✅ (1dbfb83e0). T-C16 dimulakan untuk baki: Tracking A, spec pipeline-chain, PRD. ETL dimaklumkan: files.public_id dan pautan kumpulan wajib supaya rajah V2 dipaparkan. |
 | 2026-11-10 | T-B1 ✅. Baki kegagalan ujian migrasi diserahkan kepada T-B9a (kiraan KP-5, bendera rangsangan, senarai never-stage). |
+| 2026-11-10 | Anggaran ditukar kepada jam ejen (PO: jangan kira masa manusia). Baki kerja dijangka siap malam ini; raptai penuh + G-100 esok pagi. |
