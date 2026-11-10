@@ -508,7 +508,12 @@ export const QuestionUpdateRequestSchema = baseInput
   // `parts` parse leniently here: the service holds new and changed parts to the strict write rules and lets a part echoed
   // unchanged from the stored version keep the read rules (#692), which a strict DTO would make unreachable over HTTP.
   // Typed as the write tree the service takes; the runtime schema is the lenient V3 reader (v1 and v2 stored content).
-  .extend({ parts: z.array(QuestionPartReadV3Schema as unknown as typeof QuestionWritePartSchema).min(1).optional() })
+  // `questionText` may be EMPTY here (K10): a migrated V2 question that is only a picture has no stem. The service keeps that rule: an empty stem is
+  // accepted only when the stored stem is empty too (carried over); any other stem is held to the 10 characters, as for a new question.
+  .extend({
+    parts: z.array(QuestionPartReadV3Schema as unknown as typeof QuestionWritePartSchema).min(1).optional(),
+    questionText: z.string({ error: QUESTION_MESSAGES.text }).trim().refine((v) => v === '' || v.length >= 10, QUESTION_MESSAGES.text),
+  })
   .meta({ id: 'QuestionUpdateRequest' })
 
 /** D54a: an action is the target lifecycle code, or `delete`. The mock verbs approve/reject/pending_review are gone. */
@@ -713,7 +718,8 @@ export const QuestionStructuredDetailSchema = z
 /** V2 `StructuredRubricEditor` limits, with the point text held to the V3 key (`label` at most 200). */
 export const STRUCTURED_RUBRIC_MESSAGES = {
   scheme: 'Skema tidak boleh melebihi 4000 aksara.',
-  text: 'Isi poin tidak boleh melebihi 200 aksara.',
+  /** V2 `structured_rubric_points.text` is varchar(500) and the V2 save validated `max:500` (K10: a migrated rubric point of 201 to 500 characters must save). */
+  text: 'Isi poin tidak boleh melebihi 500 aksara.',
   marks: 'Markah poin mesti antara 1 dan 20.',
   noPoints: 'Sekurang-kurangnya satu poin rubrik diperlukan.',
   saved: 'Skema dan rubrik disimpan.',
@@ -760,7 +766,7 @@ export const StructuredRubricUpdateRequestSchema = z
           points: z
             .array(
               z.object({
-                text: z.string().max(200, STRUCTURED_RUBRIC_MESSAGES.text).nullable().optional(),
+                text: z.string().max(500, STRUCTURED_RUBRIC_MESSAGES.text).nullable().optional(),
                 marks: z.coerce
                   .number({ error: STRUCTURED_RUBRIC_MESSAGES.marks })
                   .int(STRUCTURED_RUBRIC_MESSAGES.marks)

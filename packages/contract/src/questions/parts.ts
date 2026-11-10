@@ -447,7 +447,15 @@ const LeafBranches = buildBranches(OptionKey, PointsKeyV1Base, z.discriminatedUn
 const LeafBranchesWrite = buildBranches(z.union([OptionKey, McqMultiKey]), PointsKeyWrite, RubricOrPointsKeyWrite)
 const LeafBranchesV3 = buildBranches(z.union([OptionKey, McqMultiKey]), PointsKey, RubricOrPointsKey)
 /** Lenient read of a stored leaf that may hold a v2 key or an `mcq_multi` key (old rules only). */
-const LeafBranchesReadV3 = buildBranches(z.union([OptionKey, McqMultiKey]), PointsKeyReadV3, RubricOrPointsKeyReadV3)
+const LeafBranchesReadV3Strict = buildBranches(z.union([OptionKey, McqMultiKey]), PointsKeyReadV3, RubricOrPointsKeyReadV3)
+/**
+ * The same branches with a prompt that may be EMPTY, for the READ path only (stored rows, responses, an unchanged part of an update): the
+ * duplicate-stem trim (S4-T04, `uat-ops/trim-duplicate-stem`) and the V2 question-bank loader keep the text once, in the stem, and leave
+ * `prompt_ms` empty, and the Studio must still open such a question (K10). The WRITE schemas keep `ms` min 1: a leaf the admin changes
+ * needs its instruction, as for a new question.
+ */
+const QuestionRichTextReadSchema = z.object({ ms: z.string(), en: z.string().optional() }).meta({ id: 'QuestionRichTextRead' })
+const LeafBranchesReadV3 = LeafBranchesReadV3Strict.map((b) => b.extend({ prompt: QuestionRichTextReadSchema })) as unknown as typeof LeafBranchesReadV3Strict
 
 /** AC-ADM-QE3.17: an example leaf without an answer. */
 export const EXAMPLE_ANSWER_MESSAGE = 'Jawapan contoh diperlukan.'
@@ -564,9 +572,11 @@ const WLevel2 = z.union([QuestionWriteLeafPartSchema, branch(WLevel3)])
 export const QuestionWritePartSchema = z.union([QuestionWriteLeafPartSchema, branch(WLevel2)]).meta({ id: 'QuestionWritePart' })
 
 /** Lenient part tree that reads v1 and v2 stored content (tree.ts, unchanged parts of an update). */
+const branchRead = <C extends z.ZodType>(children: C) =>
+  z.strictObject({ label: z.string().max(10), prompt: QuestionRichTextReadSchema, children: z.array(children).min(1) })
 const ReadV3_3 = QuestionLeafPartReadV3Schema
-const ReadV3_2 = z.union([QuestionLeafPartReadV3Schema, branch(ReadV3_3)])
-export const QuestionPartReadV3Schema = z.union([QuestionLeafPartReadV3Schema, branch(ReadV3_2)]).meta({ id: 'QuestionPartReadV3' })
+const ReadV3_2 = z.union([QuestionLeafPartReadV3Schema, branchRead(ReadV3_3)])
+export const QuestionPartReadV3Schema = z.union([QuestionLeafPartReadV3Schema, branchRead(ReadV3_2)]).meta({ id: 'QuestionPartReadV3' })
 /**
  * The response `parts` (S1-T09a part 5): parses with the lenient V3 reader so a scheme v2 key and an `mcq_multi` key reach the client
  * unstripped. The declared TS type stays the v1 `QuestionPart` so the existing consumers keep compiling (the extra fields are plain

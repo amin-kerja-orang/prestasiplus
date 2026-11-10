@@ -14,6 +14,7 @@ import {
   type QuestionSchemeValidateResult,
 } from '@pp/contract'
 
+import { maskCarriedPrompts } from './carried-prompt'
 import { validateSchemeBody } from './scheme-validate'
 import { ApiError } from '../../common/errors/api-error'
 import type { TxClient } from '../../db/client'
@@ -933,12 +934,15 @@ export class QuestionsService {
     }
     // Strict (write) rules for new and changed top-level parts; a part carried over unchanged from the stored version keeps the
     // lenient read rules, so a legacy row (marks 0, duplicate labels) can still have its stem or tag fixed (#692).
-    const unchanged = (p: QuestionPart, i: number): boolean => stored?.[i] !== undefined && isDeepStrictEqual(stored[i], p)
-    const res = this.parseParts(parts, unchanged)
+    const same = parts.map((p, i) => stored?.[i] !== undefined && isDeepStrictEqual(stored[i], p))
+    // K10: an empty prompt the stored part already has stays empty (a migrated V2 question has only its stem); see carried-prompt.ts.
+    const { masked, restore } = maskCarriedPrompts(parts, stored)
+    const res = this.parseParts(masked, (_p, i) => same[i] === true)
     if (res.success) {
+      const data = restore(res.data)
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
-      if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
-      return res.data
+      if (leavesOf(data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
+      return data
     }
     const issue = res.error.issues[0]
     const deepest = issue ? deepestIssue(issue as unknown as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
@@ -1317,6 +1321,8 @@ export class QuestionsService {
   private async applyUpdate(record: QuestionRecord, rawInput: QuestionUpdateInput, actor: QuestionActor, opts: { keepSubject?: boolean } = {}): Promise<QuestionRecord> {
     const input = await this.withImageKeys(rawInput)
     const v = record.version
+    // K10: an empty stem is a carried-over one only (a migrated V2 question that is a picture): a stem that had text cannot be emptied.
+    if (input.questionText.trim() === '' && (v.stemMs ?? '').trim() !== '') throw fail({ questionText: QUESTION_MESSAGES.text })
     const flat = flatFromVersion(v)
     const single = v.parts.length === 1 ? v.parts[0] : undefined
     const flatShaped = single !== undefined && isLeaf(single) && (single.mode === 'mcq' || single.mode === 'short_text' || single.mode === 'essay')

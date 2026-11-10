@@ -103,13 +103,17 @@ function rebuildKey(key: PointsKeyShape, input: RubricSubInput): PointsKeyShape 
     const rows = input.points
       .map((row, i) => ({ text: (row.text ?? '').trim(), marks: row.marks, old: key.points[i] }))
       .filter((r) => r.text !== '')
+    // A scheme v2 point label is at most 200 characters; the point text (a V2 rubric text is up to 500) carries the whole of it.
+    const labelOf = (text: string): string => (key.scheme_v === 2 ? text.slice(0, 200) : text)
+    const longText = (text: string): { text?: { ms: string } } => (key.scheme_v === 2 && text.length > 200 ? { text: { ms: text } } : {})
     const points: PointShape[] = rows.map((r) => {
       if (r.old) {
-        const point: PointShape = { ...r.old, label: r.text, marks: r.marks }
+        const point: PointShape = { ...r.old, label: labelOf(r.text), marks: r.marks }
         if (point.text) point.text = { ...point.text, ms: r.text }
+        else Object.assign(point, longText(r.text))
         return point
       }
-      return { id: nextId(taken), code: 'P', label: r.text, marks: r.marks }
+      return { id: nextId(taken), code: 'P', label: labelOf(r.text), marks: r.marks, ...longText(r.text) }
     })
     next.points = points
     const kept = new Set(points.map((p) => p.id))

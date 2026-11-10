@@ -169,7 +169,7 @@ async function submit(): Promise<void> {
                     <span class="w-8 shrink-0 text-caption font-bold text-muted">A{{ i + 1 }}</span>
                     <UInput
                       v-model="row.text"
-                      :maxlength="200"
+                      :maxlength="500"
                       placeholder="Isi yang diberi markah…"
                       :aria-label="`Poin A${String(i + 1)}`"
                       :color="fieldError(sub.id, `points.${String(i)}.text`) ? 'error' : undefined"

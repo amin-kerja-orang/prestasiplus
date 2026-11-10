@@ -78,7 +78,7 @@ describe('structured rubric editor (admin)', () => {
     const id = await questionIdOf(t.db, 'SEED-STR-TREE')
     const n = (await versions(id)).length
     const res = await admin.put(`/api/structured-questions/${id}/rubric`, {
-      subs: [{ id: '(a).(ii)', scheme: 'x'.repeat(4001), points: [{ text: 'a', marks: 0 }, { text: 'b'.repeat(201), marks: 21 }] }],
+      subs: [{ id: '(a).(ii)', scheme: 'x'.repeat(4001), points: [{ text: 'a', marks: 0 }, { text: 'b'.repeat(501), marks: 21 }] }],
     })
     const fields = expectError(res, 'VALIDATION_ERROR').fields!
     expect(fields['subs.0.scheme']).toBe(STRUCTURED_RUBRIC_MESSAGES.scheme)

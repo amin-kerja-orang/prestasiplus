@@ -46091,7 +46091,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -46255,7 +46255,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -46378,7 +46378,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -46495,7 +46495,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -46620,7 +46620,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -46776,7 +46776,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -47020,7 +47020,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -47391,7 +47391,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -47635,7 +47635,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -47752,7 +47752,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -48132,7 +48132,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "children": {
                 "type": "array",
@@ -48146,7 +48146,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -48310,7 +48310,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -48433,7 +48433,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -48550,7 +48550,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -48675,7 +48675,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -48831,7 +48831,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -49075,7 +49075,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -49446,7 +49446,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -49690,7 +49690,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -49807,7 +49807,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "marks": {
                           "type": "integer",
@@ -50187,7 +50187,7 @@
                           "maxLength": 10
                         },
                         "prompt": {
-                          "$ref": "#/components/schemas/QuestionRichText"
+                          "$ref": "#/components/schemas/QuestionRichTextRead"
                         },
                         "children": {
                           "type": "array",
@@ -50216,6 +50216,20 @@
             ],
             "additionalProperties": false
           }
+        ]
+      },
+      "QuestionRichTextRead": {
+        "type": "object",
+        "properties": {
+          "ms": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ms"
         ]
       },
       "QuestionSchemeV2PointsKey": {
@@ -51277,7 +51291,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -51441,7 +51455,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -51564,7 +51578,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -51681,7 +51695,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -51806,7 +51820,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -51962,7 +51976,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -52206,7 +52220,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -52577,7 +52591,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -52821,7 +52835,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -52938,7 +52952,7 @@
                 "maxLength": 10
               },
               "prompt": {
-                "$ref": "#/components/schemas/QuestionRichText"
+                "$ref": "#/components/schemas/QuestionRichTextRead"
               },
               "marks": {
                 "type": "integer",
@@ -60443,8 +60457,7 @@
             "maximum": 5
           },
           "questionText": {
-            "type": "string",
-            "minLength": 10
+            "type": "string"
           },
           "dskpSpId": {
             "type": [
@@ -99860,7 +99873,7 @@
                           "string",
                           "null"
                         ],
-                        "maxLength": 200
+                        "maxLength": 500
                       },
                       "marks": {
                         "type": "integer",
