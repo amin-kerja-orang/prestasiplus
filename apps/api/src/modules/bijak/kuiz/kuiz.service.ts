@@ -578,9 +578,12 @@ export class KuizService {
     for (const g of groups) sizes.set(g.id, g.questionIds.filter((id) => latest.get(id)?.version.status !== 'archived').length)
     const have = new Set(records.map((r) => r.id))
     const missing = [...new Set(groups.flatMap((g) => g.questionIds))].filter((id) => !have.has(id))
-    const extra = missing.length === 0 ? [] : (await this.questions.getMany(missing, 'live')).filter(
+    const loadedMissing = missing.length === 0 ? [] : (await this.questions.getMany(missing, 'live')).filter(
       (r) => r.isActive && r.version.status === 'approved' && r.version.type === 'mcq' && leavesOf(r.id, r.version.parts).length === 1,
     )
+    // M1: a flagged / held / taken-down member is not added; the group then has fewer records than `sizes` and `drawUnits` drops it whole.
+    const blocked = await this.questions.unservableAmong(loadedMissing.map((r) => r.id))
+    const extra = loadedMissing.filter((r) => !blocked.has(r.id))
     return { records: [...records, ...extra], sizes }
   }
 

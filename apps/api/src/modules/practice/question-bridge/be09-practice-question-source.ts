@@ -173,8 +173,10 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
       const { records, groups, media } = await this.servableRecords(wanted, allowPrivate)
       return this.mapServable([...records.values()], (r) => r.id, true, groups, media)
     }
-    const records = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r)))
-    return this.mapAll(records, (r) => r.id)
+    const loaded = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r)))
+    // M1: a by-id read applies no flag / import-hold / media rule; the draw does, so a flagged question (history, Ulang Kaji, remedial) is not served here either.
+    const blocked = await this.questions.unservableAmong(loaded.map((r) => r.id))
+    return this.mapAll(loaded.filter((r) => !blocked.has(r.id)), (r) => r.id)
   }
 
   async spmServable(ids: readonly string[]): Promise<ReadonlySet<string>> {
@@ -222,6 +224,8 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     const loaded: QuestionRecord[] = []
     for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r))))
     const groupIds = [...new Set(loaded.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
+    // M1: the ungrouped ids the by-id read loaded but the draw would refuse (flag, import hold, source takedown, unresolved media).
+    let blocked = groupIds.length === 0 ? await this.questions.unservableAmong(loaded.map((r) => r.id)) : new Set<string>()
     if (groupIds.length > 0) {
       const have = new Map(loaded.map((r) => [r.id, r]))
       const defs = await this.questions.groupsByIds(groupIds)
@@ -229,16 +233,19 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
       for (let i = 0; i < missing.length; i += HYDRATE_MAX) {
         for (const r of (await this.questions.getMany(missing.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter(eligible)) have.set(r.id, r)
       }
+      // M1 / m-4: a flagged, held or taken-down member (the draw's `groupCompleteSql` counts it as a gap) drops its whole group.
+      blocked = await this.questions.unservableAmong([...have.keys()])
       for (const g of defs) {
         const eligibleMembers = g.questionIds.flatMap((id) => (have.has(id) ? [have.get(id) as QuestionRecord] : []))
         const members = eligibleMembers.filter((m) => this.check(m, true))
-        if (g.stimuli.length > 0 && members.length > 0 && members.length === eligibleMembers.length) {
+        if (g.stimuli.length > 0 && members.length > 0 && members.length === eligibleMembers.length && !eligibleMembers.some((m) => blocked.has(m.id))) {
           groups.set(g.id, { group: { ...g, questionIds: members.map((m) => m.id) }, members })
         }
       }
     }
     for (const r of loaded) {
       if (r.groupId !== null && !groups.has(r.groupId)) continue
+      if (blocked.has(r.id)) continue
       if (this.check(r, true)) records.set(r.id, r)
     }
     // T-C13 (D105, D90): what a question must SHOW (rajah, figure, option pictures) has to be showable, else it is not served: the draw,

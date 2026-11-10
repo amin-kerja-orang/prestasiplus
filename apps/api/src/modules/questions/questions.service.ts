@@ -44,7 +44,7 @@ import { detectStimulusFlag } from './effective-leaf'
 import { flagPartsOf, gateDataOf } from './gate-data'
 import { GATES } from './workflow/lifecycle/gates'
 import { GroupMembers } from './group-members'
-import { assertServableSomewhere } from './serving/approval-guard'
+import { assertServableSomewhere, groupStimulusGateFields } from './serving/approval-guard'
 import { ServabilityService } from './serving/servability.service'
 import { BANK_ONLY, QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
@@ -1014,7 +1014,13 @@ export class QuestionsService {
   private async gateFields(gate: 'submit' | 'approve', record: QuestionRecord, version: QuestionVersionRecord): Promise<Record<string, string>> {
     const facts = await this.repo.gateFacts(record.id, version.versionNo)
     const spmBound = await this.repo.isSpmBound(version.subjectId, version.educationLevelId)
-    return GATES[gate](gateDataOf({ id: record.id, version }, facts, spmBound))
+    const fields = GATES[gate](gateDataOf({ id: record.id, version }, facts, spmBound))
+    if (gate === 'approve' && record.groupId !== null) {
+      // m-5: a grouped member is shown with its group's stimulus; a group with none cannot be approved (media resolves vacuously for 0 stimuli).
+      const group = (await this.repo.groupsByIds([record.groupId]))[0]
+      Object.assign(fields, groupStimulusGateFields(record.groupId, group?.stimuli.length ?? 0))
+    }
+    return fields
   }
 
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {

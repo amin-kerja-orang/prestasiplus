@@ -264,6 +264,9 @@ const groupGapCountSql = (groupId: Prisma.Sql): Prisma.Sql =>
         LEFT JOIN question_versions wv ON wv.question_id = wm.id AND wv.version_no = wm.live_version_no
        WHERE wm.group_id = ${groupId} AND wl.status <> 'archived'
          AND (NOT wm.is_active OR wv.id IS NULL OR wv.status <> 'approved' OR wv.type <> 'mcq'
+              -- M1 / m-4: a flagged, held (legacy_image_unresolved) or taken-down member is a gap too (the macros' own aliases live in the inner select, correlated by id)
+              OR NOT EXISTS (SELECT 1 FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+                              WHERE q.id = wm.id AND ${NOT_FLAGGED_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${MEDIA_RESOLVED_SQL})
               OR (SELECT count(*) FROM question_parts wp WHERE wp.question_version_id = wv.id) <> 1
               OR NOT EXISTS (SELECT 1 FROM question_parts wp
                               JOIN answer_keys wk ON wk.part_id = wp.id
@@ -636,6 +639,29 @@ export class QuestionsRepository {
       const { from, where } = this.scope({ ...filter, status: 'approved', active: true, idIn: wanted.slice(i, i + AMONG_CHUNK) }, true)
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC`
       out.push(...rows.map((r) => idToString(r.id)))
+    }
+    return out
+  }
+
+  /**
+   * M1: the ids among `ids` whose LIVE version a pupil must not be shown for what it carries: a `stimulus_missing` / `figure_only` flag nobody
+   * dismissed, a taken-down source, or media that cannot be shown (an unresolved stimulus of the question or its group, or the
+   * `legacy_image_unresolved` import hold). The by-id reads (`getMany`) apply none of these, so a reader that serves ids it did not draw
+   * (history, Ulang Kaji, remedial, kuiz group members) removes this set. Same macros as the draw (`scope` with `learnerVisible`), never a
+   * second definition (D91). Does not check status, level or visibility: the caller's own eligibility does.
+   */
+  async unservableAmong(ids: readonly string[]): Promise<Set<string>> {
+    const keys = [...new Set(ids)].flatMap((id) => {
+      const k = bi(id)
+      return k === null ? [] : [k]
+    })
+    const out = new Set<string>()
+    for (let i = 0; i < keys.length; i += AMONG_CHUNK) {
+      const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+        SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+         WHERE q.id = ANY(${keys.slice(i, i + AMONG_CHUNK)}::bigint[])
+           AND NOT (${NOT_FLAGGED_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${MEDIA_RESOLVED_SQL})`
+      for (const r of rows) out.add(idToString(r.id))
     }
     return out
   }
