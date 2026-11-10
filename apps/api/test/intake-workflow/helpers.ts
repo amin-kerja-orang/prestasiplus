@@ -15,6 +15,7 @@ import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
+import { NO_SCAN, VirusScanService } from '../support/no-scan'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AI_PROVIDER } from '../../src/modules/ai-extraction/ai.constants'
 import type { ExtractionProvider } from '../../src/modules/ai-extraction/ai.types'
@@ -123,6 +124,8 @@ export async function bootWorkflowApp(env: Record<string, string | undefined> = 
     .useValue(clock)
     .overrideProvider(OCR_ENGINE)
     .useValue(new FakeOcrEngine())
+    .overrideProvider(VirusScanService)
+    .useValue(NO_SCAN)
   const moduleRef = await (opts.provider
     ? builder.overrideProvider(AI_PROVIDER).useValue(opts.provider)
     : builder.overrideProvider(AI_EXTRACTOR).useValue(ai)
