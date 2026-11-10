@@ -480,24 +480,19 @@ test.describe('QA-G5 M07 responsive sweep', MODULE, () => {
     await actAs(page, mock, gotoApp, 'pelajar@demo.test', '/pksk')
     await expect(tid(page, 'pksk-hub')).toBeVisible()
     if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-sidebar').locator('[data-nav-id="pksk"]')).toBeVisible()
+      await expect(tid(page, 'pembelajaran-nav').locator('a[href="/pksk"]').first()).toBeVisible()
     } else {
-      await tid(page, 'shell-user-hamburger').click()
-      const drawer = tid(page, 'shell-user-drawer')
-      await expect(drawer.locator('[data-nav-id="pksk"]')).toBeVisible()
+      await tid(page, 'pembelajaran-bottom-nav').locator('[data-nav-id="tab-lagi"]').click()
+      const drawer = tid(page, 'pembelajaran-lagi-nav')
+      await expect(drawer.locator('a[href="/pksk"]').first()).toBeVisible()
     }
     await actAs(page, mock, gotoApp, 'admin@demo.test', '/admin/pksk/access')
     await expect(tid(page, 'access-table')).toBeVisible()
-    if (isDesktopShell(page)) {
-      const sb = tid(page, 'shell-admin-sidebar')
-      await expect(sb.getByRole('link', { name: 'PKSK Soalan' })).toBeVisible()
-      await expect(sb.getByRole('link', { name: 'PKSK Akses' })).toBeVisible()
-    } else {
-      // "Lagi" sheet of the bottom bar lists Premium > PKSK Soalan / PKSK Akses.
-      await page.getByRole('button', { name: /Lagi/ }).first().click()
-      await expect(page.getByRole('link', { name: 'PKSK Soalan' }).first()).toBeVisible()
-      await expect(page.getByRole('link', { name: 'PKSK Akses' }).first()).toBeVisible()
-    }
+    // Portal Pentadbiran: the sidebar from lg, the drawer behind the menu button below it.
+    if (!isDesktopShell(page)) await tid(page, 'pentadbiran-menu-button').click()
+    const nav = page.locator('[data-testid="pentadbiran-nav"]:visible')
+    await expect(nav.getByRole('link', { name: 'PKSK Soalan' })).toBeVisible()
+    await expect(nav.getByRole('link', { name: 'PKSK Akses' })).toBeVisible()
   })
 })
 
