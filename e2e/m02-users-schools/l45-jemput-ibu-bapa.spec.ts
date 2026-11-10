@@ -51,17 +51,23 @@ async function tokenOf(page: Page): Promise<string> {
   return token
 }
 
-/** The "Jemput Ibu Bapa" menu item of the surface the viewport shows (sidebar >= 1024, else drawer). */
+/** The "Jemput Ibu Bapa" menu item of the surface the viewport shows (sidebar >= 1024, else the "Lagi" sheet). */
 async function menuItem(page: Page): Promise<Locator> {
   if (isDesktopShell(page)) {
-    return page.getByTestId('shell-user-sidebar').locator('[data-nav-id="jemput-ibu-bapa"]')
+    return page.getByTestId('pembelajaran-sidebar').locator('a[href="/jemput-ibu-bapa"]')
   }
-  await page.getByTestId('shell-user-hamburger').click()
-  const drawer = page.getByTestId('shell-user-drawer')
-  await expect(drawer).toHaveClass(/\bopen\b/)
-  return drawer.locator('[data-nav-id="jemput-ibu-bapa"]')
+  await page.locator('[data-nav-id="tab-lagi"]').click()
+  const sheet = page.getByTestId('pembelajaran-lagi-nav')
+  await expect(sheet).toBeVisible()
+  return sheet.locator('a[href="/jemput-ibu-bapa"]')
 }
 
+/** "Jana Link Baru" now asks first (dialog "Jana pautan baharu?", R1-MUR-40): click it and confirm. */
+async function regenerate(page: Page): Promise<void> {
+  await page.getByTestId('jemput-regenerate').click()
+  await expect(page.getByRole('dialog')).toContainText('Jana pautan baharu?')
+  await page.getByTestId('jemput-regen-confirm').click()
+}
 /** A clipboard stand-in that records the text (`window.__copied`) or rejects. */
 async function stubClipboard(page: Page, mode: 'ok' | 'reject'): Promise<void> {
   await page.addInitScript((m) => {
@@ -92,8 +98,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await (await menuItem(page)).click()
       await expect(page).toHaveURL('/jemput-ibu-bapa')
       await expectTabTitle(page, 'Jemput Ibu Bapa | PRESTASIPLUS')
-      await expect(page.getByTestId('shell-user-title')).toHaveText('Jemput Ibu Bapa')
-      await expect(page.getByTestId('shell-user-subtitle')).toHaveText(HERO_TEXT)
+      await expect(page.getByTestId('pembelajaran-header')).toContainText('Jemput Ibu Bapa')
       const hero = page.getByTestId('jemput-hero')
       await expect(hero.getByRole('heading', { level: 1 })).toHaveText('Jemput Ibu Bapa 👨‍👩‍👧')
       await expect(hero).toContainText(HERO_TEXT)
@@ -165,13 +170,13 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
         await button.click()
         await expect(button).toHaveText('Disalin!')
         await expect(button).toHaveAttribute('data-copied', 'true')
-        await expect(button).toHaveClass(/bg-emerald/)
+        await expect(button).toHaveClass(/bg-success/)
         expect(
           await page.evaluate(() => (window as unknown as { __copied?: string }).__copied),
         ).toBe(url)
         await clock.fastForward(2100)
         await expect(button).toHaveText('Salin')
-        await expect(button).toHaveClass(/bg-indigo/)
+        await expect(button).toHaveClass(/bg-primary/)
       },
     )
 
@@ -226,7 +231,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       const before = await field(page).inputValue()
       await mock.setLatency(800, 'POST /api/me/parent-invite/generate')
       const button = page.getByTestId('jemput-regenerate')
-      await button.click()
+      await regenerate(page)
       await expect(button).toBeDisabled()
       await expect(page.getByTestId('jemput-flash')).toHaveText(FLASH)
       await expect(button).toBeEnabled()
@@ -248,7 +253,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await loginAs(STUDENT_NO_PARENT)
       await gotoApp('/jemput-ibu-bapa')
       expect(await tokenOf(page)).toBe(FIRST_TOKEN)
-      await page.getByTestId('jemput-regenerate').click()
+      await regenerate(page)
       await expect(page.getByTestId('jemput-flash')).toHaveText(FLASH)
       expect(await tokenOf(page)).toBe(SECOND_TOKEN)
       await gotoApp(`/ibu-bapa/terima/${FIRST_TOKEN}`)
@@ -268,13 +273,13 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await gotoApp('/jemput-ibu-bapa')
       const before = await field(page).inputValue()
       await mock.failNext('POST /api/me/parent-invite/generate', 500)
-      await page.getByTestId('jemput-regenerate').click()
+      await regenerate(page)
       await expect(page.getByTestId('jemput-alert')).toHaveText(GENERIC_ERROR)
       await expect(page.getByTestId('jemput-flash')).toHaveCount(0)
       await expect(field(page)).toHaveValue(before)
       await expect(page.getByTestId('jemput-regenerate')).toBeEnabled()
       // A successful regenerate leaves the connected parents untouched (AC-04.3).
-      await page.getByTestId('jemput-regenerate').click()
+      await regenerate(page)
       await expect(page.getByTestId('jemput-flash')).toHaveText(FLASH)
       await expect(page.getByTestId('jemput-parent')).toHaveCount(1)
       await expect(page.getByTestId('jemput-parent-name')).toHaveText('Ibu Bapa Demo')
@@ -282,7 +287,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
   )
 
   test(
-    'E2E-L45-09 student 2: one row with name and email, no chip, no remove control',
+    'E2E-L45-09 student 2: one row with name and email, no chip, one "Buang" button (R1-MUR-40)',
     tagP(PROPOSED),
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(STUDENT_WITH_PARENT)
@@ -292,8 +297,10 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await expect(page.getByTestId('jemput-parent')).toHaveCount(1)
       await expect(page.getByTestId('jemput-parent-name')).toHaveText('Ibu Bapa Demo')
       await expect(page.getByTestId('jemput-parent-email')).toHaveText('ibubapa@demo.test')
-      await expect(card.locator('button, a, input')).toHaveCount(0)
-      await expect(page.getByTestId('jemput-parent').locator('span')).toHaveCount(1) // only the icon tile
+      // R1-MUR-40: the pupil can remove a linked parent; the only control in the card is "Buang".
+      await expect(card.locator('a, input')).toHaveCount(0)
+      await expect(card.getByRole('button')).toHaveText('Buang')
+      await expect(card.getByRole('button')).toHaveCount(1)
       await expect(page.getByTestId('jemput-empty')).toHaveCount(0)
       await expect(page.getByTestId('jemput-parent').locator('img')).toHaveCount(0)
     },
@@ -330,11 +337,11 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       // The admin adds parent 5401 to student 3 in M02 S3: two rows, by name A to Z.
       await mock.setUser('admin@demo.test')
       await gotoApp('/admin/users/5401/edit')
-      await page.getByTestId('linker-search').fill('Pelajar Dua')
-      await page.getByTestId('linker-result').first().click()
-      await expect(page.getByTestId('linker-chip')).toHaveCount(1)
-      await page.getByTestId('form-submit').click()
-      await expect(page).toHaveURL('/admin/users')
+      // v2: the parent links live in the "Ibu Bapa" tab and are saved at once (no form submit).
+      await page.getByTestId('user-tab-parent').click()
+      await page.getByTestId('parents-search').fill('Pelajar Dua')
+      await page.getByTestId('parents-result').first().click()
+      await expect(page.getByTestId('parents-row')).toHaveCount(1)
 
       await mock.setUser(STUDENT_NO_PARENT)
       await gotoApp('/jemput-ibu-bapa')
@@ -346,9 +353,10 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       // The admin removes the link again: the list follows.
       await mock.setUser('admin@demo.test')
       await gotoApp('/admin/users/5401/edit')
-      await page.getByTestId('linker-remove').first().click()
-      await page.getByTestId('form-submit').click()
-      await expect(page).toHaveURL('/admin/users')
+      await page.getByTestId('user-tab-parent').click()
+      await page.getByTestId('parents-remove').first().click()
+      await page.getByTestId('parents-remove-confirm').click()
+      await expect(page.getByTestId('parents-none')).toBeVisible()
       await mock.setUser(STUDENT_NO_PARENT)
       await gotoApp('/jemput-ibu-bapa')
       await expect(page.getByTestId('jemput-parent-name')).toHaveText(['Ibu Bapa Demo'])
@@ -357,7 +365,8 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
 
   test('E2E-L45-12 a guest is sent to /login with no message', async ({ page, gotoApp }) => {
     await gotoApp('/jemput-ibu-bapa')
-    await expect(page).toHaveURL('/login')
+    // v2 usability: a guest sent to /login remembers the page asked for (`?redirect=`).
+    await expect(page).toHaveURL('/login?redirect=/jemput-ibu-bapa')
     await expect(page.getByTestId('login-alert')).toHaveCount(0)
   })
 
@@ -371,7 +380,8 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
     await expect(page).toHaveURL('/jemput-ibu-bapa')
     await expectTabTitle(page, 'Akses Ditolak | PRESTASIPLUS')
     await expect(page.getByText('403', { exact: true })).toBeVisible()
-    await expect(page.getByText('🚫')).toBeVisible()
+    // v2: friend / icon chip instead of the glyph.
+    await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Akses Ditolak')
     await expect(
       page.getByText(
@@ -383,7 +393,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
     await expect(page.getByText('PRESTASIPLUS', { exact: true })).toBeVisible()
     await expectNoHorizontalScroll(page)
     // No "Jemput Ibu Bapa" menu item for the admin either (the student-only item is never rendered).
-    await expect(page.locator('[data-nav-id="jemput-ibu-bapa"]')).toHaveCount(0)
+    await expect(page.locator('a[href="/jemput-ibu-bapa"]')).toHaveCount(0)
   })
 
   for (const [role, who] of [
@@ -401,7 +411,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
         await expect(page.getByRole('heading', { level: 1 })).toHaveText('Akses Ditolak')
         await gotoApp('/profile')
         await expect(page.getByTestId('profile-page')).toBeVisible()
-        await expect(page.locator('[data-nav-id="jemput-ibu-bapa"]')).toHaveCount(0)
+        await expect(page.locator('a[href="/jemput-ibu-bapa"]')).toHaveCount(0)
       },
     )
   }
@@ -420,7 +430,7 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await expect(page).toHaveURL('/jemput-ibu-bapa')
       await expect(page.getByTestId('jemput-hero')).toBeVisible()
       const current = await menuItem(page)
-      await expect(current).toHaveClass(/\bactive\b/)
+      await expect(current).toHaveAttribute('aria-current', 'page')
     },
   )
 
@@ -496,11 +506,11 @@ test.describe('L45 S1 /jemput-ibu-bapa', { tag }, () => {
       await page.setViewportSize({ width: 320, height: 800 })
       await loginAs(STUDENT_NO_PARENT)
       await gotoApp('/jemput-ibu-bapa')
-      await page.getByTestId('jemput-regenerate').click()
+      await regenerate(page)
       await expect(page.getByTestId('jemput-flash')).toBeVisible()
       await expectNoHorizontalScroll(page)
       await mock.failNext('POST /api/me/parent-invite/generate', 500)
-      await page.getByTestId('jemput-regenerate').click()
+      await regenerate(page)
       await expect(page.getByTestId('jemput-alert')).toBeVisible()
       await expectNoHorizontalScroll(page)
     },
