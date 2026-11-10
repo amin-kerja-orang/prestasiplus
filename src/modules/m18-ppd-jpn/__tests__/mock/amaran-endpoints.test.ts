@@ -145,9 +145,29 @@ describe('#21 GET /api/amaran/schools/:id', () => {
       )
       expect(f.levelFilter).toBe(`T${String(n)}`)
       expect(f.pupils).toHaveLength(f.tally.total)
-      expect(f.pupils.length).toBeGreaterThan(0)
+      // T4 and T5 are always listed (an empty one filters to 0 rows); T1-T3 only appear with pupils.
+      if (n <= 3) expect(f.pupils.length).toBeGreaterThan(0)
     }
+    expect(d.levels).toEqual(expect.arrayContaining([4, 5]))
   }, 600_000)
+
+  it('S4 always lists the T4 and T5 pills, also for a school with no pupils in them (900001)', async () => {
+    const d = await dataAs<SchoolRiskData & { levels: number[] }>(
+      runtime,
+      admin.id,
+      '/api/amaran/schools/900001',
+    )
+    expect(d.levels).toEqual([4, 5])
+    // Every listed pill filters to a list that equals its own tally, also when that level has no pupils.
+    for (const n of d.levels) {
+      const f = await dataAs<SchoolRiskData>(
+        runtime,
+        admin.id,
+        `/api/amaran/schools/900001?tingkatan=T${String(n)}`,
+      )
+      expect(f.pupils).toHaveLength(f.tally.total)
+    }
+  })
 
   it('7780: 17 pupils, 15 x 100 then 2 x 80, with the FN-M18-4.1.3 cell texts', async () => {
     const d = await dataAs<SchoolRiskData>(runtime, admin.id, '/api/amaran/schools/7780')

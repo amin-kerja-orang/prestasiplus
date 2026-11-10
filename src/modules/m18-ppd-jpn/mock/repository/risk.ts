@@ -286,11 +286,13 @@ const filterLevel = (rows: PupilRiskRow[], t: Tingkatan | undefined): PupilRiskR
         (t <= 3 && r.classTingkatan.length === 0 && gradeTingkatan(r.grade) === t),
       )
 
-/** The Tingkatan numbers that have pupils in a school (the S4 pills), ascending. */
+/**
+ * The Tingkatan pills of a school's S4 page, ascending: T4 and T5 always (the original contract; an empty level
+ * simply filters to 0 rows), T1 to T3 (D101) only where the school has pupils in them.
+ */
 export function levelsOfSchool(schoolId: number, options?: RiskOptions): Tingkatan[] {
   const rows = schoolPupils(schoolId, nowOf(options))
-  // A pill is listed only when its filter keeps at least one pupil, so a pill never opens an empty list.
-  return ([1, 2, 3, 4, 5] as const).filter((t) => filterLevel(rows, t).length > 0)
+  return ([1, 2, 3, 4, 5] as const).filter((t) => t >= 4 || filterLevel(rows, t).length > 0)
 }
 
 /** Schools of a scope that hold pupils (fixtures excluded, BR-M18-02). */
