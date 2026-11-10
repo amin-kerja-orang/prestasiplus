@@ -278,12 +278,17 @@ export function groupsStep(q: QuestionsContext): AnyEntityStep {
       const { plan } = await q.plan()
       let inserted = 0
       let unchanged = 0
+      let updated = 0
       for (const u of rows) {
-        const wrote = u.group !== null ? await writeGroup(ctx, plan, u.group, q) : await writeOwnerLink(ctx, plan, u.owner as NonNullable<GroupUnit['owner']>)
-        if (wrote) inserted += 1
+        if (u.group !== null) {
+          const w = await writeGroup(ctx, plan, u.group, q)
+          if (w.inserted) inserted += 1
+          else if (w.updated > 0) updated += w.updated
+          else unchanged += 1
+        } else if (await writeOwnerLink(ctx, plan, u.owner as NonNullable<GroupUnit['owner']>)) inserted += 1
         else unchanged += 1
       }
-      return { inserted, unchanged }
+      return { inserted, updated, unchanged }
     },
   }
 }
@@ -309,12 +314,59 @@ async function loadedMembers(db: SqlExecutor, source: string, legacyIds: readonl
   })
 }
 
-async function writeGroup(ctx: BatchContext, plan: RajahPlan, g: PlannedGroup, q: QuestionsContext): Promise<boolean> {
+/**
+ * A group that exists already: a member that was quarantined or held in an earlier run and is loaded by this one has `group_id` NULL.
+ * Attach it, and renumber the whole group in V2 order (two phases: the unique index on (group_id, group_position) is checked row by row,
+ * and the +3000 shift is undone by the renumber, so positions never grow). Returns the number of members attached; 0 changes no row.
+ */
+async function attachLateMembers(ctx: BatchContext, g: PlannedGroup, groupId: string, q: QuestionsContext, plan: RajahPlan): Promise<number> {
+  const db = ctx.db
+  const loaded = await loadedMembers(db, ctx.source, g.members)
+  const late = loaded.filter((m) => m.group === null)
+  if (late.length === 0) return 0
+  const inGroup = loaded.filter((m) => m.group === groupId || m.group === null)
+  const ordered = inGroup.map((m) => m.id)
+  const extra = await db.query<{ id: string }>(
+    `SELECT id::text AS id FROM questions WHERE group_id = $1::bigint AND NOT (id = ANY($2::bigint[])) ORDER BY group_position, id`,
+    [groupId, ordered],
+  )
+  const finalOrder = [...ordered, ...extra.rows.map((r) => r.id)]
+  await db.query(`UPDATE questions SET group_position = group_position + 3000 WHERE group_id = $1::bigint`, [groupId])
+  await db.query(
+    `UPDATE questions q SET group_id = $1::bigint, group_position = x.pos, updated_at = now()
+       FROM jsonb_to_recordset($2::jsonb) AS x(id bigint, pos smallint) WHERE q.id = x.id`,
+    [groupId, toJson(finalOrder.map((id, i) => ({ id, pos: i + 1 })))],
+  )
+  // A group whose picture is still not copied is held as a whole: the late members join the hold.
+  const stimulus = plan.stimuli.get(g.stimulusKey)
+  if (stimulus !== undefined && stimulus.imagePath !== null) {
+    const copied = await db.query(`SELECT 1 FROM stimuli s WHERE s.id = $1::bigint AND s.asset_file_id IS NOT NULL`, [await stimulusIdOf(ctx, g.stimulusKey)])
+    if ((copied.rowCount ?? 0) === 0) {
+      const ids = late.map((m) => m.id)
+      await db.query(
+        `UPDATE question_versions v SET import_issues = coalesce(CASE WHEN jsonb_typeof(v.import_issues) = 'array' THEN v.import_issues END, '[]'::jsonb)
+                || jsonb_build_array(jsonb_build_object('code', 'legacy_image_unresolved', 'target', 'question', 'path', $2::text))
+          WHERE v.question_id = ANY($1::bigint[]) AND v.version_no = 1
+            AND NOT coalesce(jsonb_typeof(v.import_issues) = 'array' AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb, false)`,
+        [ids, stimulus.imagePath],
+      )
+      await db.query(`UPDATE questions SET is_active = false WHERE id = ANY($1::bigint[])`, [ids])
+    }
+  }
+  q.notes.count(`groups.members.${g.cls}`, late.length)
+  q.notes.count('groups.late_attached', late.length)
+  return late.length
+}
+
+async function writeGroup(ctx: BatchContext, plan: RajahPlan, g: PlannedGroup, q: QuestionsContext): Promise<{ inserted: boolean; updated: number }> {
   const db = ctx.db
   const known = await existing(ctx, 'stimulus_groups', 'stimulus_groups', [g.key])
-  if (known.has(g.key)) return false
+  if (known.has(g.key)) {
+    const groupId = await ctx.idMap.resolve('stimulus_groups', g.key)
+    return { inserted: false, updated: groupId === null ? 0 : await attachLateMembers(ctx, g, groupId, q, plan) }
+  }
   const members = (await loadedMembers(db, ctx.source, g.members)).filter((m) => m.group === null)
-  if (members.length === 0) return false
+  if (members.length === 0) return { inserted: false, updated: 0 }
   const stimulus = plan.stimuli.get(g.stimulusKey)
   if (stimulus === undefined) throw new Error(`migrate:questions: group ${g.key} has no stimulus in the plan`)
   const stimulusId = await stimulusIdOf(ctx, g.stimulusKey)
@@ -346,7 +398,7 @@ async function writeGroup(ctx: BatchContext, plan: RajahPlan, g: PlannedGroup, q
   await ctx.idMap.registerMany('stimulus_groups', [[g.key, groupId as string]])
   q.notes.count(`groups.${g.confidence}.${g.cls}`)
   q.notes.count(`groups.members.${g.cls}`, members.length)
-  return true
+  return { inserted: true, updated: 0 }
 }
 
 async function writeOwnerLink(ctx: BatchContext, plan: RajahPlan, o: NonNullable<GroupUnit['owner']>): Promise<boolean> {

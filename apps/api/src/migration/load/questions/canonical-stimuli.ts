@@ -236,12 +236,15 @@ export async function linkCanonicalStimuli(
   if (touched.length > 0) {
     // V2 order inside each group, in two phases (the unique index on (group_id, group_position) is checked row by row).
     await ctx.db.query(`UPDATE questions SET group_position = group_position + 3000 WHERE group_id = ANY($1::bigint[])`, [touched])
+    // Every member is renumbered (the shift above covers all of them, so none may stay at +3000): members that are not exam
+    // questions (rajah-group members) keep their relative order and follow the exam questions.
     await ctx.db.query(
       `UPDATE questions q SET group_position = r.rn
-         FROM (SELECT q2.id, row_number() OVER (PARTITION BY q2.group_id ORDER BY coalesce(eq."position"::text::int, 0), eq.id::bigint)::int AS rn
+         FROM (SELECT q2.id, row_number() OVER (PARTITION BY q2.group_id
+                       ORDER BY (eq.id IS NULL), coalesce(eq."position"::text::int, 0), eq.id::bigint, q2.group_position, q2.id)::int AS rn
                  FROM questions q2
-                 JOIN etl_id_map m ON m.new_id::bigint = q2.id AND m.entity = 'exam_questions' AND m.legacy_source = $2
-                 JOIN ${A}.exam_questions eq ON eq.id = m.legacy_id::bigint
+                 LEFT JOIN etl_id_map m ON m.new_id::bigint = q2.id AND m.entity = 'exam_questions' AND m.legacy_source = $2
+                 LEFT JOIN ${A}.exam_questions eq ON eq.id = m.legacy_id::bigint
                 WHERE q2.group_id = ANY($1::bigint[])) r
         WHERE q.id = r.id`,
       [touched, ctx.source],

@@ -177,7 +177,7 @@ export function segmentPaper(input: AiExtractRequest): ExtractedDraftPaper {
     }
 
     // 3. A question number.
-    let qm = /^(\d{1,3})\s*[.)]\s*(.*)$/.exec(t)
+    let qm = /^(\d{1,3})\s*[.)](?![0-9])\s*(.*)$/.exec(t)
     if (qm) {
       const n = Number(qm[1])
       if (!(lastNo === 0 ? n <= 5 : n > lastNo && n <= lastNo + 5)) qm = null

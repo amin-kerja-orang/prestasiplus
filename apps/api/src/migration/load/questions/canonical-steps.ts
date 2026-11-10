@@ -82,26 +82,65 @@ async function* readCanonical(pool: pg.Pool, afterKey: string | null, pageSize: 
   }
 }
 
-const NORM = (e: string): string => `lower(regexp_replace(coalesce(${e}, ''), '[^[:alnum:]]+', '', 'g'))`
+/**
+ * Case and whitespace only (M-B): digits and the signs + - . / = % are kept, so '2x+3' is not '2x-3' and '1.5' is not '15'.
+ * (Used in SQL; `normText` is the same rule in TypeScript.)
+ */
+const NORM = (e: string): string => `lower(btrim(regexp_replace(coalesce(${e}, ''), '\\s+', ' ', 'g')))`
+export const normText = (s: string | null | undefined): string => (s ?? '').replace(/\s+/g, ' ').trim().toLowerCase()
 
-/** V2 canonical id to the V3 id of the legacy question it copies (lowest legacy id on several matches). */
-async function legacyCopiesOf(ctx: BatchContext, plans: readonly QuestionTreePlan[]): Promise<Map<string, string>> {
+/** The normalised text of the correct option(s) of a canonical leaf, sorted and joined; null when it has no usable key. */
+function correctTextOf(leaf: { options?: { label: string; body: string | null }[]; key: Record<string, unknown> }): string | null {
+  const labels = Array.isArray(leaf.key.correctOptionIds) ? (leaf.key.correctOptionIds as string[]) : typeof leaf.key.correct === 'string' ? [leaf.key.correct] : []
+  const texts = labels.map((l) => normText(leaf.options?.find((o) => o.label === l)?.body))
+  return texts.length === 0 || texts.some((t) => t === '') ? null : texts.sort().join('|')
+}
+
+/**
+ * V2 canonical id to the V3 id of the legacy question it copies (lowest legacy id on several matches). A copy needs the same subject, the same
+ * stem and options (case and whitespace aside), the same correct option text AND the same stimulus set (V3 stimulus ids, so a canonical question
+ * with a stimulus of its own is never a copy of a legacy question that has a different picture). Options with no text (images) cannot be compared:
+ * such a question is never deduped.
+ */
+async function legacyCopiesOf(ctx: BatchContext, plans: readonly QuestionTreePlan[], links: ReadonlyMap<string, readonly string[]>): Promise<Map<string, string>> {
+  const allSids = [...new Set(plans.flatMap((p) => links.get(p.idKey) ?? []))]
+  const stimulusOf = allSids.length > 0 ? await ctx.idMap.resolveMany('canonical_stimuli', allSids) : new Map<string, string>()
   const input = plans.flatMap((p) => {
     if (p.subject_id === null || p.stem.trim() === '') return []
     const only = p.tree.length === 1 ? p.tree[0] : undefined
-    const opts = only?.kind === 'leaf' && only.options !== undefined ? only.options.map((o) => o.body ?? '') : []
-    return [{ id: p.idKey, subject: p.subject_id, stem: p.stem, opts }]
+    if (only?.kind !== 'leaf') return []
+    const bodies = (only.options ?? []).map((o) => normText(o.body))
+    if (bodies.some((b) => b === '')) return []
+    let correct = ''
+    if (bodies.length > 0) {
+      const c = correctTextOf(only)
+      if (c === null) return []
+      correct = c
+    }
+    const sids = [...new Set(links.get(p.idKey) ?? [])]
+    const v3 = sids.map((s) => stimulusOf.get(s))
+    if (v3.some((s) => s === undefined)) return [] // its stimulus does not exist in V3 yet, so no legacy question can already carry it
+    return [{ id: p.idKey, subject: p.subject_id, stem: p.stem, opts: bodies, correct, sids: (v3 as string[]).sort() }]
   })
   const out = new Map<string, string>()
   if (input.length === 0) return out
   const res = await ctx.db.query<{ id: string; legacy: string }>(
     `SELECT DISTINCT ON (x.id) x.id, q.id::text AS legacy
-       FROM jsonb_to_recordset($1::jsonb) AS x(id text, subject bigint, stem text, opts jsonb)
+       FROM jsonb_to_recordset($1::jsonb) AS x(id text, subject bigint, stem text, opts jsonb, correct text, sids jsonb)
        JOIN question_versions v ON v.subject_id = x.subject AND ${NORM('v.stem_ms')} = ${NORM('x.stem')}
        JOIN questions q ON q.id = v.question_id AND v.version_no = q.latest_version_no
       WHERE q.legacy_source = $2 AND q.legacy_id IS NOT NULL
         AND coalesce((SELECT string_agg(${NORM('o.body_ms')}, '|' ORDER BY ${NORM('o.body_ms')}) FROM question_parts p JOIN part_options o ON o.part_id = p.id WHERE p.question_version_id = v.id), '')
-          = coalesce((SELECT string_agg(${NORM('b')}, '|' ORDER BY ${NORM('b')}) FROM jsonb_array_elements_text(x.opts) b), '')
+          = coalesce((SELECT string_agg(b, '|' ORDER BY b) FROM jsonb_array_elements_text(x.opts) b), '')
+        AND coalesce((SELECT string_agg(${NORM('o.body_ms')}, '|' ORDER BY ${NORM('o.body_ms')})
+                        FROM question_parts p JOIN part_options o ON o.part_id = p.id JOIN answer_keys k ON k.part_id = p.id
+                       WHERE p.question_version_id = v.id
+                         AND o.label IN (SELECT jsonb_array_elements_text(CASE WHEN k.content ? 'correctOptionIds' THEN k.content->'correctOptionIds' ELSE jsonb_build_array(k.content->>'correct') END))), '')
+          = x.correct
+        AND coalesce((SELECT jsonb_agg(sid ORDER BY sid) FROM (
+                        SELECT s.stimulus_id::text AS sid FROM question_version_stimuli s WHERE s.question_version_id = v.id
+                        UNION SELECT gs.stimulus_id::text FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id) u), '[]'::jsonb)
+          = (SELECT coalesce(jsonb_agg(s ORDER BY s), '[]'::jsonb) FROM jsonb_array_elements_text(x.sids) s)
       ORDER BY x.id, q.id`,
     [toJson(input), ctx.source],
   )
@@ -136,9 +175,22 @@ export function canonicalStep(q: QuestionsContext): AnyEntityStep {
         if (!out.ok) rejectRow(ctx, entity, row.id ?? '', out.reject)
         else plans.push(out.value)
       }
-      // A canonical row that is a copy of a legacy question without a `legacy_canonical_map` row (same subject, same stem, same options once
-      // letters, case and punctuation are ignored) is not loaded twice: it maps to the legacy question, so placements point to that one.
-      const copies = await legacyCopiesOf(ctx, plans)
+      // A canonical row that is a copy of a legacy question without a `legacy_canonical_map` row (same subject, stem, options, correct option and
+      // stimulus set; case and whitespace aside) is not loaded twice: it maps to the legacy question, so placements point to that one.
+      const copies = await legacyCopiesOf(ctx, plans, linksOf)
+      // A row that an earlier run mapped to a legacy question and that is not a copy under the current rule (the old rule ignored digits, signs
+      // and the stimulus) is repointed: its id-map entry is dropped here, the row loads as its own question below and registers itself again.
+      // The legacy question is not touched. A canonical question of its own has `legacy_id IS NULL`, so only wrong dedupes match.
+      const notCopies = plans.map((p) => p.idKey).filter((id) => !copies.has(id))
+      if (notCopies.length > 0) {
+        const fixed = await ctx.db.query(
+          `DELETE FROM etl_id_map m USING questions lq
+            WHERE m.legacy_source = $1 AND m.entity = 'exam_questions' AND m.legacy_id = ANY($2::text[])
+              AND lq.id = m.new_id::bigint AND lq.legacy_id IS NOT NULL`,
+          [ctx.source, notCopies],
+        )
+        if ((fixed.rowCount ?? 0) > 0) q.notes.count('canonical.dedupe_repointed', fixed.rowCount ?? 0)
+      }
       if (copies.size > 0) {
         await ctx.idMap.registerMany('exam_questions', [...copies].map(([id, legacy]) => [id, legacy] as const))
         q.notes.count('canonical.deduped_to_legacy', copies.size)

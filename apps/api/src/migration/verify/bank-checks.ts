@@ -3,6 +3,8 @@
  * rejects. Every expectation is computed from the staged and archived V2 tables (or from the loader's own reject rows for the picture files, which only
  * the file system can judge); no number is typed in. Aggregates only: no question text, path or id is selected into the report.
  */
+import { readFileSync } from 'node:fs'
+
 import type pg from 'pg'
 
 import { ARCHIVE_SCHEMA, STAGING_SCHEMA } from '../ddl/spec'
@@ -218,6 +220,18 @@ const blueprintExpectations: readonly Expectation[] = [
 const JUDGED_ELSEWHERE: ReadonlySet<string> = new Set(['exam_questions|INVALID_VALUE|stem', 'paper_document_pages|INVALID_VALUE|path'])
 const judgedElsewhere = (key: string): boolean => JUDGED_ELSEWHERE.has(key) || key.startsWith('question_files|')
 
+/**
+ * The per-run allowlist of reject reasons the operator accepts as explained: `entity|reason|column` (column may be empty to accept every column
+ * of that reason). From `PP_VERIFY_ACCEPT_REJECTS` (comma separated) and/or the file named by `PP_VERIFY_ACCEPT_REJECTS_FILE` (one per line,
+ * `#` comments). Accepted keys are listed in the check detail, so the report records what was waved through.
+ */
+export function acceptedRejectKeys(env: NodeJS.ProcessEnv): Set<string> {
+  const items: string[] = (env.PP_VERIFY_ACCEPT_REJECTS ?? '').split(',')
+  const file = env.PP_VERIFY_ACCEPT_REJECTS_FILE
+  if (file !== undefined && file.trim() !== '') items.push(...readFileSync(file, 'utf8').split(/\r?\n/).map((l) => l.replace(/#.*$/, '')))
+  return new Set(items.map((s) => s.trim()).filter((s) => s !== ''))
+}
+
 export const STANDALONE_ENTITIES = [
   'questions', 'question_stimuli', 'stimulus_groups', 'question_files', 'structured_questions', 'subjective_questions', 'exam_questions', 'pksk_questions',
   'spm_sets', 'paper_blueprints', 'exam_papers', 'paper_documents', 'paper_document_pages',
@@ -263,6 +277,8 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
   let counted = 0
   let unexplained = 0
   const rest: string[] = []
+  const accepted = acceptedRejectKeys(process.env)
+  if (accepted.size > 0) rest.push(`allowlist in force: ${[...accepted].sort().join(', ')}`)
   for (const [key, n] of [...counts].sort(([a], [b]) => (a < b ? -1 : 1))) {
     if (computed.has(key)) continue
     const [entity, reason, column] = key.split('|')
@@ -270,6 +286,9 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
     if (judgedElsewhere(key)) {
       counted += n
       rest.push(`${label} (judged by the text or the file, counted as is)`)
+    } else if (accepted.has(key) || accepted.has(`${entity}|${reason}|`)) {
+      counted += n
+      rest.push(`${label} (ACCEPTED by the run allowlist)`)
     } else {
       unexplained += n
       rest.push(`${label} (UNEXPLAINED)`)
@@ -282,7 +301,8 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
     kind: 'counts',
     expected,
     actual: total,
-    status: unexplained > 0 ? 'reported' : expected === total ? 'ok' : 'mismatch',
+    // An unexplained reject reason fails the verify unless the run explicitly accepts it (PP_VERIFY_ACCEPT_REJECTS / _FILE).
+    status: unexplained === 0 && expected === total ? 'ok' : 'mismatch',
     detail: total === 0 ? 'no reject' : capped([...all.map((e) => `${e.entity} ${e.reason}/${e.column}: ${counts.get(`${e.entity}|${e.reason}|${e.column}`) ?? 0}`), ...rest]),
   })
   return out

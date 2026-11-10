@@ -82,6 +82,17 @@ describe('segmentPaper edge cases', () => {
     expect(p.questions[1]?.options.map((o) => o.id)).toEqual(['A', 'B', 'C', 'D'])
   })
 
+  it('does not read a decimal measurement ("2.5 cm") as question 2', () => {
+    const p = segmentPaper(request([['2.5 cm', '1. Panjang pensel ialah 2.5 cm.', 'A. 2', 'B. 3', '2.5 cm ialah panjang tali.']]))
+    expect(p.questions.map((q) => q.label)).toEqual(['1'])
+  })
+
+  it('still reads "2. Rajah ..." and "2) Rajah ..." as question 2', () => {
+    const p = segmentPaper(request([['1. Satu?', 'A. a', 'B. b', '2. Rajah 1 menunjukkan graf.', 'A. c', 'B. d', '3) Tiga?', 'A. e', 'B. f']]))
+    expect(p.questions.map((q) => q.label)).toEqual(['1', '2', '3'])
+    expect(p.questions[1]?.stem).toContain('Rajah 1')
+  })
+
   it('returns a warning, not a throw, for text with no questions', () => {
     const p = segmentPaper(request([['Teks tanpa soalan.']]))
     expect(p.questions).toEqual([])

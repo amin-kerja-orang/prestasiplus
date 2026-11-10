@@ -294,9 +294,22 @@ describe('migrate:verify knows the question, structured and papers loaders', () 
     expect(checks['stimulus groups: groups with a stimulus and members']?.status).toBe('ok')
     expect(checks['PKSK questions: tags and draft state']).toMatchObject({ status: 'ok', actual: 0 })
     expect(checks['PKSK questions: tags and draft state']?.detail).toContain('3 still have no options')
-    // The quarantined 912 has an unknown subject: a reject reason with no computed expectation, so the total is reported and never passed.
-    expect(checks['rejects of the question and paper loaders (latest apply run of each)']?.status).toBe('reported')
+    // The quarantined 912 has an unknown subject: a reject reason with no computed expectation, so the check fails (M-C) unless the run accepts it.
+    expect(checks['rejects of the question and paper loaders (latest apply run of each)']?.status).toBe('mismatch')
     expect(checks['rejects of the question and paper loaders (latest apply run of each)']?.detail).toContain('UNEXPLAINED')
+    // This fixture has several unexplained reasons (an unknown subject, level, status, a duplicate set); the run accepts each explicitly.
+    const rejectKey = ((await sql(`select distinct entity || '|' || reason || '|' || coalesce(column_name, '') as k from etl_rejects order by 1`)).rows.map((r) => r.k as string)).join(',')
+    expect(rejectKey).toContain('questions|ORPHAN_PARENT|subject_id')
+    process.env.PP_VERIFY_ACCEPT_REJECTS = rejectKey
+    try {
+      const accepted = Object.fromEntries((await verify()).checks.map((c) => [c.name, c]))
+      const c = accepted['rejects of the question and paper loaders (latest apply run of each)']
+      expect(c?.status, JSON.stringify(c)).toBe('ok')
+      expect(c?.detail).toContain('ACCEPTED by the run allowlist')
+      expect(c?.detail).toContain('allowlist in force: ')
+    } finally {
+      delete process.env.PP_VERIFY_ACCEPT_REJECTS
+    }
     // Every reason V2 data explains has its own computed expectation: the blueprint with no duration anywhere (subject 2, kertas 1) is the one reject.
     expect(checks['rejects: paper_blueprints: rejected for no duration']).toMatchObject({ status: 'ok', expected: 1, actual: 1 })
     expect(checks['rejects: questions: rejected for the answer key']).toMatchObject({ status: 'ok', expected: 0, actual: 0 })
