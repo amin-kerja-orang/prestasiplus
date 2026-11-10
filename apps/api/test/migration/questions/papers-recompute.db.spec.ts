@@ -123,8 +123,8 @@ describe('papers recompute (M-A)', () => {
     await h.both()
     const r = await papersRun()
     expect(r.inserted).toBe(0)
-    // 881 (draft), 882 and 885 (published, unedited; an attempt does not block an ADD) change; 883 (edited) and 884 (nothing new) do not
-    expect(r.updated).toBe(3)
+    // 881 (draft) and 882 (published, unedited, no attempt) change; 885 (published WITH an attempt, G-2), 883 (edited) and 884 (nothing new) do not
+    expect(r.updated).toBe(2)
     expect(await placed('881')).toEqual([await v3Of('971'), await v3Of('972'), await v3Of('973')])
     expect((await sql(`select status from papers where id = $1::bigint`, [await paperOf('881')])).rows[0].status).toBe('draft')
     const candidates = await terbitCandidates(h.pool, 'cloud')
@@ -148,8 +148,8 @@ describe('papers recompute (M-A)', () => {
     expect(await placed('883')).toEqual([await v3Of('971')])
   })
 
-  it('a published paper with an exam attempt gets its missing placement added; the attempt is not touched', async () => {
-    expect(await placed('885')).toEqual([await v3Of('971'), await v3Of('973')])
+  it('a published paper with an exam attempt is left untouched (V2 pupil results never change) and is listed', async () => {
+    expect(await placed('885')).toEqual([await v3Of('971')])
     expect(await h.count('exam_attempts', `t.title = 'Kertas Pulih Percubaan' and t.status = 'submitted'`)).toBe(1)
   })
 
@@ -180,4 +180,61 @@ describe('papers recompute (M-A)', () => {
     expect(await heldDetail(h.pool, await paperOf('882'), ['group_split'])).toEqual(['group_split', `group_split: group ${g} has 2 of 3 members placed, in 1 Bahagian`])
     expect(await heldDetail(h.pool, await paperOf('882'), ['kertas_unknown:composite_document'])).toEqual(['kertas_unknown:composite_document'])
   })
+
+  it('completes a split rajah group: the missing members are added adjacent in group order, the hold clears, nothing is removed', async () => {
+    // the group {971, 972, 973} exists (previous test). Paper 886 places only 971; published 882 places 971 and 973.
+    await sql(`insert into archive_cloud.exam_papers (id, title, subject_id, kertas, duration_minutes, status_id) values (886, 'Kertas Pulih Kumpulan', 2, '1', 90, 91)`)
+    await sql(`insert into archive_cloud.paper_sections (id, exam_paper_id, label, position, selection_rule_id) values (76, 886, 'Bahagian A', 1, 1)`)
+    await sql(`insert into archive_cloud.exam_questions (id, exam_paper_id, status_id, position) values (7092, 886, 1, 1)`)
+    await sql(`insert into archive_cloud.legacy_canonical_map (id, source, legacy_id, canonical_type, canonical_id) values (9200, 'questions', '971', 'exam_question', 7092)`)
+    await sql(`insert into archive_cloud.exam_paper_questions (id, exam_question_id, paper_section_id, sort_order) values (200, 7092, 76, 1)`)
+    const [a, b, c] = [await v3Of('971'), await v3Of('972'), await v3Of('973')]
+    const rowIds = async (): Promise<string[]> => (await sql(`select pl.id::text as id from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1::bigint order by pl.id`, [await paperOf('882')])).rows.map((x) => x.id as string)
+    const idsBefore = await rowIds()
+    const first = await papersRun()
+    expect(first.inserted).toBe(1)
+    // a NEW paper keeps the load-time hold; the published, unedited 882 is completed in the same run (an add, still published)
+    expect(await placed('886')).toEqual([a])
+    expect((await sql(`select new_id from etl_id_map where entity = 'exam_paper_holds' and legacy_id = '886'`)).rows.map((x) => x.new_id)).toEqual(['group_split'])
+    expect(await placed('882')).toEqual([a, b, c])
+    // no DELETE: the placement rows that were there are the same rows (G-1), and 885 (with an attempt) is not completed
+    expect((await rowIds()).filter((id) => idsBefore.includes(id))).toEqual(idsBefore)
+    expect(await placed('885')).toEqual([await v3Of('971')])
+    expect((await sql(`select status from papers where id = $1::bigint`, [await paperOf('882')])).rows[0].status).toBe('published')
+    // the next run completes the draft and clears its hold
+    const second = await papersRun()
+    expect(second.updated).toBe(1)
+    expect(await placed('886')).toEqual([a, b, c])
+    expect((await sql(`select 1 from etl_id_map where entity = 'exam_paper_holds' and legacy_id = '886'`)).rows).toEqual([])
+    expect(await papersRun()).toMatchObject({ inserted: 0, updated: 0 })
+  })
+
+  it('race A: a Studio edit that holds the paper lock is waited for, and the recompute then finds a foreign audit row and leaves the paper alone', async () => {
+    await sql(`insert into archive_cloud.exam_papers (id, title, subject_id, kertas, duration_minutes, status_id) values (887, 'Kertas Pulih Berebut', 2, '1', 90, 91)`)
+    await sql(`insert into archive_cloud.paper_sections (id, exam_paper_id, label, position, selection_rule_id) values (77, 887, 'Bahagian A', 1, 1)`)
+    await sql(`insert into archive_cloud.exam_questions (id, exam_paper_id, status_id, position) values (7093, 887, 1, 1)`)
+    await sql(`insert into archive_cloud.legacy_canonical_map (id, source, legacy_id, canonical_type, canonical_id) values (9201, 'questions', '972', 'exam_question', 7093)`)
+    await sql(`insert into archive_cloud.exam_paper_questions (id, exam_question_id, paper_section_id, sort_order) values (201, 7093, 77, 1)`)
+    await papersRun()
+    const id = await paperOf('887')
+    expect(await placed('887')).toEqual([await v3Of('972')])
+    const editor = await h.pool.connect()
+    try {
+      await editor.query('begin')
+      await editor.query(`select id from papers where id = $1::bigint for update`, [id])
+      let done = false
+      const run = papersRun().then((r) => {
+        done = true
+        return r
+      })
+      await new Promise((resolve) => setTimeout(resolve, 2500))
+      expect(done).toBe(false)
+      await editor.query(`insert into audit_events (actor_user_id, action, target_type, target_id, request_id) values (null, 'bijak.paper.updated', 'bijak_paper', $1, 'req-studio-3')`, [id])
+      await editor.query('commit')
+      expect((await run).updated).toBe(0)
+    } finally {
+      editor.release()
+    }
+    expect(await placed('887')).toEqual([await v3Of('972')])
+  }, 120_000)
 })

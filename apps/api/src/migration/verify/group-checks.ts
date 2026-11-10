@@ -78,8 +78,11 @@ export function findingsDetail(f: GroupFindings): string {
 }
 
 /** Reads the expectation (the plan) and the loaded state, and compares them. */
-export async function readGroupFindings(pool: pg.Pool, source: LegacySource): Promise<GroupFindings> {
-  const ctx = new QuestionsContext({ pool, env: {}, source: 'cloud', asOf: '' })
+export async function readGroupFindings(pool: pg.Pool, source: LegacySource, asOf = ''): Promise<GroupFindings> {
+  // The plan is a pure function of the archive and the curriculum id maps (it reads no date); the same `QuestionsContext` the loader builds, with the
+  // run's source and as-of, gives exactly the plan the load used.
+  if (source !== 'cloud') throw new Error(`stimulus group check: the rajah plan exists for the cloud source only, not ${source}`)
+  const ctx = new QuestionsContext({ pool, env: {}, source, asOf })
   const { plan } = await ctx.plan()
   const expected: ExpectedGroup[] = plan.groups.map((g) => ({ key: g.key, members: g.members }))
   const legacyIds = [...new Set(expected.flatMap((g) => g.members))]
@@ -121,3 +124,68 @@ export async function positionGapGroups(pool: pg.Pool, source: LegacySource): Pr
   )
   return res.rows[0] ?? { groups: 0, gaps: 0 }
 }
+
+export interface CanonicalFindings {
+  /** Loaded canonical-only questions with at least one V2 stimulus link. */
+  questions: number
+  /** Questions with no group and no own stimulus link at all although V2 links a stimulus. */
+  noStimulus: number
+  /** Questions that show a stimulus V2 does not link to them (own link or group stimulus). */
+  foreignLink: number
+  /** Questions that show fewer stimuli than V2 links (up to 3 own plus the group stimulus). */
+  tooFewLinks: number
+  /** Canonical groups whose exam-question members are not in V2 order (`exam_questions.position`, id), and groups above 40 members. */
+  groupOrder: number
+  groupOver40: number
+  groups: number
+}
+
+/**
+ * The canonical bank (V2 `exam_questions` that are not projections of a legacy question), compared with V2 `question_stimulus` and a part's
+ * `stimulus_id`: every such question that V2 links to a stimulus shows exactly the stimuli V2 links (its own links, up to 3, plus the stimulus of its
+ * group), and the canonical groups keep V2 order. Aggregates only.
+ */
+export async function readCanonicalFindings(pool: pg.Pool, source: LegacySource): Promise<CanonicalFindings> {
+  const res = await pool.query<CanonicalFindings>(
+    `WITH v2links AS (
+        SELECT DISTINCT u.exam_question_id AS eq, u.stimulus_id AS sid FROM (
+          SELECT exam_question_id, stimulus_id FROM archive_cloud.question_stimulus
+          UNION ALL SELECT exam_question_id, stimulus_id FROM archive_cloud.question_parts WHERE stimulus_id IS NOT NULL) u
+         WHERE NOT EXISTS (SELECT 1 FROM archive_cloud.legacy_canonical_map m WHERE m.canonical_type = 'exam_question' AND m.canonical_id = u.exam_question_id)),
+      loaded AS (SELECT m.legacy_id::bigint AS eq, m.new_id::bigint AS qid FROM etl_id_map m JOIN questions q ON q.id = m.new_id::bigint
+                  WHERE m.legacy_source = $1 AND m.entity = 'exam_questions'),
+      expd AS (SELECT DISTINCT l.qid, s.new_id::bigint AS stim FROM v2links v JOIN loaded l ON l.eq = v.eq
+                 JOIN etl_id_map s ON s.legacy_source = $1 AND s.entity = 'canonical_stimuli' AND s.legacy_id = v.sid::text),
+      act AS (SELECT DISTINCT x.qid, x.stim FROM (
+                SELECT ver.question_id AS qid, qvs.stimulus_id AS stim FROM question_version_stimuli qvs JOIN question_versions ver ON ver.id = qvs.question_version_id AND ver.version_no = 1
+                UNION ALL SELECT q.id, gs.stimulus_id FROM questions q JOIN stimulus_group_stimuli gs ON gs.group_id = q.group_id) x
+               WHERE x.qid IN (SELECT qid FROM expd)),
+      per AS (SELECT e.qid, count(*)::int AS exp_n,
+                     (SELECT count(*) FROM act a WHERE a.qid = e.qid)::int AS act_n,
+                     (SELECT count(*) FROM act a WHERE a.qid = e.qid AND NOT EXISTS (SELECT 1 FROM expd d WHERE d.qid = a.qid AND d.stim = a.stim))::int AS foreign_n,
+                     (EXISTS (SELECT 1 FROM questions q WHERE q.id = e.qid AND q.group_id IS NOT NULL))::int AS in_group
+                FROM expd e GROUP BY e.qid),
+      cg AS (SELECT sg.id AS gid FROM etl_id_map m JOIN stimulus_groups sg ON sg.id = m.new_id::bigint WHERE m.legacy_source = $1 AND m.entity = 'canonical_stimulus_groups'),
+      ranked AS (SELECT q.id, q.group_id,
+                        row_number() OVER (PARTITION BY q.group_id ORDER BY q.group_position) AS by_pos,
+                        row_number() OVER (PARTITION BY q.group_id ORDER BY (eq.id IS NULL), coalesce(eq."position"::text::int, 0), eq.id::bigint, q.group_position, q.id) AS by_v2
+                   FROM questions q JOIN cg ON cg.gid = q.group_id
+                   LEFT JOIN etl_id_map em ON em.new_id::bigint = q.id AND em.entity = 'exam_questions' AND em.legacy_source = $1
+                   LEFT JOIN archive_cloud.exam_questions eq ON eq.id = em.legacy_id::bigint)
+      SELECT (SELECT count(*) FROM per)::int AS questions,
+             (SELECT count(*) FROM per WHERE act_n = 0)::int AS "noStimulus",
+             (SELECT count(*) FROM per WHERE foreign_n > 0)::int AS "foreignLink",
+             (SELECT count(*) FROM per WHERE act_n > 0 AND act_n < LEAST(exp_n, 3 + in_group))::int AS "tooFewLinks",
+             (SELECT count(DISTINCT group_id) FROM ranked WHERE by_pos <> by_v2)::int AS "groupOrder",
+             (SELECT count(*) FROM (SELECT group_id FROM ranked GROUP BY group_id HAVING count(*) > 40) o)::int AS "groupOver40",
+             (SELECT count(*) FROM cg)::int AS groups`,
+    [source],
+  )
+  return res.rows[0] ?? { questions: 0, noStimulus: 0, foreignLink: 0, tooFewLinks: 0, groupOrder: 0, groupOver40: 0, groups: 0 }
+}
+
+export const canonicalTotal = (f: CanonicalFindings): number => f.noStimulus + f.foreignLink + f.tooFewLinks + f.groupOrder + f.groupOver40
+
+export const canonicalDetail = (f: CanonicalFindings): string =>
+  `${f.questions} canonical-only questions with a V2 stimulus link in ${f.groups} canonical groups: ${f.noStimulus} show no stimulus, ${f.foreignLink} show a stimulus V2 does not link, ` +
+  `${f.tooFewLinks} show fewer stimuli than V2 links, ${f.groupOrder} groups out of V2 order, ${f.groupOver40} groups above 40 members`

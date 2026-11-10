@@ -1,21 +1,20 @@
 /**
- * The ONE eligibility call of the papers recompute: which of these V3 questions may be placed on a PUBLISHED paper (pupils are served from it).
- *
- * TODO(M-A, coordinator): this is a stand-in adapter. The exam builder's servability rule (builder.service.ts `reasonOf` / serving/rules.ts:
- * held `legacy_image_unresolved`, inactive, unresolved media, ...) is being fixed by another agent, which will export one function. When it exists,
- * replace the body of `servableQuestionIds` with a call to it; nothing else in the recompute changes. Do not grow a second copy of the rule here.
- * The stand-in is deliberately strict: active, has a live version, and the live version carries no `legacy_image_unresolved` hold.
+ * The ONE eligibility call of the papers recompute: the shared servability rule of the exam builder (`placementVerdict`, one predicate underneath:
+ * `unservableReasonsOf`), in mode `'fixedSet'` (KP-14, KP-15): a V2-published paper is a set a person already chose, so nothing is refused. A held or
+ * unresolved-picture question is PLACED and shown with a placeholder; this only reports which ones those are (counted, never dropped).
+ * The builder's function takes a Prisma-style handle; `fromExecutor` adapts the migration's batch executor to it.
  */
+import type { Prisma } from '../../../db/generated/client'
+import { placementVerdict } from '../../../modules/exam/builder/placement-blockers'
+import type { UnservableDb } from '../../../modules/questions/questions.repository'
 import type { SqlExecutor } from '../../kit/types'
 
-export async function servableQuestionIds(db: SqlExecutor, questionIds: readonly string[]): Promise<Set<string>> {
-  if (questionIds.length === 0) return new Set()
-  const res = await db.query<{ id: string }>(
-    `SELECT q.id::text AS id FROM questions q
-       JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-      WHERE q.id = ANY($1::bigint[]) AND q.is_active
-        AND NOT coalesce(jsonb_typeof(v.import_issues) = 'array' AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb, false)`,
-    [questionIds],
-  )
-  return new Set(res.rows.map((r) => r.id))
+const fromExecutor = (db: SqlExecutor): UnservableDb =>
+  ({ $queryRaw: (q: Prisma.Sql) => db.query(q.text, q.values as unknown[]).then((r) => r.rows) }) as unknown as UnservableDb
+
+/** Of these questions, which are placed with a placeholder (held or unresolved picture) and which, if any, must be refused (none in `'fixedSet'`). */
+export async function placementOutcome(db: SqlExecutor, questionIds: readonly string[]): Promise<{ refused: string[]; placeholder: string[] }> {
+  if (questionIds.length === 0) return { refused: [], placeholder: [] }
+  const v = await placementVerdict(fromExecutor(db), questionIds, 'fixedSet')
+  return { refused: [...v.refused.keys()], placeholder: [...v.placeholder.keys()] }
 }

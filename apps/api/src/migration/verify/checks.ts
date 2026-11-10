@@ -18,7 +18,7 @@ import { buildGeo } from '../transform/reference'
 import { survivorSql } from './deleted'
 import { questionFileChecks, standaloneRejects } from './bank-checks'
 import { capped, entityOf, exists, reported, type CheckContext } from './check-kit'
-import { findingsDetail, findingsTotal, positionGapGroups, readGroupFindings } from './group-checks'
+import { canonicalDetail, canonicalTotal, findingsDetail, findingsTotal, positionGapGroups, readCanonicalFindings, readGroupFindings } from './group-checks'
 import { existingLegacyTables, loadForeignKeys, readMigratableList, type ForeignKey } from './fk-graph'
 import type { StatCheck } from './types'
 
@@ -555,7 +555,9 @@ async function stimulusGroupPlanChecks({ pool, source, entities }: CheckContext)
   if (!(await exists(pool, ARCHIVE_SCHEMA, 'questions'))) return [reported(name, 'orphans', 'archive_cloud.questions is not available; the plan cannot be recomputed, not compared')]
   const findings = await readGroupFindings(pool, source)
   const gaps = await positionGapGroups(pool, source)
-  const bad = findingsTotal(findings) + gaps.gaps
+  const canonicalReady = (await exists(pool, ARCHIVE_SCHEMA, 'question_stimulus')) && (await exists(pool, ARCHIVE_SCHEMA, 'exam_questions')) && (await exists(pool, ARCHIVE_SCHEMA, 'question_parts'))
+  const canonical = canonicalReady ? await readCanonicalFindings(pool, source) : null
+  const bad = findingsTotal(findings) + gaps.gaps + (canonical === null ? 0 : canonicalTotal(canonical))
   return [
     {
       name,
@@ -563,7 +565,7 @@ async function stimulusGroupPlanChecks({ pool, source, entities }: CheckContext)
       expected: 0,
       actual: bad,
       status: bad === 0 ? 'ok' : 'mismatch',
-      detail: `${findingsDetail(findings)}; group_position 1..n without a gap in ${gaps.groups - gaps.gaps} of ${gaps.groups} groups of the id maps`,
+      detail: `${findingsDetail(findings)}; group_position 1..n without a gap in ${gaps.groups - gaps.gaps} of ${gaps.groups} groups of the id maps; ${canonical === null ? 'canonical stimulus tables are not available: canonical links not compared' : canonicalDetail(canonical)}`,
     },
   ]
 }

@@ -14,16 +14,20 @@
  *    `bijak.paper.published_override` with NO request id: the pass calls the service in-process; a Studio call always carries one). Every Studio
  *    edit (create, place, remove, order, section, question, withdraw, Terbit) writes an audit row, so any edit leaves a foreign row;
  *  - a published paper also has `updated_at = published_at` (every later edit bumps `updated_at`).
- * A published paper is changed only when that is safe for pupils: no group would be split and every question added or repointed is eligible
- * (`papers-servable.ts`, one call). A repoint is refused when an exam attempt references the paper (the attempt's picture access is read through the
- * placement of the question it was served). Otherwise the paper is left as it is and counted (`papers.recompute_skipped.*`).
+ * A published paper is changed (add or repoint alike) only when that is safe for pupils: 0 exam attempts (V2 pupil results never change; a paper with
+ * attempts is skipped and listed in the report as `papers.recompute_skipped_attempts`), no group would be split, and every question added or repointed is
+ * placeable under the shared rule in `fixedSet` mode (`papers-servable.ts`, one call; held questions are placed with a placeholder, not refused). Otherwise the paper is left as it is and counted (`papers.recompute_skipped.*`).
+ *
+ * Concurrency. The paper row is locked FOR UPDATE first (the lock every Studio edit takes), so ownership is read and written under one lock (race A: an
+ * edit mid-recompute waits, or has already left a foreign audit row). For a published paper the attempts table is locked against inserts before the
+ * last attempts count (race B: an attempt cannot start between the count and the write). Placements are never deleted.
  *
  * Writes are idempotent: the merged placements are compared with the stored ones first, and nothing is written when they agree (a re-run with
  * nothing new changes 0 rows). `updated_at` is never bumped, so the ownership signal survives.
  */
 import type { BatchContext } from '../../kit/runner'
 import { toJson } from '../../kit/sql'
-import { servableQuestionIds } from './papers-servable'
+import { placementOutcome } from './papers-servable'
 import type { PlacementPlan, SectionPlan } from './papers-step'
 
 export type RecomputeOutcome = 'updated' | 'unchanged' | 'skipped'
@@ -70,6 +74,30 @@ export async function insertSections(ctx: BatchContext, paperId: string, section
     )
   }
   return placementRows.length
+}
+
+/**
+ * Adds to a section every member of a stimulus group that the paper does not place anywhere, when the section places at least one member of it
+ * (appended; `normaliseGroups` then moves the group's members next to each other in group order). A member placed in ANOTHER section is not
+ * moved: that group stays split and the paper stays held.
+ */
+export function completeGroups(sections: readonly SectionPlan[], facts: { groupOf: ReadonlyMap<string, string>; members: ReadonlyMap<string, readonly string[]> }): SectionPlan[] {
+  const onPaper = new Set(sections.flatMap((s) => s.placements.map((p) => p.question_id)))
+  return sections.map((s) => {
+    const extra: PlacementPlan[] = []
+    const seen = new Set<string>()
+    for (const p of s.placements) {
+      const g = facts.groupOf.get(p.question_id)
+      if (g === undefined || seen.has(g)) continue
+      seen.add(g)
+      for (const m of facts.members.get(g) ?? []) {
+        if (onPaper.has(m)) continue
+        onPaper.add(m)
+        extra.push({ question_id: m, number_label: null, marks_override: null })
+      }
+    }
+    return extra.length === 0 ? s : { ...s, placements: [...s.placements, ...extra] }
+  })
 }
 
 export interface CurrentPlacement {
@@ -133,6 +161,10 @@ export interface RecomputeInput {
 export async function recomputePaper(ctx: BatchContext, input: RecomputeInput): Promise<RecomputeOutcome> {
   const { paperId, legacyId, sections } = input
   const db = ctx.db
+  // Race A (an admin edit mid-recompute): the Studio takes this same row lock (`BuilderRepository.lockPaper`) before every edit, so an edit waits for this
+  // batch transaction and the ownership read below is the state that is written; an edit that committed first shows as a foreign audit row. Taken before any read.
+  const locked = await db.query(`SELECT id FROM papers WHERE id = $1::bigint AND kind = 'pilihan' FOR UPDATE`, [paperId])
+  if ((locked.rowCount ?? 0) === 0) return 'unchanged'
   const head = await db.query<{ status: string; version: number; stamped: boolean; admin_sections: number; foreign_events: number; attempts: number }>(
     `SELECT p.status, p.version, (p.updated_at = p.published_at) AS stamped,
             (SELECT count(*) FROM paper_sections s WHERE s.paper_id = p.id AND s.admin_created)::int AS admin_sections,
@@ -207,62 +239,106 @@ export async function recomputePaper(ctx: BatchContext, input: RecomputeInput): 
 /** Safety of a change: always no split group for a published paper; a repoint needs no attempt on the paper; what is added or repointed must be eligible. */
 async function mayApply(ctx: BatchContext, attempts: number, published: boolean, input: RecomputeInput, merged: readonly (readonly MergedEntry[])[]): Promise<boolean> {
   const entries = merged.flat()
-  if (entries.some((e) => e.kind === 'repointed') && attempts > 0) {
+  if (!published) return true
+  // G-2: a published paper changes (add or repoint) only with 0 exam attempts: V2 pupil results never change. Listed in the report.
+  if (attempts > 0) {
     input.count('papers.recompute_skipped.has_attempts')
+    input.report('papers.recompute_skipped_attempts', `paper:${input.paperId}`)
     return false
   }
-  if (!published) return true
+  // Race B (an attempt starting mid-write): the attempts table is locked against inserts until this transaction ends, then the count is read again.
+  await ctx.db.query('LOCK TABLE exam_attempts IN SHARE ROW EXCLUSIVE MODE')
+  const again = await ctx.db.query<{ n: number }>(`SELECT count(*)::int AS n FROM exam_attempts WHERE paper_id = $1::bigint`, [input.paperId])
+  if ((again.rows[0]?.n ?? 0) > 0) {
+    input.count('papers.recompute_skipped.has_attempts')
+    input.report('papers.recompute_skipped_attempts', `paper:${input.paperId}`)
+    return false
+  }
   if (input.split) {
     input.count('papers.recompute_skipped.group_split')
     return false
   }
+  return placeable(ctx, input, entries)
+}
+
+/**
+ * The shared rule in mode 'fixedSet' (KP-14/KP-15): a V2-published paper is a set a person already chose, so nothing is refused; a held or
+ * unresolved-picture question is placed and shown with a placeholder. The refusal branch stays for a mode that would refuse.
+ */
+async function placeable(ctx: BatchContext, input: RecomputeInput, entries: readonly MergedEntry[]): Promise<boolean> {
   const touched = [...new Set(entries.filter((e) => e.kind !== 'kept').map((e) => e.question_id))]
-  const ok = await servableQuestionIds(ctx.db, touched)
-  if (ok.size !== touched.length) {
+  const out = await placementOutcome(ctx.db, touched)
+  if (out.refused.length > 0) {
     input.count('papers.recompute_skipped.unservable')
     return false
   }
+  if (out.placeholder.length > 0) input.count('papers.recompute_placeholder', out.placeholder.length)
   return true
 }
 
-/** Rewrites the placements of every section with the merged list (same section rows). A kept placement keeps its pin, label and marks. */
+/**
+ * Writes the merged placements of the sections that CHANGED (other sections keep their rows and V2 figures). No DELETE: a repoint is an UPDATE of
+ * `question_id` on the same placement row, the positions are shifted out of the way and set to the final order (the unique index on
+ * (section, position) is checked row by row), and the added placements are INSERTed. A kept placement keeps its pin, label and marks.
+ */
 async function writeMerged(ctx: BatchContext, input: RecomputeInput, current: readonly CurrentSection[], merged: readonly (readonly MergedEntry[])[], published: boolean): Promise<void> {
   const db = ctx.db
   const fresh = published
     ? (await db.query<{ id: string; live: number }>(`SELECT id::text AS id, live_version_no AS live FROM questions WHERE id = ANY($1::bigint[])`, [merged.flat().filter((e) => e.kind !== 'kept').map((e) => e.question_id)])).rows
     : []
   const liveOf = new Map(fresh.map((r) => [r.id, r.live]))
-  const rows = merged.flatMap((m, i) =>
-    m.map((e, j) => {
-      const base = { section_id: (current[i] as CurrentSection).id, question_id: e.question_id, position: j + 1 }
-      if (e.kind === 'kept') {
-        const c = e.current as CurrentPlacement
-        return { ...base, pinned_version_no: c.pinned_version_no, number_label: c.number_label, marks_override: c.marks_override }
-      }
-      const p = e.plan as PlacementPlan
-      return {
-        ...base,
-        // A draft is pinned at 1 as at load; a published paper's new placement is pinned at the live version with its frozen marks.
-        pinned_version_no: published ? (liveOf.get(e.question_id) ?? 1) : 1,
-        number_label: p.number_label ?? e.current?.number_label ?? null,
-        marks_override: published ? (p.marks_override ?? input.marksOf(e.question_id)) : (e.current?.marks_override ?? p.marks_override),
-      }
-    }),
-  )
-  for (const m of merged) m.forEach((e, j) => { if (e.kind === 'repointed') input.report('papers.repointed', `paper:${input.paperId}|position:${j + 1}|old:${e.from}|new:${e.question_id}`) })
-  await db.query(`DELETE FROM paper_placements WHERE paper_section_id = ANY($1::bigint[])`, [current.map((s) => s.id)])
-  if (rows.length > 0) {
-    await db.query(
-      `INSERT INTO paper_placements (paper_section_id, question_id, pinned_version_no, position, number_label, marks_override)
-       SELECT x.section_id, x.question_id, x.pinned_version_no, x.position, x.number_label, x.marks_override
-       FROM jsonb_to_recordset($1::jsonb) AS x(section_id bigint, question_id bigint, pinned_version_no int, position smallint, number_label text, marks_override smallint)`,
-      [toJson(rows)],
+  for (const [i, m] of merged.entries()) {
+    if (!m.some((e) => e.kind !== 'kept')) continue
+    const section = current[i] as CurrentSection
+    const planSection = input.sections[i] as SectionPlan
+    const marksOfEntry = (e: MergedEntry): number => {
+      if (e.kind === 'kept') return (e.current as CurrentPlacement).marks_override ?? input.marksOf(e.question_id)
+      return published ? ((e.plan as PlacementPlan).marks_override ?? input.marksOf(e.question_id)) : (e.current?.marks_override ?? (e.plan as PlacementPlan).marks_override ?? input.marksOf(e.question_id))
+    }
+    for (const [j, e] of m.entries()) {
+      if (e.kind !== 'repointed') continue
+      input.report('papers.repointed', `paper:${input.paperId}|position:${j + 1}|old:${e.from}|new:${e.question_id}`)
+      await db.query(
+        `UPDATE paper_placements SET question_id = $3::bigint,
+                pinned_version_no = CASE WHEN $4::boolean THEN $5::int ELSE pinned_version_no END,
+                marks_override = CASE WHEN $4::boolean THEN $6::smallint ELSE marks_override END
+          WHERE paper_section_id = $1::bigint AND question_id = $2::bigint`,
+        [section.id, e.from, e.question_id, published, liveOf.get(e.question_id) ?? 1, marksOfEntry(e)],
+      )
+    }
+    const existing = m.flatMap((e, j) => (e.kind === 'added' ? [] : [{ question_id: e.question_id, position: j + 1 }]))
+    await db.query(`UPDATE paper_placements SET position = position + 1000 WHERE paper_section_id = $1::bigint`, [section.id])
+    if (existing.length > 0) {
+      await db.query(
+        `UPDATE paper_placements p SET position = x.position
+           FROM jsonb_to_recordset($2::jsonb) AS x(question_id bigint, position smallint) WHERE p.paper_section_id = $1::bigint AND p.question_id = x.question_id`,
+        [section.id, toJson(existing)],
+      )
+    }
+    const added = m.flatMap((e, j) =>
+      e.kind !== 'added'
+        ? []
+        : [
+            {
+              section_id: section.id,
+              question_id: e.question_id,
+              // A draft is pinned at 1 as at load; a published paper's new placement is pinned at the live version with its frozen marks.
+              pinned_version_no: published ? (liveOf.get(e.question_id) ?? 1) : 1,
+              position: j + 1,
+              number_label: (e.plan as PlacementPlan).number_label,
+              marks_override: published ? marksOfEntry(e) : (e.plan as PlacementPlan).marks_override,
+            },
+          ],
     )
-  }
-  const marksOfRow = (q: string, r: { marks_override: number | null } | undefined): number => r?.marks_override ?? input.marksOf(q)
-  for (const [i, s] of input.sections.entries()) {
-    const sectionRows = rows.filter((r) => r.section_id === (current[i] as CurrentSection).id)
-    const f = sectionFigures({ mark_budget: s.mark_budget, rule_type: s.rule_type, rule_n: s.rule_n, placements: sectionRows }, sectionRows.reduce((sum, r) => sum + marksOfRow(r.question_id, r), 0))
-    await db.query(`UPDATE paper_sections SET question_count = $2, mark_budget = $3 WHERE id = $1::bigint`, [(current[i] as CurrentSection).id, f.question_count, f.mark_budget])
+    if (added.length > 0) {
+      await db.query(
+        `INSERT INTO paper_placements (paper_section_id, question_id, pinned_version_no, position, number_label, marks_override)
+         SELECT x.section_id, x.question_id, x.pinned_version_no, x.position, x.number_label, x.marks_override
+         FROM jsonb_to_recordset($1::jsonb) AS x(section_id bigint, question_id bigint, pinned_version_no int, position smallint, number_label text, marks_override smallint)`,
+        [toJson(added)],
+      )
+    }
+    const f = sectionFigures({ mark_budget: planSection.mark_budget, rule_type: planSection.rule_type, rule_n: planSection.rule_n, placements: m }, m.reduce((sum, e) => sum + marksOfEntry(e), 0))
+    await db.query(`UPDATE paper_sections SET question_count = $2, mark_budget = $3 WHERE id = $1::bigint`, [section.id, f.question_count, f.mark_budget])
   }
 }

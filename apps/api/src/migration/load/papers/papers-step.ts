@@ -21,7 +21,7 @@ import { text } from '../../transform/common'
 import { rejectRow } from '../helpers'
 import type { QuestionsContext } from '../questions/context'
 import { childrenOf, lookupSlugs, readArchiveById, type ArchiveRow } from './archive-source'
-import { insertSections, recomputePaper } from './papers-recompute'
+import { completeGroups, insertSections, recomputePaper } from './papers-recompute'
 import { inferKertas, instructionsOf, intOf, referenceSheetsOf, ruleTypeOf, type KertasEvidence } from './plan'
 
 export interface PlacementPlan {
@@ -168,6 +168,17 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
       }
       const groupIds = [...new Set([...facts.values()].flatMap((f) => (f.group_id === null ? [] : [f.group_id])))]
       const groupFacts: GroupFacts = await readGroupFacts(ctx, groupIds)
+      // The members of those groups that no V2 placement names (a recompute adds them to an existing paper): their marks are needed too.
+      const unseen = [...groupFacts.members.values()].flat().filter((m) => !facts.has(m))
+      if (unseen.length > 0) {
+        const more = await ctx.db.query<{ id: string; group_id: string | null; subject_id: string | null; marks: number }>(
+          `SELECT q.id::text AS id, q.group_id::text AS group_id, v.subject_id::text AS subject_id,
+                  coalesce((SELECT sum(p.marks) FROM question_parts p WHERE p.question_version_id = v.id AND p.marks IS NOT NULL), 0)::int AS marks
+             FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE q.id = ANY($1::bigint[])`,
+          [unseen],
+        )
+        for (const r of more.rows) facts.set(r.id, r)
+      }
       const blueprintHeads = new Map<string, number | null>()
       const ref = (kertasRef ??= await readKertasReference(c, ctx))
       // Leaf answer modes of every V2 question of this page (parts with children are not leaves).
@@ -251,7 +262,9 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
           }
         }
         if (dropped > 0) c.notes.count('papers.placement_dropped', dropped)
-        const grouped = normaliseGroups(sections, groupFacts)
+        // An EXISTING paper that places only some members of a rajah group is completed (the PO rule: every member shows the rajah, a group is never split;
+        // V2's defect is repaired, not copied): the missing members are added, adjacent, in group order. A new paper keeps the load-time hold.
+        const grouped = normaliseGroups(existingId === null ? sections : completeGroups(sections, groupFacts), groupFacts)
         const hold: string[] = []
         if (grouped.split) {
           hold.push('group_split')
