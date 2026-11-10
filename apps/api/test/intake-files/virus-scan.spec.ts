@@ -63,10 +63,16 @@ async function authOf(t: IntakeTestApp, email: string, role: 'admin' | 'teacher'
 
 const infectedPdf = (seed: number): Buffer => Buffer.concat([textPdf(1, seed), eicar()])
 
+interface Counts {
+  files: number
+  intakeFiles: number
+  jobs: number
+}
+const counts = async (t: IntakeTestApp): Promise<Counts> => ({ files: await countRows(t.db, 'files'), intakeFiles: await countRows(t.db, 'intake_files'), jobs: await countRows(t.db, 'jobs') })
+/** Row counts at the start of the current test (earlier tests of the same app stored files); a refused upload must leave them unchanged. */
+let base: Counts = { files: 0, intakeFiles: 0, jobs: 0 }
 async function nothingStored(t: IntakeTestApp): Promise<void> {
-  expect(await countRows(t.db, 'files')).toBe(0)
-  expect(await countRows(t.db, 'intake_files')).toBe(0)
-  expect(await countRows(t.db, 'jobs')).toBe(0)
+  expect(await counts(t)).toEqual(base)
 }
 
 describe('intake upload virus scan with a configured scanner', () => {
@@ -78,7 +84,7 @@ describe('intake upload virus scan with a configured scanner', () => {
 
   beforeAll(async () => {
     await clamd.start()
-    t = await bootIntakeApp({ CLAMAV_HOST: '127.0.0.1', CLAMAV_PORT: String(clamd.port), CLAMAV_TIMEOUT_MS: '1000' }, undefined, undefined, 'real')
+    t = await bootIntakeApp({ CLAMAV_HOST: '127.0.0.1', CLAMAV_PORT: String(clamd.port), CLAMAV_TIMEOUT_MS: '1000', INTAKE_MAX_ACTIVE_BATCHES: '100' }, undefined, undefined, 'real')
     admin = await loginAs(t, 'admin@demo.test')
     teacher = await loginAs(t, 'guru@demo.test')
     teacherAuth = await authOf(t, 'guru@demo.test', 'teacher')
@@ -90,6 +96,7 @@ describe('intake upload virus scan with a configured scanner', () => {
   beforeEach(async () => {
     clamd.mode = 'scan'
     clamd.scans = 0
+    base = await counts(t)
     await t.db.query(`delete from audit_events where action in ('intake.file_infected', 'intake.file_unscannable')`)
   })
 
@@ -235,7 +242,8 @@ describe('intake upload virus scan: required but no scanner configured (INTAKE_T
   let teacher: LoggedIn
 
   beforeAll(async () => {
-    t = await bootIntakeApp({ CLAMAV_HOST: undefined, INTAKE_TEACHER_ENABLED: 'true' }, undefined, undefined, 'real')
+    base = { files: 0, intakeFiles: 0, jobs: 0 }
+    t = await bootIntakeApp({ CLAMAV_HOST: undefined, INTAKE_TEACHER_ENABLED: 'true', INTAKE_MAX_ACTIVE_BATCHES: '100' }, undefined, undefined, 'real')
     admin = await loginAs(t, 'admin@demo.test')
     teacher = await loginAs(t, 'guru@demo.test')
   }, 120_000)
