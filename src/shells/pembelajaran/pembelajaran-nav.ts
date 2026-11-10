@@ -23,6 +23,9 @@ import type { Role } from '@/stores/session-types'
 /** Touch target of the Log Keluar row in the account dropdown and the Lagi panel (AC-MUR-A5-4: at least 44 px). */
 export const LOGOUT_ROW_MIN_HEIGHT_CLASS = 'min-h-11'
 
+/** The "Tetapan Peribadi" page, listed once in the "Lagi" panel (in its Akaun block). */
+const SETTINGS_PATH = '/tetapan'
+
 /** Link wrapper of a header reward pill (FR-MUR-SH-11): at least 44 px high, the pill look is unchanged. */
 export const REWARD_LINK_CLASS = 'inline-flex min-h-11 items-center rounded-full'
 
@@ -194,7 +197,12 @@ export function sidebarEntries(role: Role | null, canOpen?: CanOpen): NavEntry[]
 
 /** Full menu for the "Lagi" panel (< lg). */
 export function drawerEntries(role: Role | null, canOpen?: CanOpen): NavEntry[] {
-  return openable(navFor(role, 'drawer'), canOpen)
+  // "Tetapan Peribadi" is in the Akaun block of the panel (`accountItems`): with the prototype scope off the
+  // menu data still lists it (Pusat AI block), so it would show twice. V2 lists it once (pelajar/layout.blade.php:271).
+  const entries = navFor(role, 'drawer').filter(
+    (e) => !(e.kind === 'item' && e.to === SETTINGS_PATH),
+  )
+  return openable(entries, canOpen)
 }
 
 /** Account links (Profil Saya, Tetapan, Panduan) for the "Lagi" panel; the logout is separate. */

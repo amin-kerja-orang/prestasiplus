@@ -75,6 +75,17 @@ describe('Pembelajaran menus come from the scoped nav data', () => {
     expect(drawerEntries('teacher').length).toBeGreaterThan(0)
     expect(accountItems('student').some((i) => i.to === '/logout')).toBe(false)
   })
+
+  it('"Tetapan Peribadi" is listed once in the Lagi panel (Akaun block), with the scope on or off', () => {
+    for (const scope of ['on', 'off']) {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', scope)
+      for (const role of ['student', 'teacher'] as const) {
+        const inMenu = flatItems(drawerEntries(role)).filter((i) => i.to === '/tetapan')
+        expect(inMenu, `${role} menu, scope ${scope}`).toHaveLength(0)
+        expect(accountItems(role).filter((i) => i.to === '/tetapan'), `${role} account`).toHaveLength(1)
+      }
+    }
+  })
 })
 
 describe('useFriend', () => {
