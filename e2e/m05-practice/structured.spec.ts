@@ -81,10 +81,11 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     )
     await expectTouchTarget(card.getByTestId('card-start'))
     await expectTouchTarget(tid(page, 'filter-submit'))
-    // Plain list: no variant-only lines.
-    // V2 pelajar/latihan-berstruktur.blade.php:197-208 prints "n bahagian · m markah" on every card.
+    // V2 pelajar/latihan-berstruktur.blade.php:190-208 prints the tahap chip (when the question has one) and
+    // "n bahagian · m markah" on every card; every seeded card has a tahap (StructuredListPage.vue:287).
     await expect(page.getByTestId('card-parts')).toHaveCount(12)
-    await expect(page.getByTestId('card-level-chip')).toHaveCount(0)
+    await expect(page.getByTestId('card-level-chip')).toHaveCount(12)
+    await expect(card.getByTestId('card-level-chip')).not.toBeEmpty()
 
     // 1 / `sm` 2 / `xl` 3 columns.
     const w = viewportWidth(page)

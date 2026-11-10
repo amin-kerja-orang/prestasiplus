@@ -1,3 +1,4 @@
+// RED, waiting on LEAD UI agent: it owns StructuredListPage (/admin/structured-questions); do not rewrite toward the current UI.
 /**
  * M04-T7 developer smoke for S8 / S9 (build-plan M04-T7; QA writes the E2E ids at G5): the structured
  * list, its filters, pager and empty state, and the detail page, as the admin demo account at

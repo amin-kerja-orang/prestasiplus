@@ -69,8 +69,8 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
     await expectTabTitle(page, 'Latih Tubi | PRESTASIPLUS')
     await expect(shellTitle(page)).toHaveText('Latih Tubi SPM')
     await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Pilih subjek untuk mula berlatih')
-    await expect(tid(page, 'practice-title')).toHaveText('Latih Tubi 🎯')
-    await expect(page.getByText('Pilih subjek dan mula berlatih!')).toBeVisible()
+    // DsPage showTitle="auto" (PracticeListPage.vue): the shell owns the title; the page body is the list page.
+    await expect(tid(page, 'practice-list-page')).toBeVisible()
 
     const banner = tid(page, 'chapter-banner')
     await expect(banner).toHaveAttribute('href', '/practice/chapter')
@@ -86,9 +86,10 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
     expect(hrefs[2]).toBe('/practice/MATH')
     expect(new Set(hrefs).size).toBe(31)
 
-    // Counts use ms-MY separators (Matematik 13,872) and the badge shows on the 7 core subjects.
+    // Counts use ms-MY separators and the badge shows on the 7 core subjects. MATH = T4 1,511 + T5 1,090 = 2,601 (D72):
+    // m05 mock/handlers/common.ts:71-73 practiceLevelCount = M04 questions.practiceWhere count over datasets/questions-spec.ts.
     await expect(tid(page, 'subject-card-MATH').getByTestId('subject-count')).toHaveText(
-      '13,872 soalan',
+      '2,601 soalan',
     )
     await expect(page.getByTestId('subject-core')).toHaveCount(7)
     // Every subject icon tile shows a glyph (DV-M05-02).
@@ -115,7 +116,7 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
     await tid(page, 'subject-card-SCI').getByTestId('subject-name').click()
     await expect(page).toHaveURL(/\/practice\/SCI$/)
     await page.goBack()
-    await expect(tid(page, 'practice-title')).toBeVisible()
+    await expect(tid(page, 'practice-list-page')).toBeVisible()
     await tid(page, 'subject-card-SCI').getByTestId('subject-start').click()
     await expect(page).toHaveURL(/\/practice\/SCI$/)
     await expect(tid(page, 'config-name')).toBeVisible()
@@ -133,7 +134,7 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
 
     for (const url of ['/practice?subject=XYZ', '/practice?level=D3', '/practice?topic_id=99999']) {
       await gotoApp(url)
-      await expect(tid(page, 'practice-title')).toBeVisible()
+      await expect(tid(page, 'practice-list-page')).toBeVisible()
       await expect(page.locator('[data-testid^=subject-card-]')).toHaveCount(31)
       expect(new URL(page.url()).pathname).toBe('/practice')
     }
@@ -148,7 +149,7 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
 test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('Matematik opens with every default, the levels D1–D4 and the tips', async ({
+  test('Matematik opens with every default, the levels T4 and T5 (D72) and the tips', async ({
     page,
     loginAs,
     gotoApp,
@@ -164,11 +165,15 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
     await expect(tid(page, 'config-total')).toContainText('soalan tersedia')
 
     const levels = page.locator('[data-testid=config-levels] button')
-    await expect(levels).toHaveCount(5)
+    // D72 / D101: Darjah is hidden, so MATH offers "Semua" + Tingkatan 4 (id 10) + Tingkatan 5 (id 11).
+    // Counts = m05 mock/handlers/common.ts:71-73 over the M04 questions dataset: T4 1,511, T5 1,090, total 2,601.
+    await expect(levels).toHaveCount(3)
     await expect(tid(page, 'level-all')).toHaveAttribute('data-selected', 'true')
-    for (const [i, code] of ['D1', 'D2', 'D3', 'D4'].entries()) {
-      await expect(levels.nth(i + 1)).toContainText(code)
-    }
+    await expect(tid(page, 'level-all')).toContainText('2,601 soalan')
+    await expect(tid(page, 'level-10')).toContainText('Tingkatan 4')
+    await expect(tid(page, 'level-10')).toContainText('1,511 soalan')
+    await expect(tid(page, 'level-11')).toContainText('Tingkatan 5')
+    await expect(tid(page, 'level-11')).toContainText('1,090 soalan')
     await expect(page.locator('[data-testid=config-counts] button')).toHaveText([
       /5\s*soalan/,
       /10\s*soalan/,
@@ -181,20 +186,23 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('levels follow the subject: SK offers only D4, ADDMATH none', async ({
+  test('levels follow the subject: SK offers T4 and T5 with 0 questions, ADDMATH offers both with counts', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(PELAJARMAJU)
     await gotoApp('/practice/SK')
-    await expect(page.locator('[data-testid=config-levels] button')).toHaveCount(2)
-    await expect(tid(page, 'level-4')).toContainText('D4')
-    await expect(tid(page, 'level-4')).toContainText('0 soalan')
-    await gotoApp('/practice/ADDMATH')
-    await expect(page.locator('[data-testid=config-levels] button')).toHaveCount(1)
+    // SK has no practice-drawable questions (dataset gives 0 at T4/T5; handlers/common.ts:71-73).
+    await expect(page.locator('[data-testid=config-levels] button')).toHaveCount(3)
+    await expect(tid(page, 'level-10')).toContainText('Tingkatan 4')
+    await expect(tid(page, 'level-10')).toContainText('0 soalan')
+    await expect(tid(page, 'level-11')).toContainText('0 soalan')
     await expect(tid(page, 'level-all')).toContainText('0 soalan')
     await expect(tid(page, 'config-insufficient')).toBeVisible()
+    await gotoApp('/practice/ADDMATH')
+    await expect(page.locator('[data-testid=config-levels] button')).toHaveCount(3)
+    await expect(tid(page, 'level-all')).not.toContainText('0 soalan')
   })
 
   test('selections restyle the buttons and update the summary and every count', async ({
@@ -206,12 +214,12 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
     await gotoApp('/practice/MATH')
     const subjectTotal = (await tid(page, 'summary-available').innerText()).trim()
 
-    await tid(page, 'level-2').click()
-    await expect(tid(page, 'level-2')).toHaveAttribute('data-selected', 'true')
-    await expect(tid(page, 'level-2')).toHaveClass(/bg-indigo-600/)
-    await expect(tid(page, 'level-2')).toHaveClass(/ring-indigo-300/)
+    await tid(page, 'level-10').click()
+    await expect(tid(page, 'level-10')).toHaveAttribute('data-selected', 'true')
+    await expect(tid(page, 'level-10')).toHaveAttribute('aria-pressed', 'true')
+    await expect(tid(page, 'level-10')).toHaveClass(/bg-primary/)
     await expect(tid(page, 'level-all')).toHaveAttribute('data-selected', 'false')
-    await expect(tid(page, 'summary-level')).toHaveText('Darjah 2')
+    await expect(tid(page, 'summary-level')).toHaveText('Tingkatan 4')
     const level2 = (await tid(page, 'summary-available').innerText()).trim()
     expect(level2).not.toBe(subjectTotal)
     // "Semua" shows the level total; the five cells sum to it.
@@ -228,7 +236,8 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
 
     await tid(page, 'difficulty-3').click()
     await tid(page, 'count-20').click()
-    await expect(tid(page, 'difficulty-3')).toHaveClass(/bg-yellow-500/)
+    await expect(tid(page, 'difficulty-3')).toHaveAttribute('aria-pressed', 'true')
+    await expect(tid(page, 'difficulty-3')).toHaveClass(/bg-primary/)
     await expect(tid(page, 'summary-difficulty')).toHaveText('Sederhana')
     await expect(tid(page, 'summary-count')).toHaveText('20')
     const cell = (
@@ -257,12 +266,12 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
     await expect(tid(page, 'config-trial')).toHaveCount(0)
     await expectTouchTarget(tid(page, 'config-start'))
 
-    await tid(page, 'level-2').click()
+    await tid(page, 'level-10').click()
     await tid(page, 'difficulty-3').click()
     await tid(page, 'count-20').click()
     await expect(tid(page, 'config-start')).toHaveAttribute(
       'href',
-      '/practice/MATH/quiz?level=2&difficulty=3&count=20',
+      '/practice/MATH/quiz?level=10&difficulty=3&count=20',
     )
 
     // "Sgt Sukar" has no questions: amber box, grey button, a click stays on the page.
@@ -299,13 +308,13 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(PELAJARMAJU)
     await gotoApp('/practice/MATH')
-    await tid(page, 'level-1').click()
+    await tid(page, 'level-10').click()
     await expect(tid(page, 'config-subjective')).toHaveCount(0)
 
-    await mock.hook('setSubjectiveCounts', 'MATH', { '1': 4 })
+    await mock.hook('setSubjectiveCounts', 'MATH', { '10': 4 })
     await gotoApp('/practice/MATH')
     await expect(tid(page, 'config-subjective')).toHaveCount(0)
-    await tid(page, 'level-1').click()
+    await tid(page, 'level-10').click()
     await expect(tid(page, 'config-subjective')).toContainText('Latihan Subjektif (4 soalan)')
     await expect(tid(page, 'config-subjective')).toHaveAttribute('href', '/practice/MATH/subjektif')
     await tid(page, 'level-all').click()
@@ -332,7 +341,7 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
       await loginAs(PELAJARMAJU)
       await gotoApp('/practice/MATH/quiz?level=10&count=5')
       await expect(tid(page, 'quiz-title')).toHaveText('Matematik')
-      await expectTabTitle(page, 'Matematik - Latihan | PRESTASIPLUS')
+      await expectTabTitle(page, 'Kuiz Matematik | PRESTASIPLUS')
       await expect(shellTitle(page)).toHaveText('Latih Tubi')
 
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
@@ -474,13 +483,13 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
     mock,
   }) => {
     await loginAs(PELAJARMAJU)
-    await gotoApp('/practice/MATH/quiz?level=2&difficulty=3&count=15')
+    await gotoApp('/practice/MATH/quiz?level=10&difficulty=3&count=15')
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 15')
     const last = await mock.lastRequest('/api/practice/sessions')
     expect(last?.body).toMatchObject({
       mode: 'random',
       subjectCode: 'MATH',
-      levelId: 2,
+      levelId: 10,
       difficulty: 3,
       count: 15,
     })
@@ -502,7 +511,7 @@ test.describe('M05 S2 / S3 / Q1 responsive sweep', { tag: [moduleTag(5)] }, () =
       await gotoApp(url)
       await expect(
         page.locator(
-          '[data-testid=practice-title], [data-testid=config-name], [data-testid=quiz-title]',
+          '[data-testid=practice-list-page], [data-testid=config-name], [data-testid=quiz-title]',
         ),
       ).toBeVisible()
       await expectNoHorizontalScroll(page)
@@ -529,7 +538,7 @@ test.describe('M05 S2 / S3 / Q1 responsive sweep', { tag: [moduleTag(5)] }, () =
 
     // Level, difficulty and count buttons are touch targets at 375.
     if (isMobileWidth(page)) {
-      for (const id of ['level-1', 'difficulty-3', 'count-5', 'config-start']) {
+      for (const id of ['level-10', 'difficulty-3', 'count-5', 'config-start']) {
         await expectTouchTarget(tid(page, id))
       }
     }

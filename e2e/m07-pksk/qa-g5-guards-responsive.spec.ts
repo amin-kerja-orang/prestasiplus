@@ -74,7 +74,9 @@ test.describe('QA-G5 M07 access guards', MODULE, () => {
         if (path === ADMIN_ROUTES[0]) await actAs(page, mock, gotoApp, who, path)
         else await visit(page, gotoApp, path)
         const url = new URL(page.url())
-        expect(url.pathname, `${who} on ${path} must be redirected away`).not.toMatch(/^\/admin\/pksk/)
+        // A forbidden role gets the in-place 403 page: the URL stays and the admin screen never renders.
+        expect(url.pathname, `${who} on ${path} stays on the URL`).toBe(path)
+        await expect(page.locator('[data-ds=error-page][data-code="403"]'), `${who} ${path}`).toBeVisible()
         await expect(tid(page, 'pksk-questions-page'), `${who} ${path}`).toHaveCount(0)
         await expect(tid(page, 'pksk-access-page'), `${who} ${path}`).toHaveCount(0)
         await expect(tid(page, 'pksk-question-form'), `${who} ${path}`).toHaveCount(0)
@@ -82,7 +84,7 @@ test.describe('QA-G5 M07 access guards', MODULE, () => {
     })
   }
 
-  test('AC-22.2 a student redirected from an admin PKSK screen sends no admin API request', async ({
+  test('AC-22.2 a student on an admin PKSK screen (in-place 403) sends no admin API request', async ({
     page,
     gotoApp,
     mock,
@@ -95,7 +97,8 @@ test.describe('QA-G5 M07 access guards', MODULE, () => {
     await expect(tid(page, 'pksk-hub')).toBeVisible()
     for (const path of ADMIN_ROUTES) {
       await visit(page, gotoApp, path)
-      await expect(page, path).not.toHaveURL(/\/admin\/pksk/)
+      await expect(page.locator('[data-ds=error-page][data-code="403"]'), path).toBeVisible()
+      await expect(tid(page, 'pksk-questions-page'), path).toHaveCount(0)
     }
     expect(await mock.requests('/api/admin/pksk*')).toHaveLength(0)
   })

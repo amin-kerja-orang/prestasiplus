@@ -41,10 +41,14 @@ test.describe('QA G5 S4 edit form', { tag: [moduleTag(4), '@qa'] }, () => {
 
   // E2E-M04-27 / E2E-M04-29 (legacy S4 form: required options, Batal, image remove flags) removed: the form was
   // replaced by the Studio editor (no q-option-*, q-text, form-submit, q-image test ids remain in src).
-  test('E2E-M04-27 /admin/questions/:id/edit lands on the Studio sunting route (FR-ADM-Q04.7)', async ({ page, loginAs, gotoApp }) => {
+  // routes/questions-form.ts:24-29: there is no redirect for /:id/edit in any mode (only /create redirects to Studio, :19-22);
+  // the edit route keeps the legacy S4 page (QuestionEditPage.vue) "until the S2-T10 essay form exists", so the URL stays.
+  test('E2E-M04-27 /admin/questions/:id/edit stays on the S4 edit page (no Studio redirect, routes/questions-form.ts:24-29)', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions/570022/edit')
-    await expect(page).toHaveURL(/\/admin\/studio\/questions\/570022\/sunting$/)
+    await expect(page).toHaveURL(/\/admin\/questions\/570022\/edit$/)
+    await expect(byId(page, 'pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Edit Soalan')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText('Kemaskini maklumat soalan #570022')
   })
 })
 

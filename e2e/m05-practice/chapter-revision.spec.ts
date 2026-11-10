@@ -291,7 +291,7 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/91\/quiz\?count=5$/)
       await expect(tid(page, 'quiz-title')).toHaveText('Bab 1: Fungsi dan Persamaan Kuadratik')
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
-      await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
+      await expectTabTitle(page, 'Kuiz Matematik | PRESTASIPLUS')
       await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
       await expect(tid(page, 'chip-revision')).toHaveCount(0)
       await expect(tid(page, 'pill-wrong-times')).toHaveCount(0)

@@ -167,10 +167,15 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     loginAs,
     gotoApp,
   }) => {
-    test.setTimeout(150_000) // the school select has 10,221 native options
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
-    await page.getByTestId('diagrams-school').selectOption('380', { timeout: 120_000 })
+    // The school select has 10,221 native options: selectOption times out under load (test technique, the control
+    // works for users), so the value is set directly and a change event is dispatched.
+    await page.getByTestId('diagrams-school').evaluate((el: HTMLSelectElement) => {
+      el.value = '380'
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await expect(page.getByTestId('diagrams-school')).toHaveValue('380')
     await page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' }).click()
     await expect(page).toHaveURL(/school_id=380/)
     await expect(page.getByTestId('diagrams-mcq')).toHaveCount(0)

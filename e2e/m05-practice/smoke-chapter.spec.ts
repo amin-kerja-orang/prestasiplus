@@ -59,7 +59,10 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
       await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
       await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-subject-name')).toHaveText('Matematik')
-      await expect(tid(page, 'chapter-level-select').locator('option')).toHaveCount(4)
+      // D72: Tingkatan 4 and 5 only. A USelect: the options live in the opened listbox.
+      await tid(page, 'chapter-level-select').click()
+      await expect(page.getByRole('option')).toHaveCount(2)
+      await page.keyboard.press('Escape')
       await expect(tid(page, 'chapter-list').locator('[data-state=locked]')).toHaveCount(0)
       await expect(tid(page, 'chapter-list').locator('[data-state=open]').first()).toBeVisible()
       await expectNoHorizontalScroll(page)
@@ -73,7 +76,7 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
     await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/1\/quiz\?count=5$/)
     await expect(tid(page, 'quiz-title')).toContainText('Bab 1:')
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
-    await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
+    await expectTabTitle(page, 'Kuiz Matematik | PRESTASIPLUS')
     await expectNoHorizontalScroll(page)
   })
 

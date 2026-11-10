@@ -54,7 +54,7 @@ test.describe('QA-G5 L21 Latih Tubi flow', { tag: [moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
   test(
-    'E2E-M05-16/17/21/23 S2 -> S3 (Darjah 1, 5 soalan) -> Q1 -> results -> "Ulang Lagi" -> back to S3',
+    'E2E-M05-16/17/21/23 S2 -> S3 (Tingkatan 4, 5 soalan) -> Q1 -> results -> "Ulang Lagi" -> back to S3',
     provisional('LS-1 / LS-2: the live random quiz and its results were never observed'),
     async ({ page, loginAs, gotoApp }) => {
       await loginAs('pelajarmaju@demo.test')
@@ -63,9 +63,10 @@ test.describe('QA-G5 L21 Latih Tubi flow', { tag: [moduleTag(5)] }, () => {
       const cardCount = num(await tid(page, 'subject-card-MATH').getByTestId('subject-count').innerText())
       await tid(page, 'subject-card-MATH').getByTestId('subject-name').click()
       await expect(page).toHaveURL(/\/practice\/MATH$/)
-      // S2 card = Q-ELIGIBLE (13,872); S3 "Semua Tahap" = Q-PRACTICE (6,538) (AC-36.1).
-      expect(cardCount).toBe(13872)
-      expect(num(await tid(page, 'summary-available').innerText())).toBe(6538)
+      // D72: the S2 card and S3 "Semua Tahap" are the same practice-drawable count (m05 mock/handlers/common.ts:71-83,
+      // subjectView: approvedCount = bankCount = sum of the offered levels): MATH T4 1,511 + T5 1,090 = 2,601 (AC-36.1).
+      expect(cardCount).toBe(2601)
+      expect(num(await tid(page, 'summary-available').innerText())).toBe(2601)
 
       await tid(page, 'level-10').click()
       await tid(page, 'count-5').click()
@@ -131,9 +132,9 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, 'chapter-subject-grid')).toBeVisible()
       await tid(page, 'chapter-subject-name').filter({ hasText: 'Matematik' }).click()
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH(\?level=[^&]+)?$/)
-      await expect(tid(page, 'chapter-stats-1')).toHaveText('0/464 soalan unik · Skor 0% · 464 baki')
-      await tid(page, 'chapter-count-1-5').click()
-      await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/1\/quiz\?count=5$/)
+      await expect(tid(page, 'chapter-stats-91')).toHaveText('0/134 soalan unik · Skor 0% · 134 baki')
+      await tid(page, 'chapter-count-91-5').click()
+      await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/91\/quiz\?count=5$/)
       await expectNoHorizontalScroll(page)
 
       const right = await answerAll(page, 5)
@@ -143,10 +144,10 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
       await expectNoHorizontalScroll(page)
 
       await tid(page, 'result-back').click()
-      await expect(page).toHaveURL(/\/practice\/chapter\/MATH\?level=1$/)
-      await expect(tid(page, 'chapter-stats-1')).toContainText('5/464 soalan unik')
-      // 5 of 464 answered: every chapter stays open (D98).
-      await expect(tid(page, 'chapter-card-1')).toHaveAttribute('data-state', 'open')
+      await expect(page).toHaveURL(/\/practice\/chapter\/MATH\?level=10$/)
+      await expect(tid(page, 'chapter-stats-91')).toContainText('5/134 soalan unik')
+      // 5 of 134 answered: every chapter stays open (D98).
+      await expect(tid(page, 'chapter-card-91')).toHaveAttribute('data-state', 'open')
       await expect(page.locator('[data-testid^=chapter-card-][data-state=locked]')).toHaveCount(0)
 
       // S6: every wrong answer is queued (BR-14); S7 serves them.
@@ -177,9 +178,9 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
     )
     const second = ids[1]!
 
-    await mock.hook('answerChapter', 3, 1, { correctPct: 69 })
+    await mock.hook('answerChapter', 3, 91, { correctPct: 69 })
     await gotoApp('/practice/chapter/MATH')
-    await expect(tid(page, 'chapter-stats-1')).toContainText('464/464 soalan unik')
+    await expect(tid(page, 'chapter-stats-91')).toContainText('134/134 soalan unik')
     await expect(tid(page, `chapter-card-${second}`)).toHaveAttribute('data-state', 'open')
     await expect(tid(page, `chapter-card-${second}`).locator('a')).toHaveCount(4)
     await expect(page.locator('[data-testid^=chapter-card-][data-state=locked]')).toHaveCount(0)
@@ -202,8 +203,11 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
     expect(hrefs).toHaveLength(2)
     for (const [i, href] of hrefs.slice(0, 3).entries()) {
       await gotoApp(href)
-      await expect(page.locator('select option').first()).toBeAttached()
-      const options = await page.locator('select option').allInnerTexts()
+      // The level select is a USelect: read the options from the opened listbox.
+      await tid(page, 'chapter-level-select').click()
+      await expect(page.getByRole('option').first()).toBeVisible()
+      const options = await page.getByRole('option').allInnerTexts()
+      await page.keyboard.press('Escape')
       const sum = options
         .map((o) => Number((o.split('—')[1] ?? '').replace(/[^\d]/g, '')))
         .reduce((a, b) => a + b, 0)
@@ -219,7 +223,7 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
     await loginAs('pelajar2@demo.test')
     await gotoApp('/practice/chapter/ADDMATH')
     await expect(page.getByText('Tiada bab tersedia untuk tahap ini.')).toBeVisible()
-    await expect(page.locator('select')).toHaveCount(0)
+    await expect(tid(page, 'chapter-level-select')).toHaveCount(0)
   })
 })
 
@@ -514,7 +518,7 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs('pelajar@demo.test')
     await open(page, '/practice')
-    await expect(tid(page, 'practice-title')).toBeVisible()
+    await expect(tid(page, 'practice-list-page')).toBeVisible()
     const desktop = isDesktopShell(page)
     if (!desktop) {
       await expect(
@@ -556,10 +560,10 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
     test.skip(!isDesktopShell(page), 'the sidebar exists from 1024 px')
     // AC-35.3 / FN-M05-9.1.6: exactly one active item per page; none on S6 / S7.
     const expected: Array<[string, string, string[]]> = [
-      ['/practice', 'practice-title', ['Latih Tubi']],
+      ['/practice', 'practice-list-page', ['Latih Tubi']],
       ['/practice/MATH', 'config-name', ['Latih Tubi']],
       ['/practice/chapter', 'chapter-subject-grid', ['Soalan by Chapter']],
-      ['/practice/chapter/MATH', 'chapter-card-1', ['Soalan by Chapter']],
+      ['/practice/chapter/MATH', 'chapter-card-91', ['Soalan by Chapter']],
       ['/practice/revision', 'revision-list-page', []],
       ['/latihan-berstruktur', 'structured-h1', ['Soalan Berstruktur']],
       ['/remedial/saya', 'remedial-h1', ['Remedial']],
