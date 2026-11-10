@@ -4,18 +4,18 @@
  * UNVERIFIED COPY (SRS §8), so the tests that assert their text are `@provisional`.
  *
  * Seeds used (SRS §6.9): Matematik = subject 3, Tingkatan 4 = level 10 (10 chapters, 24 topics, 0 subtopics;
- * chapter 91 "Fungsi dan Persamaan Kuadratik" with topics 126 / 380 / 127), Bahasa Melayu = subject 1, Darjah 1
- * = level 1 (chapter 35 with topic 59 "Mendengar dan Memahami" and 2 subtopics), Bahasa Inggeris = subject 2,
- * Tingkatan 3 = level 9 (empty).
+ * chapter 91 "Fungsi dan Persamaan Kuadratik" with topics 126 / 380 / 127), Matematik Tingkatan 1 = level 7
+ * (13 chapters), Bahasa Inggeris = subject 2, Tingkatan 3 = level 9 (empty). The Darjah levels are hidden
+ * (D72) and no Tingkatan topic in curriculum.json has subtopics, so the subtopic tests first create two
+ * subtopics on topic 126 through the inline "Tambah Subtopik" form (SEED_SUBTOPICS).
  */
 
 import type { Page } from '@playwright/test'
 
 import { reloadApp } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
+import { confirmDialog } from './admin-table'
 import {
-  acceptNextDialog,
-  dismissNextDialog,
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
@@ -27,11 +27,50 @@ import {
 
 const ADMIN = 'admin@demo.test'
 const MATH_T4 = '/admin/curriculum?subject_id=3&education_level_id=10'
-const BM_D1 = '/admin/curriculum?subject_id=1&education_level_id=1'
+const MATH_T1 = '/admin/curriculum?subject_id=3&education_level_id=7'
 const TREE_TAB = 'Kurikulum | PRESTASIPLUS'
 
 const chapters = (page: Page) => page.getByTestId('chapter')
 const flash = (page: Page) => page.getByTestId('cmp-flash')
+/** Topic 126 "Topik 1: Fungsi", the first topic of the first chapter of Matematik T4. */
+const firstTopic = (page: Page) => chapters(page).first().getByTestId('topic').first()
+
+const SEED_SUBTOPICS = [
+  {
+    name: 'Mendengar sebutan dan intonasi',
+    nameEn: 'Listening to pronunciation and intonation',
+    objective: 'Mendengar dengan teliti',
+  },
+  {
+    name: 'Mendengar arahan ringkas',
+    nameEn: 'Listening to short instructions',
+    objective: 'Mengikut arahan',
+  },
+] as const
+
+/**
+ * Creates the two seed subtopics on topic 126 through the inline add form, then reloads S1 (topics
+ * collapsed, no flash left) so a test starts from a clean tree with 2 subtopics on topic 126.
+ */
+async function seedSubtopics(page: Page, gotoApp: (path: string) => Promise<void>): Promise<void> {
+  await gotoApp(MATH_T4)
+  for (const [index, seed] of SEED_SUBTOPICS.entries()) {
+    const topic = firstTopic(page)
+    await expect(topic.getByTestId('topic-subtopics')).toHaveCount(0)
+    await topic.getByTestId('topic-toggle').click()
+    await expect(topic.getByTestId('subtopic-row')).toHaveCount(index)
+    await topic.getByTestId('subtopic-add-toggle').click()
+    await topic.getByTestId('subtopic-add-name').fill(seed.name)
+    await topic.getByTestId('subtopic-add-name-en').fill(seed.nameEn)
+    await topic.getByTestId('subtopic-add-objective').fill(seed.objective)
+    await topic.getByTestId('subtopic-add-submit').click()
+    await expect(flash(page)).toContainText('Subtopik berjaya ditambah.')
+    // The tree reloads, collapsed again.
+    await expect(firstTopic(page).getByTestId('topic-subtopics')).toHaveCount(0)
+  }
+  await gotoApp(MATH_T4)
+  await expect(chapters(page)).toHaveCount(10)
+}
 
 /** The computed font size (px) of the smallest visible text node inside `main`. */
 async function smallestTextPx(page: Page): Promise<number> {
@@ -65,7 +104,11 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     await gotoApp('/admin/curriculum')
     await expect(page.getByTestId('curriculum-prompt')).toBeVisible()
     await expectTabTitle(page, TREE_TAB)
-    await expect(page.getByText('Tapis Kurikulum')).toBeVisible()
+    // The v2 filter panel has no card title; it holds the two labelled selects and "Tapis".
+    await expect(page.getByTestId('curriculum-filter')).toBeVisible()
+    await expect(page.getByTestId('curriculum-filter')).toContainText('Subjek')
+    await expect(page.getByTestId('curriculum-filter')).toContainText('Tahap')
+    await expect(page.getByTestId('curriculum-filter-submit')).toHaveText('Tapis')
     await expect(page.getByTestId('curriculum-prompt')).toContainText(
       'Sila pilih subjek dan tahap pendidikan',
     )
@@ -74,7 +117,8 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     await expect(subjects).toHaveCount(32)
     await expect(subjects.first()).toHaveText('-- Pilih Subjek --')
     const levels = page.getByTestId('curriculum-level').locator('option')
-    await expect(levels).toHaveCount(12)
+    // 5 Tingkatan levels + the placeholder (the 6 Darjah levels are hidden, D72).
+    await expect(levels).toHaveCount(6)
     await expect(levels.first()).toHaveText('-- Pilih Tahap --')
     await expect(page.getByTestId('curriculum-stats')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
@@ -138,10 +182,15 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M03-04 subtopic rows of Bahasa Melayu Darjah 1', async ({ page, loginAs, gotoApp }) => {
+  test('E2E-M03-04 subtopic rows of Matematik Tingkatan 4 topic 126 (seeded in the UI)', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    test.slow()
     await loginAs(ADMIN)
-    await gotoApp(BM_D1)
-    const topic = page.getByTestId('topic').filter({ hasText: 'Topik 1: Mendengar dan Memahami' })
+    await seedSubtopics(page, gotoApp)
+    const topic = firstTopic(page)
     await topic.getByTestId('topic-toggle').click()
     await expect(topic.getByTestId('subtopic-row')).toHaveCount(2)
     await expect(topic.getByTestId('subtopic-row').first()).toContainText(
@@ -170,7 +219,7 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     await expect(headings.nth(0)).toHaveText(/^Topik 1: /)
     await expect(headings.nth(1)).toHaveText(/^Topik 2: /)
     await expect(headings.nth(2)).toHaveText(/^Topik 3: /)
-    await gotoApp('/admin/curriculum?subject_id=3&education_level_id=1')
+    await gotoApp(MATH_T1)
     await expect(chapters(page).first()).toBeVisible()
     const numbers = await page.getByTestId('chapter-heading').allInnerTexts()
     const parsed = numbers.map((t) => Number(/^Bab (\d+):/.exec(t)?.[1]))
@@ -226,17 +275,16 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
       await expect(chapter.getByTestId('chapter-delete')).toHaveAttribute('title', 'Padam Bab')
       await expectTouchTarget(chapter.getByTestId('chapter-delete'), isMobileWidth(page) ? 44 : 32)
 
-      const dismissed = dismissNextDialog(page, {
-        type: 'confirm',
-        message: 'Adakah anda pasti mahu padam bab ini?',
-      })
+      // The confirmation is the DS dialog (useConfirm), not a native confirm.
+      const dialog = confirmDialog(page)
       await chapter.getByTestId('chapter-delete').click()
-      await dismissed
+      await expect(dialog.message).toHaveText('Adakah anda pasti mahu padam bab ini?')
+      await dialog.cancel.click()
+      await expect(dialog.message).toBeHidden()
       await expect(chapters(page)).toHaveCount(10)
 
-      const accepted = acceptNextDialog(page, { type: 'confirm' })
       await chapter.getByTestId('chapter-delete').click()
-      await accepted
+      await dialog.ok.click()
       await expect(chapters(page)).toHaveCount(9)
       await expect(page.getByTestId('stat-chapters')).toContainText('9')
       await expect(flash(page)).toContainText('Bab berjaya dipadam.')
@@ -249,36 +297,32 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     'E2E-M03-10 delete a topic and a subtopic',
     provisional('The success flash text is a placeholder (SRS §8)'),
     async ({ page, loginAs, gotoApp }) => {
+      test.slow()
       await loginAs(ADMIN)
-      await gotoApp(BM_D1)
-      const topic = page.getByTestId('topic').filter({ hasText: 'Topik 1: Mendengar dan Memahami' })
+      await seedSubtopics(page, gotoApp)
+      const topic = firstTopic(page)
       await topic.getByTestId('topic-toggle').click()
       await expect(topic.getByTestId('subtopic-row')).toHaveCount(2)
 
-      const dismissed = dismissNextDialog(page, {
-        type: 'confirm',
-        message: 'Adakah anda pasti mahu padam subtopik ini?',
-      })
+      const dialog = confirmDialog(page)
       await topic.getByTestId('subtopic-delete').first().click()
-      await dismissed
+      await expect(dialog.message).toHaveText('Adakah anda pasti mahu padam subtopik ini?')
+      await dialog.cancel.click()
+      await expect(dialog.message).toBeHidden()
       await expect(topic.getByTestId('subtopic-row')).toHaveCount(2)
 
-      const accepted = acceptNextDialog(page, { type: 'confirm' })
       await topic.getByTestId('subtopic-delete').first().click()
-      await accepted
+      await dialog.ok.click()
       await expect(flash(page)).toContainText('Subtopik berjaya dipadam.')
       // The tree reloaded: the topics are collapsed again.
       await topic.getByTestId('topic-toggle').click()
       await expect(topic.getByTestId('subtopic-row')).toHaveCount(1)
 
-      const topicDelete = acceptNextDialog(page, {
-        type: 'confirm',
-        message: 'Adakah anda pasti mahu padam topik ini?',
-      })
       await topic.getByTestId('topic-delete').click()
-      await topicDelete
+      await expect(dialog.message).toHaveText('Adakah anda pasti mahu padam topik ini?')
+      await dialog.ok.click()
       await expect(flash(page)).toContainText('Topik berjaya dipadam.')
-      await expect(page.getByText('Mendengar dan Memahami')).toHaveCount(0)
+      await expect(page.getByText('Topik 1: Fungsi', { exact: true })).toHaveCount(0)
     },
   )
 
@@ -286,9 +330,10 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     'E2E-M03-11 add a subtopic: "Batal" hides but keeps the typed text; empty name blocked',
     provisional('The success flash text is a placeholder (SRS §8)'),
     async ({ page, loginAs, gotoApp }) => {
+      test.slow()
       await loginAs(ADMIN)
-      await gotoApp(BM_D1)
-      const topic = page.getByTestId('topic').filter({ hasText: 'Topik 1: Mendengar dan Memahami' })
+      await seedSubtopics(page, gotoApp)
+      const topic = firstTopic(page)
       await topic.getByTestId('topic-toggle').click()
       const toggle = topic.getByTestId('subtopic-add-toggle')
       await expect(toggle).toHaveText('Tambah Subtopik')
@@ -332,9 +377,10 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     'E2E-M03-12 edit a subtopic inline: one at a time, "Batal" keeps the typed text, "Simpan" saves',
     provisional('The success flash text is a placeholder (SRS §8)'),
     async ({ page, loginAs, gotoApp }) => {
+      test.slow()
       await loginAs(ADMIN)
-      await gotoApp(BM_D1)
-      const topic = page.getByTestId('topic').filter({ hasText: 'Topik 1: Mendengar dan Memahami' })
+      await seedSubtopics(page, gotoApp)
+      const topic = firstTopic(page)
       await topic.getByTestId('topic-toggle').click()
       const rows = topic.getByTestId('subtopic-row')
       const forms = topic.getByTestId('subtopic-edit-form')
@@ -607,7 +653,7 @@ test.describe('M03 S4 create topic', { tag: [TAG.smoke, moduleTag(3)] }, () => {
       await gotoApp(MATH_T4)
       await chapters(page).first().getByTestId('topic-add').click()
       await expect(page.getByTestId('topic-form')).toBeVisible()
-      await expectTabTitle(page, 'Tambah Topik | PRESTASIPLUS')
+      await expectTabTitle(page, 'Tambah Topik Baru | PRESTASIPLUS')
       const context = page.getByTestId('chapter-context')
       await expect(context).toContainText('Bab')
       await expect(context).toContainText('Bab 1: Fungsi dan Persamaan Kuadratik')
@@ -717,9 +763,8 @@ test.describe('M03 S1-S5 responsive sweep', { tag: [moduleTag(3)] }, () => {
       expect(await smallestTextPx(page)).toBeGreaterThanOrEqual(12)
 
       if (screen.ready.endsWith('-form')) {
-        const prefix = screen.ready.startsWith('chapter') ? 'chapter' : 'topic'
-        const cancel = await page.getByTestId(`${prefix}-cancel`).boundingBox()
-        const submit = await page.getByTestId(`${prefix}-submit`).boundingBox()
+        const cancel = await page.getByTestId('form-cancel').boundingBox()
+        const submit = await page.getByTestId('form-submit').boundingBox()
         expect(cancel).not.toBeNull()
         expect(submit).not.toBeNull()
         // One row, right-aligned: same vertical band, the submit button is the right-most.
@@ -727,7 +772,7 @@ test.describe('M03 S1-S5 responsive sweep', { tag: [moduleTag(3)] }, () => {
         expect(cancel!.x).toBeLessThan(submit!.x)
         const width = page.viewportSize()!.width
         expect(submit!.x + submit!.width).toBeLessThanOrEqual(width)
-        await expectTouchTarget(page.getByTestId(`${prefix}-submit`))
+        await expectTouchTarget(page.getByTestId('form-submit'))
       }
     })
   }
