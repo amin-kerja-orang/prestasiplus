@@ -18,6 +18,7 @@ import { alertNative, useApi, useFlash } from '@/composables'
 import {
   type CardField,
   DsDataTable,
+  DsHeading,
   DsPage,
   DsStatRow,
   type StatItem,
@@ -166,6 +167,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
     <template v-else-if="data">
       <DsStatRow :items="kpiItems" density="compact" :cols="4" aria-label="Ringkasan subjek" />
 
+      <DsHeading :level="2" variant="heading">Senarai Subjek</DsHeading>
       <DsDataTable
         :data="tableRows"
         :columns="columns"

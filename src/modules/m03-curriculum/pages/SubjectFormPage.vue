@@ -238,8 +238,9 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             name="code"
             required
             maxlength="20"
-            placeholder="cth: MATH01"
+            placeholder="cth: MATE"
             class="w-full"
+            :ui="{ base: 'uppercase' }"
             data-testid="subject-code"
           />
         </DsFormField>

@@ -17,7 +17,7 @@ import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsPage, DsPageHeader, DsPanel, DsPillNav, DsStack, useConfirm, type PillItem } from '@/ds'
+import { DsEmptyState, DsHeading, DsPage, DsPageHeader, DsPanel, DsPillNav, DsStack, useConfirm, type PillItem } from '@/ds'
 import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 
 import {
@@ -217,6 +217,7 @@ provide(TREE_ACTIONS, actions)
         data-testid="curriculum-filter"
         @submit.prevent="applyFilter"
       >
+        <DsHeading :level="3" variant="subheading" class="px-4 pt-4 md:px-6 md:pt-6">Tapis Kurikulum</DsHeading>
         <div class="flex flex-col gap-4 p-4 md:flex-row md:items-end md:p-6">
           <div class="min-w-0 md:flex-1">
             <DsFormField v-slot="{ id }" native for="cur-subject" label="Subjek">

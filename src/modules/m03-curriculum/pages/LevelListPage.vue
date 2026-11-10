@@ -15,6 +15,7 @@ import { alertNative, useApi, useFlash } from '@/composables'
 import {
   type CardField,
   DsDataTable,
+  DsHeading,
   DsPage,
   DsStatRow,
   type StatItem,
@@ -181,6 +182,7 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
     <template v-else-if="data">
       <DsStatRow :items="kpiItems" density="compact" :cols="4" aria-label="Ringkasan tahap" />
 
+      <DsHeading :level="2" variant="heading">Senarai Tahap Pendidikan</DsHeading>
       <DsDataTable
         :data="tableRows"
         :columns="columns"

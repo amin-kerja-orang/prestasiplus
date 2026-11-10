@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The colour swatch of the S6 "Warna" cell: a dot in the subject's own colour (data, not a theme
- * token, so it needs an inline style) and the hex below `sm`-hidden text. Lives outside the strict globs.
+ * token, so it needs an inline style) and the hex text, shown from `sm` (V2 `hidden sm:inline`). Lives outside the strict globs.
  */
 defineProps<{ color: string }>()
 </script>
@@ -14,7 +14,7 @@ defineProps<{ color: string }>()
       aria-hidden="true"
     ></span>
     <span
-      class="hidden font-mono text-caption text-muted 2xl:inline"
+      class="hidden font-mono text-caption text-muted sm:inline"
       data-testid="subject-color-hex"
       >{{ color }}</span
     >

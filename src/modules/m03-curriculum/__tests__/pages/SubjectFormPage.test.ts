@@ -95,7 +95,7 @@ describe('SubjectFormPage create (M03 S7)', () => {
     expect(t(w, 'subject-name').attributes('placeholder')).toBe('cth: Matematik')
     expect(t(w, 'subject-name-en').attributes('placeholder')).toBe('e.g: Mathematics')
     const code = t(w, 'subject-code')
-    expect(code.attributes('placeholder')).toBe('cth: MATH01')
+    expect(code.attributes('placeholder')).toBe('cth: MATE')
     expect(code.attributes('maxlength')).toBe('20')
     expect((t(w, 'subject-icon-input').element as HTMLInputElement).value).toBe('fas fa-book')
     expect(t(w, 'subject-icon-input').attributes('placeholder')).toBe('cth: fas fa-calculator')
