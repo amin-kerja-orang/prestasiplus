@@ -342,12 +342,21 @@ describe('LearningMapPage (S14)', () => {
     expect(islands[3]?.attributes('href')).toBeUndefined()
     expect(islands[3]?.text()).toContain('Selesaikan topik sebelumnya dulu')
     expect(islands[2]?.text()).toContain('2 sesi · 7 soalan dijawab')
-    // FR-M03-85: from md the islands alternate right (first) and left; only below md are they centred (C-9).
-    expect(nodes.map((n) => n.classes().filter((c) => /^(max-md:mx-auto|md:ms-auto|md:me-auto)$/.test(c)))).toEqual([
-      ['max-md:mx-auto', 'md:ms-auto'],
-      ['max-md:mx-auto', 'md:me-auto'],
-      ['max-md:mx-auto', 'md:ms-auto'],
-      ['max-md:mx-auto', 'md:me-auto'],
+    // V2 peta-belajar.blade.php:43-44, 133-139: above 768 px the islands alternate right (first) and left;
+    // at 768 px and below they are centred (C-9b).
+    expect(
+      nodes.map((n) =>
+        n
+          .classes()
+          .filter((c) =>
+            ['max-[768px]:mx-auto', 'min-[769px]:ms-auto', 'min-[769px]:me-auto'].includes(c),
+          ),
+      ),
+    ).toEqual([
+      ['max-[768px]:mx-auto', 'min-[769px]:ms-auto'],
+      ['max-[768px]:mx-auto', 'min-[769px]:me-auto'],
+      ['max-[768px]:mx-auto', 'min-[769px]:ms-auto'],
+      ['max-[768px]:mx-auto', 'min-[769px]:me-auto'],
     ])
     expect(nodes.every((n) => !n.classes().includes('mx-auto'))).toBe(true)
   })

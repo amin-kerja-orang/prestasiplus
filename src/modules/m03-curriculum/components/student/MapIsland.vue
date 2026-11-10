@@ -55,8 +55,8 @@ const TILE: Record<string, string> = {
 <template>
   <div
     ref="node"
-    class="relative w-full max-w-md max-md:mx-auto transition-all duration-500 ease-out md:w-5/12 md:max-w-none"
-    :class="[index % 2 === 0 ? 'md:ms-auto' : 'md:me-auto', visible ? 'opacity-100' : 'opacity-0']"
+    class="relative w-full max-w-md transition-all duration-500 ease-out max-[768px]:mx-auto min-[769px]:w-5/12 min-[769px]:max-w-none"
+    :class="[index % 2 === 0 ? 'min-[769px]:ms-auto' : 'min-[769px]:me-auto', visible ? 'opacity-100' : 'opacity-0']"
     :data-state="topic.state"
     :data-visible="visible ? 'true' : 'false'"
     data-testid="map-node"
