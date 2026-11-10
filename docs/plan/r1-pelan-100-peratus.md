@@ -34,6 +34,7 @@ Setiap baris mesti lulus dengan bukti sebenar (output ujian, laporan recon, tang
 | KP-8 | V2 selepas cutover: dibekukan, diubah hala, atau terus hidup (perubahan selepas dump hilang) | **Terbuka** (perlu sebelum Fasa 5) |
 | KP-9 | Notis downtime kepada pengguna UAT dan tetingkap deploy | **Terbuka** (Fasa 5) |
 | KP-10 | Lulus push branch ke origin | **Terbuka** (Fasa 5) |
+| KP-11 | Soalan rajah/berstimulus dalam latihan murid ikut Bab (T-C13): bina sekarang atau tangguh | **Terbuka** |
 
 ## 3. Fasa dan jadual
 
@@ -88,7 +89,7 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 |---|---|---|---|---|---|---|
 | T-C1 | Pautan menu Hadiah/Tebusan dan Permainan (PG-06, PG-11) ke laluan yang sudah wujud | frontend-developer | — | 0.25 | ✅ | cab9d1a88: PG-01..06, PG-10, PG-11 berpautan; peta kanonik --check lulus |
 | T-C2 | UI admin Gamifikasi: Overview, Tier Config (baca sahaja), Cabaran (baca sahaja), Pelajar, Transaksi, Kawalan Reward; atas endpoint sedia ada (`admin/gamification`, `reward-control`); tajuk dan label ikut V2 | frontend-developer | — | 2 | ✅ | cab9d1a88: 6 skrin baca sahaja ikut V2; 39 ujian + shell 37 lulus; 375/768/1536 tiada skrol mendatar |
-| T-C3 | Bijak SPM G-01 hingga G-05: sahkan semula, baiki yang masih gagal (Jana set terkunci, lajur DSKP CSV, stimulus hilang semasa simpan draf, Topik tidak ditapis ikut Bab) | backend-developer + frontend-developer | — | 1 | 🔄 | |
+| T-C3 | Bijak SPM G-01 hingga G-05: sahkan semula, baiki yang masih gagal (Jana set terkunci, lajur DSKP CSV, stimulus hilang semasa simpan draf, Topik tidak ditapis ikut Bab) | backend-developer + frontend-developer | — | 1 | ✅ | G-01, G-02, G-04 dibaiki; G-05 sudah siap; G-03 → T-C13 |
 | T-C4 | Pengekstrak PDF sebenar dengan tesseract (bukan `heuristik-1`): pecah pilihan A–D, ujian atas kertas contoh | backend-developer | T-A5 | 1.5 | ⬜ | |
 | T-C5 | Kiraan bercanggah admin sekolah (murid 20 lawan 17, guru 3 lawan 4) dan dua jumlah Amaran Awal: satu sumber kiraan | backend-developer | — | 0.5 | 🔄 | |
 | T-C6 | Remedial tidak menjana, Heatmap kosong, kad "Pakej SPM Aktif", Kedudukan: sahkan semula dan baiki | backend-developer + frontend-developer | — | 1 | 🔄 | |
@@ -98,6 +99,7 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | T-C10 | Baki susun atur: Mod Pelajar pada 375 (semakan visual), lencana mahkota Profil 375 | frontend-developer | — | 0.25 | ⬜ | |
 | T-C11 | Tulis semula spec E2E mock untuk shell Pembelajaran (id `shell-user-*` tiada sejak 17 Okt: m01, m07, m27 dan lain-lain) dan triage drift data seed (m02 smoke-users: kiraan, `users-stat-count`, baris admin sendiri); heading "⚙️ Tetapan Peribadi" pada /tetapan | qa-engineer | T-C9 | 1 | ⬜ | |
 | T-C12 | Medan backend untuk pariti admin Gamifikasi V2: kiraan "sertai / siap" Cabaran, Streak pelajar, Status dan Harga Token hadiah (Kawalan Reward), warna tier, penapis tier ikut id; jenis `id` (string lawan number) | backend-developer | T-C2 | 0.5 | 🔄 | |
+| T-C13 | Soalan berkumpulan / berstimulus (rajah) dalam Latihan Bab dan latihan murid (D105 / S5-T03 Part B): kontrak latihan, mula sesi, `QuizRunner.vue`, bendera `GROUP_SURFACES`. Wajib jika soalan rajah V2 (T-B9) mahu boleh dilatih murid | backend-developer + frontend-developer | KP-11 | 2 | ⬜ | |
 
 ### Gerbang G-100 (Fasa 4)
 
@@ -143,3 +145,4 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | 2026-11-10 | T-B2 ✅. T-B1 diteruskan oleh ejen baharu (ejen pertama kehabisan ruang; prosesnya, bekas tb1-pg dan folder .migration-out dibersihkan oleh Lead). Penemuan: seed produksi tidak memuat kurikulum/DSKP (diserah ke T-A3); MCQ dimuat tanpa medan DSKP/kognitif/kesukaran → skrip uat-ops selepas ETL (T-A7, T-B9). |
 | 2026-11-10 | T-C1 ✅, T-C2 ✅ (cab9d1a88). Jurang backend untuk pariti penuh → T-C12. DsDataTable: slot sel dalam paparan kad bawah md dibaiki. |
 | 2026-11-10 | T-C7 dan T-C12 bermula (satu ejen backend). |
+| 2026-11-10 | T-C3 ✅ (G-01, G-02, G-04 dibaiki; G-05 sudah siap). G-03 ialah ciri tertangguh D105 Part B → T-C13, perlu keputusan PO (KP-11). imports.spec 2 kegagalan timeout perlu larian semula di mesin lapang (G-100). |
