@@ -12,7 +12,7 @@ import { computed, ref } from 'vue'
 import { DsDataTable, DsPillNav, DsStatRow, type CardField, type PillItem, type StatItem } from '@/ds'
 
 import type { SchoolActivityReport } from '../../api/school-admin'
-import { accuracy, count, duration, lastLogin, matches } from './activity-format'
+import { accuracy, count, duration, lastLogin, matches, NO_DATA } from './activity-format'
 
 const props = defineProps<{ report: SchoolActivityReport }>()
 
@@ -50,7 +50,8 @@ const rows = computed<Row[]>(() =>
       name: r.name,
       kelas: r.className ?? '-',
       sessions: count(r.sessions),
-      accuracy: accuracy(r.accuracy),
+      // XS-5: a pupil with no session has no accuracy, never "0%".
+      accuracy: r.sessions === 0 ? NO_DATA : accuracy(r.accuracy),
       time: duration(r.seconds),
       coins: count(r.coins),
       last: lastLogin(r.lastLoginAt),
@@ -89,7 +90,7 @@ const tiles = computed<StatItem[]>(() => [
   {
     key: 'accuracy',
     label: 'Purata Ketepatan',
-    value: accuracy(t.value.accuracy),
+    value: t.value.sessions === 0 ? NO_DATA : accuracy(t.value.accuracy),
     icon: 'target', accent: 'friend',
   },
 ])

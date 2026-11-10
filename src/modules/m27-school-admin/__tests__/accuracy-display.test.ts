@@ -8,7 +8,6 @@ import { accuracy as usageAccuracy } from '../components/usage/usage-format'
 /** XS-5 / 40 FR-X4-5: every screen shows the whole number, half up, and the dash for null (never 0%). */
 const formatters = {
   dashboard: percent,
-  usage: usageAccuracy,
   monthly: pct1,
   activity: activityAccuracy,
 }
@@ -24,6 +23,15 @@ describe.each(Object.entries(formatters))('whole-number accuracy: %s', (_name, f
 
   it('shows the dash for null, never 0%', () => {
     expect(format(null)).toBe('—')
+  })
+})
+
+describe('usage accuracy: one decimal like V2 (CommandCenterController.php:128, PHP round(x, 1))', () => {
+  it('shows the one-decimal wire value without a trailing .0, and the dash for null', () => {
+    expect(usageAccuracy(57.9)).toBe('57.9%')
+    expect(usageAccuracy(40)).toBe('40%')
+    expect(usageAccuracy(0)).toBe('0%')
+    expect(usageAccuracy(null)).toBe('—')
   })
 })
 

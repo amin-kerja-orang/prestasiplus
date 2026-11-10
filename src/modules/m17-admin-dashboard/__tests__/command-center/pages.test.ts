@@ -311,7 +311,7 @@ describe('S4 school', () => {
       'Jumlah Pelajar1,234',
       'Pelajar Aktif56',
       'Jumlah Jawapan130,077',
-      'Ketepatan82%',
+      'Ketepatan82.3%',
     ])
     expect(panelTitles(w)[0]?.text()).toBe('Senarai Guru (2)')
     const rows = w.findAll('[data-testid=cc-teacher-row]')
@@ -388,7 +388,7 @@ describe('S5 teacher', () => {
     const cells = trOf(w.get('[data-testid=cc-class-row]'))
       .findAll('td')
       .map((c) => c.text())
-    expect(cells).toEqual(['1', '5 PERNIAGAAN', 'T5', '30', '3', '1,234', '78%'])
+    expect(cells).toEqual(['1', '5 PERNIAGAAN', 'T5', '30', '3', '1,234', '77.8%'])
     expect(document.title).toBe('Cikgu Contoh - Command Center | PRESTASIPLUS')
     await w.get('[data-testid=cc-class-row]').trigger('click')
     await flushPromises()
@@ -421,7 +421,7 @@ describe('S6 class', () => {
         .findAll('td')
         .map((c) => c.text())
         .slice(0, 6),
-    ).toEqual(['1', 'Murid Satu', '2,378', '94%', '25/09 01:22', 'Aktif'])
+    ).toEqual(['1', 'Murid Satu', '2,378', '93.5%', '25/09 01:22', 'Aktif'])
     expect(
       trOf(rows[1])
         .findAll('td')
@@ -486,7 +486,7 @@ describe('S7 student', () => {
     expect(crumbCurrent(w)).toBe('Murid Satu')
     expect(cards(w)).toEqual([
       'Jumlah Jawapan2,378',
-      'Ketepatan94%',
+      'Ketepatan93.5%',
       'Hari Aktif15',
       'Streak1',
       'Konsistensi27%',
@@ -533,7 +533,7 @@ describe('S7 student', () => {
     expect(modalStats()).toEqual([
       '452Jawapan',
       '23Sesi',
-      '100%Ketepatan',
+      '99.6%Ketepatan',
       '14mJumlah Masa',
     ])
     const row = body('cc-session-row')

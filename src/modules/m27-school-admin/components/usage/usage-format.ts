@@ -29,6 +29,6 @@ export const count = (n: number): string => formatCount(n)
 /** Integer percent ("68%"). */
 export const wholePercent = (n: number): string => `${formatCount(n)}%`
 
-/** Whole number, half up ("58%" for 57.9, 40 FR-X4-5) or the dash (never 0%). */
+/** One decimal ("57.9%", V2 CommandCenterController.php:128) or the dash (never 0%). */
 export const accuracy = (n: number | null): string =>
-  n === null ? NO_DATA : formatPercent(n, { decimals: 0 })
+  n === null ? NO_DATA : formatPercent(n, { decimals: 1, dropZeroFraction: true })

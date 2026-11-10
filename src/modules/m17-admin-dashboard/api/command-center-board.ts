@@ -29,9 +29,9 @@ export const NO_DATA = '—'
 /** The whole number a screen shows for an accuracy: half up from the one-decimal wire value (57.9 -> 58, 40 FR-X4-5). */
 export const shownAccuracy = (value: number | null): number | null => (value === null ? null : roundHalfUp(value))
 
-/** "58%" for 57.9, the dash for null. The one accuracy text of the Command Center screens (m17). */
+/** "57.9%" for 57.9 (one decimal, V2 CommandCenterController.php:128, a PHP round() so "95" not "95.0"), the dash for null. The one accuracy text of the Command Center screens (m17). */
 export const accuracyText = (value: number | null): string =>
-  value === null ? NO_DATA : formatPercent(value, { decimals: 0 })
+  value === null ? NO_DATA : formatPercent(value, { decimals: 1, dropZeroFraction: true })
 
 interface Signal {
   signal?: AbortSignal
