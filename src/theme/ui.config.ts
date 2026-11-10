@@ -46,7 +46,7 @@ const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staf
 const pagerButton =
   'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:size-10 md:min-h-10 md:min-w-10 hover:bg-elevated hover:text-highlighted'
 
-const squareStaff = 'justify-center p-0 size-11 min-h-11 min-w-11 staff:md:size-10 staff:md:min-h-10 staff:md:min-w-10'
+const squareStaff = 'justify-center p-0 size-11 min-h-11 min-w-11 staff:lg:size-10 staff:lg:min-h-10 staff:lg:min-w-10'
 const squareButton = {
   xs: squareStaff,
   sm: squareStaff,
