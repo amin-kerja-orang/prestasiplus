@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { PrismaService } from '../../src/db/prisma.service'
-import { isMigrationOwnedUneditedPaper } from '../../src/modules/exam/builder'
+import { isMigrationOwnedUneditedPaper, pgExecutor } from '../../src/modules/exam/builder'
 import { FakeBank, matBank } from './fakes'
 import { bootBuilderApp, type BuilderTestApp } from './helpers'
 
@@ -77,6 +77,14 @@ describe('isMigrationOwnedUneditedPaper', () => {
     const b = await loaded({ status: 'published' })
     await audit(b, 'bijak.paper.published', 'req-2')
     expect(await owned(b)).toEqual({ owned: false, reason: 'edited_audit_events' })
+  })
+
+  it('the same rule through the pg executor (what the migration passes) and with an explicit legacy source', async () => {
+    const id = await loaded()
+    const exec = pgExecutor({ query: async (s, p) => ({ rows: await t.db.query<Record<string, unknown>>(s, p) }) })
+    expect(await isMigrationOwnedUneditedPaper(exec, id)).toEqual({ owned: true })
+    expect(await isMigrationOwnedUneditedPaper(exec, id, { legacySource: 'v2' })).toEqual({ owned: true })
+    expect(await isMigrationOwnedUneditedPaper(exec, id, { legacySource: 'other' })).toEqual({ owned: false, reason: 'no_etl_id_map_entry' })
   })
 
   it('a paper with no etl_id_map exam_papers entry is not owned; an unknown or non-numeric id is not found', async () => {
