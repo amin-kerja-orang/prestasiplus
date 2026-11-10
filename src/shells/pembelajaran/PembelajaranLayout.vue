@@ -12,7 +12,7 @@
  * Menus come from `pembelajaran-nav.ts` (derived from the user-nav data, filtered by role and the
  * prototype scope). Legacy pages (routes without `meta.v2`) render unchanged inside a light island.
  */
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { isAlesaAiOn } from '@/app/features'
@@ -21,6 +21,7 @@ import { FlashOutlet } from '@/components/feedback'
 import { dsCopy } from '@/ds/copy'
 import { TournamentBanner } from '@/modules/m16-battle-games'
 import { useFlash } from '@/composables/useFlash'
+import { usePageMeta } from '@/composables/usePageMeta'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
 import {
   DsArt3D,
@@ -63,7 +64,7 @@ import { LG_QUERY, useMediaQuery } from '@/shells/admin/useMinWidth'
 import ModPelajarBanner from '@/shells/shared/ModPelajarBanner.vue'
 import { useShellTabTitle } from '@/shells/shared/useShellTabTitle'
 import { useIntervalWhileVisible } from '@/composables/useIntervalWhileVisible'
-import { BELL_REFRESH_MS } from '@/shells/user/constants'
+import { BELL_REFRESH_MS, NOTIFICATION_PUSH_EVENT } from '@/shells/user/constants'
 import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
 import { useExclusiveSheets } from './useExclusiveSheets'
@@ -107,6 +108,12 @@ const bellLabel = computed(() =>
 useIntervalWhileVisible(() => {
   void bell.refresh()
 }, BELL_REFRESH_MS)
+// FR-M01-53: a foreground push refreshes the bell badge at once (as UserShell does).
+function onNotificationPush(): void {
+  void bell.refresh()
+}
+onMounted(() => window.addEventListener(NOTIFICATION_PUSH_EVENT, onNotificationPush))
+onBeforeUnmount(() => window.removeEventListener(NOTIFICATION_PUSH_EVENT, onNotificationPush))
 
 const lagiOpen = ref(false)
 const sidebarOpen = ref(false)
@@ -146,7 +153,12 @@ const current = computed(() => currentItem(sidebar.value, route.path))
 const sectionTabs = computed(() =>
   groupTabs(sidebar.value, current.value?.id).map((t) => ({ key: t.id, label: t.label, to: t.to })),
 )
-const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
+// A page with a data-driven header (usePageMeta.setHeader) wins over the route's static one.
+const pageMeta = usePageMeta()
+const header = computed(() => pageMeta.state.header ?? route.meta.header)
+const title = computed(() => header.value?.title ?? current.value?.label ?? '')
+/** Page description under the title (school-name line, "Tingkatan N"): set by the page or the route. */
+const subtitle = computed(() => header.value?.subtitle || '')
 useShellTabTitle(title)
 /** Sidebar headings are stored in capitals ("HARIAN"); the crumb reads in sentence case like the admin shell. */
 const sentenceCase = (t: string): string =>
@@ -396,6 +408,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></RouterLink>
               </template>
               <template #title>
+                <div class="flex min-w-0 flex-col">
                 <div class="flex min-w-0 items-baseline gap-2">
                   <span v-if="crumb" class="hidden truncate text-body text-muted xl:block"
                     >{{ crumb }} <span aria-hidden="true">/</span></span
@@ -408,6 +421,15 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   >
                     {{ title }}
                   </component>
+                </div>
+                <p
+                  v-if="subtitle"
+                  class="hidden truncate text-caption text-muted md:block"
+                  :title="subtitle"
+                  data-testid="pembelajaran-subtitle"
+                >
+                  {{ subtitle }}
+                </p>
                 </div>
               </template>
               <template #right>
