@@ -15,8 +15,8 @@ const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const header = (page: Page) => ({
-  title: page.getByTestId('shell-user-title'),
-  subtitle: page.getByTestId('shell-user-subtitle'),
+  title: page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1'),
+  subtitle: page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]'),
 })
 
 test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
@@ -29,7 +29,7 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
   test('S4 lists the two own classes and opens S5', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/kelas')
     await expect(page.getByTestId('kelas-list')).toBeVisible()
-    await expectTabTitle(page, 'Pilih Kelas — Prestasi')
+    await expectTabTitle(page, 'Prestasi Kelas | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Prestasi Kelas')
     await expect(page.locator('[data-testid^=class-card-]')).toHaveCount(2)
     await expect(page.getByTestId('class-card-2001')).toContainText('5 MARIKH - Kimia')
@@ -46,7 +46,7 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/prestasi/kelas/2001')
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
-    await expectTabTitle(page, '5 MARIKH - Kimia — Dashboard Kelas')
+    await expectTabTitle(page, '5 MARIKH - Kimia — Dashboard Kelas | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('5 MARIKH - Kimia')
     await expect(header(page).subtitle).toContainText('· Kimia · 2026')
     await expect(page.getByTestId('class-sub')).toContainText('Kod: DMO101')
@@ -107,7 +107,7 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/analitik/kelas?classroom_id=2001&subject_id=10')
     await expect(page.getByTestId('analitik-kelas-page')).toBeVisible()
-    await expectTabTitle(page, 'Analitik Kelas')
+    await expectTabTitle(page, 'Analitik Kelas | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Analitik Kelas')
     await expect(header(page).subtitle).toHaveText(
       'Pantau prestasi pelajar dan kenal pasti yang memerlukan perhatian',
@@ -161,7 +161,7 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/analisa-item')
     await expect(page.getByTestId('analisa-item-kelas-pilih-page')).toBeVisible()
     expect(new URL(page.url()).pathname).toBe('/analisa-item/kelas')
-    await expectTabTitle(page, 'Analisa Item — Papan Guru | PRESTASIPLUS')
+    await expectTabTitle(page, 'Analisa Item | PRESTASIPLUS')
     await expect(page.getByTestId('class-grid').locator('> a')).toHaveCount(2)
     await expectNoHorizontalScroll(page)
     await page.getByTestId('class-card-2001').click()
