@@ -43,8 +43,8 @@ test.describe('M10 S34 Set Soalan Guru (student)', MODULE, () => {
     await gotoApp('/set-soalan-saya')
     await expect(page.getByTestId('set-soalan-page')).toBeVisible({ timeout: 15_000 })
     await expectTabTitle(page, 'Set Soalan Guru | PRESTASIPLUS')
-    await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Set Soalan Guru')
-    await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText(
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Set Soalan Guru')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
       'Set soalan yang disediakan oleh guru anda',
     )
     const empty = page.getByTestId('sets-empty')
@@ -81,7 +81,8 @@ test.describe('M10 S34 Set Soalan Guru (student)', MODULE, () => {
   }) => {
     await loginAs('guru@demo.test')
     await gotoApp('/set-soalan-saya')
-    await expect(page).not.toHaveURL(/\/set-soalan-saya/)
+    // v2: a forbidden role gets the 403 page in place (no redirect).
+    await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     await expect(page.getByTestId('set-soalan-page')).toHaveCount(0)
   })
 
