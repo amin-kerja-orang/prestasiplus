@@ -10,15 +10,23 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import { TIMEOUT_FACTOR } from './timeout-factor'
-import { acceptNextDialog, moduleTag } from '../support'
+import { moduleTag } from '../support'
+import {
+  chooseDelete,
+  confirmDialog,
+  expectListLoaded,
+  expectSwitch,
+  idOfRow,
+  listRows,
+  rowById,
+  rowSwitch,
+} from './admin-table'
 
 const ADMIN = 'admin@demo.test'
 const MODULE = { tag: [moduleTag(3), '@qa'] }
 
-const subjectRow = (page: Page, id: number | string) =>
-  page.locator(`[data-testid="subject-row"][data-subject-id="${String(id)}"]`)
-const levelRow = (page: Page, id: number | string) =>
-  page.locator(`[data-testid="level-row"][data-level-id="${String(id)}"]`)
+const subjectRow = (page: Page, id: number | string) => rowById(page, 'subjects', Number(id))
+const levelRow = (page: Page, id: number | string) => rowById(page, 'levels', Number(id))
 
 async function optionValues(page: Page, testId: string): Promise<string[]> {
   const read = () =>
@@ -31,10 +39,10 @@ async function optionValues(page: Page, testId: string): Promise<string[]> {
   return read()
 }
 
+/** Runs the delete click, then accepts the DS confirm dialog (useConfirm; no native dialog any more). */
 async function confirmDelete(page: Page, click: () => Promise<void>): Promise<void> {
-  const accepted = acceptNextDialog(page, { type: 'confirm' })
   await click()
-  await accepted
+  await confirmDialog(page).ok.click()
 }
 
 test.describe('QA G5 lookups', MODULE, () => {
@@ -59,12 +67,12 @@ test.describe('QA G5 lookups', MODULE, () => {
     // Deactivate subject 12 on S6 and level 11 on S9.
     await gotoApp('/admin/subjects')
     await expect(subjectRow(page, 12)).toBeVisible()
-    await subjectRow(page, 12).getByTestId('subject-switch').click()
-    await expect(subjectRow(page, 12).getByTestId('switch-track')).toHaveClass(/bg-slate-300/)
+    await rowSwitch(subjectRow(page, 12)).click()
+    await expectSwitch(subjectRow(page, 12), false)
     await gotoApp('/admin/education-levels')
     await expect(levelRow(page, 11)).toBeVisible()
-    await levelRow(page, 11).getByTestId('level-switch').click()
-    await expect(levelRow(page, 11).getByTestId('switch-track')).toHaveClass(/bg-slate-300/)
+    await rowSwitch(levelRow(page, 11)).click()
+    await expectSwitch(levelRow(page, 11), false)
 
     // Lookup consumers: M04 question form no longer offers them; the others are unchanged and ordered.
     await gotoApp('/admin/questions/create')
@@ -90,18 +98,20 @@ test.describe('QA G5 lookups', MODULE, () => {
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 31 subjek')
     await gotoApp('/admin/education-levels')
     await expect(levelRow(page, 11)).toBeVisible()
-    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 11 tahap')
+    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 5 tahap')
     await gotoApp('/admin/curriculum')
     expect(await optionValues(page, 'curriculum-subject')).toContain('12')
     expect(await optionValues(page, 'curriculum-level')).toContain('11')
 
     // Reactivate: back in the lookups.
     await gotoApp('/admin/subjects')
-    await subjectRow(page, 12).getByTestId('subject-switch').click()
-    await expect(subjectRow(page, 12).getByTestId('switch-track')).toHaveClass(/bg-emerald-500/)
+    await expectListLoaded(page, 'subjects')
+    await rowSwitch(subjectRow(page, 12)).click()
+    await expectSwitch(subjectRow(page, 12), true)
     await gotoApp('/admin/education-levels')
-    await levelRow(page, 11).getByTestId('level-switch').click()
-    await expect(levelRow(page, 11).getByTestId('switch-track')).toHaveClass(/bg-emerald-500/)
+    await expectListLoaded(page, 'levels')
+    await rowSwitch(levelRow(page, 11)).click()
+    await expectSwitch(levelRow(page, 11), true)
     await gotoApp('/admin/questions/create')
     await expect(page.getByTestId('q-subject')).toBeVisible()
     expect(await optionValues(page, 'q-subject')).toContain('12')
@@ -120,20 +130,21 @@ test.describe('QA G5 lookups', MODULE, () => {
     await page.getByTestId('subject-code').fill('LKP1')
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL('/admin/subjects')
-    const row = page.getByTestId('subject-row').filter({ hasText: 'Subjek Carian' })
-    const id = await row.getAttribute('data-subject-id')
+    const row = listRows(page, 'subjects').filter({ hasText: 'Subjek Carian' })
+    const id = await idOfRow(row)
     expect(id).toBeTruthy()
 
     await gotoApp('/admin/questions/create')
     await expect(page.getByTestId('q-subject')).toBeVisible()
-    expect(await optionValues(page, 'q-subject')).toContain(id!)
+    expect(await optionValues(page, 'q-subject')).toContain(id)
 
     await gotoApp('/admin/subjects')
-    await confirmDelete(page, () => subjectRow(page, id!).getByTestId('subject-delete').click())
-    await expect(subjectRow(page, id!)).toHaveCount(0)
+    await expectListLoaded(page, 'subjects')
+    await confirmDelete(page, () => chooseDelete(page, subjectRow(page, id)))
+    await expect(subjectRow(page, id)).toHaveCount(0)
     await gotoApp('/admin/questions/create')
     await expect(page.getByTestId('q-subject')).toBeVisible()
-    expect(await optionValues(page, 'q-subject')).not.toContain(id!)
+    expect(await optionValues(page, 'q-subject')).not.toContain(id)
   })
 
   test('E2E-M03-26 deleting a subject removes it from the S1 filter; E2E-M03-32 deleting a level removes it from S1 and S6 lines', async ({
@@ -144,7 +155,7 @@ test.describe('QA G5 lookups', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/admin/subjects')
     await expect(subjectRow(page, 31)).toBeVisible()
-    await confirmDelete(page, () => subjectRow(page, 31).getByTestId('subject-delete').click())
+    await confirmDelete(page, () => chooseDelete(page, subjectRow(page, 31)))
     await expect(subjectRow(page, 31)).toHaveCount(0)
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 30 subjek')
     await gotoApp('/admin/curriculum')
@@ -153,12 +164,12 @@ test.describe('QA G5 lookups', MODULE, () => {
 
     await gotoApp('/admin/education-levels')
     await expect(levelRow(page, 11)).toBeVisible()
-    await confirmDelete(page, () => levelRow(page, 11).getByTestId('level-delete').click())
+    await confirmDelete(page, () => chooseDelete(page, levelRow(page, 11)))
     await expect(levelRow(page, 11)).toHaveCount(0)
-    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 10 tahap')
+    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 4 tahap')
     await gotoApp('/admin/curriculum')
     expect(await optionValues(page, 'curriculum-level')).not.toContain('11')
-    expect(await optionValues(page, 'curriculum-level')).toHaveLength(10)
+    expect(await optionValues(page, 'curriculum-level')).toHaveLength(4)
     await gotoApp('/admin/subjects')
     await expect(subjectRow(page, 3).getByTestId('subject-levels')).not.toContainText('Tingkatan 5')
   })
@@ -174,7 +185,7 @@ test.describe('QA G5 lookups', MODULE, () => {
     const before10 = await levelRow(page, 10).getByTestId('level-subjects').innerText()
     const before11 = await levelRow(page, 11).getByTestId('level-subjects').innerText()
     await gotoApp('/admin/subjects')
-    await confirmDelete(page, () => subjectRow(page, 8).getByTestId('subject-delete').click())
+    await confirmDelete(page, () => chooseDelete(page, subjectRow(page, 8)))
     await expect(subjectRow(page, 8)).toHaveCount(0)
     await gotoApp('/admin/education-levels')
     await expect(levelRow(page, 10)).toBeVisible()
@@ -199,7 +210,7 @@ test.describe('QA G5 cross-screen flow', MODULE, () => {
     await gotoApp('/admin/subjects')
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 31 subjek')
     await gotoApp('/admin/education-levels')
-    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 11 tahap')
+    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 5 tahap')
 
     // 1. Level (S10).
     await gotoApp('/admin/education-levels/create')
@@ -210,10 +221,10 @@ test.describe('QA G5 cross-screen flow', MODULE, () => {
     await page.getByTestId('level-curriculum').fill('KSSM')
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL('/admin/education-levels')
-    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 12 tahap')
-    const newLevel = page.getByTestId('level-row').filter({ hasText: 'Tahap QA' })
+    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 6 tahap')
+    const newLevel = listRows(page, 'levels').filter({ hasText: 'Tahap QA' })
     await expect(newLevel).toHaveCount(1)
-    const levelId = (await newLevel.getAttribute('data-level-id'))!
+    const levelId = await idOfRow(newLevel)
     await expect(newLevel.getByTestId('level-subjects')).toHaveText('0 subjek')
     await expect(newLevel).toContainText('QAL')
 
@@ -222,14 +233,14 @@ test.describe('QA G5 cross-screen flow', MODULE, () => {
     await page.getByTestId('subject-name').fill('Subjek QA')
     await page.getByTestId('subject-name-en').fill('QA Subject')
     await page.getByTestId('subject-code').fill('qas1')
-    await expect(page.getByTestId('subject-level-option')).toHaveCount(12)
+    await expect(page.getByTestId('subject-level-option')).toHaveCount(6)
     await page.getByTestId('subject-levels-box').getByText('Tahap QA (QA Level)').click()
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL('/admin/subjects')
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 32 subjek')
-    const newSubject = page.getByTestId('subject-row').filter({ hasText: 'Subjek QA' })
+    const newSubject = listRows(page, 'subjects').filter({ hasText: 'Subjek QA' })
     await expect(newSubject).toHaveCount(1)
-    const subjectId = (await newSubject.getAttribute('data-subject-id'))!
+    const subjectId = await idOfRow(newSubject)
     await expect(newSubject.getByTestId('subject-levels')).toHaveText('Tahap QA')
     await expect(newSubject.getByTestId('subject-questions')).toContainText('0')
 
@@ -300,17 +311,17 @@ test.describe('QA G5 cross-screen flow', MODULE, () => {
 
     // 5. Delete the subject: S6 count reverts, S9 link count reverts; then the level: S9 count reverts.
     await gotoApp('/admin/subjects')
-    await confirmDelete(page, () => subjectRow(page, subjectId).getByTestId('subject-delete').click())
+    await confirmDelete(page, () => chooseDelete(page, subjectRow(page, subjectId)))
     await expect(subjectRow(page, subjectId)).toHaveCount(0)
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 31 subjek')
     await gotoApp('/admin/education-levels')
     await expect(levelRow(page, levelId).getByTestId('level-subjects')).toHaveText('0 subjek')
-    await confirmDelete(page, () => levelRow(page, levelId).getByTestId('level-delete').click())
+    await confirmDelete(page, () => chooseDelete(page, levelRow(page, levelId)))
     await expect(levelRow(page, levelId)).toHaveCount(0)
-    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 11 tahap')
+    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 5 tahap')
     await gotoApp('/admin/curriculum')
     expect(await optionValues(page, 'curriculum-subject')).toHaveLength(31)
-    expect(await optionValues(page, 'curriculum-level')).toHaveLength(11)
+    expect(await optionValues(page, 'curriculum-level')).toHaveLength(5)
   })
 
   test('deleting a chapter that still has topics and subtopics cascades (stats of the pair, BR-10)', async ({
@@ -319,18 +330,29 @@ test.describe('QA G5 cross-screen flow', MODULE, () => {
     gotoApp,
   }) => {
     await loginAs(ADMIN)
-    // BM Darjah 1 chapter 35 has topic 59 with 2 subtopics.
-    const tree = '/admin/curriculum?subject_id=1&education_level_id=1'
+    // No Tingkatan chapter has subtopics in the seed (the Darjah ones are hidden, D72): give topic 126
+    // of chapter 91 (Matematik T4, 24 topics) two subtopics through the inline add form first.
+    const tree = '/admin/curriculum?subject_id=3&education_level_id=10'
     await gotoApp(tree)
     await expect(page.getByTestId('chapter').first()).toBeVisible()
+    const seedTopic = page.getByTestId('chapter').first().getByTestId('topic').first()
+    for (const [index, name] of ['Subtopik Satu', 'Subtopik Dua'].entries()) {
+      await seedTopic.getByTestId('topic-toggle').click()
+      await seedTopic.getByTestId('subtopic-add-toggle').click()
+      await seedTopic.getByTestId('subtopic-add-name').fill(name)
+      await seedTopic.getByTestId('subtopic-add-submit').click()
+      await expect(page.getByTestId('stat-topics')).toContainText(`24 / ${String(index + 1)}`)
+    }
     const stat = async (id: string) => (await page.getByTestId(id).innerText()).replace(/\s+/g, ' ')
     const before = await stat('stat-topics')
     const [t0, s0] = (/(\d+) \/ (\d+)/.exec(before) ?? []).slice(1).map(Number) as [number, number]
     expect(s0).toBeGreaterThanOrEqual(2)
-    const chapter = page.getByTestId('chapter').filter({ hasText: 'Mendengar dan Memahami' })
+    const chapter = page.getByTestId('chapter').filter({ hasText: 'Fungsi dan Persamaan Kuadratik' })
     const topicsInChapter = await chapter.getByTestId('topic').count()
     await confirmDelete(page, () => chapter.getByTestId('chapter-delete').click())
-    await expect(page.getByTestId('chapter').filter({ hasText: 'Mendengar dan Memahami' })).toHaveCount(0)
+    await expect(
+      page.getByTestId('chapter').filter({ hasText: 'Fungsi dan Persamaan Kuadratik' }),
+    ).toHaveCount(0)
     const after = await stat('stat-topics')
     const [t1, s1] = (/(\d+) \/ (\d+)/.exec(after) ?? []).slice(1).map(Number) as [number, number]
     expect(t1).toBe(t0 - topicsInChapter)
