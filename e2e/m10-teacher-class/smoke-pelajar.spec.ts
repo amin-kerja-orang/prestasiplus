@@ -13,6 +13,7 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
+  isDesktopShell,
   isMobileWidth,
   moduleTag,
   provisional,
@@ -174,7 +175,9 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       await expect(page.getByTestId('student-row')).toHaveCount(8)
       const chips = await page.getByTestId('student-class').count()
       const remove = page.getByTestId('student-remove').first()
-      await expectTouchTarget(remove)
+      // NFR-RESP-03 / design-system.md:874: 44px applies on touch viewports; the staff theme deliberately uses 40px from md (ui.config.ts:49).
+      if (isDesktopShell(page)) await expect(remove).toBeVisible()
+      else await expectTouchTarget(remove)
       await remove.click()
       await expect(page.locator('[data-ds="confirm-message"]')).toHaveText(
         'Keluarkan pelajar ini daripada kelas?',
