@@ -378,8 +378,8 @@ test.describe('L07 QA S1 Dashboard Guru', MODULE, () => {
     await loginAs(GURU)
     await gotoApp('/guru')
     await expectTabTitle(page, 'Dashboard Guru | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Guru')
-    const sub = page.getByTestId('shell-user-subtitle')
+    await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Dashboard Guru')
+    const sub = page.getByTestId('pembelajaran-subtitle')
     await expect(sub).toContainText('Selamat datang, ')
     const m = await sub.evaluate((el) => {
       const cs = getComputedStyle(el)

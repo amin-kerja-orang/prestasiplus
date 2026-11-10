@@ -27,8 +27,9 @@ const MODULE = { tag: [moduleTag(10)] }
 test.use({ mockInit: { latency: 0 } })
 
 async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText(subtitle)
+  await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText(title)
+  // Default subtitles: guru "Selamat datang, <name> 👩‍🏫" (guru/layout.blade.php:323), pelajar "Selamat datang kembali".
+  await expect(page.getByTestId('pembelajaran-subtitle')).toContainText(subtitle)
 }
 
 /** FR-M10-129: no text node inside `main` smaller than 12px (S21). */
@@ -74,7 +75,7 @@ test.describe('S21 as the admin', MODULE, () => {
     await expectHeader(
       page,
       'Sumbang Soalan',
-      'Sumbangan anda kepada bank soalan kebangsaan PrestasiPlus',
+      'Selamat datang, ',
     )
     await expect(page.getByTestId('stat-total-value')).toHaveText('16817')
     await expect(page.getByTestId('stat-approved-value')).toHaveText('16817')

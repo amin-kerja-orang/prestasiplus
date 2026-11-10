@@ -21,8 +21,8 @@ test.describe('M10 S33 Kelas Saya (student)', MODULE, () => {
     await gotoApp('/kelas-saya')
     await expect(page.getByTestId('kelas-saya-page')).toBeVisible({ timeout: 15_000 })
     await expectTabTitle(page, 'Kelas Saya')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Kelas Saya')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Sertai kelas guru anda 🏫')
+    await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Kelas Saya')
+    await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText('Kelas yang anda sertai, guru dan rakan sekelas anda')
 
     await expect(page.getByText('Masukkan Kod Kelas')).toHaveCount(0)
     await expect(page.getByTestId('class-code')).toHaveCount(0)

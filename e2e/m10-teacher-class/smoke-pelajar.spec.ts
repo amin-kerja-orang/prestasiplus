@@ -26,8 +26,9 @@ const MODULE = { tag: [moduleTag(10)] }
 test.use({ mockInit: { latency: 0 } })
 
 async function expectHeader(page: Page): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText('Pelajar')
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Urus pelajar dalam kelas anda')
+  await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Pelajar Saya')
+  // V2 guru layout default subtitle (guru/layout.blade.php:323): the greeting with the teacher name.
+  await expect(page.getByTestId('pembelajaran-subtitle')).toContainText('Selamat datang, ')
 }
 
 test.describe('M10 S6 Pelajar Saya', MODULE, () => {

@@ -46,9 +46,9 @@ test.describe('M10 S1 Dashboard Guru', MODULE, () => {
     await gotoApp('/guru')
     await expect(page.getByTestId('guru-dashboard')).toBeVisible({ timeout: 15_000 })
     await expectTabTitle(page, 'Dashboard Guru | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Guru')
-    await expect(page.getByTestId('shell-user-subtitle')).toContainText('Selamat datang, ')
-    await expect(page.getByTestId('shell-user-subtitle')).toContainText('👩‍🏫')
+    await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Dashboard Guru')
+    await expect(page.getByTestId('pembelajaran-subtitle')).toContainText('Selamat datang, ')
+    await expect(page.getByTestId('pembelajaran-subtitle')).toContainText('👩‍🏫')
 
     await expect(page.getByTestId('checklist-count')).toHaveText('0/3 langkah selesai')
     await expect(page.getByTestId('checklist-percent')).toHaveText('0%')

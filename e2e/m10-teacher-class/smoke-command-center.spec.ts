@@ -78,8 +78,8 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
   }) => {
     await openBoard(page, gotoApp)
     await expect(page).toHaveTitle(/^Command Center — Guru: \S.* [|] PRESTASIPLUS$/)
-    await expect(tid(page, 'shell-user-sidebar')).toHaveCount(0)
-    await expect(tid(page, 'shell-admin-sidebar')).toHaveCount(0)
+    await expect(tid(page, 'pembelajaran-sidebar')).toHaveCount(0)
+    await expect(tid(page, 'pentadbiran-sidebar')).toHaveCount(0)
 
     await expect(tid(page, 'cc-title')).toHaveText('Command Center')
     await expect(tid(page, 'cc-back')).toHaveAttribute('href', '/guru')
@@ -400,7 +400,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
       await gotoApp(url.pathname)
       await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
       await expect(tid(page, 'cc-crumb-current')).toHaveText(/\S/)
-      await expect(tid(page, 'shell-user-sidebar')).toHaveCount(0)
+      await expect(tid(page, 'pembelajaran-sidebar')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
 
       await gotoApp(`${CC}/student/2022`)
@@ -566,7 +566,7 @@ test.describe('M17 mount under /guru/command-center (E2E-M17-70) and refusals', 
       await expect(tid(page, 'cc-title')).toHaveCount(0)
       await expect(tid(page, 'cc-info')).toContainText('Kimia')
       await expect(page.locator('[data-ds="back-link"]')).toHaveAttribute('href', /^\/guru\/command-center/)
-      await expect(tid(page, 'shell-user-sidebar')).toHaveCount(0)
+      await expect(tid(page, 'pembelajaran-sidebar')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
 
       await gotoApp(`${CC}/classroom/370`)
