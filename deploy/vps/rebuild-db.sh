@@ -414,8 +414,9 @@ etl_pass() {
     pp_log "PLAN WRITTEN: $plan_file (in $out_dir). Review it with the PO, then press ENTER to apply (Ctrl-C leaves the database empty of questions)."
     read -r _ </dev/tty || pp_die "--pause-after-plan needs a terminal" 3
   fi
-  etl "p$pass migrate:questions --dry-run" migrate:questions --dry-run --as-of="$asof" --core-as-of="$asof" --plan-file="$plan_file"
-  etl "p$pass migrate:questions --apply" migrate:questions --apply --as-of="$asof" --core-as-of="$asof" --plan-file="$plan_file"
+  # --files-dir runs the picture pass (copies question/stimulus images, releases held groups); not valid with --plan.
+  etl "p$pass migrate:questions --dry-run" migrate:questions --dry-run --as-of="$asof" --core-as-of="$asof" --plan-file="$plan_file" ${fa[@]+"${fa[@]}"}
+  etl "p$pass migrate:questions --apply" migrate:questions --apply --as-of="$asof" --core-as-of="$asof" --plan-file="$plan_file" ${fa[@]+"${fa[@]}"}
   # HOOK (T-B9-6/7): structured, subjective and canonical-only questions. Entry point exists in the tree; skip with --skip structured.
   if is_skipped structured; then pp_warn "HOOK structured skipped (--skip structured)"; else
     etl "p$pass migrate:structured --dry-run" migrate:structured --dry-run --as-of="$asof" --core-as-of="$asof"
@@ -423,8 +424,9 @@ etl_pass() {
   fi
   # HOOK (T-B10): SPM sets, blueprints, papers. --terbit publishes the V2-published papers through the real publish gate.
   if is_skipped papers; then pp_warn "HOOK papers skipped (--skip papers)"; else
-    etl "p$pass migrate:papers --dry-run" migrate:papers --dry-run --as-of="$asof" --core-as-of="$asof"
-    etl "p$pass migrate:papers --apply" migrate:papers --apply --as-of="$asof" --core-as-of="$asof" ${tb[@]+"${tb[@]}"}
+    # --files-dir: Kertas Subjektif page images (and FILE_STORAGE_DIR, which the API config needs in production).
+    etl "p$pass migrate:papers --dry-run" migrate:papers --dry-run --as-of="$asof" --core-as-of="$asof" ${fa[@]+"${fa[@]}"}
+    etl "p$pass migrate:papers --apply" migrate:papers --apply --as-of="$asof" --core-as-of="$asof" ${tb[@]+"${tb[@]}"} ${fa[@]+"${fa[@]}"}
   fi
   # MIG-09 backfill: link migrated answers to bank questions (reads archive_cloud only)
   if is_skipped link-questions; then pp_warn "HOOK link-questions skipped (--skip link-questions)"; else
