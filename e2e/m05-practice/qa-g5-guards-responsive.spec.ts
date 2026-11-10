@@ -24,6 +24,10 @@ import {
 const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
+/** The page title the Pembelajaran navbar prints (h1, or `shell-title` when the page owns its h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
+
 test.describe.configure({ timeout: 300_000 })
 
 /** Every in-scope route with the path used for the guest sweep (concrete ids). */
@@ -94,7 +98,7 @@ test.describe('QA-G5 access guards', { tag: [moduleTag(5)] }, () => {
     await loginAs('guru@demo.test')
     await gotoApp('/practice/chapter')
     await expectTabTitle(page, 'Soalan by Chapter | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+    await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
     await expect(page.locator('[data-testid=chapter-subject-name]')).toHaveCount(10)
     await tid(page, 'chapter-subject-name').first().click()
     await expect(page).toHaveURL(/\/practice\/chapter\/BM$/)
