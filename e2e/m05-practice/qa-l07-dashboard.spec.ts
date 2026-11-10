@@ -41,6 +41,10 @@ test.skip(true, 'Superseded by the v2 Murid Home redesign; rewrite under the v2 
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
+/** The page title the Pembelajaran navbar prints (h1, or `shell-title` when the page owns its h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
+
 /** Pauses the carousel autoplay (FR-M05-08 hover pause) so slide-dependent checks do not race a slow machine. */
 const freeze = (page: Page) => tid(page, 'dash-carousel').dispatchEvent('mouseenter')
 
@@ -152,8 +156,8 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
   }) => {
     await open(page, loginAs, gotoApp, ADMIN)
     await expectTabTitle(page, 'Dashboard | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Dashboard')
-    await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
+    await expect(shellTitle(page)).toHaveText('Dashboard')
+    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Selamat datang kembali')
     await navigateInApp(page, '/practice')
     await navigateInApp(page, '/dashboard')
     await expectTabTitle(page, 'Dashboard | PRESTASIPLUS')
