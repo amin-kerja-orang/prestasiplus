@@ -46,8 +46,8 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
     await loginAs(ADMIN)
     await openList(page, gotoApp)
     await expectTabTitle(page, 'Soalan Berstruktur')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Soalan Berstruktur')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Soalan Berstruktur')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
     await expect(page.getByTestId('structured-page').getByRole('heading', { level: 1 })).toHaveText(
       'Soalan Berstruktur',
     )
@@ -198,7 +198,7 @@ test.describe('M04 S9 structured detail', { tag: [TAG.smoke, moduleTag(4)] }, ()
     await expect(page).toHaveURL(/\/admin\/structured-questions\/4454$/)
     await expect(page.getByTestId('structured-detail')).toBeVisible()
     await expectTabTitle(page, 'Detail Soalan Berstruktur')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Detail Soalan Berstruktur')
+    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Detail Soalan Berstruktur')
     await expect(page.getByTestId('structured-id')).toHaveText('ID: #4454')
     await expect(page.getByTestId('structured-pill-marks')).toHaveText('8 Markah')
     await expect(page.getByTestId('structured-subs-heading')).toHaveText(
