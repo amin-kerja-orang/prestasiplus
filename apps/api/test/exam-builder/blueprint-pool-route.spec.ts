@@ -17,7 +17,7 @@ const Preview = envelopeOf(BijakPoolPreviewSchema)
 let t: BuilderTestApp
 let admin: Client
 
-let units: { nodeId: string }[] = []
+let units: { nodeId: string; code: string }[] = []
 
 beforeAll(async () => {
   t = await bootBuilderApp()
@@ -94,5 +94,25 @@ describe('GET /api/admin/blueprints/:subject/:kertas/pool', () => {
     expect(Preview.parse(spec.body).data.blueprint).toMatchObject({ version: 1, source: 'Spec' })
     // The paper builder keeps refusing a draft head (unchanged).
     expectError(await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=17'), 'NOT_FOUND', 404)
+  })
+
+  // G-04: the shortage under a locked "Jana set" said "perlu 6 markah 489" (a bare node id); a unit shortage now carries its DSKP code, level and title.
+  // The seed pool of this suite is empty (the first failure is a count), so the labelling is checked directly against the real unit rows.
+  it('labelUnits adds code, level and title to a unit shortage and leaves other shortages alone', async () => {
+    const { BuilderService } = await import('../../src/modules/exam/builder/builder.service')
+    const { BuilderRepository } = await import('../../src/modules/exam/builder/builder.repository')
+    const repo = t.app.get(BuilderRepository)
+    const service = t.app.get(BuilderService) as unknown as { labelUnits(s: unknown[]): Promise<{ unit?: unknown }[]> }
+    expect(service).toBeInstanceOf(BuilderService)
+    const nodeId = units[0]!.nodeId
+    const out = await service.labelUnits([
+      { section: 'Bahagian A', need: 6, have: 2, kind: 'unit', basis: 'marks', unit: { kind: 'unit', nodeId } },
+      { section: 'Bahagian B', need: 4, have: 0, kind: 'count' },
+      { section: 'Bahagian C', need: 1, have: 0, kind: 'unit', unit: { kind: 't1_t3' } },
+    ])
+    expect(out[0]!.unit).toMatchObject({ kind: 'unit', nodeId, code: expect.any(String), level: expect.stringMatching(/^T[45]$/), title: expect.any(String) })
+    expect(out[1]).not.toHaveProperty('unit')
+    expect(out[2]!.unit).toEqual({ kind: 't1_t3' })
+    expect((await repo.unitLabels([BigInt(nodeId)])).get(nodeId)?.code).toBe(units[0]!.code)
   })
 })

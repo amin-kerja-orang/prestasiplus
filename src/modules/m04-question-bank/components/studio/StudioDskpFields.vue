@@ -4,15 +4,21 @@
  * level, never typed (AC-03.4). A unit may be chosen without an SP while drafting; approval needs 1 to 3 SP. TP and the
  * cognitive level are per leaf part (Langkah 3).
  */
+import { unitsOfChapter } from '@pp/contract'
 import { computed, ref, watch } from 'vue'
 
 import { DsFormField, DsNativeSelect, DsStack, DsText } from '@/ds'
 
+import type { ChapterOption } from '../../api/lookups'
 import { fetchStudioDskp, type StudioDskp } from '../../api/studio'
 import { MAX_SP, toggleSp } from '../../lib/studio/dskp-tags'
 import { LOAD_ERROR } from '../../lib/ui-errors'
 
-const props = defineProps<{ subjectId: string; levelId: string; disabled?: boolean; error?: string | undefined }>()
+/**
+ * G-02: `chapterId` and `chapters` (the active Bab of the same Subjek + Tingkatan) narrow the unit list to the chosen Bab, where the Bab
+ * and the unit are known to belong together (`unitsOfChapter`); with no Bab, or no known link, every unit is offered.
+ */
+const props = defineProps<{ subjectId: string; levelId: string; chapterId?: string; chapters?: ChapterOption[]; disabled?: boolean; error?: string | undefined }>()
 /** Whether the Subjek + Tingkatan has DSKP nodes; the SP, TP and aras rules bind only then (FR-ADM-QE4.6). */
 const emit = defineEmits<{ nodes: [has: boolean | null]; failed: [failed: boolean] }>()
 const unitId = defineModel<string | null>('unitId', { required: true })
@@ -58,6 +64,25 @@ watch(
   },
 )
 
+const offered = computed(() => {
+  const all = dskp.value?.units ?? []
+  const chapter = props.chapterId ? (props.chapters ?? []).find((c) => String(c.id) === props.chapterId) : undefined
+  if (!chapter) return all
+  return unitsOfChapter(chapter, props.chapters ?? [], all) ?? all
+})
+// A later change of Bab drops a unit that no longer belongs to it (the first load keeps what was saved).
+watch(
+  () => props.chapterId,
+  (_now, before) => {
+    if (before === undefined) return
+    if (unitId.value !== null && !offered.value.some((u) => u.id === unitId.value)) {
+      unitId.value = null
+      spIds.value = []
+    }
+  },
+  { flush: 'post' },
+)
+
 const unit = computed(() => dskp.value?.units.find((u) => u.id === unitId.value) ?? null)
 function chooseUnit(value: string): void {
   unitId.value = value === '' ? null : value
@@ -78,7 +103,7 @@ const full = computed(() => spIds.value.length >= MAX_SP)
         data-testid="studio-unit"
         @update:model-value="chooseUnit(String($event))"
       >
-        <option v-for="u in dskp?.units ?? []" :key="u.id" :value="u.id">{{ u.code }} {{ u.title }}</option>
+        <option v-for="u in offered" :key="u.id" :value="u.id">{{ u.code }} {{ u.title }}</option>
       </DsNativeSelect>
     </DsFormField>
     <DsStack v-if="unit" gap="xs" data-testid="studio-sp">

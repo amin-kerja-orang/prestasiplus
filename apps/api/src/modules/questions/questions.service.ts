@@ -7,6 +7,8 @@ import {
   QUESTION_MESSAGES,
   QuestionPartReadV3Schema,
   QuestionWritePartSchema,
+  CHAPTER_UNIT_MISMATCH_MESSAGE,
+  unitsOfChapter,
   type QuestionPart,
   type QuestionSchemeRules,
   type QuestionSchemeValidateResult,
@@ -1167,6 +1169,25 @@ export class QuestionsService {
       const topic = key === null ? null : await this.curriculum.topic(key)
       if (!topic || (chapterKey !== null && topic.chapterId !== chapterKey)) fields.curriculumTopicId = QUESTION_MESSAGES.guruTopic
       else topicKey = topic.id
+    }
+
+    // G-02: a Bab and a Tajuk DSKP that cannot belong together (Bab 7 with unit 2.0) are refused. Only where the link is known
+    // (`unitsOfChapter`), and only when the pair is new, so an old question with another pair can still be saved on other fields.
+    if (unitKey !== null && chapterKey !== null && fields['tag.unitId'] === undefined && subject !== null && level !== null) {
+      const unitId = idToString(unitKey)
+      const chapterId = idToString(chapterKey)
+      if (previous === null || previous.version.unitId !== unitId || previous.version.chapterId !== chapterId) {
+        const chapter = await this.curriculum.chapter(chapterKey)
+        const allowed =
+          chapter === null
+            ? null
+            : unitsOfChapter(
+                chapter,
+                await this.curriculum.chapters(subject.id, level.id, { active: true }),
+                (await this.curriculum.dskpNodes(level.id, subject.id)).filter((nd) => nd.kind === 'unit'),
+              )
+        if (allowed !== null && !allowed.some((u) => u.id === unitKey)) fields['tag.unitId'] = CHAPTER_UNIT_MISMATCH_MESSAGE
+      }
     }
 
     // Images are existing `question_image` files; stimuli and the group must exist.

@@ -556,4 +556,61 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(studio.createQuestionInGroup.mock.calls[0]?.[0]).toBe('9')
     expect(studio.createStudioQuestion).not.toHaveBeenCalled()
   })
+
+  // G-01: a stimulus typed but never confirmed with "Sediakan rangsangan kongsi" was dropped silently on "Simpan draf".
+  it('G-01: a typed stimulus that was not confirmed is saved with the new question', async () => {
+    studio.createStimulus.mockResolvedValue({ data: GROUP.stimuli[0], status: 'ok' })
+    studio.createGroup.mockResolvedValue({ data: { ...GROUP, questionIds: [] }, status: 'ok' })
+    studio.createQuestionInGroup.mockResolvedValue({ data: { id: '99', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/create')
+    await t(w, 'studio-group-new-label').setValue('Petikan 1')
+    await t(w, 'studio-group-new-body').setValue('Petikan tentang pasar tani.')
+    // no click on studio-group-create
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect(studio.createStimulus).toHaveBeenCalledTimes(1)
+    expect(studio.createGroup).toHaveBeenCalledWith({ label: 'Petikan 1', stimulusIds: ['70'], questionIds: [] })
+    expect(studio.createQuestionInGroup.mock.calls[0]?.[0]).toBe('9')
+    expect(studio.createStudioQuestion).not.toHaveBeenCalled()
+  })
+
+  it('G-01: a half-filled stimulus stops the save and names what is missing; nothing is created', async () => {
+    const w = await render('/admin/studio/questions/create')
+    await t(w, 'studio-group-new-label').setValue('Petikan 1')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect(t(w, 'studio-problems').text()).toContain('Petikan mesti mempunyai teks.')
+    expect(studio.createStimulus).not.toHaveBeenCalled()
+    expect(studio.createStudioQuestion).not.toHaveBeenCalled()
+    expect(studio.createQuestionInGroup).not.toHaveBeenCalled()
+  })
+
+  it('G-01: an untouched stimulus form does not block or change a normal save', async () => {
+    studio.createStudioQuestion.mockResolvedValue({ data: { id: '77', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/create')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect(studio.createStimulus).not.toHaveBeenCalled()
+    expect(studio.createStudioQuestion).toHaveBeenCalledTimes(1)
+  })
+
+  it('G-01: on a saved question without a group, a typed stimulus is made into the group on "Simpan draf"', async () => {
+    serve({
+      id: '501', status: 'draft', numberLabel: '1', subjectId: '3', educationLevelId: '7', difficultyLevel: 3,
+      questionText: 'S1 berdasarkan Rajah 1, apakah ini?', questionImage: null, kertas: '1', curriculumChapterId: '12', stimulusGroup: null,
+      tag: { unitId: '40', spIds: ['41'], tp: 2 },
+      parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'mcq', marks: 1, difficultyTp: 2, cognitiveLevel: 'memahami', kbat: 'bukan', options: [{ label: 'A', body: { ms: 'x' } }, { label: 'B', body: { ms: 'y' } }, { label: 'C', body: { ms: 'z' } }], key: { kind: 'option', correct: 'A' } }],
+    })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'Soalan berjaya dikemaskini.' })
+    studio.createStimulus.mockResolvedValue({ data: GROUP.stimuli[0], status: 'ok' })
+    studio.createGroup.mockResolvedValue({ data: GROUP, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    await t(w, 'studio-group-new-label').setValue('Petikan 1')
+    await t(w, 'studio-group-new-body').setValue('Petikan tentang pasar tani.')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect(studio.updateStudioQuestion).toHaveBeenCalledTimes(1)
+    expect(studio.createStimulus).toHaveBeenCalledTimes(1)
+    expect(studio.createGroup).toHaveBeenCalledWith({ label: 'Petikan 1', stimulusIds: ['70'], questionIds: ['501'] })
+  })
 })

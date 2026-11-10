@@ -87,6 +87,11 @@ export function stimulusIssue(f: StimulusForm): string | null {
   return null
 }
 
+/** G-01: true when the author typed or uploaded anything in a stimulus form that is still blank by default (the kind alone does not count). */
+export function stimulusTouched(f: StimulusForm): boolean {
+  return [f.label, f.caption, f.alt, f.body, f.tableText, f.sourceCitation].some((v) => v.trim() !== '') || f.imageToken !== null
+}
+
 const orNull = (v: string): string | null => (v.trim() === '' ? null : v.trim())
 
 export function toCreateBody(f: StimulusForm): StimulusCreateRequest {

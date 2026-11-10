@@ -13,6 +13,7 @@ import { useFlash } from '@/composables/useFlash'
 import { DsBadge, DsCluster, DsEmptyState, DsFormField, DsGrid, DsLoadError, DsNativeSelect, DsPage, DsPanel, DsStack, DsStatusBadge, DsText, useConfirm } from '@/ds'
 
 import { ADMIN_ROUTES } from '../../papers/ui'
+import { shortageLine } from '../../kontrak/domain/pool'
 import { KONTRAK_ROUTES } from '../../kontrak/server/api'
 import PoolPreviewCard from '../components/PoolPreviewCard.vue'
 import { builderCopy as t, LEVEL_SCOPE_ITEMS, levelScopeLabel } from '../domain/copy'
@@ -365,7 +366,7 @@ async function deleteSet(id: string, status: string): Promise<void> {
             <DsText v-if="!genSubject" variant="caption" tone="muted" data-testid="gen-reason">{{ t.subjectRequired }}</DsText>
             <DsText v-else-if="poolState === 'none'" variant="caption" tone="muted" data-testid="gen-reason">{{ t.noBlueprint }}</DsText>
             <DsText v-else-if="poolState === 'ready' && !canGenerate && !countError && !genTitleError" variant="caption" tone="error" data-testid="gen-reason">
-              {{ t.generateBlocked }}
+              {{ pool?.firstFailure ? `${shortageLine(pool.firstFailure)}. ${t.poolReduce}` : t.generateBlocked }}
             </DsText>
           </div>
         </form>

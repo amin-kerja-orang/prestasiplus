@@ -199,9 +199,24 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     expect(t(w, 'deferred').text()).toContain('apabila soalan disimpan')
     const pending = w.emitted('update:pending')?.at(-1)?.[0] as { form: { body: string }; memberIds: string[] } | null
     expect(pending?.form.body).toBe('Petikan tentang pasar tani.')
+    // "Batalkan" only ends the deferral: what is typed is still the author's input (G-01), so it stays pending until the fields are cleared.
     await t(w, 'undefer').trigger('click')
     await flushPromises()
+    expect((w.emitted('update:pending')?.at(-1)?.[0] as { form: { body: string } } | null)?.form.body).toBe('Petikan tentang pasar tani.')
+    await w.get('[data-testid="studio-group-new-label"]').setValue('')
+    await w.get('[data-testid="studio-group-new-body"]').setValue('')
+    await flushPromises()
     expect(w.emitted('update:pending')?.at(-1)?.[0]).toBeNull()
+  })
+
+  it('G-01: a typed stimulus is pending even before "Sediakan rangsangan kongsi" is clicked; a blank form is not', async () => {
+    const w = await render(null, { currentQuestionId: null })
+    expect(w.emitted('update:pending')?.at(-1)?.[0] ?? null).toBeNull()
+    await w.get('[data-testid="studio-group-new-label"]').setValue('Rajah 1')
+    await flushPromises()
+    const pending = w.emitted('update:pending')?.at(-1)?.[0] as { form: { label: string } } | null
+    expect(pending?.form.label).toBe('Rajah 1')
+    expect(api.createStimulus).not.toHaveBeenCalled()
   })
 
   it('browses the existing groups (T49) instead of asking for an id, searches them and joins one', async () => {

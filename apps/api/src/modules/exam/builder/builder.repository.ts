@@ -103,6 +103,21 @@ export class BuilderRepository {
     await this.prisma.client.$queryRaw`select id from questions where id = any(${sorted}::bigint[]) order by id for share`
   }
 
+  /** Display fields (code, level, title) of DSKP units by node id, for the shortage lines (G-04: "unit 489" read as a bare id). */
+  async unitLabels(ids: readonly bigint[]): Promise<Map<string, { code: string; level: 'T4' | 'T5'; title: string }>> {
+    const out = new Map<string, { code: string; level: 'T4' | 'T5'; title: string }>()
+    if (ids.length === 0) return out
+    const rows = await this.prisma.client.curriculumNode.findMany({
+      where: { id: { in: [...ids] }, kind: 'unit' },
+      select: { id: true, code: true, title: true, educationLevel: { select: { code: true } } },
+    })
+    for (const r of rows) {
+      const level = r.educationLevel.code
+      if (level === 'T4' || level === 'T5') out.set(r.id.toString(), { code: r.code, level, title: r.title })
+    }
+    return out
+  }
+
   findPilihan(id: bigint): Promise<PaperTree | null> {
     return this.prisma.client.paper.findFirst({ where: { id, kind: 'pilihan' }, include: TREE })
   }

@@ -32,6 +32,7 @@ import {
   type BijakBuilderReview,
   type BijakBuilderStudentView,
   type BijakPoolPreview,
+  type BijakGenerateShortage,
   type BijakBuilderEditor,
   type QuestionPart,
   type BijakBuilderPaper,
@@ -1597,6 +1598,18 @@ export class BuilderService {
     return this.previewOf(subject, blueprint, kertas, { years: [], negeri: [] })
   }
 
+  /** Adds the DSKP code, level and title to a unit shortage so the line reads "T4 3.0 ...", not a bare node id (G-04). */
+  private async labelUnits(shortages: BijakGenerateShortage[]): Promise<BijakGenerateShortage[]> {
+    const ids = shortages.flatMap((s) => (s.unit?.kind === 'unit' ? [BigInt(s.unit.nodeId)] : []))
+    if (ids.length === 0) return shortages
+    const labels = await this.repo.unitLabels(ids)
+    return shortages.map((s) => {
+      if (s.unit?.kind !== 'unit') return s
+      const l = labels.get(s.unit.nodeId)
+      return l ? { ...s, unit: { kind: 'unit' as const, nodeId: s.unit.nodeId, ...l } } : s
+    })
+  }
+
   private async previewOf(
     subject: NonNullable<Awaited<ReturnType<BuilderRepository['subjectByCode']>>>,
     blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['activeBlueprint']>>>,
@@ -1616,7 +1629,7 @@ export class BuilderService {
       publishedTotal: published,
       eligibleTotal: published - preview.excluded.total,
       verdict: preview.verdict,
-      firstFailure: preview.firstFailure ? shortageToWire(preview.firstFailure) : null,
+      firstFailure: preview.firstFailure ? (await this.labelUnits([shortageToWire(preview.firstFailure)]))[0]! : null,
       excluded: {
         total: preview.excluded.total,
         byReason: preview.excluded.byReason.map((r) => ({ reason: r.reason, count: r.count, bankQuery: excludedBankQuery(r.reason, subject.id.toString()) })),
@@ -1666,7 +1679,7 @@ export class BuilderService {
       const seed = fnv1a32(`${now.toISOString()}|${actor.userId}|${blueprint.code}|${String(previous)}`)
       const outcome = composeStandardPaper(std, candidates, { seed, seen })
       if (!outcome.ok) {
-        if (outcome.reason === 'shortage') throw shortage(outcome.shortages.map(shortageToWire))
+        if (outcome.reason === 'shortage') throw shortage(await this.labelUnits(outcome.shortages.map(shortageToWire)))
         if (outcome.reason === 'limit') throw generateLimit()
         throw new Error('bijak draft generate: the independent re-check found a violation')
       }

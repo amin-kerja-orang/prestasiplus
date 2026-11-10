@@ -15,7 +15,7 @@ import { useSessionStore } from '@/stores'
 import { DsCallout, DsCluster, DsDrawer, DsFormBar, DsFormField, DsFormSection, DsGrid, DsLoadError, DsNativeSelect, DsPage, DsPillNav, DsStack, DsText, StimulusFigure } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
-import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
+import { fetchEducationLevels, fetchSubjects, type ChapterOption } from '../api/lookups'
 import {
   createGroup,
   createQuestionInGroup,
@@ -88,6 +88,8 @@ const saving = ref(false)
 const problems = ref<string[]>([])
 const fieldProblems = ref<Record<string, string>>({})
 
+/** The active Bab of the chosen Subjek + Tingkatan: the Tajuk DSKP list follows the chosen Bab (G-02). */
+const chapterList = ref<ChapterOption[]>([])
 const groupView = ref<GroupView | null>(null)
 /** D93: a shared stimulus prepared on the create page; it is created with the question in `save` (no orphan group). */
 const pendingGroup = ref<PendingGroup | null>(null)
@@ -304,7 +306,21 @@ async function save(): Promise<void> {
   fieldProblems.value = {}
   try {
     if (edit.value && props.id !== undefined) {
+      // G-01: a stimulus typed on a question that has no group yet is saved with it, or its missing field is named; never dropped.
+      const pend = draft.value.groupId === null ? pendingGroup.value : null
+      if (pend !== null) {
+        const issue = stimulusIssue(pend.form)
+        if (issue !== null) {
+          problems.value = [issue]
+          return
+        }
+      }
       const res = await updateStudioQuestion(props.id, toRequestBody(draft.value, { sendScript: showScript.value }))
+      if (pend !== null) {
+        const stim = await createStimulus(toCreateBody(pend.form))
+        const label = pend.form.label.trim() === '' ? null : pend.form.label.trim()
+        await createGroup({ label, stimulusIds: [stim.data.id], questionIds: [props.id, ...pend.memberIds] })
+      }
       flash.success(res.status)
       if (store !== null) clearSnapshot(store, storeKey.value)
       await load()
@@ -398,8 +414,8 @@ async function save(): Promise<void> {
               </DsNativeSelect>
             </DsFormField>
           </DsGrid>
-          <StudioDskpFields v-model:unit-id="draft.unitId" v-model:sp-ids="draft.spIds" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :disabled="readOnly" :error="fieldProblems['tag.unitId']" @nodes="hasDskp = $event" @failed="dskpFailed = $event" />
-          <ChapterSelect v-model="draft.chapterId" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :error="fieldProblems.curriculumChapterId" @chapters="hasChapters = $event" @failed="chaptersFailed = $event" />
+          <StudioDskpFields v-model:unit-id="draft.unitId" v-model:sp-ids="draft.spIds" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :chapter-id="draft.chapterId" :chapters="chapterList" :disabled="readOnly" :error="fieldProblems['tag.unitId']" @nodes="hasDskp = $event" @failed="dskpFailed = $event" />
+          <ChapterSelect v-model="draft.chapterId" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :error="fieldProblems.curriculumChapterId" @chapters="hasChapters = $event" @list="chapterList = $event" @failed="chaptersFailed = $event" />
           <DsFormField v-slot="{ id: fid }" native label="Tahap kesukaran" for="studio-difficulty" hint="Kesukaran ialah anggaran guru; TP ialah tahap DSKP." :error="fieldProblems.difficultyLevel">
             <DsNativeSelect :id="fid" v-model.number="draft.difficulty" :disabled="readOnly" data-testid="studio-difficulty">
               <option v-for="k in KESUKARAN" :key="k.value" :value="k.value">{{ k.label }}</option>
