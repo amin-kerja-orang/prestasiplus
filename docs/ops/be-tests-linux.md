@@ -36,9 +36,12 @@ A full-suite run could not be completed: the first attempt was OOM-killed (4 wor
 - copies only files newer than the stamp `/work/.sync-stamp` (`find -newer` piped to `tar --null -T -`, same excludes as the old full copy);
 - deletes files that exist in `/work` but no longer in `/src` (sorted file lists compared with `comm`; `node_modules`, `.git` and the other excluded paths are never touched; it refuses to delete anything when `/src` lists no files at all, for example a missing mount);
 - replaces the stamp only after the sync succeeded. The stamp is dated at the start of the sync minus 60 seconds, so a file edited during the sync, or a small clock difference between the host and the container, makes that file be copied again next time. A few recently edited files are therefore always re-copied;
+- refuses to run unless `/work` is a real mountpoint (never `/`), so a missing volume cannot make the deletion pass touch the image;
 - keeps the old tolerance: `tar` exit 1 (file changed while read) is a warning, exit 2 fails the run;
 - prints `sync (full|incremental ...): N copied, M deleted, S s`.
 
 Force a full copy with `PP_BETEST_FULL_SYNC=1` (for example `docker compose ... run --rm -e PP_BETEST_FULL_SYNC=1 runner`), or delete the stamp. Do this after a restore of the volume, or if `/work` was changed by hand. `down -v` clears the volume, so the next run is a full copy again.
 
 Do not edit `run-be-tests.sh` while a runner container is executing it (bash reads the script as it runs); the shared runner lock (`shared-runner` notes) covers this.
+
+The sync uses NUL-delimited file lists (`find -print0`, `sort -z`, `comm -z`), so a crafted file or folder name (for example one that contains a newline and `..`) cannot make the deletion pass remove anything outside `/work`. The fixture test `deploy/test/test-run-be-sync.sh` covers the first full copy, an unchanged tree, an incremental copy, deletion, a forced full sync, a missing stamp, an empty source, the crafted name and the mountpoint guard: `docker run --rm -v "$PWD:/src:ro" --entrypoint bash node:22.22.2-bookworm /src/deploy/test/test-run-be-sync.sh`.

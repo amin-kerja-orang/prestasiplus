@@ -40,7 +40,7 @@ case "$1" in
       case "$1" in
         --rm|-d|-i|-t|-it|--init|--read-only) shift ;;
         --entrypoint|--user|-u|-v|--volume|-e|--env|-w|--workdir|--name|--network|--env-file|--label|--restart|--security-opt|--memory|--cpus|--pull|--platform) shift 2 ;;
-        --*=*) shift ;;
+        --entrypoint=*|--user=*|--volume=*|--env=*|--workdir=*|--name=*|--network=*|--env-file=*|--label=*|--restart=*|--security-opt=*|--memory=*|--cpus=*|--pull=*|--platform=*) shift ;;   # only the =value forms of the options above
         -*) echo "unknown flag: $1" >&2; exit 125 ;;
         *) break ;;
       esac

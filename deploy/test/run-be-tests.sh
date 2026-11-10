@@ -31,20 +31,30 @@ sync_tree() {
     set -e
     [ "$rc_r" -le 1 ] && [ "$rc_w" -le 1 ] || { echo "[be-test] sync failed (tar exit $rc_r/$rc_w)"; return 2; }
   fi
-  # Deletions: in DEST but not in SRC.
-  (cd "$src" && find . \( "${prune[@]}" \) -prune -o \( -type f -o -type l \) -print) | LC_ALL=C sort >"$tmp/src.names"
-  (cd "$dst" && find . \( "${prune[@]}" \) -prune -o \( -type f -o -type l \) -print) | LC_ALL=C sort >"$tmp/dst.names"
+  # Deletions: in DEST but not in SRC. NUL-delimited lists, so a directory or file name with a newline cannot forge a second entry (such as ../f) and make
+  # the delete reach outside DEST (every name comes from find inside DEST, so it is always below DEST).
+  (cd "$src" && find . \( "${prune[@]}" \) -prune -o \( -type f -o -type l \) -print0) | LC_ALL=C sort -z >"$tmp/src.names"
+  (cd "$dst" && find . \( "${prune[@]}" \) -prune -o \( -type f -o -type l \) -print0) | LC_ALL=C sort -z >"$tmp/dst.names"
   if [ ! -s "$tmp/src.names" ]; then echo "[be-test] sync failed: no files found in $src (mount missing?); nothing deleted"; return 1; fi
-  LC_ALL=C comm -13 "$tmp/src.names" "$tmp/dst.names" >"$tmp/del.names"
-  deleted="$(wc -l <"$tmp/del.names")"
-  if [ "$deleted" -gt 0 ]; then (cd "$dst" && tr '\n' '\0' <"$tmp/del.names" | xargs -0 rm -f --); fi
+  LC_ALL=C comm -z -13 "$tmp/src.names" "$tmp/dst.names" >"$tmp/del.names"
+  deleted="$(tr -cd '\0' <"$tmp/del.names" | wc -c)"
+  if [ "$deleted" -gt 0 ]; then (cd "$dst" && xargs -0 rm -f -- <"$tmp/del.names"); fi
   mv -f "$tmp/stamp.new" "$stamp"
   echo "[be-test] sync /src -> /work ($mode; node_modules, dist*, .git, e2e output excluded): $copied copied, $deleted deleted, $((SECONDS - t0)) s"
+}
+
+# assert_work_mount DIR: the sync target must be a real mounted volume, never / or a plain folder of the container (a wrong mount would let the
+# deletion pass remove files from the image).
+assert_work_mount() {
+  local d; d="$(readlink -f "$1")"
+  [ "$d" != / ] && [ -n "$d" ] || { echo "[be-test] refusing: $1 resolves to /"; return 1; }
+  mountpoint -q "$d" || { echo "[be-test] refusing: $1 is not a mountpoint (the work volume is not mounted)"; return 1; }
 }
 
 # Tests source the function only (PP_BETEST_SOURCE_ONLY=1); the real run continues below.
 if [ "${PP_BETEST_SOURCE_ONLY:-}" = 1 ]; then return 0 2>/dev/null || exit 0; fi
 
+assert_work_mount /work
 sync_tree /src /work
 cd /work
 # Specs that run `git check-ignore` or look for a .git ancestor need a repository (the real .git is not copied).
