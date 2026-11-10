@@ -28,6 +28,10 @@ const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
+/** The page title the Pembelajaran navbar prints (h1, or `shell-title` when the page owns its h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
+
 // Several full page loads and quiz runs per test: give the shared build server room when workers compete.
 test.describe.configure({ timeout: 120_000 })
 
@@ -108,8 +112,8 @@ test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, (
   test('S14 empty state for a canonical pupil', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJAR)
     await gotoApp('/misi-harian')
-    await expectTabTitle(page, 'Misi Harian — PrestasiPlus')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Misi Harian')
+    await expectTabTitle(page, 'Misi Harian | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('Misi Harian')
     await expect(tid(page, 'missions-empty')).toContainText('Tiada misi hari ini')
     await expect(tid(page, 'missions-empty')).toContainText(
       'Misi baru akan muncul bila guru anda assign.',
@@ -124,8 +128,8 @@ test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, (
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/target-spm')
-    await expectTabTitle(page, 'Target SPM Saya — PrestasiPlus')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Target SPM Saya')
+    await expectTabTitle(page, 'Target SPM Saya | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('Target SPM Saya')
     const rows = page.locator('[data-testid^=target-row-]')
     await expect(rows).toHaveCount(20)
     await expect(page.locator('[data-testid=target-status]').first()).toHaveText('Belum mula')
@@ -180,7 +184,7 @@ test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, (
       const row = tid(page, 'target-row-1')
       await expect(row.getByTestId('target-status')).toHaveText('12 soalan · 75%')
       await expect(row.getByTestId('target-predicted')).toHaveText('A-')
-      await expect(row.getByTestId('target-bar')).toHaveAttribute('style', /width: 75%/)
+      await expect(row.getByTestId('target-bar')).toHaveAttribute('data-value', '75')
     },
   )
 
@@ -225,7 +229,7 @@ test.describe(
         )
         await card.getByTestId('remedial-start').click()
         await expect(page).toHaveURL(/\/remedial\/7601$/)
-        await expectTabTitle(page, 'Ujian Remedial Saya')
+        await expectTabTitle(page, 'Ujian Remedial Saya | PRESTASIPLUS')
         await expect(tid(page, 'quiz-title')).toContainText('Ujian Remedial — ')
         await expectNoHorizontalScroll(page)
         await answerAll(page, total)
@@ -325,7 +329,7 @@ test.describe(
 
         await card.getByTestId('mission-start').click()
         await expect(page).toHaveURL(/\/misi-harian\/7101$/)
-        await expectTabTitle(page, 'Misi Harian — PrestasiPlus')
+        await expectTabTitle(page, 'Misi Harian | PRESTASIPLUS')
         await expect(tid(page, 'quiz-title')).toHaveText('Misi Harian 22/09/2026')
         await answerAll(page, 10)
         await expect(tid(page, 'result-back')).toHaveAttribute('href', '/misi-harian')
