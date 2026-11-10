@@ -25,12 +25,12 @@ describe('reference seeds in production', () => {
   })
 
   it('only school-packages, the wallet tiers, the SPM subject configs and marketplace categories are reference modules', () => {
-    expect(seedModules.filter((m) => m.kind === 'reference').map((m) => m.name)).toEqual(['core-school-packages', 'core-wallet-tiers', 'spm-subject-configs', 'core-marketplace-categories'])
+    expect(seedModules.filter((m) => m.kind === 'reference').map((m) => m.name)).toEqual(['core-school-packages', 'core-wallet-tiers', 'curriculum', 'spm-subject-configs', 'core-marketplace-categories'])
   })
 
   it('production without the flag loads the 4 catalogue rows, the 4 wallet tiers, the 6 marketplace categories and no demo rows', async () => {
     const ran = await runSeeds(seedModules, { prisma: a.prisma, env: { NODE_ENV: 'production' } })
-    expect(ran).toEqual(['core-school-packages', 'core-wallet-tiers', 'spm-subject-configs', 'core-marketplace-categories'])
+    expect(ran).toEqual(['core-school-packages', 'core-wallet-tiers', 'curriculum', 'spm-subject-configs', 'core-marketplace-categories'])
     expect(await counts(a)).toEqual({ packages: 4, tiers: 4, wallets: 0, categories: 6, demoUsers: 0, demoSchools: 0 })
     await runSeeds(seedModules, { prisma: a.prisma, env: { NODE_ENV: 'production', ALLOW_DEMO_SEED: 'false' } })
     expect((await counts(a)).packages).toBe(4)

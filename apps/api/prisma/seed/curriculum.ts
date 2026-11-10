@@ -269,8 +269,14 @@ async function seedDskp(
   }
 }
 
+/**
+ * `reference` (T-A3, 10 Nov 2026): public curriculum data (levels, subjects, chapter tree, learner catalogue, DSKP tree), no personal
+ * data and no demo accounts, so a production database (UAT rebuilt from empty) gets it from `be:db:seed`. The ETL adopts these rows
+ * by natural key (`claimSeeded`), so a later `migrate:core` ends with one row per level / subject / chapter.
+ */
 export const curriculumSeed: SeedModule = {
   name: 'curriculum',
+  kind: 'reference',
   async run(ctx) {
     // Read and validate every source first: a bad file must not leave half a curriculum behind.
     const snap = loadSnapshot()

@@ -79,7 +79,7 @@ export interface SeedModule {
 
 /**
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
- * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`), the 4 wallet tiers
+ * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`), the public curriculum (`curriculum`: levels, subjects, chapter tree, DSKP; T-A3, the ETL adopts it by natural key), the 4 wallet tiers
  * (`core-wallet-tiers`, P11-B1: without them every student dashboard and wallet read answers 500 in production;
  * LEAD approval: pending (P11-B1, #113)), the marketplace categories
  * (`core-marketplace-categories`, BE-46) and the
