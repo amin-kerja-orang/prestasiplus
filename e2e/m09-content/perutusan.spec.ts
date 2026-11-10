@@ -23,7 +23,7 @@ test.describe('M09 Perutusan (teacher)', MODULE, () => {
   }) => {
     await loginAs(TEACHER)
     await gotoApp('/perutusan')
-    await expect(page.getByRole('heading', { name: 'Perutusan Rasmi', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Perutusan', level: 1, exact: true })).toBeVisible()
     const cards = page.getByTestId('perutusan-card')
     await expect(cards.first()).toBeVisible()
     await expect(page.getByTestId('perutusan-write')).toHaveCount(0)
@@ -95,7 +95,7 @@ test.describe('M09 Perutusan (school admin)', MODULE, () => {
   }) => {
     await loginAs(SCHOOL_ADMIN)
     await gotoApp('/perutusan')
-    await expect(page.getByRole('heading', { name: 'Perutusan Rasmi', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Perutusan', level: 1, exact: true })).toBeVisible()
     await expect(page.getByTestId('perutusan-write')).toBeVisible()
     await expectTouchTarget(page.getByTestId('perutusan-write'))
     if (isDesktopShell(page)) {
