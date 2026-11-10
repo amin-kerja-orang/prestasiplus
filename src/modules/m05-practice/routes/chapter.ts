@@ -61,8 +61,8 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Soalan Aku Salah — PRESTASIPLUS',
-      // DV-M05-01 / DV-SH-03: no subtitle (live shows the Dashboard header here).
-      header: { title: 'Soalan Aku Salah' },
+      // V2 pelajar/practice-revision.blade.php:4.
+      header: { title: 'Soalan Aku Salah', subtitle: 'Ulang kaji soalan yang pernah dijawab salah' },
       module: 'M05',
       v2: true,
     },
@@ -77,7 +77,8 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       // "Ulang Kaji — {subject}" is set once the subject is known.
       title: 'Soalan Aku Salah — PRESTASIPLUS',
-      header: { title: 'Soalan Aku Salah' },
+      // V2 pelajar/practice-revision-drill.blade.php has no subheading: the pupil layout default shows.
+      header: { title: 'Soalan Aku Salah', subtitle: 'Selamat datang kembali' },
       module: 'M05',
       v2: true,
     },

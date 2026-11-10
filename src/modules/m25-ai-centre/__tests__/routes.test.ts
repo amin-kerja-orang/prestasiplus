@@ -31,7 +31,7 @@ describe('M25 S1 route', () => {
     expect(r?.meta.title).toBe('Heatmap Topik Lemah')
     expect(r?.meta.header).toEqual({
       title: 'Heatmap Topik Lemah',
-      subtitle: 'Selamat datang kembali',
+      subtitle: 'Topik mana anda kuat, mana lemah — dalam satu paparan',
     })
   })
 

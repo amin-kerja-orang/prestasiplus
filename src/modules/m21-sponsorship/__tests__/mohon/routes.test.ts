@@ -39,7 +39,7 @@ describe('M21 S6 route', () => {
     expect(r?.meta.title).toBe('Mohon Keluarga Angkat')
     expect(r?.meta.header).toEqual({
       title: 'Mohon Keluarga Angkat',
-      subtitle: 'Selamat datang kembali',
+      subtitle: 'Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma',
     })
     expect(router.resolve('/mohon-keluarga-angkat').matched.length).toBeGreaterThan(0)
   })

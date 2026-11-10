@@ -40,7 +40,7 @@ export const VIDEO_STAFF_ROLES: readonly string[] = ['admin', 'teacher']
 
 export const COPY = {
   listTitle: 'Video Pembelajaran',
-  listSubtitle: 'Tonton video motivasi, tutorial dan tips peperiksaan',
+  listSubtitle: 'Perpustakaan video pembelajaran anda',
   searchPlaceholder: 'Cari video...',
   add: 'Tambah Video',
   all: 'Semua',

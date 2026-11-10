@@ -23,7 +23,7 @@ const routes: RouteRecordRaw[] = [
       guestTitle: PUBLIC_SECTIONS.artikel.guestTitle,
       header: {
         title: 'Artikel',
-        subtitle: 'Tips belajar, berita pendidikan, motivasi dan panduan',
+        subtitle: 'Bacaan pilihan daripada guru dan pasukan PrestasiPlus',
       },
       module: 'M09',
       v2: true,

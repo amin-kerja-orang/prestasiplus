@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
       roles: ['student', 'admin'],
       onForbidden: '403',
       title: 'Heatmap Topik Lemah',
-      header: { title: 'Heatmap Topik Lemah', subtitle: 'Selamat datang kembali' },
+      header: { title: 'Heatmap Topik Lemah', subtitle: 'Topik mana anda kuat, mana lemah — dalam satu paparan' },
       module: 'M25',
       v2: true,
     },

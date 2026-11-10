@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = whenKeluargaAngkat<RouteRecordRaw>([
       layout: 'user',
       access: 'auth',
       title: 'Mohon Keluarga Angkat',
-      header: { title: 'Mohon Keluarga Angkat', subtitle: 'Selamat datang kembali' },
+      header: { title: 'Mohon Keluarga Angkat', subtitle: 'Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma' },
       module: 'M21',
       v2: true,
     },

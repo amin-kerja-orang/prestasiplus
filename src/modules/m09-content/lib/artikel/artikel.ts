@@ -14,7 +14,7 @@ export const ARTIKEL_SEARCH_MAX = 100
 
 export const ARTIKEL_COPY = {
   headerTitle: 'Artikel',
-  headerSubtitle: 'Tips belajar, berita pendidikan, motivasi dan panduan',
+  headerSubtitle: 'Bacaan pilihan daripada guru dan pasukan PrestasiPlus',
   hotHeading: 'Artikel Paling Hangat',
   searchPlaceholder: 'Cari',
   guestSearchPlaceholder: 'Cari artikel menarik...',

@@ -160,23 +160,21 @@ describe('S6 question column is capped (bug 3)', () => {
   })
 })
 
-describe('S1 and S6 render the route-meta subtitle (bug 8)', () => {
-  it('S1 shows "Pantau penglibatan dan prestasi pelajar"', async () => {
+describe('S1 and S6 have no own subtitle (V2 guru/laporan and analisis-item: the guru greeting default)', () => {
+  it('S1 route meta has the title and no subtitle', async () => {
     const w = await mountPage(LaporanPage, '/guru/laporan', withStub(laporanRoutes))
-    const header = w.get('[data-ds="page-header"]')
-    expect(header.text()).toContain(laporanRoutes[0]!.meta!.header!.subtitle)
-    expect(header.text()).toContain('Pantau penglibatan dan prestasi pelajar')
+    expect(laporanRoutes[0]!.meta!.header!.subtitle).toBeUndefined()
+    expect(w.text()).not.toContain('Pantau penglibatan dan prestasi pelajar')
   })
 
-  it('S6 shows "Kenal pasti soalan yang sukar dan indeks diskriminasi"', async () => {
+  it('S6 route meta has the title and no subtitle', async () => {
     api.fetchItemAnalysis.mockResolvedValue({
       options: { subjects: [], classes: [] },
       rows: [],
     } satisfies ItemAnalysis)
     const w = await mountPage(AnalisisItemPage, '/guru/analisis-item', withStub(analisisItemRoutes))
-    const header = w.get('[data-ds="page-header"]')
-    expect(header.text()).toContain(analisisItemRoutes[0]!.meta!.header!.subtitle)
-    expect(header.text()).toContain('Kenal pasti soalan yang sukar dan indeks diskriminasi')
+    expect(analisisItemRoutes[0]!.meta!.header!.subtitle).toBeUndefined()
+    expect(w.text()).not.toContain('Kenal pasti soalan yang sukar dan indeks diskriminasi')
   })
 })
 

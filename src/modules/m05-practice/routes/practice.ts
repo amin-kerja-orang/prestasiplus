@@ -30,8 +30,8 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       // The tab title is "{subject} - Latihan" once the subject is known (the page sets it).
       title: 'Latih Tubi - PRESTASIPLUS',
-      // DV-M05-01 / DV-SH-03: no subtitle.
-      header: { title: 'Latih Tubi' },
+      // V2 latih-tubi/setup.blade.php has no subheading: the pupil layout default shows.
+      header: { title: 'Latih Tubi', subtitle: 'Selamat datang kembali' },
       module: 'M05',
       v2: true,
     },
@@ -45,8 +45,8 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Latih Tubi - PRESTASIPLUS',
-      // INFERRED (FR-M05-52 table: Q1 "Latih Tubi", no subtitle).
-      header: { title: 'Latih Tubi' },
+      // V2 latih-tubi/quiz.blade.php has no subheading: the pupil layout default shows.
+      header: { title: 'Latih Tubi', subtitle: 'Selamat datang kembali' },
       module: 'M05',
       v2: true,
     },

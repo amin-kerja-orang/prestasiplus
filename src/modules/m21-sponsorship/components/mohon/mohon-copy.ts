@@ -15,7 +15,7 @@ import {
 export const MOHON_COPY = {
   title: 'Mohon Keluarga Angkat',
   /** Header subtitle (FR-M21-05, DV-M21-06). */
-  headerSubtitle: 'Selamat datang kembali',
+  headerSubtitle: 'Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma',
   heroLead: 'Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma.',
   emailLabel: 'Email Pelajar',
   emailPlaceholder: 'pelajar@email.com',

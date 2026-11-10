@@ -15,10 +15,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles: ['teacher', 'admin'],
       title: 'Analisis Item Soalan - Portal Guru',
-      header: {
-        title: 'Analisis Item Soalan',
-        subtitle: 'Kenal pasti soalan yang sukar dan indeks diskriminasi',
-      },
+      header: { title: 'Analisis Item Soalan' },
       module: 'M11',
       v2: true,
     },

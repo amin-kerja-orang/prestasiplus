@@ -45,10 +45,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       ...base,
       title: 'Sumbang Soalan - PRESTASIPLUS',
-      header: {
-        title: 'Sumbang Soalan',
-        subtitle: 'Sumbangan anda kepada bank soalan kebangsaan PrestasiPlus',
-      },
+      header: { title: 'Sumbang Soalan' },
     },
   },
   {

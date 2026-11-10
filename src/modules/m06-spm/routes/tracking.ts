@@ -8,7 +8,6 @@ import type { RouteRecordRaw } from 'vue-router'
  * "Tracking A SPM — {Subjek}" from its data (DV-M06-07); Q3 was never captured (UNVERIFIED) and shows
  * the list title without a subtitle.
  */
-const SUBTITLE = 'Selamat datang kembali'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -20,7 +19,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Tracking A SPM - PRESTASIPLUS',
-      header: { title: 'Tracking A SPM', subtitle: SUBTITLE },
+      header: { title: 'Tracking A SPM', subtitle: 'Set objektif penuh & bahasa format sebenar' },
       module: 'M06',
       v2: true,
     },
@@ -48,7 +47,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Latihan Subjektif SPM - PRESTASIPLUS',
-      header: { title: 'Subjektif SPM', subtitle: SUBTITLE },
+      header: { title: 'Subjektif SPM', subtitle: 'Latihan struktur & esei' },
       module: 'M06',
       v2: true,
     },
