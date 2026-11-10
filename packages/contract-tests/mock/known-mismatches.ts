@@ -44,12 +44,6 @@ const notServed = (scenario: string, reason: string): KnownMismatch[] => [
 export const KNOWN_MISMATCHES: KnownMismatch[] = [
   ...notServed('files/POST /files anonymous -> 401', NO_FILES),
   {
-    scenario: 'schools/GET /admin/schools -> 200',
-    kind: 'schema',
-    reason:
-      'Mock side: the admin school rows carry no joinCode; the contract (BE-05) requires the key (string or null).',
-  },
-  {
     scenario: 'users/GET /admin/users -> 200',
     kind: 'schema',
     reason:
@@ -100,6 +94,9 @@ export const KNOWN_MISMATCHES: KnownMismatch[] = [
   { scenario: 'bijak-papers/GET /bijak/papers -> 200', reason: NO_BIJAK },
   { scenario: 'bijak-papers/GET /bijak/papers anonymous -> 401', reason: NO_BIJAK },
   { scenario: 'bijak-papers/GET /bijak/papers as teacher -> 403', reason: NO_BIJAK },
+  { scenario: 'kertas-dokumen/GET /bijak/kertas-dokumen -> 200', reason: NO_BIJAK },
+  { scenario: 'kertas-dokumen/GET /bijak/kertas-dokumen anonymous -> 401', reason: NO_BIJAK },
+  { scenario: 'kertas-dokumen/GET /bijak/kertas-dokumen as teacher -> 403', reason: NO_BIJAK },
   { scenario: 'bijak-attempts/GET /bijak/history -> 200', reason: NO_BIJAK },
   { scenario: 'bijak-attempts/GET /bijak/history anonymous -> 401', reason: NO_BIJAK },
   { scenario: 'bijak-attempts/GET /bijak/history as teacher -> 403', reason: NO_BIJAK },
