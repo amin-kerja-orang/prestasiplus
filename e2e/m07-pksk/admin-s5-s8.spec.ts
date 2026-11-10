@@ -34,8 +34,8 @@ const asAdmin = () =>
     await loginAs(ADMIN)
   })
 
-const title = (page: Page) => page.getByTestId('shell-admin-title')
-const subtitle = (page: Page) => page.getByTestId('shell-admin-subtitle')
+const title = (page: Page) => page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })
+const subtitle = (page: Page) => page.getByTestId('pentadbiran-subtitle')
 const rowsOf = (page: Page) => page.getByTestId('pksk-question-row')
 
 async function ids(page: Page): Promise<number[]> {
@@ -64,7 +64,7 @@ test.describe('M07 S5 question list', MODULE, () => {
   asAdmin()
   test('E2E-M07-12 header, tab title, add button and stat cards', async ({ page, gotoApp }) => {
     await openList(page, gotoApp)
-    await expectTabTitle(page, 'Soalan PKSK - Admin')
+    await expectTabTitle(page, 'Soalan PKSK | PRESTASIPLUS')
     await expectHeader(page, 'Soalan PKSK', 'Urus soalan Pentaksiran Kemasukan Sekolah Khusus')
     const add = page.getByTestId('pksk-add')
     await expect(add).toHaveText('Tambah Soalan')
@@ -88,7 +88,7 @@ test.describe('M07 S5 question list', MODULE, () => {
       await expect(page.getByTestId(id).getByTestId('stat-value')).toHaveClass(new RegExp(cls))
     }
     if (isDesktopShell(page)) {
-      const sidebar = page.getByTestId('shell-admin-sidebar')
+      const sidebar = page.getByTestId('pentadbiran-sidebar')
       await expect(sidebar.getByRole('link', { name: 'PKSK Soalan' })).toHaveAttribute('href', LIST)
       await expect(sidebar.getByRole('link', { name: 'PKSK Akses' })).toBeVisible()
     }
@@ -370,7 +370,7 @@ test.describe('M07 S6 create', MODULE, () => {
 
   test('E2E-M07-24 header, tab, selects and domain filtering', async ({ page, gotoApp }) => {
     await openCreate(page, gotoApp)
-    await expectTabTitle(page, 'Tambah Soalan PKSK - Admin')
+    await expectTabTitle(page, 'Tambah Soalan PKSK | PRESTASIPLUS')
     await expectHeader(page, 'Tambah Soalan PKSK', 'Cipta soalan baru untuk PKSK')
     await expect(page.getByTestId('q-bahagian').locator('option')).toHaveText([
       '-- Pilih --',
@@ -589,7 +589,7 @@ test.describe('M07 S7 edit', MODULE, () => {
   test('E2E-M07-31 edit #178460: header, prefill and card layout', async ({ page, gotoApp }) => {
     await gotoApp(edit(178460))
     await expect(page.getByTestId('pksk-question-form')).toBeVisible()
-    await expectTabTitle(page, 'Edit Soalan PKSK - Admin')
+    await expectTabTitle(page, 'Edit Soalan PKSK | PRESTASIPLUS')
     await expectHeader(page, 'Edit Soalan PKSK', 'Kemaskini soalan #178460')
     await expect(page.getByText('<?php')).toHaveCount(0)
     const domain = page.getByTestId('q-domain')
@@ -715,7 +715,7 @@ test.describe('M07 S8 access', MODULE, () => {
     gotoApp,
   }) => {
     await openAccess(page, gotoApp)
-    await expectTabTitle(page, 'Akses PKSK - Admin')
+    await expectTabTitle(page, 'Akses PKSK | PRESTASIPLUS')
     await expectHeader(page, 'Akses PKSK', 'Urus akses premium pengguna')
     await expect(page.getByTestId('stat-label')).toHaveText([
       'Jumlah Akses Aktif',
