@@ -24,6 +24,10 @@ import {
 const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
+/** The page title the Pembelajaran navbar prints (h1, or `shell-title` when the page owns its h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
+
 test.describe.configure({ timeout: 180_000 })
 
 /** Picks "A", checks, goes on through question `count`; returns which answers were right. */
@@ -63,9 +67,9 @@ test.describe('QA-G5 L21 Latih Tubi flow', { tag: [moduleTag(5)] }, () => {
       expect(cardCount).toBe(13872)
       expect(num(await tid(page, 'summary-available').innerText())).toBe(6538)
 
-      await tid(page, 'level-1').click()
+      await tid(page, 'level-10').click()
       await tid(page, 'count-5').click()
-      await expect(tid(page, 'config-start')).toHaveAttribute('href', '/practice/MATH/quiz?level=1&count=5')
+      await expect(tid(page, 'config-start')).toHaveAttribute('href', '/practice/MATH/quiz?level=10&count=5')
       await tid(page, 'config-start').click()
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
       await expectNoHorizontalScroll(page)
@@ -426,7 +430,7 @@ test.describe('QA-G5 missions and sets', { tag: [moduleTag(5)] }, () => {
       await addInitSession(page, 'murid3001@demo.test')
       await gotoApp('/set-soalan-saya/7402/jawab')
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 10')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Set Soalan Guru')
+      await expect(shellTitle(page)).toHaveText('Set Soalan Guru')
       await expectNoHorizontalScroll(page)
       const right = await answerAll(page, 10)
       await expect(tid(page, 'result-score')).toHaveText(`${right.filter(Boolean).length}/10`)
@@ -514,11 +518,11 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
     const desktop = isDesktopShell(page)
     if (!desktop) {
       await expect(
-        tid(page, 'shell-user-bottom-nav').getByRole('link', { name: 'Home' }),
+        tid(page, 'pembelajaran-bottom-nav').getByRole('link', { name: 'Home' }),
       ).toHaveAttribute('href', '/dashboard')
-      await tid(page, 'shell-user-hamburger').click()
+      await tid(page, 'pembelajaran-bottom-nav').locator('[data-nav-id="tab-lagi"]').click()
     }
-    const nav = desktop ? tid(page, 'shell-user-sidebar') : tid(page, 'shell-user-drawer')
+    const nav = desktop ? tid(page, 'pembelajaran-nav') : tid(page, 'pembelajaran-lagi-nav')
     const hrefOf = async (name: string) =>
       nav.getByRole('link', { name, exact: true }).first().getAttribute('href')
     expect(await hrefOf('Latih Tubi')).toBe('/practice')
@@ -539,8 +543,8 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
       }
     }
     if (desktop) {
-      await expect(nav.locator('a.active')).toHaveCount(1)
-      await expect(nav.locator('a.active')).toContainText('Latih Tubi')
+      await expect(nav.locator('a[aria-current="page"]')).toHaveCount(1)
+      await expect(nav.locator('a[aria-current="page"]')).toContainText('Latih Tubi')
     }
   })
 
@@ -566,7 +570,7 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
       await open(page, path)
       await expect(tid(page, ready)).toBeVisible()
       const active = (
-        await tid(page, 'shell-user-sidebar').locator('a.active').allInnerTexts()
+        await tid(page, 'pembelajaran-nav').locator('a[aria-current="page"]').allInnerTexts()
       ).map((t) => t.trim().replace(/\s+/g, ' '))
       expect(active, `active sidebar items on ${path}`).toEqual(labels)
     }
