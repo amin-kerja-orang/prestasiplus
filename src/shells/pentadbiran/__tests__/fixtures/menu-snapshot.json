@@ -299,44 +299,44 @@
         {
           "id": "PG-01",
           "label": "Overview",
-          "to": "/admin/p/pg-01",
-          "built": false
+          "to": "/admin/gamification",
+          "built": true
         },
         {
           "id": "PG-02",
           "label": "Tier Config",
-          "to": "/admin/p/pg-02",
-          "built": false
+          "to": "/admin/gamification/tiers",
+          "built": true
         },
         {
           "id": "PG-03",
           "label": "Cabaran",
-          "to": "/admin/p/pg-03",
-          "built": false
+          "to": "/admin/gamification/challenges",
+          "built": true
         },
         {
           "id": "PG-04",
           "label": "Pelajar",
-          "to": "/admin/p/pg-04",
-          "built": false
+          "to": "/admin/gamification/students",
+          "built": true
         },
         {
           "id": "PG-05",
           "label": "Transaksi",
-          "to": "/admin/p/pg-05",
-          "built": false
+          "to": "/admin/gamification/transactions",
+          "built": true
         },
         {
           "id": "PG-06",
           "label": "Kedai Hadiah",
-          "to": "/admin/p/pg-06",
-          "built": false
+          "to": "/admin/hadiah",
+          "built": true
         },
         {
           "id": "PG-10",
           "label": "Kawalan Reward",
-          "to": "/admin/p/pg-10",
-          "built": false
+          "to": "/admin/reward-control",
+          "built": true
         }
       ]
     },
@@ -360,8 +360,8 @@
         {
           "id": "PG-11",
           "label": "Tetapan Permainan",
-          "to": "/admin/p/pg-11",
-          "built": false
+          "to": "/admin/permainan",
+          "built": true
         },
         {
           "id": "PG-23",
@@ -946,6 +946,68 @@
           "id": "SY-02",
           "label": "Kawalan Ciri",
           "to": "/admin/feature-toggles",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "gamifikasi",
+      "label": "Gamifikasi",
+      "icon": "trophy",
+      "items": [
+        {
+          "id": "PG-01",
+          "label": "Overview",
+          "to": "/admin/gamification",
+          "built": true
+        },
+        {
+          "id": "PG-02",
+          "label": "Tier Config",
+          "to": "/admin/gamification/tiers",
+          "built": true
+        },
+        {
+          "id": "PG-03",
+          "label": "Cabaran",
+          "to": "/admin/gamification/challenges",
+          "built": true
+        },
+        {
+          "id": "PG-04",
+          "label": "Pelajar",
+          "to": "/admin/gamification/students",
+          "built": true
+        },
+        {
+          "id": "PG-05",
+          "label": "Transaksi",
+          "to": "/admin/gamification/transactions",
+          "built": true
+        },
+        {
+          "id": "PG-06",
+          "label": "Kedai Hadiah",
+          "to": "/admin/hadiah",
+          "built": true
+        },
+        {
+          "id": "PG-10",
+          "label": "Kawalan Reward",
+          "to": "/admin/reward-control",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "battle-permainan",
+      "label": "Battle & Permainan",
+      "icon": "game-controller",
+      "items": [
+        {
+          "id": "PG-11",
+          "label": "Tetapan Permainan",
+          "to": "/admin/permainan",
           "built": true
         }
       ]

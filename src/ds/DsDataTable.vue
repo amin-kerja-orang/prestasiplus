@@ -242,6 +242,8 @@ const shownFields = computed<ShownField[]>(() => {
 /** Calls a forwarded slot with props. A dynamic `<slot :name>` would widen the typed `UTable` slots for every consumer. */
 const CellSlot = (p: { render: (props: Record<string, unknown>) => unknown; slotProps: Record<string, unknown> }) =>
   p.render(p.slotProps) as VNode[]
+// Props are declared so the template's `:slot-props` reaches the function as `slotProps` (undeclared ones stay kebab-cased attrs).
+CellSlot.props = ['render', 'slotProps']
 
 function cellSlotProps(row: T, index: number, key: string): Record<string, unknown> {
   const getValue = (): unknown => row[key]

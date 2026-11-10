@@ -639,6 +639,8 @@ export interface Draw {
   status: DrawStatus
   createdAt: string
   ticketsSold: number
+  /** Drawn winners (the V2 "Pemenang" column); absent on a draw that has none yet. */
+  winners?: { id: number | string; prizeLabel: string; name: string }[]
 }
 
 /** #40 `data`. */

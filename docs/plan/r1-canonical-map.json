@@ -2458,6 +2458,66 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/gamification|m14.admin-overview",
+      "path": "/admin/gamification",
+      "name": "m14.admin-overview",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminOverviewPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/gamification/tiers|m14.admin-tiers",
+      "path": "/admin/gamification/tiers",
+      "name": "m14.admin-tiers",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminTiersPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/gamification/challenges|m14.admin-challenges",
+      "path": "/admin/gamification/challenges",
+      "name": "m14.admin-challenges",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminChallengesPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/gamification/students|m14.admin-students",
+      "path": "/admin/gamification/students",
+      "name": "m14.admin-students",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminStudentsPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/gamification/transactions|m14.admin-transactions",
+      "path": "/admin/gamification/transactions",
+      "name": "m14.admin-transactions",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminTransactionsPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/reward-control|m14.admin-reward-control",
+      "path": "/admin/reward-control",
+      "name": "m14.admin-reward-control",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminRewardControlPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/gamification|gamification-dashboard",
       "path": "/gamification",
       "name": "gamification-dashboard",
@@ -4021,7 +4081,7 @@
       "key": "user-nav|t-laporan",
       "source": "user-nav",
       "id": "t-laporan",
-      "label": "Laporan",
+      "label": "Laporan Statistik",
       "route": "/guru/laporan",
       "roles": [
         "teacher"
@@ -4077,7 +4137,7 @@
       "key": "user-nav|t-kirk-reaksi",
       "source": "user-nav",
       "id": "t-kirk-reaksi",
-      "label": "Tahap 1: Reaksi",
+      "label": "T1: Reaksi",
       "route": "/guru/kirkpatrick/reaction",
       "roles": [
         "teacher"
@@ -4091,7 +4151,7 @@
       "key": "user-nav|t-kirk-pembelajaran",
       "source": "user-nav",
       "id": "t-kirk-pembelajaran",
-      "label": "Tahap 2: Pembelajaran",
+      "label": "T2: Pembelajaran",
       "route": "/guru/kirkpatrick/learning",
       "roles": [
         "teacher"
@@ -4105,7 +4165,7 @@
       "key": "user-nav|t-kirk-tingkah-laku",
       "source": "user-nav",
       "id": "t-kirk-tingkah-laku",
-      "label": "Tahap 3: Tingkah Laku",
+      "label": "T3: Tingkah Laku",
       "route": "/guru/kirkpatrick/behavior",
       "roles": [
         "teacher"
@@ -4119,7 +4179,7 @@
       "key": "user-nav|t-kirk-hasil",
       "source": "user-nav",
       "id": "t-kirk-hasil",
-      "label": "Tahap 4: Hasil",
+      "label": "T4: Hasil",
       "route": "/guru/kirkpatrick/results",
       "roles": [
         "teacher"
@@ -4133,7 +4193,7 @@
       "key": "user-nav|t-kirk-rantaian",
       "source": "user-nav",
       "id": "t-kirk-rantaian",
-      "label": "Rantaian Impak",
+      "label": "Rantaian",
       "route": "/guru/kirkpatrick/chain",
       "roles": [
         "teacher"
@@ -4852,7 +4912,7 @@
       "key": "user-nav|t-video",
       "source": "user-nav",
       "id": "t-video",
-      "label": "Video",
+      "label": "Video Pembelajaran",
       "route": "/video",
       "roles": [
         "teacher"
@@ -4894,7 +4954,7 @@
       "key": "user-nav|t-panduan",
       "source": "user-nav",
       "id": "t-panduan",
-      "label": "Panduan",
+      "label": "Panduan Pengguna",
       "route": "/panduan",
       "roles": [
         "teacher"
@@ -5612,7 +5672,7 @@
       "key": "user-nav|pksk",
       "source": "user-nav",
       "id": "pksk",
-      "label": "PKSK",
+      "label": "PKSK PRO",
       "route": "/pksk",
       "roles": [
         "student",
@@ -5921,20 +5981,6 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|kedai-hadiah-digital",
-      "source": "user-nav",
-      "id": "kedai-hadiah-digital",
-      "label": "Kedai Hadiah 🎁",
-      "route": "/cikgu/hadiah",
-      "roles": [
-        "student"
-      ],
-      "status": "canonical",
-      "sector": "S7",
       "file": "src/shells/nav/user-nav.ts",
       "approved_by_card": null
     },
@@ -6320,7 +6366,7 @@
       "key": "user-nav|panduan",
       "source": "user-nav",
       "id": "panduan",
-      "label": "Panduan",
+      "label": "Panduan Pengguna",
       "route": "/panduan",
       "roles": [
         "student",
@@ -6610,14 +6656,13 @@
       "source": "pentadbiran",
       "id": "PG-01",
       "label": "Overview",
-      "route": "/admin/p/pg-01",
+      "route": "/admin/gamification",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
     },
@@ -6626,14 +6671,13 @@
       "source": "pentadbiran",
       "id": "PG-02",
       "label": "Tier Config",
-      "route": "/admin/p/pg-02",
+      "route": "/admin/gamification/tiers",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
     },
@@ -6642,14 +6686,13 @@
       "source": "pentadbiran",
       "id": "PG-03",
       "label": "Cabaran",
-      "route": "/admin/p/pg-03",
+      "route": "/admin/gamification/challenges",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
     },
@@ -6658,14 +6701,13 @@
       "source": "pentadbiran",
       "id": "PG-04",
       "label": "Pelajar",
-      "route": "/admin/p/pg-04",
+      "route": "/admin/gamification/students",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
     },
@@ -6674,14 +6716,13 @@
       "source": "pentadbiran",
       "id": "PG-05",
       "label": "Transaksi",
-      "route": "/admin/p/pg-05",
+      "route": "/admin/gamification/transactions",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
     },
@@ -6690,14 +6731,13 @@
       "source": "pentadbiran",
       "id": "PG-06",
       "label": "Kedai Hadiah",
-      "route": "/admin/p/pg-06",
+      "route": "/admin/hadiah",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
     },
@@ -6706,14 +6746,13 @@
       "source": "pentadbiran",
       "id": "PG-10",
       "label": "Kawalan Reward",
-      "route": "/admin/p/pg-10",
+      "route": "/admin/reward-control",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
     },
@@ -6754,14 +6793,13 @@
       "source": "pentadbiran",
       "id": "PG-11",
       "label": "Tetapan Permainan",
-      "route": "/admin/p/pg-11",
+      "route": "/admin/permainan",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
       "group": "battle-permainan",
       "approved_by_card": null
     },

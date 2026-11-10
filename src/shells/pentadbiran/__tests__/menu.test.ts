@@ -66,6 +66,8 @@ describe('Pentadbiran menu data', () => {
       'Pengguna',
       'Premium',
       'Sistem', // Kawalan Ciri (PRD 30 §3.1 row 8)
+      'Gamifikasi', // PG-01..06, PG-10 (T-C1, T-C2)
+      'Battle & Permainan', // Tetapan Permainan (T-C1)
       'Marketplace', // Produk, Penjual (S7-T08)
       'Kandungan',
       'Sistem', // Tetapan and Tiket Bantuan (row 13): two groups carry the label, as the PRD lists them
@@ -109,6 +111,8 @@ describe('Pentadbiran menu data', () => {
       ],
       ['PKSK Soalan', 'PKSK Akses'],
       ['Kawalan Ciri'],
+      ['Overview', 'Tier Config', 'Cabaran', 'Pelajar', 'Transaksi', 'Kedai Hadiah', 'Kawalan Reward'],
+      ['Tetapan Permainan'],
       ['Produk', 'Penjual'],
       ['Artikel', 'Banner', 'Nota', 'Upload Screenshot', 'Video'],
       ['Tetapan', 'Tiket Bantuan'],
