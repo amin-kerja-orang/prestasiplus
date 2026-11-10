@@ -11,7 +11,10 @@ import type { CoreContext } from './context'
 import { rejectRow, sumResults, upsertAndMap } from './helpers'
 import { distinctValues, readById, readPairTable, resolveFk, type StagedRow } from './source'
 import { parentLinkLegacyId, transformParentLink } from '../transform/classes'
-import { roleRejectLabel, transformUser, type UserOutput } from '../transform/users'
+import { classLabelName, gradeFromClassLabel, roleRejectLabel, transformUser, type UserOutput } from '../transform/users'
+import { STAGING_SCHEMA } from '../ddl/spec'
+import { enumKey, squash } from '../transform/common'
+import { SCHOOL_TYPE_MAP } from '../transform/enums'
 
 const idOf = (row: StagedRow): string => {
   const id = row.id ?? ''
@@ -41,6 +44,34 @@ async function schoolFacts(ctx: BatchContext, ids: readonly string[]): Promise<M
   return out
 }
 
+/**
+ * T-B5 rule 2: per source school, the grade of every class NAME that some pupil of the school writes with a number. A pupil whose own
+ * label is only a name (`AMANAH`) takes the grade of that name when the school has exactly one grade for it. Read from the staged pupils.
+ */
+async function siblingGradesOf(core: CoreContext, schoolSourceIds: readonly string[]): Promise<Map<string, Map<string, number | null>>> {
+  const out = new Map<string, Map<string, number | null>>()
+  const ids = schoolSourceIds.filter((s) => /^\d{1,18}$/.test(s))
+  if (ids.length === 0) return out
+  const res = await core.pool.query<{ school_id: string; kelas: string; type: string | null }>(
+    `SELECT u.school_id::text AS school_id, u.kelas::text AS kelas, s.type::text AS type
+       FROM "${STAGING_SCHEMA}"."users" u JOIN "${STAGING_SCHEMA}"."schools" s ON s.id = u.school_id
+      WHERE lower(btrim(u.role)) = 'pelajar' AND u.school_id = ANY($1::bigint[]) AND u.kelas ~ '^\\s*[0-9]'`,
+    [ids],
+  )
+  for (const r of res.rows) {
+    const typeKey = enumKey(r.type)
+    const label = squash(r.kelas)
+    const name = classLabelName(label)
+    const grade = gradeFromClassLabel(label, typeKey === null ? null : (SCHOOL_TYPE_MAP[typeKey] ?? null))
+    if (name === null || grade === null) continue
+    const names = out.get(r.school_id) ?? new Map<string, number | null>()
+    const seen = names.get(name)
+    names.set(name, seen === undefined || seen === grade ? grade : null)
+    out.set(r.school_id, names)
+  }
+  return out
+}
+
 export function usersStep(core: CoreContext): AnyEntityStep {
   const entity = 'users'
   return {
@@ -51,6 +82,7 @@ export function usersStep(core: CoreContext): AnyEntityStep {
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const schools = await ctx.idMap.resolveMany('schools', distinctValues(rows, 'school_id'))
       const facts = await schoolFacts(ctx, [...new Set(schools.values())])
+      const siblings = await siblingGradesOf(core, distinctValues(rows, 'school_id'))
 
       const accepted: { legacyId: string; out: UserOutput }[] = []
       for (const row of rows) {
@@ -61,6 +93,7 @@ export function usersStep(core: CoreContext): AnyEntityStep {
           school: typeof schoolId === 'string' ? (facts.get(schoolId) ?? null) : null,
           ic: core.ic,
           defaultHashes: core.defaultHashes,
+          siblingGrades: siblings.get((row.school_id ?? '').trim()),
         })
         if (!out.ok) {
           rejectRow(ctx, entity, legacyId, out.reject)
@@ -82,10 +115,13 @@ export function usersStep(core: CoreContext): AnyEntityStep {
         if (out.user.must_reset_password && out.user.email === null && out.user.username === null) {
           core.notes.addRestricted('flaggedWithoutLoginId', legacyId)
         }
+        if (out.notes.gradeFromSiblingClass) core.notes.count('users.grade_from_sibling_class')
+        if (out.notes.loadedInactive) core.notes.count('users.loaded_inactive_role.agent')
         if (out.notes.icInvalid) core.notes.addId('ic_invalid', legacyId)
         if (out.notes.emailInvalid) core.notes.addId('email_invalid', legacyId)
         if (out.notes.experienceInvalid) core.notes.addId('teaching_experience_invalid', legacyId)
-        if (out.ppdUnscoped) core.notes.addId('ppd_officer_without_scope', legacyId)
+        if (out.ppdUnscoped) core.notes.addId('ppd_officer_without_scope', legacyId) // loaded inactive: V2 has no scope for the officer (T-B5b)
+        if (out.notes.teacherWithoutSchool) core.notes.addId('teacher_without_school', legacyId) // loaded inactive: a V3 teacher scope is a school
       }
 
       const result = await upsertAndMap(
@@ -130,12 +166,14 @@ async function dropDuplicateLogins(
 ): Promise<void> {
   const emails = new Set<string>()
   const names = new Set<string>()
+  const dropped = new Set<string>()
   for (const a of accepted) {
     const u = a.out.user
     if (u.email !== null) {
       if (emails.has(u.email)) {
         u.email = null
         core.notes.addId('duplicate_email', a.legacyId)
+        dropped.add(a.legacyId)
       } else emails.add(u.email)
     }
     if (u.username !== null && u.school_id !== null) {
@@ -143,6 +181,7 @@ async function dropDuplicateLogins(
       if (names.has(key)) {
         u.username = null
         core.notes.addId('duplicate_username', a.legacyId)
+        dropped.add(a.legacyId)
       } else names.add(key)
     }
   }
@@ -160,11 +199,19 @@ async function dropDuplicateLogins(
     if (u.email !== null && foreign(heldEmail.get(u.email), a.legacyId)) {
       u.email = null
       core.notes.addId('duplicate_email', a.legacyId)
+      dropped.add(a.legacyId)
     }
     if (u.username !== null && u.school_id !== null && foreign(heldName.get(`${u.school_id}|${u.username.toLowerCase()}`), a.legacyId)) {
       u.username = null
       core.notes.addId('duplicate_username', a.legacyId)
+      dropped.add(a.legacyId)
     }
+  }
+  // KP-7: a roster account is no longer flagged for being a roster account, but an account that lost its only login identifier here
+  // (a duplicate) cannot sign in at all, so it stays flagged for reset as before (Q11 `flaggedWithoutLoginId`).
+  for (const a of accepted) {
+    const u = a.out.user
+    if (u.username === null && u.email === null && dropped.has(a.legacyId)) u.must_reset_password = true
   }
 }
 

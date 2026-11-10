@@ -1,0 +1,368 @@
+/**
+ * `exam_papers` (175) + `paper_sections` + `exam_paper_questions` -> `papers` / `paper_sections` / `paper_placements` (T-B10-3, design 10.4).
+ *
+ * EVERY paper loads as `draft` (kind `pilihan`); the Terbit pass (`terbit-pass.ts`) publishes the V2-published ones through the real gate.
+ *
+ *  - kertas 1 to 4 from `inferKertas` (V2 text, cover code, title, structure; T-B13b, design 10.4a); undecided: kertas 1, held as
+ *    `kertas_unknown:<reason>` (listed, never guessed);
+ *  - surface: `simulasi` when an active V3 Kontrak exists for (subject, kertas), `subjektif` when kertas is 2 to 4 and none exists, else
+ *    `simulasi`; duration: V2's, else (simulasi) the Kontrak's (V3 head, or the V2-median draft Kontrak), else a 60-minute placeholder that is never Terbit-ed (V3 requires a positive
+ *    duration for a simulasi paper), a subjektif paper may be untimed (0);
+ *  - sections from `paper_sections` (position renumbered 1..n), placements from `exam_paper_questions` (or `exam_questions.paper_section_id`
+ *    + `position` when a section has no pivot rows); a placement is resolved to the V3 question through `legacy_canonical_map` ->
+ *    `etl_id_map('questions' | 'structured_questions')`, else `etl_id_map('exam_questions')`; an unresolved placement is dropped and counted;
+ *  - PO core rule: a stimulus group is placed whole and adjacent in `group_position` order inside ONE section; a paper whose groups cannot
+ *    be kept whole (a member absent or in another section) is loaded as `draft` with `group_split` counted and is never Terbit-ed;
+ *  - `section.mark_budget` is V2's, else the sum of the placed leaf marks (a choose-N section: the share of N of them).
+ */
+import type { AnyEntityStep, BatchContext, BatchResult } from '../../kit/runner'
+import { assertSurrogateLegacyId, toJson } from '../../kit/sql'
+import { text } from '../../transform/common'
+import { rejectRow } from '../helpers'
+import type { QuestionsContext } from '../questions/context'
+import { childrenOf, lookupSlugs, readArchiveById, type ArchiveRow } from './archive-source'
+import { inferKertas, instructionsOf, intOf, referenceSheetsOf, ruleTypeOf, type KertasEvidence } from './plan'
+
+export const PLACEHOLDER_MINUTES = 60
+
+export interface PlacementPlan {
+  question_id: string
+  number_label: string | null
+  marks_override: number | null
+}
+export interface SectionPlan {
+  label: string
+  instruction: string | null
+  rule_type: 'all' | 'choose'
+  rule_n: number | null
+  mark_budget: number | null
+  placements: PlacementPlan[]
+}
+
+export interface GroupFacts {
+  /** question id -> its group id (absent: not in a group). */
+  groupOf: ReadonlyMap<string, string>
+  /** group id -> member question ids in `group_position` order. */
+  members: ReadonlyMap<string, readonly string[]>
+}
+
+/**
+ * Keeps every stimulus group whole inside its section: the placed members of a group move next to each other, in `group_position` order, at
+ * the place of the first one. `split` is true when a group cannot be whole (a member is not placed, or the members sit in different sections).
+ */
+export function normaliseGroups(sections: readonly SectionPlan[], facts: GroupFacts): { sections: SectionPlan[]; split: boolean } {
+  let split = false
+  const sectionOfQuestion = new Map<string, number>()
+  sections.forEach((s, i) => s.placements.forEach((p) => sectionOfQuestion.set(p.question_id, i)))
+  const out = sections.map((s, si) => {
+    const placed = new Set(s.placements.map((p) => p.question_id))
+    const emitted = new Set<string>()
+    const list: PlacementPlan[] = []
+    for (const p of s.placements) {
+      if (emitted.has(p.question_id)) continue
+      const g = facts.groupOf.get(p.question_id)
+      if (g === undefined) {
+        emitted.add(p.question_id)
+        list.push(p)
+        continue
+      }
+      const all = facts.members.get(g) ?? [p.question_id]
+      if (all.some((m) => sectionOfQuestion.get(m) !== si)) split = true
+      for (const m of all) {
+        if (!placed.has(m) || emitted.has(m)) continue
+        emitted.add(m)
+        list.push(s.placements.find((x) => x.question_id === m) as PlacementPlan)
+      }
+    }
+    return { ...s, placements: list }
+  })
+  return { sections: out, split }
+}
+
+interface V3Question {
+  id: string
+  group_id: string | null
+  subject_id: string | null
+  marks: number
+}
+
+export function papersStep(c: QuestionsContext): AnyEntityStep {
+  const entity = 'exam_papers'
+  let statuses: Map<string, string> | undefined
+  let rules: Map<string, string> | undefined
+  let kertasRef: KertasReference | undefined
+  return {
+    entity,
+    source: c.source,
+    extract: (after) => readArchiveById(c.pool, 'exam_papers', after, c.pageSize),
+    keyOf: (r: ArchiveRow) => r.id ?? '',
+    async load(rows: ArchiveRow[], ctx: BatchContext): Promise<BatchResult> {
+      statuses ??= await lookupSlugs(c.pool, 'staging_cloud', 'paper_statuses')
+      rules ??= await lookupSlugs(c.pool, 'archive_cloud', 'selection_rules')
+      const ids = rows.map((r) => r.id as string)
+      const sectionsBy = await childrenOf(c.pool, 'paper_sections', 'exam_paper_id', ids, 't."position", t."id"')
+      const sectionIds = [...sectionsBy.values()].flatMap((l) => l.map((s) => s.id as string))
+      const pivotBy = await childrenOf(c.pool, 'exam_paper_questions', 'paper_section_id', sectionIds, 't."sort_order", t."id"')
+      const bareBy = await childrenOf(c.pool, 'exam_questions', 'paper_section_id', sectionIds, 't."position", t."id"')
+      const eqIds = [...new Set([...pivotBy.values(), ...bareBy.values()].flatMap((l) => l.map((x) => (x.exam_question_id ?? x.id) as string)))]
+      const eqLabel = new Map<string, string | null>()
+      if (eqIds.length > 0) {
+        const res = await c.pool.query<{ id: string; number_label: string | null }>(`SELECT id::text AS id, number_label FROM archive_cloud.exam_questions WHERE id = ANY($1::bigint[])`, [eqIds])
+        for (const r of res.rows) eqLabel.set(r.id, text(r.number_label))
+      }
+      const mapped = new Map<string, { source: string; legacy_id: string }>()
+      if (eqIds.length > 0) {
+        const res = await c.pool.query<{ canonical_id: string; source: string; legacy_id: string }>(
+          `SELECT canonical_id::text AS canonical_id, source, legacy_id FROM archive_cloud.legacy_canonical_map WHERE canonical_type = 'exam_question' AND canonical_id = ANY($1::bigint[])`,
+          [eqIds],
+        )
+        for (const r of res.rows) mapped.set(r.canonical_id, { source: (r.source ?? '').trim().toLowerCase(), legacy_id: r.legacy_id })
+      }
+      const users = await ctx.idMap.resolveMany('users', rows.map((r) => (text(r.created_by) ?? '')).filter((x) => x !== ''))
+      const cur = await c.curriculum()
+      const legacyQuestions = await ctx.idMap.resolveMany('questions', [...mapped.values()].filter((m) => m.source === 'questions').map((m) => m.legacy_id))
+      const structured = await ctx.idMap.resolveMany('structured_questions', [...mapped.values()].filter((m) => m.source === 'structured').map((m) => m.legacy_id))
+      const canonical = await ctx.idMap.resolveMany('exam_questions', eqIds)
+      const resolveQuestion = (eq: string): string | undefined => {
+        const m = mapped.get(eq)
+        if (m?.source === 'questions') return legacyQuestions.get(m.legacy_id) ?? canonical.get(eq)
+        if (m?.source === 'structured') return structured.get(m.legacy_id) ?? canonical.get(eq)
+        return canonical.get(eq)
+      }
+      // V3 facts of every resolved question: subject, group and leaf marks.
+      const v3Ids = new Set<string>()
+      const resolved = new Map<string, string | undefined>()
+      for (const e of eqIds) {
+        const q = resolveQuestion(e)
+        resolved.set(e, q)
+        if (q !== undefined) v3Ids.add(q)
+      }
+      const facts = new Map<string, V3Question>()
+      if (v3Ids.size > 0) {
+        const res = await ctx.db.query<{ id: string; group_id: string | null; subject_id: string | null; marks: number }>(
+          `SELECT q.id::text AS id, q.group_id::text AS group_id, v.subject_id::text AS subject_id,
+                  coalesce((SELECT sum(p.marks) FROM question_parts p WHERE p.question_version_id = v.id AND p.marks IS NOT NULL), 0)::int AS marks
+             FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE q.id = ANY($1::bigint[])`,
+          [[...v3Ids]],
+        )
+        for (const r of res.rows) facts.set(r.id, r)
+      }
+      const groupIds = [...new Set([...facts.values()].flatMap((f) => (f.group_id === null ? [] : [f.group_id])))]
+      const groupFacts: GroupFacts = await readGroupFacts(ctx, groupIds)
+      const blueprintHeads = new Map<string, number | null>()
+      const ref = (kertasRef ??= await readKertasReference(c, ctx))
+      // Leaf answer modes of every V2 question of this page (parts with children are not leaves).
+      const leafModesOf = new Map<string, string[]>()
+      if (eqIds.length > 0) {
+        const modes = await c.pool.query<{ eq: string; slug: string }>(
+          `SELECT p.exam_question_id::text AS eq, lower(btrim(am.slug)) AS slug FROM archive_cloud.question_parts p JOIN staging_cloud.answer_modes am ON am.id = p.answer_mode_id
+            WHERE p.exam_question_id = ANY($1::bigint[]) AND NOT EXISTS (SELECT 1 FROM archive_cloud.question_parts c WHERE c.parent_part_id = p.id)`,
+          [eqIds],
+        )
+        for (const r of modes.rows) leafModesOf.set(r.eq, [...(leafModesOf.get(r.eq) ?? []), r.slug])
+      }
+
+      let inserted = 0
+      let unchanged = 0
+      for (const row of rows) {
+        const legacyId = row.id ?? ''
+        assertSurrogateLegacyId(legacyId, 'migrate:papers')
+        const have = await ctx.db.query(`SELECT 1 FROM etl_id_map m JOIN papers p ON p.id = m.new_id::bigint WHERE m.legacy_source = $1 AND m.entity = $2 AND m.legacy_id = $3`, [ctx.source, entity, legacyId])
+        if (have.rows.length > 0) {
+          unchanged += 1
+          continue
+        }
+        await ctx.db.query(`DELETE FROM etl_id_map WHERE legacy_source = $1 AND entity = $2 AND legacy_id = $3`, [ctx.source, entity, legacyId])
+        const title = text(row.title)
+        if (title === null) {
+          rejectRow(ctx, entity, legacyId, { reason: 'INVALID_VALUE', column: 'title' })
+          continue
+        }
+        // Sections and placements.
+        const sections: SectionPlan[] = []
+        const paperEqs = new Set<string>()
+        let hasDocumentSection = false
+        let dropped = 0
+        for (const s of sectionsBy.get(legacyId) ?? []) {
+          const sid = s.id as string
+          if (text(s.paper_document_id) !== null) hasDocumentSection = true
+          const links = pivotBy.get(sid)
+          const entries: { eq: string; label: string | null; override: number | null }[] =
+            links !== undefined && links.length > 0
+              ? links.map((l) => ({ eq: l.exam_question_id as string, label: text(l.number_label) ?? eqLabel.get(l.exam_question_id as string) ?? null, override: intOf(l.marks_override, 1) }))
+              : (bareBy.get(sid) ?? []).map((l) => ({ eq: l.id as string, label: eqLabel.get(l.id as string) ?? null, override: null }))
+          for (const e of entries) paperEqs.add(e.eq)
+          const seen = new Set<string>()
+          const placements: PlacementPlan[] = []
+          for (const e of entries) {
+            const q = resolved.get(e.eq)
+            if (q === undefined) {
+              dropped += 1
+              continue
+            }
+            if (seen.has(q)) continue
+            seen.add(q)
+            placements.push({ question_id: q, number_label: e.label, marks_override: e.override })
+          }
+          const slug = rules.get(text(s.selection_rule_id) ?? '')
+          let rule = ruleTypeOf(slug) ?? 'all'
+          const n = intOf(s.select_count, 1)
+          if (rule === 'choose' && n === null) {
+            rule = 'all'
+            c.notes.count('papers.rule_n_missing')
+          }
+          sections.push({ label: text(s.label) ?? `Bahagian ${sections.length + 1}`, instruction: text(s.instruction_text), rule_type: rule, rule_n: rule === 'choose' ? n : null, mark_budget: intOf(s.mark_budget, 0), placements })
+        }
+        if (dropped > 0) c.notes.count('papers.placement_dropped', dropped)
+        const grouped = normaliseGroups(sections, groupFacts)
+        const hold: string[] = []
+        if (grouped.split) {
+          hold.push('group_split')
+          c.notes.count('papers.group_split')
+        }
+
+        // Subject: V2's, else the one subject of the placed questions.
+        let subject = text(row.subject_id) === null ? undefined : cur.subjects.get((row.subject_id as string).trim())
+        if (subject === undefined) {
+          const subjects = new Set(grouped.sections.flatMap((s) => s.placements.map((p) => facts.get(p.question_id)?.subject_id ?? null)).filter((x): x is string => x !== null))
+          if (subjects.size === 1) {
+            subject = [...subjects][0]
+            c.notes.count('papers.subject_from_questions')
+          }
+        }
+        if (subject === undefined) {
+          rejectRow(ctx, entity, legacyId, { reason: 'ORPHAN_PARENT', column: 'subject_id' })
+          continue
+        }
+        const evidence: KertasEvidence = {
+          raw: row.kertas ?? null,
+          coverCode: row.cover_code ?? null,
+          title,
+          leafModes: [...paperEqs].flatMap((e) => leafModesOf.get(e) ?? []),
+          hasDocumentSection,
+          objectiveK1: ref.objectiveK1.has(subject),
+          structuredKertas: [...(ref.structuredKertas.get(subject) ?? [])].sort(),
+        }
+        const inferred = inferKertas(evidence)
+        let kertas = inferred.kertas
+        if (kertas === null) {
+          kertas = 1
+          hold.push(`kertas_unknown:${inferred.via}`)
+          c.notes.count('papers.kertas_unknown')
+        } else if (inferred.via !== 'v2') c.notes.count(`papers.kertas_inferred.${inferred.via}`)
+        const headKey = `${subject}|${kertas}`
+        if (!blueprintHeads.has(headKey)) {
+          const head = await ctx.db.query<{ duration_min: number }>(`SELECT duration_min FROM blueprints WHERE subject_id = $1::bigint AND kertas = $2 AND status = 'active'`, [subject, kertas])
+          blueprintHeads.set(headKey, head.rows.length > 0 ? (head.rows[0] as { duration_min: number }).duration_min : null)
+        }
+        const kontrakMinutes = blueprintHeads.get(headKey) ?? null
+        const surface: 'simulasi' | 'subjektif' = kontrakMinutes !== null ? 'simulasi' : kertas >= 2 ? 'subjektif' : 'simulasi'
+        const ownMinutes = intOf(row.duration_minutes, 1)
+        let printed: number
+        let durationMinutes: number | null = null
+        if (surface === 'subjektif') {
+          const ok = ownMinutes !== null && ownMinutes <= 300
+          printed = ok ? (ownMinutes as number) : 0
+          durationMinutes = ok ? printed : null
+          if (!ok && ownMinutes !== null) c.notes.count('papers.duration_out_of_range')
+        } else if (ownMinutes !== null) printed = ownMinutes
+        else if (kontrakMinutes !== null) {
+          printed = kontrakMinutes
+          c.notes.count('papers.duration_from_kontrak')
+        } else {
+          printed = PLACEHOLDER_MINUTES
+          hold.push('duration_placeholder')
+          c.notes.count('papers.duration_placeholder')
+        }
+        const code = text(row.cover_code) ?? `K${kertas}`
+        const creator = text(row.created_by)
+        const paper = await ctx.db.query<{ id: string }>(
+          `INSERT INTO papers (kind, title, subject_id, kertas, paper_code, printed_duration_min, surface, duration_minutes, instructions, reference_sheets, status, version, created_by_id, created_at, updated_at)
+           VALUES ('pilihan', $1, $2::bigint, $3, $4, $5, $6, $7, $8::text[], $9::jsonb, 'draft', 1, $10::bigint, coalesce($11::timestamptz, now()), coalesce($12::timestamptz, now()))
+           RETURNING id::text AS id`,
+          [title, subject, kertas, code, printed, surface, durationMinutes, instructionsOf(row.instructions), toJson(referenceSheetsOf(row.reference_assets)), creator === null ? null : (users.get(creator) ?? null), text(row.created_at), text(row.updated_at)],
+        )
+        const paperId = (paper.rows[0] as { id: string }).id
+        const secRows = grouped.sections.map((s, i) => {
+          const marks = s.placements.reduce((sum, p) => sum + (p.marks_override ?? facts.get(p.question_id)?.marks ?? 0), 0)
+          const budget = s.mark_budget ?? (s.rule_type === 'choose' && s.rule_n !== null && s.placements.length > 0 ? Math.round((marks * s.rule_n) / s.placements.length) : marks)
+          return { position: i + 1, label: s.label, instruction: s.instruction, rule_type: s.rule_type, rule_n: s.rule_n, question_count: s.placements.length, mark_budget: budget }
+        })
+        if (secRows.length > 0) {
+          const made = await ctx.db.query<{ id: string; position: number }>(
+            `INSERT INTO paper_sections (paper_id, position, label, instruction, rule_type, rule_n, question_count, mark_budget, compulsory, allowed_modes, admin_created)
+             SELECT $1::bigint, x.position, x.label, x.instruction, x.rule_type, x.rule_n, x.question_count, x.mark_budget, false, '{}', false
+             FROM jsonb_to_recordset($2::jsonb) AS x(position smallint, label text, instruction text, rule_type text, rule_n smallint, question_count int, mark_budget int)
+             RETURNING id::text AS id, position::int AS position`,
+            [paperId, toJson(secRows)],
+          )
+          const sectionOf = new Map(made.rows.map((r) => [r.position, r.id]))
+          const placementRows = grouped.sections.flatMap((s, i) =>
+            s.placements.map((p, j) => ({ section_id: sectionOf.get(i + 1), question_id: p.question_id, position: j + 1, number_label: p.number_label, marks_override: p.marks_override })),
+          )
+          if (placementRows.length > 0) {
+            await ctx.db.query(
+              `INSERT INTO paper_placements (paper_section_id, question_id, pinned_version_no, position, number_label, marks_override)
+               SELECT x.section_id, x.question_id, 1, x.position, x.number_label, x.marks_override
+               FROM jsonb_to_recordset($1::jsonb) AS x(section_id bigint, question_id bigint, position smallint, number_label text, marks_override smallint)`,
+              [toJson(placementRows)],
+            )
+            c.notes.count('papers.placements_loaded', placementRows.length)
+          }
+        } else c.notes.count('papers.no_sections')
+        await ctx.idMap.register(entity, legacyId, paperId)
+        if (hold.length > 0) await ctx.idMap.register('exam_paper_holds', legacyId, hold.join(','))
+        inserted += 1
+        c.notes.count(`papers.surface.${surface}`)
+        for (const h of hold) c.notes.count(`papers.hold.${h}`)
+      }
+      return { inserted, unchanged }
+    },
+  }
+}
+
+/** Reference facts of the kertas inference, read once per run (V3 `spm_subject_configs` and `blueprints`, V2 `paper_blueprints`), keyed by V3 subject id. */
+export interface KertasReference {
+  objectiveK1: ReadonlySet<string>
+  structuredKertas: ReadonlyMap<string, ReadonlySet<number>>
+}
+
+async function readKertasReference(c: QuestionsContext, ctx: BatchContext): Promise<KertasReference> {
+  const cur = await c.curriculum()
+  const objectiveK1 = new Set<string>()
+  const structuredKertas = new Map<string, Set<number>>()
+  const add = (subject: string, kertas: number): void => {
+    if (kertas >= 2 && kertas <= 4) structuredKertas.set(subject, (structuredKertas.get(subject) ?? new Set<number>()).add(kertas))
+  }
+  const cfg = await ctx.db.query<{ subject_id: string }>(`SELECT subject_id::text AS subject_id FROM spm_subject_configs WHERE target_type = 'spm'`)
+  for (const r of cfg.rows) objectiveK1.add(r.subject_id)
+  const heads = await ctx.db.query<{ subject_id: string; kertas: number }>(`SELECT subject_id::text AS subject_id, kertas FROM blueprints WHERE status = 'active'`)
+  for (const r of heads.rows) add(r.subject_id, r.kertas)
+  const v2 = await c.pool.query<{ subject_id: string | null; kertas: string | null; source: string | null; auto_markable: string | null }>(
+    `SELECT subject_id::text AS subject_id, kertas::text AS kertas, lower(btrim(source)) AS source, auto_markable::text AS auto_markable FROM archive_cloud.paper_blueprints`,
+  )
+  for (const r of v2.rows) {
+    const subject = r.subject_id === null ? undefined : cur.subjects.get(r.subject_id.trim())
+    const kertas = Number(r.kertas)
+    if (subject === undefined || !Number.isInteger(kertas)) continue
+    if (kertas === 1 && r.source === 'derived' && ['1', 't', 'true'].includes((r.auto_markable ?? '').toLowerCase())) objectiveK1.add(subject)
+    else if (r.source !== 'draft') add(subject, kertas)
+  }
+  return { objectiveK1, structuredKertas }
+}
+
+async function readGroupFacts(ctx: BatchContext, groupIds: readonly string[]): Promise<GroupFacts> {
+  const groupOf = new Map<string, string>()
+  const members = new Map<string, string[]>()
+  if (groupIds.length === 0) return { groupOf, members }
+  const res = await ctx.db.query<{ id: string; group_id: string }>(
+    `SELECT id::text AS id, group_id::text AS group_id FROM questions WHERE group_id = ANY($1::bigint[]) ORDER BY group_id, group_position, id`,
+    [groupIds],
+  )
+  for (const r of res.rows) {
+    groupOf.set(r.id, r.group_id)
+    members.set(r.group_id, [...(members.get(r.group_id) ?? []), r.id])
+  }
+  return { groupOf, members }
+}
+

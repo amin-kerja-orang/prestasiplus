@@ -352,8 +352,8 @@ describe('content', () => {
     expect(draft.ok && draft.value.published_at).toBeNull()
   })
 
-  it('rejects an article with no content, an unknown category or an unresolved author', () => {
-    expect(rejectOf(transformArticle(article, { authorId: '9' }))).toBe('INVALID_VALUE:content')
+  it('rejects an unknown category or an unresolved author (an article without text loads empty, T-B6)', () => {
+    expect(transformArticle(article, { authorId: '9' })).toMatchObject({ ok: true, value: { content: '' } })
     expect(rejectOf(transformArticle({ ...article, category: 'lain' }, { authorId: '9' }))).toBe('UNKNOWN_ENUM:category')
     expect(rejectOf(transformArticle({ ...article, content: 'x' }, { authorId: undefined }))).toBe('ORPHAN_PARENT:author_id')
     expect(rejectOf(transformArticle({ ...article, content: 'x', is_published: 'maybe' }, { authorId: '9' }))).toBe('INVALID_VALUE:is_published')
@@ -439,21 +439,23 @@ describe('operations', () => {
     expect(transformTimeline({ title: 'T', body: null, happened_on: null }, { userId: '3' }).ok).toBe(true)
   })
 
-  it('feedback: four scores kept, nps null, newest per month, scores 1 to 5', () => {
+  it('feedback: the 0-10 V2 score is the nps, three 1-5 scores kept, newest per month', () => {
     const base = { satisfaction: '4', usability: '3', relevance: '5', score: '4', comment: 'Komen', created_at: '2026-05-20T10:00:00Z' }
     const ctx = { userId: '3', role: 'pelajar', schoolId: '8', month: '2026-05-01', newest: true }
     const ok = transformFeedback(base, ctx)
-    expect(ok.ok && ok.value).toMatchObject({ role: 'student', school_id: '8', month: '2026-05-01', nps: null, satisfaction: 4, usability: 3, relevance: 5, score: 4 })
+    expect(ok.ok && ok.value).toMatchObject({ role: 'student', school_id: '8', month: '2026-05-01', nps: 4, satisfaction: 4, usability: 3, relevance: 5, score: null })
     expect(rejectOf(transformFeedback(base, { ...ctx, newest: false }))).toBe('DUPLICATE_KEY:month')
     expect(rejectOf(transformFeedback({ ...base, satisfaction: '6' }, ctx))).toBe('INVALID_VALUE:satisfaction')
     expect(rejectOf(transformFeedback({ ...base, satisfaction: '0' }, ctx))).toBe('INVALID_VALUE:satisfaction')
-    expect(rejectOf(transformFeedback({ ...base, score: '9' }, ctx))).toBe('INVALID_VALUE:score')
+    expect(rejectOf(transformFeedback({ ...base, score: '11' }, ctx))).toBe('INVALID_VALUE:score')
+    const ten = transformFeedback({ ...base, score: '10' }, ctx)
+    expect(ten.ok && ten.value.nps).toBe(10)
     expect(rejectOf(transformFeedback({ ...base, satisfaction: null }, ctx))).toBe('INVALID_VALUE:satisfaction')
     expect(rejectOf(transformFeedback(base, { ...ctx, role: 'super_guru' }))).toBe('UNKNOWN_ENUM:role')
     expect(rejectOf(transformFeedback(base, { ...ctx, month: null }))).toBe('INVALID_VALUE:created_at')
     expect(rejectOf(transformFeedback(base, { ...ctx, userId: undefined }))).toBe('ORPHAN_PARENT:user_id')
     const sparse = transformFeedback({ satisfaction: '3' }, ctx)
-    expect(sparse.ok && sparse.value).toMatchObject({ usability: null, relevance: null, score: null, comment: null })
+    expect(sparse.ok && sparse.value).toMatchObject({ usability: null, relevance: null, nps: null, score: null, comment: null })
   })
 })
 

@@ -41,6 +41,8 @@ const subjectRow = z.object({
 const chapterRow = z.object({
   ref: z.number().int(), subject: z.string(), level: nullableText, name: nullableText, nameEn: nullableText,
   chapterNumber: z.number().int().nullable(), description: nullableText, inTree: z.boolean(),
+  /** Absent = active. `false`: kept for the admin to curate, never shown to a learner (see the note above `seedTree`). */
+  isActive: z.boolean().optional(),
 })
 const topicRow = z.object({
   ref: z.number().int(), chapter: z.number().int(), name: z.string(), nameEn: nullableText,
@@ -151,6 +153,13 @@ async function seedReference(db: Tx, snap: CurriculumSnapshot, now: Date) {
   return { levels, subjects }
 }
 
+/**
+ * Chapters. The 569 chapters that the Tingkatan 1-3 textbook extraction auto-created (description "Auto-created from textbook
+ * chapter extraction for Tingkatan 1-3 seeding."; about a fifth are OCR debris: page headers, copyright lines, indexes) are seeded
+ * `is_active = false`, still `in_tree`. The learner catalogue reads active chapters only, so a pupil never sees them (V2 pupils saw
+ * Tingkatan 5 only), while the admin curriculum tree lists active and inactive chapters, so an admin can delete the debris or
+ * activate a real chapter. `in_tree = false` would hide them from the admin as well (the tree never returns out-of-tree rows).
+ */
 async function seedTree(db: Tx, snap: CurriculumSnapshot, now: Date, levels: Map<string, bigint>, subjects: Map<string, bigint>) {
   const sid = (code: string) => subjects.get(code) as bigint
   const lid = (code: string | null) => (code === null ? null : (levels.get(code) as bigint))
@@ -172,7 +181,7 @@ async function seedTree(db: Tx, snap: CurriculumSnapshot, now: Date, levels: Map
     await db.chapter.createMany({
       data: batch.map((c) => ({
         subjectId: sid(c.subject), educationLevelId: lid(c.level), name: c.name, nameEn: c.nameEn,
-        chapterNumber: c.chapterNumber, description: c.description, inTree: c.inTree, createdAt: now, updatedAt: now,
+        chapterNumber: c.chapterNumber, description: c.description, inTree: c.inTree, isActive: c.isActive ?? true, createdAt: now, updatedAt: now,
       })),
     })
   }

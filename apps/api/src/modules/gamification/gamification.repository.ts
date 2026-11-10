@@ -309,6 +309,7 @@ const VISIBLE_WALLETS = Prisma.sql`
            (w.total_syiling_earned - COALESCE(ts.t, 0))::bigint AS shown_total
       FROM wallets w LEFT JOIN tsum ts ON ts.user_id = w.user_id
      WHERE NOT (COALESCE(ts.t, 0) > 0 AND w.total_syiling_earned - COALESCE(ts.t, 0) <= 0)
+       AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = w.user_id AND ur.role = 'student')
   )`
 
 const escapeLike = (term: string): string => term.replace(/[\\%_]/g, (c) => `\\${c}`)
@@ -771,7 +772,7 @@ export class GamificationRepository {
     const rows = await db.$queryRaw<{ name: string; type: string; amount: number; source: string; createdAt: Date }[]>`
       SELECT u.name, l.type, l.amount, l.source, l.created_at AS "createdAt"
         FROM coin_ledger l JOIN users u ON u.id = l.user_id
-       WHERE NOT l.is_test
+       WHERE NOT l.is_test AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = l.user_id AND ur.role = 'student')
        ORDER BY l.created_at DESC, l.id DESC LIMIT ${take}`
     return rows
   }
@@ -779,7 +780,8 @@ export class GamificationRepository {
   // --- admin lists (every wallet and every ledger row: the audit view) ------------------------------
 
   async adminStudents(db: Db, filter: { search: string; tier: string; sort: StudentSort; page: number; pageSize: number }): Promise<{ rows: AdminStudentRow[]; total: number }> {
-    const conds: Prisma.Sql[] = []
+    // T-B5b: the admin Pelajar list is pupils only; V2 non-pupil wallets (teachers...) are kept but never listed here.
+    const conds: Prisma.Sql[] = [Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = w.user_id AND ur.role = 'student')`]
     // The V2 filter posts the tier id; the key (tier_name) keeps working.
     if (filter.tier) conds.push(Prisma.sql`(t.tier_name = ${filter.tier} OR t.id::text = ${filter.tier})`)
     const term = filter.search.trim()

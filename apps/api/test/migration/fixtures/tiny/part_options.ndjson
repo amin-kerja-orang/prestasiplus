@@ -1,0 +1,8 @@
+{"id":1000000,"question_part_id":100000,"label":"A","body":{"ms":"Pilihan A"},"is_correct":"1","is_distractor":"0","position":1,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":1000001,"question_part_id":100000,"label":"B","body":{"ms":"Pilihan B"},"is_correct":"0","is_distractor":"1","position":2,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":1000002,"question_part_id":100000,"label":"C","body":{"ms":"Pilihan C"},"is_correct":"0","is_distractor":"1","position":3,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":1000003,"question_part_id":100000,"label":"D","body":{"ms":"Pilihan D"},"is_correct":"0","is_distractor":"1","position":4,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":1000020,"question_part_id":100002,"label":"A","body":{"ms":"Pilihan A"},"is_correct":"1","is_distractor":"0","position":1,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":1000021,"question_part_id":100002,"label":"B","body":{"ms":"Pilihan B"},"is_correct":"0","is_distractor":"1","position":2,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":1000022,"question_part_id":100002,"label":"C","body":{"ms":"Pilihan C"},"is_correct":"0","is_distractor":"1","position":3,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":1000023,"question_part_id":100002,"label":"D","body":{"ms":"Pilihan D"},"is_correct":"0","is_distractor":"1","position":4,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}

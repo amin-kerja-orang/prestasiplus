@@ -25,6 +25,8 @@ vi.mock('../server/client', () => ({
   bijakServer: () => server,
   browserStorage: () => window.localStorage,
 }))
+// The V2 page-image documents have their own test (subjektif-dokumen.test.ts); here the list has none.
+vi.mock('../server/documents-client', () => ({ kertasDokumenServer: () => ({ list: () => Promise.resolve([]) }) }))
 vi.mock('../lib/use-bijak', async () => {
   const { ref } = await import('vue')
   return { useBijakUser: () => ref(7), useLearnerTheme: () => undefined }

@@ -17,15 +17,15 @@ describe('staging_cloud.sql', () => {
     expect(lf(readFileSync(DDL_FILE, 'utf8'))).toBe(renderDdl())
   })
 
-  it('has 89 migrated or staged tables and 38 archived question tables, with the final paper table names', () => {
+  it('has 89 migrated or staged tables and 45 archived question tables, with the final paper table names', () => {
     expect(TABLES.filter((t) => t.group === 'staging')).toHaveLength(89)
-    expect(TABLES.filter((t) => t.group === 'archive')).toHaveLength(38)
-    expect(TABLES).toHaveLength(127)
+    expect(TABLES.filter((t) => t.group === 'archive')).toHaveLength(45)
+    expect(TABLES).toHaveLength(134)
     expect(findTable('exam_papers')?.group).toBe('archive')
     expect(findTable('teacher_reference_papers')?.group).toBe('archive')
     expect(findTable('question_sets')?.group).toBe('staging')
-    // framework, derived and backup tables are not mirrored (`_dedup_map` is pending the half AM answer)
-    for (const name of ['cache', 'jobs', 'migrations', 'personal_access_tokens', 'school_battle_rankings', '_dedup_map', 'question_options_prefix_bak_20260819']) {
+    // the migrations table and the backup tables are not mirrored (the framework and ranking tables are staged counts-only, T-B2) (`_dedup_map` is pending the half AM answer)
+    for (const name of ['migrations', '_dedup_map', 'question_options_prefix_bak_20260819']) {
       expect(findTable(name), name).toBeUndefined()
     }
   })

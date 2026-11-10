@@ -25,6 +25,8 @@ export const ADMIN_ROUTES = {
 export const SUBJEKTIF_ROUTES = {
   list: KANDUNGAN_ROUTES.kertasSubjektif,
   detail: 'm28.admin.kandungan.kertas-subjektif.detail',
+  /** The V2 page-image documents of the same list (migration 0265): the admin preview (Pratonton). */
+  dokumen: 'm28.admin.kandungan.kertas-subjektif.dokumen',
 } as const
 
 export const STATUS_BADGE: Record<QuestionStatus, DsStatus> = {

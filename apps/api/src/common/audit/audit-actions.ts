@@ -116,5 +116,8 @@ export const AUDIT_ACTIONS = {
   HEADCOUNT_CONFIG_OTRS_CHANGED: 'headcount.config.otrs_changed',
   // S0-T10 Kawalan Ciri: detail { key, old, new }.
   FEATURE_FLAG_TOGGLED: 'feature_flag.toggled',
+  // 0265: Kertas Subjektif page-image documents (V2 `POST /admin/kertas-subjektif/{paper}/terbit`).
+  KERTAS_DOKUMEN_PUBLISHED: 'kertas_dokumen.published',
+  KERTAS_DOKUMEN_HIDDEN: 'kertas_dokumen.hidden',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

@@ -74,8 +74,8 @@ test.describe('M09 S1 article list', MODULE, () => {
   }) => {
     await gotoApp('/admin/articles')
     await expect(page.getByTestId('admin-article-row').first()).toBeVisible()
-    await expectTabTitle(page, 'Pengurusan Artikel | PRESTASIPLUS')
-    await expectHeader(page, 'Pengurusan Artikel', 'Urus artikel dan konten pendidikan')
+    await expectTabTitle(page, 'Artikel | PRESTASIPLUS')
+    await expectHeader(page, 'Artikel', 'Pengurusan artikel')
     if (isDesktopShell(page)) {
       await expect(
         page.getByTestId('shell-admin-sidebar').getByRole('link', { name: 'Artikel' }),
@@ -445,8 +445,8 @@ test.describe('M09 S5 note list', MODULE, () => {
   test('SRS §12 #28 default list @m09', async ({ page, gotoApp }) => {
     await gotoApp('/admin/notes')
     await expect(page.getByTestId('admin-note-row').first()).toBeVisible()
-    await expectTabTitle(page, 'Pengurusan Nota | PRESTASIPLUS')
-    await expectHeader(page, 'Pengurusan Nota', 'Urus nota pembelajaran dan sumber belajar')
+    await expectTabTitle(page, 'Nota | PRESTASIPLUS')
+    await expectHeader(page, 'Nota', 'Pengurusan nota pembelajaran')
     await expect(page.getByTestId('admin-notes-count')).toHaveText('Jumlah: 10 nota')
     await expect(page.getByTestId('admin-notes-add')).toHaveText('Tambah Nota')
     await expect(page.getByTestId('admin-notes-add')).toHaveAttribute('href', '/admin/notes/create')

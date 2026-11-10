@@ -253,7 +253,7 @@ Wrong grouping serves a wrong image to pupils (worse than a missing one), and a 
 | `questions.image_path` | `stimuli` (kind `image` by default, `diagram` when the caption or text says "gambar rajah"/"diagram", `graph` for "graf", `map`, `infographic`, `table` for "jadual" with an image) with `asset_file_id`; linked by `question_version_stimuli` (own) or `stimulus_group_stimuli` (group) |
 | `question_options.image_path` | `part_options.image_file_id` |
 | `media_assets` (`path`, `sha`, `kind`, `alt`, `width`, `height`) and `stimuli.asset_id` | `files` + `stimuli.asset_file_id`; `alt` to `stimuli.alt_text`; `sha` is cross-checked against the computed sha256 (mismatch = cause `checksum`, file not loaded) |
-| `paper_document_pages.path` | not loaded (open choice OC-3) |
+| `paper_document_pages.path` | `files` (purpose `kertas_page`) + `paper_document_pages.file_id`: loaded by `migrate:papers --files-dir` (section 10.6, OC-3 resolved) |
 
 `files` rows: `purpose = question_image`, `legacy_source = 'cloud'`, `legacy_id = '<table>.<column>:<id>'` (the existing `MigrationFiles` form). Identical bytes (same sha256) are **one** stored object referenced by several rows where the key allows it; `MigrationFiles` keys the object by sha256 and legacy id, so for shared figures the planner passes **one** `FileRequest` for the carrier or group and reuses the returned `fileId` for the stimulus (never one copy per member). A stimulus is created once per distinct `(sha256)` per plan group and shared across class-split groups.
 
@@ -392,15 +392,60 @@ Expected outcome: up to 36 minus skipped (those seeded) draft Kontrak visible in
 | `surface` | `simulasi` when V3 has a Kontrak for `(subject, kertas)`; `subjektif` when `kertas` is 2 to 4 and no Kontrak exists; else `simulasi` + `draft` | V3 splits the surfaces itself (D113-c); this is the only deterministic rule available from V2 data; the profile lists the split |
 | `year`, `exam_board`, `set label` | from `source_papers` joined through the papers' questions, only when unique | |
 | `status_id` slug via `paper_statuses` | `draft` always at insert (see 10.5) | V2-published papers are Terbit-ed by the post-load pass |
-| `blueprint_id` | NULL for loaded papers (the Kontrak link is made by the Studio) | do not link to a V2-derived Kontrak |
+| `blueprint_id` | NULL for loaded papers | V2 `exam_papers` has **no** blueprint reference column (verified against the V2 migrations: `exam_papers` carries `title`, `subject_id`, `kertas`, `is_composite`, `duration_minutes`, `instructions`, `reference_assets`, `status_id`, `created_by`, `cover_code`, `import_issues`; the only paper-to-blueprint relation V2 has is the implicit (subject, kertas) match). There is no link to copy and none is guessed; a link to the V3 Kontrak head would add conformance blockers a V2 paper never had. Publication of V2-published papers: section 10.5a |
 | `paper_sections` (`position`, `label`, `instruction_text`, `selection_rule_id`, `select_count`, `mark_budget`) | `paper_sections` (`position`, `label`, `instruction`, `rule_type`, `rule_n`, `question_count` = placements loaded, `mark_budget` (NULL: sum of leaf marks)) | |
 | `exam_paper_questions` (`sort_order`, `number_label`, `marks_override`) or `exam_questions.paper_section_id` + `position` | `paper_placements` (`question_id` through the id map; `pinned_version_no = 1`; `position` 1..n; `number_label`; `marks_override`) | a placement whose question is quarantined or unmapped is dropped and counted; a stimulus group is placed whole (all members adjacent, `group_position` order); a paper that would split a group is loaded `draft` with counter `group_split` |
-| `paper_documents` + pages | not loaded | OC-3 |
+| `paper_documents` + pages | loaded as they are (the V2 Kertas Subjektif feature), section 10.6 | OC-3 resolved |
 | idempotency | `etl_id_map('exam_papers')` + existence check | |
 
 ### 10.5 Terbit pass (post-load, uses the real gate)
 
-Load **every paper as `draft`**, then run an in-process Nest application context (`BuilderService.publish`, the same service the Studio calls) for V2 papers whose status was published/active, as the migration actor (an Admin Pusat user or a dedicated system actor with an audit row). A paper that passes the gate becomes `published` (and `pinned` versions freeze as the product requires); one that fails stays `draft` with the gate's BM message written to `papers-terbit-<run>.csv`. This guarantees nothing is `published` that the V3 gate would refuse, and it needs no SQL shortcut that could bypass the served-lock. (Open choice OC-6.)
+Load **every paper as `draft`**, then run an in-process Nest application context (`BuilderService.publish`, the same service the Studio calls) for V2 papers whose status was published/active, as the migration actor (an Admin Pusat user, audited). A paper that passes the gate becomes `published` (and `pinned` versions freeze as the product requires); one that fails stays `draft` with the gate's BM message written to `papers-terbit-<run>.csv`. This guarantees nothing is `published` that the V3 gate would refuse, and it needs no SQL shortcut that could bypass the served-lock. (Open choice OC-6.)
+
+### 10.5a Legacy publication rule (V2-published papers stay published)
+
+**Problem.** V2 `exam_papers` has no blueprint reference (10.4), so every loaded paper has `blueprint_id` NULL and the plain gate refuses it with the overridable line "Tiada blueprint untuk subjek dan kertas ini" (or, when a Kontrak exists, "Kontrak bukan Disahkan"). Pupils could take these papers in V2 (PO: V3 replaces V2, the experience is the same), so a plain Terbit would leave most of them draft.
+
+**Rule.** The Terbit pass calls the gate with the **same audited override the Studio already gives an admin** (V2 `studio.paper.published_override`): `BuilderService.publish(actor, id, { override: true, reason: LEGACY_PUBLISH_REASON })`. No schema flag, no SQL shortcut, no fake Kontrak.
+
+| Case | Outcome |
+|---|---|
+| No blocker | published by the plain gate (the override is not used) |
+| Only the Kontrak lines (no Kontrak, Kontrak not Disahkan, Kontrak conformance of a Spec/Draf Kontrak) | **published**; the audit row `bijak.paper.published_override` carries the reason "Diterbitkan dalam V2 (migrasi): V2 tiada rujukan kontrak blueprint pada kertas." and the lines lifted; the Terbit report row has `legacy = yes` |
+| Any hard blocker (a placed question pupils cannot be served, a split or incomplete rajah group, counts or marks of the paper itself, duplicates) | **stays `draft`** with the gate's BM lines in `papers-terbit-<run>.csv` (`outcome = failed`). The override never lifts these |
+| Held at load (`group_split`, `kertas_unknown`, `duration_placeholder`) | not offered to the gate; `outcome = held`, reason in the CSV. The group-integrity rule is unchanged: a rajah group is never split to make a paper pass |
+
+**Why this keeps the gate meaningful.** The override exists only inside the migration pass and the existing admin Terbit. A paper authored in V3 (Studio, Jana set, intake) is still refused without a Disahkan Kontrak unless an admin makes the same audited, reasoned override. A legacy paper keeps serving exactly as V2 did (once Terbit, the Kontrak line is skipped by `collectBlockers`, as for any Terbit paper). Every legacy publication is one auditable row, so "which published papers have no Kontrak" is a query, not a guess.
+
+**What the PO sees.** The report prints `terbit published / legacy / failed / held`. The `failed` and `held` papers are the papers V2 published that a V3 pupil cannot be served yet (an unservable question or a split group); they are fixed in the Studio (revive or regroup the question, then Terbit). They are listed, never hidden.
+
+### 10.6 Kertas Subjektif documents (`paper_documents` 254, `paper_document_pages` 7,424), OC-3 resolved
+
+**What they are.** In V2 they ARE the Kertas Subjektif feature: a subjective past paper (Kertas 2/3/4) served as page images plus a revealable marking scheme (V2 admin `Admin\PaperDocumentController` index and `togglePublish`; pupil `PaperDocumentController` index and show; routes `/admin/kertas-subjektif`, `/admin/kertas-subjektif/{paper}/terbit`, `/kertas-subjektif`, `/kertas-subjektif/{paper}`). V3's own Kertas Subjektif is question-based (`papers.surface = 'subjektif'`). Both are kept and appear in **one** pupil list and **one** admin list (no second menu entry).
+
+**Data model (migration `0265_kertas_dokumen`).**
+
+| Table | Columns (V2 meaning kept) |
+|---|---|
+| `paper_documents` | `subject_id` (nullable, set null on delete, as V2), `kertas` 2 to 4 (check), `title`, `negeri` (free text as V2 printed it), `year`, `source_file` (provenance, never shown), `duration_minutes`, `marks_total`, `page_count`, `scheme_page_count`, `published_at` (NULL = Draf), `legacy_source`, `legacy_id` (unique pair) |
+| `paper_document_pages` | `paper_document_id` (cascade), `kind` `paper`\|`scheme` (check), `position` >= 1, `file_id` -> `files` (restrict), `width`, `height`, `legacy_source`, `legacy_id`; unique `(paper_document_id, kind, position)` |
+| `files` | new purpose `kertas_page` (JPG/PNG/WebP, 8 MB; no role uploads it); read rule: admin always, any other signed-in role only while the page belongs to a **published** document (a Draf page is a uniform 404) |
+
+Both tables are listed in `prisma/migratable-models.json` (rollback and verify handle them like every legacy table). `paper_sections.paper_document_id` (the V2 "hybrid Bahagian B" phase-1 column, never exercised) is not carried.
+
+**API (module `modules/exam/documents`).**
+
+| Route | Role | V2 equivalent |
+|---|---|---|
+| `GET /api/bijak/kertas-dokumen` | student | pupil index (published only, Kertas then Negeri) |
+| `GET /api/bijak/kertas-dokumen/:id` | student | pupil show; Draf or unknown id = 404 "Kertas tidak ditemui" |
+| `GET /api/admin/kertas-dokumen?subject&kertas&status&page&pageSize` | admin | admin index with the three tiles (`Jumlah Kertas`, `Diterbitkan`, `Ada Skema`, over the whole set) |
+| `GET /api/admin/kertas-dokumen/:id` | admin | `Pratonton` (any status) |
+| `POST /api/admin/kertas-dokumen/:id/terbit` | admin + CSRF | `togglePublish`: published becomes Draf (“{title}” disembunyikan daripada pelajar.); Draf with no paper page is 422 (“{title}” tiada halaman — tidak boleh diterbitkan.), else published (“{title}” kini diterbitkan.). Audited `kertas_dokumen.published` / `kertas_dokumen.hidden` |
+
+**Screens (one set).** Pupil `/kertas-subjektif`: the existing list now also holds the documents, grouped by subject with the question papers (biggest group first; a document with no subject under "Lain-lain" as V2); a document card shows negeri (or the title), `Kertas N`, `{n} m/s`, `markah`, `min` and **Buka**; the viewer `/kertas-subjektif/dokumen/:id` shows the page images (full column width, lazy) and **Tunjuk Skema Pemarkahan (cuba jawab dahulu)** / **Sembunyi**, with V2's empty states ("Imej kertas belum tersedia.", "Skema pemarkahan tidak tersedia untuk kertas ini."). Admin `/admin/kertas-subjektif`: a switch **Kertas Soalan | Kertas Imbasan** on the same page and the same filter bar; the document view has the V2 tiles, the V2 columns (Subjek, Kertas, Negeri, Tahun, Halaman, Status, Tindakan) and the row actions Pratonton and Terbit/Sembunyikan (Terbit disabled while there is no page); Pratonton opens `/admin/kertas-subjektif/dokumen/:id`. The design system has no image-zoom component; as in V2 the page images are plain full-width images (the browser's own pinch zoom applies).
+
+**Loader (`migrate:papers [--files-dir=<export>]`, steps `paper_documents`, `paper_document_pages`).** Staging spec gained the columns of both tables (`ddl/spec.ts`, regenerate with `npm run staging:ddl`; anonymiser config classifies them). Header: kertas 2 to 4 and a title are required (else `INVALID_VALUE` reject); subject through the id map (none or unmapped: NULL, counted); `published_at` is V2's, so a document pupils could open in V2 is published; a re-run refreshes the header but never overwrites `published_at` or the counts (a V3 admin's Sembunyi survives). Page: kind, position and parent are checked; the image goes through `MigrationFiles` (plain path listed in `SHA256SUMS`, checksum, size and content check, copy to the file storage; failure = `INVALID_VALUE path`, counted by cause). After the pages `finaliseDocuments` sets `page_count` / `scheme_page_count` to the pages actually loaded and **hides a document left with no paper page** (nothing published is empty). Without `--files-dir` the pages are skipped and counted (`file_migration_off.paper_document_pages`) and `finaliseDocuments` does not run. Idempotent (legacy pair, `etl_id_map`, file key by sha256 and legacy id).
 
 ## 11. Idempotency, legacy ids, `etl_id_map`
 
@@ -414,6 +459,8 @@ Load **every paper as `draft`**, then run an in-process Nest application context
 | `spm_sets` | V2 id | `spm_tracking_sets.id` | natural key upsert |
 | `paper_blueprints` | V2 id | `blueprints.id` | skipped ids are mapped to the existing V3 head id? No: recorded in `etl_recon` as `skipped:blueprint_exists`, not in the id map |
 | `exam_papers` | V2 id | `papers.id` | |
+| `paper_documents` | V2 id | `paper_documents.id` | also the `(legacy_source, legacy_id)` unique pair of the table (upsert key) |
+| `paper_document_pages` | V2 id | `paper_document_pages.id` | pair as above; the image is `files.legacy_id = 'paper_document_pages.path:<id>'`, purpose `kertas_page` |
 | files | `files.legacy_id = '<table>.<column>:<id>'` | `files.id` | existing |
 
 Rules:
@@ -470,7 +517,7 @@ KP-5 (archive and draft load) is **decided** and is the plan. These remain:
 |---|---|---|---|---|
 | OC-1 | Medium-confidence rajah groups among **approved** questions | (a) hold them: load ungrouped, flagged, excluded from pupils, one-click in Regroup; (b) auto-group | **(a).** A wrong group shows a pupil the wrong figure; a held question shows nothing. The cost is a work-list the admin clears with the candidate hints. Draft and archived classes are auto-grouped either way. | No (default applies) |
 | OC-2 | A rajah shared by approved, draft and archived questions | (a) one group per lifecycle class on the same stimulus row; (b) one group with mixed statuses | **(a).** D113 requires a group to publish, serve and retire as one unit; (b) would let an archived member sit in a served group and `GroupMembers.set` rejects archived members anyway. | No |
-| OC-3 | `paper_documents` (254) and `paper_document_pages` (7,424 page images: PDF pages of subjective papers) | (a) leave in `archive_cloud`; (b) build a page-image viewer; (c) load pages as `files` only | **(a).** V3 builds a Kertas Subjektif from structured questions, not from page scans; V3 has no model for page images, so loading them would create a data set with no screen. Revisit only if the PO needs the scans. This is the one place KP-5 "bring everything" cannot be met without new product scope. | **Yes, needs a yes or no from the PO** (it is a departure from "everything") |
+| OC-3 | `paper_documents` (254) and `paper_document_pages` (7,424 page images: PDF pages of subjective papers) | (a) leave in `archive_cloud`; (b) build a page-image viewer; (c) load pages as `files` only | **Resolved: (b)**, by the PO rule "V3 replaces V2, everything not deleted comes over, same experience" (T-B13). In V2 these ARE the Kertas Subjektif feature (admin `/admin/kertas-subjektif`, pupil `/kertas-subjektif`), so the earlier recommendation (a) would have dropped a live V2 feature. Section 10.6. | Closed |
 | OC-4 | `pksk_questions` (748: body only, no options, no answers) | (a) leave in archive; (b) load as draft PKSK questions with placeholder options | **(a).** Nothing in V2 says which answer is right, and a loaded item cannot be keyed. Same reason V3 would quarantine an MCQ with no correct option. Listed in the report. | **Yes, same note as OC-3** |
 | OC-5 | Image size and type | (a) ETL-only 8 MB cap and operator PNG conversion of GIF/SVG; (b) raise `FILE_PURPOSE_RULES.question_image` for every upload | **(a).** No contract change; the export step does the conversion. (b) widens the public upload rule for a one-off need and is a LEAD-only contract change. | No |
 | OC-6 | V2-published papers | (a) Terbit pass through `BuilderService.publish`, failures stay draft; (b) load all as draft and let admins publish | **(a).** Admins continue what V2 had, and nothing is published that the V3 gate refuses. | No |

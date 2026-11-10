@@ -240,6 +240,8 @@ Assumption (D29a, user): questions are **not** migrated; the new bank is loaded 
    - `question_reports`: open reports are exported to a file for the content team; closed ones are dropped.
    - `part_responses`, `structured_attempt_answers`: not migrated by default (they need the stem to be meaningful and contain free-text student writing); the parent rows keep scores. See open question Q5.
 5. **Archive:** dump all legacy and canonical question tables to a read-only `archive_cloud` schema (not served, not in the API) for a fixed retention period (default 12 months) to support the backfill and disputes, then delete.
+
+**Staging spec size (T-B1/T-B2, 10 Nov 2026):** `ddl/spec.ts` stages 134 tables: 89 in `staging_cloud` and 45 in `archive_cloud` (the 38 question-bank and lookup tables plus 7 counts-only tables: `school_battle_rankings` and the six Laravel runtime tables, without any token, payload or cache-value column). The 134 here is the staging spec, not the .cloud table count of section 1, though the two numbers happen to match.
 6. **Prototype consequences (owners in section 4):** M05 `AnswerRow.questionId` becomes nullable with `historical`, `legacyQuestionRef` and `selectedLabel`; revision queue and "answer to queue" rules apply only to rows with a question link; mastery, topic progress and item-level analytics must read the dimensions on the answer row instead of joining the question.
 
 ## 4. Gaps: where the prototype diverges from .cloud

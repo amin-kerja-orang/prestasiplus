@@ -21,6 +21,7 @@ import {
   tierMatchKey,
   transformAchievement,
   transformChallenge,
+  REDEEM_BUDGET_UNENFORCED_SEN,
   transformRewardSetting,
   transformSetting,
   type AchievementValues,
@@ -307,8 +308,13 @@ export function rewardSettingsStep(a: ActivityContext): AnyEntityStep {
         const res = await ctx.db.query(`UPDATE reward_settings SET ${column} = $1, updated_at = $2::timestamptz WHERE id = 1 AND updated_by IS NULL AND ${column} IS DISTINCT FROM $1`, [values.value, values.updated_at])
         updated += res.rowCount ?? 0
       }
+      const budget = await ctx.db.query(
+        `UPDATE reward_settings SET redeem_budget_sen = $1 WHERE id = 1 AND updated_by IS NULL AND redeem_budget_sen IS DISTINCT FROM $1`,
+        [REDEEM_BUDGET_UNENFORCED_SEN],
+      )
+      updated += budget.rowCount ?? 0
       await ctx.idMap.registerMany(entity, items.map((i) => [i.legacyId, '1'] as const))
-      return { inserted: 0, updated, unchanged: items.length - updated }
+      return { inserted: 0, updated, unchanged: Math.max(0, items.length - updated) }
     },
   }
 }

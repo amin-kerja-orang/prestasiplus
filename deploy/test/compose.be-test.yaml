@@ -10,6 +10,9 @@ services:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
       POSTGRES_DB: postgres
+      # Password auth on loopback too (the image defaults to trust there): the migration specs that expect a wrong password or a
+      # missing role to be refused (staging/security, anonymise/pg-source) would otherwise connect.
+      POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256 --auth-local=scram-sha-256'
     command: ['postgres', '-c', 'fsync=off', '-c', 'synchronous_commit=off', '-c', 'full_page_writes=off', '-c', 'max_connections=400']
     tmpfs: [/var/lib/postgresql/data]
     healthcheck:

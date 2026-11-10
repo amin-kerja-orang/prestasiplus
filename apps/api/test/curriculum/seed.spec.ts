@@ -53,6 +53,22 @@ describe('curriculum seed (AC2, AC5, AC6, AC10)', () => {
     expect(links.map((r) => Number(r.n))).toEqual(LINKS_PER_LEVEL)
   })
 
+  it('the auto-created Tingkatan 1-3 chapters are seeded inactive (never shown to a learner) and stay in the tree for the admin to curate', async () => {
+    const AUTO = 'Auto-created from textbook chapter extraction for Tingkatan 1-3 seeding.'
+    const auto = snap.chapters.filter((c) => c.description?.startsWith(AUTO))
+    expect(auto).toHaveLength(569)
+    expect(auto.every((c) => c.inTree && c.isActive === false && ['T1', 'T2', 'T3'].includes(c.level ?? ''))).toBe(true)
+    // Nothing else is hidden: the snapshot has no other inactive chapter.
+    expect(snap.chapters.filter((c) => c.isActive === false)).toHaveLength(auto.length)
+    expect(await count(db, 'select count(*) n from chapters where not is_active')).toBe(569)
+    expect(await count(db, `select count(*) n from chapters where description like 'Auto-created from textbook chapter extraction%' and in_tree and not is_active`)).toBe(569)
+    // The same filter as the learner catalogue (in tree, active): only the observed Tingkatan 1-3 chapters remain.
+    const learner = await db.query<{ code: string; n: string }>(
+      `select l.code, count(*) n from chapters c join education_levels l on l.id = c.education_level_id where c.in_tree and c.is_active and l.code in ('T1','T2','T3') group by l.code order by l.code`,
+    )
+    expect(learner.map((r) => [r.code, Number(r.n)])).toEqual([['T1', 96], ['T2', 91], ['T3', 52]])
+  })
+
   it('only the out-of-tree chapters lack a level and a name; every seeded subject has the observed order', async () => {
     expect(await count(db, 'select count(*) n from chapters where education_level_id is null and name is null and not in_tree')).toBe(60)
     expect(await count(db, 'select count(*) n from chapters where in_tree and (education_level_id is null or name is null)')).toBe(0)

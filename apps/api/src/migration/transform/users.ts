@@ -5,7 +5,7 @@
  * passes the facts in. The clear IC, the plaintext password, `faith`, `google_id` and every token are
  * never read into the output.
  */
-import { PRIMARY_SCHOOL_TYPES, ROLE_MAP, ROLE_SOURCE_CODES, ROLES_NOT_MIGRATED, SECONDARY_SCHOOL_TYPES, STATE_SCOPE_SOURCE_ROLES } from './enums'
+import { PRIMARY_SCHOOL_TYPES, ROLE_MAP, ROLE_SOURCE_CODES, ROLES_LOADED_INACTIVE, ROLES_NOT_MIGRATED, SECONDARY_SCHOOL_TYPES, STATE_SCOPE_SOURCE_ROLES } from './enums'
 import { enumKey, flag, integer, ok, reject, squash, stamps, text, type Outcome, type Staged } from './common'
 import { decidePassword, type IcHasher, type ResetReason } from './secrets'
 
@@ -16,6 +16,11 @@ export interface UserContext {
   school: { type: string | null; state: string | null; district: string | null } | null
   ic: IcHasher
   defaultHashes: ReadonlySet<string>
+  /**
+   * T-B5: for this school, the grade of each class NAME that other pupils write with a number (`5 AMAN` -> `AMAN` -> 11); null = the name is
+   * ambiguous (two grades). Used only when the pupil's own label gives no grade.
+   */
+  siblingGrades?: ReadonlyMap<string, number | null>
 }
 
 export interface UserValues {
@@ -61,6 +66,12 @@ export interface UserOutput {
     icPresent: boolean
     emailInvalid: boolean
     experienceInvalid: boolean
+    /** The source role is one of `ROLES_LOADED_INACTIVE`: the account is stored inactive (T-B5). */
+    loadedInactive: boolean
+    /** A teacher with no school: V3 needs a school scope and V2 has none, so the account loads inactive (T-B5b). */
+    teacherWithoutSchool: boolean
+    /** The pupil's grade came from the same-named numbered class of the school (T-B5 rule 2). */
+    gradeFromSiblingClass: boolean
     resetReasons: readonly ResetReason[]
   }
 }
@@ -85,6 +96,16 @@ export function gradeFromClassLabel(kelas: string | null, schoolType: string | n
   return null
 }
 
+/**
+ * The class NAME of a label: the label without its leading number, upper case, spaces folded (`5 Amanah` -> `AMANAH`); null when it has no name or is
+ * itself only a number. T-B5 rule 2 matches a name-only label (`AMANAH`) with the numbered label of the same school.
+ */
+export function classLabelName(kelas: string | null): string | null {
+  if (kelas === null) return null
+  const name = kelas.replace(/^\s*\d{1,2}(?!\d)\s*/, '').replace(/\s+/g, ' ').trim().toUpperCase()
+  return name === '' ? null : name
+}
+
 /** Report label of a role that was rejected: the role name when it is one of `ROLES_NOT_MIGRATED`, else `other` (never raw text). */
 export function roleRejectLabel(raw: string | null | undefined): string {
   const k = enumKey(raw)
@@ -104,8 +125,12 @@ export function transformUser(row: Staged, ctx: UserContext): Outcome<UserOutput
   if (ctx.schoolId === undefined) return reject('ORPHAN_PARENT', 'school_id')
   const name = squash(row.name)
   if (name === null) return reject('INVALID_VALUE', 'name')
-  const active = flag(row.is_active, true)
-  if (active === 'invalid') return reject('INVALID_VALUE', 'is_active')
+  const parsedActive = flag(row.is_active, true)
+  if (parsedActive === 'invalid') return reject('INVALID_VALUE', 'is_active')
+  const loadedInactive = roleKey !== null && ROLES_LOADED_INACTIVE.includes(roleKey)
+  // T-B5b: V2 holds NO scope for a pegawai_ppd / jpn_officer (no ppd/jpn column, school_id null) and V3 needs a district/state scope
+  // (ROLE_SCOPE_LEVELS), or a school for a teacher, else sign-in is refused. Such an account loads inactive (admin assigns the scope, then activates).
+  const teacherWithoutSchool = role === 'teacher' && ctx.schoolId === null
   const suspended = flag(row.is_suspended, false)
   if (suspended === 'invalid') return reject('INVALID_VALUE', 'is_suspended')
   const complimentary = flag(row.is_complimentary, false)
@@ -116,11 +141,15 @@ export function transformUser(row: Staged, ctx: UserContext): Outcome<UserOutput
   const username = text(row.username)
   const password = decidePassword(row.password, {
     defaultHashes: ctx.defaultHashes,
-    rosterAccount: username !== null && email === null,
+    // PO decision KP-7 (10 Nov 2026): roster accounts keep their default password; no forced reset unless the operator opts in.
+    rosterAccount: process.env.PP_MIGRATE_ROSTER_FORCE_RESET === '1' && username !== null && email === null,
   })
   const icText = text(row.ic)
   const ic = ctx.ic.parts(icText)
   const kelas = squash(row.kelas)
+  const ownGrade = role === 'student' ? gradeFromClassLabel(kelas, ctx.school?.type ?? null) : null
+  const siblingName = role === 'student' && ownGrade === null && kelas !== null && !/^\s*\d/.test(kelas) ? classLabelName(kelas) : null
+  const siblingGrade = siblingName === null ? null : (ctx.siblingGrades?.get(siblingName) ?? null)
 
   let teacher: UserOutput['teacher'] = null
   let experienceInvalid = false
@@ -156,6 +185,8 @@ export function transformUser(row: Staged, ctx: UserContext): Outcome<UserOutput
     }
   }
 
+  const active = loadedInactive || ppdUnscoped || teacherWithoutSchool ? false : parsedActive
+
   return ok({
     user: {
       name,
@@ -167,7 +198,7 @@ export function transformUser(row: Staged, ctx: UserContext): Outcome<UserOutput
       ic_masked: ic?.masked ?? null,
       phone: text(row.phone),
       school_id: ctx.schoolId,
-      grade: role === 'student' ? gradeFromClassLabel(kelas, ctx.school?.type ?? null) : null,
+      grade: ownGrade ?? siblingGrade,
       class_label: kelas,
       bio: text(row.bio),
       is_active: active,
@@ -185,6 +216,9 @@ export function transformUser(row: Staged, ctx: UserContext): Outcome<UserOutput
       icPresent: icText !== null,
       emailInvalid: rawEmail !== null && email === null,
       experienceInvalid,
+      loadedInactive,
+      teacherWithoutSchool,
+      gradeFromSiblingClass: ownGrade === null && siblingGrade !== null,
       resetReasons: password.reasons,
     },
   })

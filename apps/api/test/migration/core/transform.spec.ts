@@ -20,7 +20,7 @@ import {
 } from '../../../src/migration/transform/reference'
 import { dateOnly, transformSubscription } from '../../../src/migration/transform/subscriptions'
 import { ROLE_MAP, ROLES_NOT_MIGRATED } from '../../../src/migration/transform/enums'
-import { gradeFromClassLabel, roleRejectLabel, transformUser, type UserContext } from '../../../src/migration/transform/users'
+import { classLabelName, gradeFromClassLabel, roleRejectLabel, transformUser, type UserContext } from '../../../src/migration/transform/users'
 import { IcHasher } from '../../../src/migration/transform/secrets'
 
 const ic = new IcHasher({ IC_HASH_KEY: 'test-ic-key-0123456789' })
@@ -144,16 +144,14 @@ describe('users', () => {
     })
   })
 
-  it('does not migrate the agent role: rejected by name on the role column, labelled for the report', () => {
-    expect(ROLES_NOT_MIGRATED).toEqual(['agent'])
-    expect(Object.keys(ROLE_MAP)).not.toContain('agent')
+  it('loads the agent role as an INACTIVE student (T-B5: v3 has no agent role, nothing is dropped)', () => {
+    expect(ROLES_NOT_MIGRATED).toEqual([])
+    expect(ROLE_MAP.agent).toBe('student')
     for (const raw of ['agent', ' Agent ']) {
-      expect(transformUser(user({ role: raw }), ctx())).toEqual({
-        ok: false, reject: expect.objectContaining({ reason: 'UNKNOWN_ENUM', column: 'role', enumValue: raw }),
-      })
+      const out = transformUser(user({ role: raw, is_active: '1' }), ctx())
+      expect(out).toMatchObject({ ok: true, value: { role: 'student', user: { is_active: false }, notes: { loadedInactive: true } } })
     }
-    expect(roleRejectLabel('agent')).toBe('agent')
-    expect(roleRejectLabel('AGENT ')).toBe('agent')
+    expect(roleRejectLabel('agent')).toBe('other')
     expect(roleRejectLabel('super_guru')).toBe('other')
     expect(roleRejectLabel(null)).toBe('other')
   })
@@ -205,8 +203,15 @@ describe('users', () => {
     expect(JSON.stringify(plain)).not.toContain('Rahsia123')
     const shared = transformUser(user(), ctx({ defaultHashes: new Set([HASH]) }))
     expect(shared).toMatchObject({ ok: true, value: { user: { password_hash: HASH, must_reset_password: true } } })
+    // KP-7: a roster account (username, no e-mail) with a bcrypt hash keeps it and is NOT flagged, unless PP_MIGRATE_ROSTER_FORCE_RESET=1.
     const roster = transformUser(user({ email: null }), ctx())
-    expect(roster).toMatchObject({ ok: true, value: { user: { must_reset_password: true } } })
+    expect(roster).toMatchObject({ ok: true, value: { user: { password_hash: HASH, must_reset_password: false } } })
+    process.env.PP_MIGRATE_ROSTER_FORCE_RESET = '1'
+    try {
+      expect(transformUser(user({ email: null }), ctx())).toMatchObject({ ok: true, value: { user: { must_reset_password: true } } })
+    } finally {
+      delete process.env.PP_MIGRATE_ROSTER_FORCE_RESET
+    }
     const argon = transformUser(user({ password: '$argon2id$v=19$m=65536,t=4,p=1$ZmFrZQ$ZmFrZWZha2U' }), ctx())
     expect(argon).toMatchObject({ ok: true, value: { user: { must_reset_password: true } } })
     expect(transformUser(user({ password: null }), ctx())).toMatchObject({ ok: true, value: { user: { password_hash: null, must_reset_password: true } } })
@@ -234,6 +239,19 @@ describe('users', () => {
     expect(JSON.stringify(t)).not.toContain('sensitive')
     expect(transformUser(user({ role: 'guru' }), ctx())).toMatchObject({ ok: true, value: { teacher: null } })
     expect(transformUser({ ...user({ role: 'pelajar' }), teaching_subject: 'X' }, ctx())).toMatchObject({ ok: true, value: { teacher: null } })
+  })
+
+  it('T-B5 rule 2: a name-only class label takes the grade of the same-named numbered class of the school, only when unambiguous', () => {
+    expect(classLabelName('5 Amanah')).toBe('AMANAH')
+    expect(classLabelName('  amanah  ')).toBe('AMANAH')
+    expect(classLabelName('5')).toBeNull()
+    const siblings = new Map<string, number | null>([['AMANAH', 11], ['IKHLAS', null]])
+    const got = transformUser(user({ kelas: 'Amanah' }), ctx({ siblingGrades: siblings }))
+    expect(got).toMatchObject({ ok: true, value: { user: { grade: 11 }, notes: { gradeFromSiblingClass: true } } })
+    expect(transformUser(user({ kelas: 'IKHLAS' }), ctx({ siblingGrades: siblings }))).toMatchObject({ ok: true, value: { user: { grade: null } } })
+    expect(transformUser(user({ kelas: 'Jujur' }), ctx({ siblingGrades: siblings }))).toMatchObject({ ok: true, value: { user: { grade: null } } })
+    // the own label always wins over a sibling
+    expect(transformUser(user({ kelas: '4 Amanah' }), ctx({ siblingGrades: siblings }))).toMatchObject({ ok: true, value: { user: { grade: 10 }, notes: { gradeFromSiblingClass: false } } })
   })
 
   it('reads the grade from the class label and the school type', () => {

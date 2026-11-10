@@ -37,6 +37,8 @@ model File {
   intakePageImages   IntakePage[]        @relation("IntakePageImage")
   intakePageThumbs   IntakePage[]        @relation("IntakePageThumb")
   intakeFigureCrops  IntakeFigure[]      @relation("IntakeFigureCrop")
+  // 0265 back-relation (exam.prisma owns the model).
+  paperDocumentPages PaperDocumentPage[] @relation("PaperDocumentPageFile")
 
   @@unique([legacySource, legacyId], map: "uq_files_legacy")
   @@index([ownerUserId, purpose], map: "ix_files_owner_user_id_purpose")

@@ -142,6 +142,8 @@ export interface OpenFilesOptions {
   repoRoots?: readonly string[]
   /** Test seam: the object store. Default: `LocalDiskStorage(FILE_STORAGE_DIR)`. */
   storage?: FileStorage
+  /** ETL-only size cap per purpose (bytes), instead of the upload rule (T-B9, design 8.2: V2 diagrams can exceed 2 MB). The upload route is untouched. */
+  capOverrides?: Partial<Record<FilePurpose, number>>
 }
 
 /** The checked export directory, its manifest and the object store. Created once per run by `openMigrationFiles`. */
@@ -157,13 +159,14 @@ export class MigrationFiles {
     private readonly env: Readonly<Record<string, string | undefined>>,
     private readonly mode: RunMode,
     private readonly source: LegacySource,
+    private readonly capOverrides: Partial<Record<FilePurpose, number>> = {},
   ) {
     this.manifestHash = manifestHash
   }
 
   /** The size cap an upload of `purpose` has: its own rule, lowered by `MAX_UPLOAD_MB` (BE-04 `FilesConfig`). */
   private capOf(purpose: FilePurpose): number {
-    const own = FILE_PURPOSE_RULES[purpose].maxBytes
+    const own = this.capOverrides[purpose] ?? FILE_PURPOSE_RULES[purpose].maxBytes
     if (purpose === 'audio_kbat') return own
     const n = Number(this.env.MAX_UPLOAD_MB)
     const ceiling = this.env.MAX_UPLOAD_MB !== undefined && this.env.MAX_UPLOAD_MB !== '' && Number.isFinite(n) && n > 0 ? n * MB : 10 * MB
@@ -328,5 +331,5 @@ export async function openMigrationFiles(options: OpenFilesOptions): Promise<Mig
       throw new ApplyGuardError('Refusing to copy files: set FILE_STORAGE_DIR to the absolute path of the v2 file storage.')
     }
   }
-  return new MigrationFiles(dir, manifest, manifestHash, storage, options.env, options.mode, options.source)
+  return new MigrationFiles(dir, manifest, manifestHash, storage, options.env, options.mode, options.source, options.capOverrides)
 }

@@ -26,6 +26,7 @@ import { PerformanceModule } from './reports/performance'
 import { SchoolAdminModule } from './school-admin'
 import { ExamBuilderModule } from './exam/builder'
 import { ExamBlueprintsModule } from './exam/blueprints'
+import { ExamDocumentsModule } from './exam/documents'
 import { GamificationModule } from './gamification'
 import { ShopModule } from './shop'
 import { IntakeFilesModule } from './intake/files'
@@ -57,4 +58,4 @@ import { DatabankModule } from './classes/teacher-tools/databank.module'
  * module order, and BE-09's `GET /guru/questions/:id` would otherwise capture BE-10's
  * `GET /guru/questions/template`. Keep it there.
  */
-export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ClassesModule, PerformanceModule, SchoolAdminModule, ExamBuilderModule, ExamBlueprintsModule, GamesModule, GamificationModule, ShopModule, IntakeFilesModule, QuestionSetsModule, MissionsModule, PracticeReadsModule, KirkpatrickModule, AnalyticsReportsModule, HeatmapModule, IntakeDashboardModule, CikguModule, CommandCenterModule, BattleModule, SpmModule, SponsorshipModule, MarketplaceModule, PkskModule, PracticeQuestionsBridgeModule, AiExtractionModule, IntakeWorkflowModule, ClassesQuestionsBridgeModule, DatabankModule]
+export const featureModules: Type<unknown>[] = [AuthModule, SchoolsModule, UsersModule, FilesModule, ParentsModule, SubscriptionsModule, NotificationsModule, AccountModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule, WalletModule, AudioKbatModule, SupportModule, VideosModule, PerutusanModule, ContentArticlesModule, BijakPapersModule, BijakAttemptsModule, PracticeModule, BijakIntegrationModule, ClassesModule, PerformanceModule, SchoolAdminModule, ExamBuilderModule, ExamBlueprintsModule, ExamDocumentsModule, GamesModule, GamificationModule, ShopModule, IntakeFilesModule, QuestionSetsModule, MissionsModule, PracticeReadsModule, KirkpatrickModule, AnalyticsReportsModule, HeatmapModule, IntakeDashboardModule, CikguModule, CommandCenterModule, BattleModule, SpmModule, SponsorshipModule, MarketplaceModule, PkskModule, PracticeQuestionsBridgeModule, AiExtractionModule, IntakeWorkflowModule, ClassesQuestionsBridgeModule, DatabankModule]

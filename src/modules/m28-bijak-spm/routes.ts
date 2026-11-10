@@ -107,6 +107,13 @@ const routes: RouteRecordRaw[] = [
       header: { title: 'Kertas Subjektif' },
     },
   },
+  // The V2 page-image documents of the same Kertas Subjektif list (migration 0265): the viewer.
+  {
+    path: '/kertas-subjektif/dokumen/:id',
+    name: 'm28.kertas-subjektif.dokumen',
+    component: () => import('./pages/SubjektifDokumenPage.vue'),
+    meta: { ...base, title: 'Kertas Subjektif - PRESTASIPLUS', header: { title: 'Kertas Subjektif' } },
+  },
   {
     path: '/kertas-subjektif/:paperId',
     name: 'm28.kertas-subjektif.paper',

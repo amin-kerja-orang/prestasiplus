@@ -53,7 +53,7 @@ export const migrateCore: MigrateCommand = {
     }
     // Counts and surrogate ids only: no name, e-mail, IC, phone or hash is ever printed.
     for (const [name, n] of [...core.notes.counters].sort(([a], [b]) => (a < b ? -1 : 1))) ctx.out(`note ${name}: ${n}`)
-    for (const name of ['ppd_officer_without_scope', 'duplicate_email', 'duplicate_username', 'ic_invalid']) {
+    for (const name of ['ppd_officer_without_scope', 'teacher_without_school', 'duplicate_email', 'duplicate_username', 'ic_invalid']) {
       const ids = core.notes.ids.get(name)
       if (ids && ids.length > 0) ctx.out(`ids ${name}: ${ids.slice(0, 200).join(',')}${ids.length > 200 ? ',...' : ''}`)
     }

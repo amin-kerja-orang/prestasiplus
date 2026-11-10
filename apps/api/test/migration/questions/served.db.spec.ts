@@ -69,7 +69,7 @@ beforeAll(async () => {
   expect((await run('dry-run')).status).toBe('succeeded')
   const applied = await run('apply')
   expect(applied.status).toBe('succeeded')
-  expect(applied.recon[0]).toMatchObject({ sourceCount: 7, eligibleCount: 6, loaded: 6, rejected: 0 })
+  expect(applied.recon[0]).toMatchObject({ sourceCount: 7, eligibleCount: 7, loaded: 7, rejected: 0 })
   const rows = await pool.query<{ legacy_id: string; id: string }>(`select legacy_id, id::text as id from questions where legacy_source = 'cloud'`)
   loaded = Object.fromEntries(rows.rows.map((r) => [r.legacy_id, r.id]))
 }, 300_000)

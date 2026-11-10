@@ -61,6 +61,7 @@ import { GURU_WEEKLY_REPORT_COMPONENT_SCHEMAS, registerGuruWeeklyReportPaths } f
 import { KIRKPATRICK_COMPONENT_SCHEMAS, registerKirkpatrickPaths } from './reports/kirkpatrick/paths'
 import { BIJAK_BUILDER_COMPONENT_SCHEMAS, registerBijakBuilderPaths } from './bijak/builder/paths'
 import { BIJAK_STANDARDS_COMPONENT_SCHEMAS, registerBijakStandardsPaths } from './bijak/standards/paths'
+import { KERTAS_DOKUMEN_COMPONENT_SCHEMAS, registerKertasDokumenPaths } from './bijak/kertas/paths'
 import { PARENT_INVITE_COMPONENT_SCHEMAS, registerParentInvitePaths } from './schools/parents/paths'
 import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './schools/subscriptions/paths'
 import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
@@ -149,6 +150,7 @@ export const COMPONENT_SCHEMAS = {
   ...KIRKPATRICK_COMPONENT_SCHEMAS, // BE-20 (M12)
   ...BIJAK_BUILDER_COMPONENT_SCHEMAS, // BE-39
   ...BIJAK_STANDARDS_COMPONENT_SCHEMAS, // BJS-01
+  ...KERTAS_DOKUMEN_COMPONENT_SCHEMAS, // 0265 (Kertas Subjektif documents)
   ...INTAKE_COMPONENT_SCHEMAS, // BE-38
   ...INTAKE_FILES_COMPONENT_SCHEMAS, // BE-37
   ...INTAKE_DASHBOARD_COMPONENT_SCHEMAS, // BE-40
@@ -209,6 +211,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerKirkpatrickPaths(registry) // BE-20 (M12)
   registerBijakBuilderPaths(registry) // BE-39
   registerBijakStandardsPaths(registry) // BJS-01
+  registerKertasDokumenPaths(registry) // 0265 (Kertas Subjektif documents)
   registerParentInvitePaths(registry) // BE-25
   registerSubscriptionPaths(registry) // BE-25
   registerCikguPaths(registry) // BE-43 (M13)

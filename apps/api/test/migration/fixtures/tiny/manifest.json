@@ -314,7 +314,7 @@
       "file": "stimulus_kinds.ndjson"
     },
     "questions": {
-      "rows": 24,
+      "rows": 27,
       "file": "questions.ndjson"
     },
     "question_options": {
@@ -322,13 +322,16 @@
       "file": "question_options.ndjson"
     },
     "structured_questions": {
-      "rows": 0
+      "rows": 8,
+      "file": "structured_questions.ndjson"
     },
     "structured_sub_questions": {
-      "rows": 0
+      "rows": 16,
+      "file": "structured_sub_questions.ndjson"
     },
     "structured_rubric_points": {
-      "rows": 0
+      "rows": 14,
+      "file": "structured_rubric_points.ndjson"
     },
     "pksk_questions": {
       "rows": 0
@@ -346,35 +349,43 @@
       "rows": 0
     },
     "spm_sets": {
-      "rows": 0
+      "rows": 6,
+      "file": "spm_sets.ndjson"
     },
     "spm_set_question": {
-      "rows": 0
+      "rows": 18,
+      "file": "spm_set_question.ndjson"
     },
     "exam_papers": {
       "rows": 3,
       "file": "exam_papers.ndjson"
     },
     "paper_sections": {
-      "rows": 0
+      "rows": 3,
+      "file": "paper_sections.ndjson"
     },
     "exam_questions": {
-      "rows": 0
+      "rows": 12,
+      "file": "exam_questions.ndjson"
     },
     "exam_paper_questions": {
-      "rows": 0
+      "rows": 9,
+      "file": "exam_paper_questions.ndjson"
     },
     "question_stimulus": {
       "rows": 0
     },
     "question_parts": {
-      "rows": 0
+      "rows": 3,
+      "file": "question_parts.ndjson"
     },
     "part_options": {
-      "rows": 0
+      "rows": 8,
+      "file": "part_options.ndjson"
     },
     "part_answer_keys": {
-      "rows": 0
+      "rows": 1,
+      "file": "part_answer_keys.ndjson"
     },
     "stimuli": {
       "rows": 0
@@ -412,10 +423,12 @@
       "rows": 0
     },
     "paper_blueprints": {
-      "rows": 0
+      "rows": 3,
+      "file": "paper_blueprints.ndjson"
     },
     "blueprint_sections": {
-      "rows": 0
+      "rows": 6,
+      "file": "blueprint_sections.ndjson"
     },
     "teacher_reference_documents": {
       "rows": 0
@@ -423,6 +436,27 @@
     "teacher_reference_papers": {
       "rows": 3,
       "file": "teacher_reference_papers.ndjson"
+    },
+    "school_battle_rankings": {
+      "rows": 0
+    },
+    "personal_access_tokens": {
+      "rows": 0
+    },
+    "jobs": {
+      "rows": 0
+    },
+    "failed_jobs": {
+      "rows": 0
+    },
+    "job_batches": {
+      "rows": 0
+    },
+    "cache": {
+      "rows": 0
+    },
+    "cache_locks": {
+      "rows": 0
     },
     "exam_boards": {
       "rows": 1,

@@ -1,7 +1,7 @@
 /**
  * `transformQuestion` / `exclusionOf` (QLOAD): pure rules, synthetic rows only.
  */
-import { QuestionLeafPartSchema } from '@pp/contract'
+import { QuestionLeafPartReadV3Schema as QuestionLeafPartSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { LANDLINE } from '../../../src/migration/anonymise/patterns'
@@ -45,17 +45,26 @@ const rejected = (r: LegacyQuestion) => {
   return `${out.reject.reason}:${out.reject.column}`
 }
 
-describe('exclusionOf', () => {
-  it('keeps approved MCQs in scope and names the first reason otherwise', () => {
+describe('exclusionOf and the status map (T-B9-2: every status loads)', () => {
+  it('only a type that another loader owns is excluded; every status and unknown types stay in scope', () => {
     expect(exclusionOf(row())).toBeNull()
     expect(exclusionOf(row({ status: ' Diluluskan ' }))).toBeNull()
     expect(exclusionOf(row({ type: 'pilihan_berganda' }))).toBeNull()
-    expect(exclusionOf(row({ status: 'draf' }))).toEqual({ by: 'status', code: 'draf' })
-    expect(exclusionOf(row({ status: 'ditolak', type: 'subjective' }))).toEqual({ by: 'status', code: 'ditolak' })
-    expect(exclusionOf(row({ type: 'subjective' }))).toEqual({ by: 'type', code: 'subjective' })
-    expect(exclusionOf(row({ status: null }))).toEqual({ by: 'status', code: 'null' })
-    // Free text never becomes a counter name.
-    expect(exclusionOf(row({ status: 'Teks bebas yang sangat panjang melebihi tiga puluh dua huruf sekali' }))).toEqual({ by: 'status', code: 'other' })
+    expect(exclusionOf(row({ status: 'draf' }))).toBeNull()
+    expect(exclusionOf(row({ type: 'subjektif' }))).toEqual({ by: 'type', code: 'subjektif' })
+    expect(exclusionOf(row({ type: 'sesuatu_lain' }))).toBeNull()
+  })
+
+  it('maps the V2 statuses; ditolak carries its reason; an unknown status or type is a reject, never dropped', () => {
+    const at = (status: string | null) => plan(row({ status }))
+    expect(at('diluluskan')).toMatchObject({ status: 'approved', live: true, published_at: '2025-02-03T04:05:06Z', rejection_reason: null })
+    expect(at('diarkib')).toMatchObject({ status: 'archived', live: false, published_at: null, is_active: true })
+    expect(at('draf')).toMatchObject({ status: 'draft', live: false, rejection_reason: null })
+    expect(at('ditolak')).toMatchObject({ status: 'draft', rejection_reason: 'Ditolak di V2.' })
+    expect(at('menunggu')).toMatchObject({ status: 'review' })
+    expect(rejected(row({ status: 'xyz' }))).toBe('UNKNOWN_ENUM:status')
+    expect(rejected(row({ status: null }))).toBe('UNKNOWN_ENUM:status')
+    expect(rejected(row({ type: 'sesuatu_lain' }))).toBe('UNKNOWN_ENUM:type')
   })
 })
 
@@ -64,13 +73,13 @@ describe('transformQuestion: the happy path', () => {
     const p = plan(row())
     expect(p).toMatchObject({
       legacyId: '7', subject_id: '101', education_level_id: '201', chapter_id: '301', topic_id: '401', form_origin: 't1_t3',
-      difficulty_tp: 3, stem: 'Soalan contoh?', explanation: 'Sebab.', correct: 'B', spm_pool: false, is_active: true, import_issues: null,
+      difficulty_tp: 3, stem: 'Soalan contoh?', explanation: 'Sebab.', correct: ['B'], qtype: 'mcq', spm_pool: false, is_active: true, import_issues: null,
       published_at: '2025-02-03T04:05:06Z', created_at: '2025-01-02T03:04:05Z',
     })
     expect(p.options.map((o) => `${o.position}${o.label}${o.body}`)).toEqual(['1ASatu', '2BDua', '3CTiga', '4DEmpat'])
-    expect(p.notes).toEqual([])
+    expect(p.notes).toEqual(['status.approved'])
     // The very leaf the contract (and the v2 reader) accepts.
-    expect(QuestionLeafPartSchema.safeParse({ label: '1', prompt: { ms: p.stem }, marks: 1, mode: 'mcq', options: p.options.map((o) => ({ label: o.label, body: { ms: o.body } })), key: { kind: 'option', correct: p.correct } }).success).toBe(true)
+    expect(QuestionLeafPartSchema.safeParse({ label: '1', prompt: { ms: p.stem }, marks: 1, mode: 'mcq', options: p.options.map((o) => ({ label: o.label, body: { ms: o.body } })), key: { kind: 'option', correct: p.correct[0] } }).success).toBe(true)
   })
 
   it('maps difficulty 1 to 5 as is; anything else is empty and counted', () => {
@@ -130,19 +139,19 @@ describe('transformQuestion: the happy path', () => {
 
 describe('transformQuestion: curriculum', () => {
   it('chapter and topic are optional and counted when missing or unmapped', () => {
-    expect(plan(row({ chapter_id: null, topic_id: null })).notes).toEqual(['chapter_missing'])
+    expect(plan(row({ chapter_id: null, topic_id: null })).notes).toEqual(['chapter_missing', 'status.approved'])
     const un = plan(row({ chapter_id: '99', topic_id: '98' }))
     expect(un).toMatchObject({ chapter_id: null, topic_id: null })
-    expect(un.notes).toEqual(['topic_unmapped', 'chapter_unmapped'])
+    expect(un.notes).toEqual(['topic_unmapped', 'chapter_unmapped', 'status.approved'])
   })
 
   it('a topic of another chapter is dropped; a chapter missing is taken from the topic', () => {
     const mismatch = plan(row({ chapter_id: '1', topic_id: '2' }))
     expect(mismatch).toMatchObject({ chapter_id: '301', topic_id: null })
-    expect(mismatch.notes).toEqual(['topic_chapter_mismatch'])
+    expect(mismatch.notes).toEqual(['topic_chapter_mismatch', 'status.approved'])
     const fromTopic = plan(row({ chapter_id: null, topic_id: '2' }))
     expect(fromTopic).toMatchObject({ chapter_id: '302', topic_id: '402' })
-    expect(fromTopic.notes).toEqual(['chapter_from_topic'])
+    expect(fromTopic.notes).toEqual(['chapter_from_topic', 'status.approved'])
   })
 })
 
@@ -154,18 +163,26 @@ describe('transformQuestion: rejects', () => {
     expect(rejected(row({ education_level_id: '999' }))).toBe('ORPHAN_PARENT:education_level_id')
   })
 
-  it('a blank body is rejected', () => {
+  it('a blank body is rejected unless the question has a picture (then the stem is empty and the picture is the stem stimulus)', () => {
     expect(rejected(row({ body: '  ' }))).toBe('INVALID_VALUE:body')
     expect(rejected(row({ body: null }))).toBe('INVALID_VALUE:body')
+    const p = plan(row({ body: null, image_path: 'a/b.png' }))
+    expect(p.stem).toBe('')
+    expect(p.notes).toContain('empty_stem_image')
+    expect(p.image_path).toBe('a/b.png')
+    expect(rejected(row({ body: '<p> </p>' }))).toBe('INVALID_VALUE:body')
   })
 
-  it('3 to 8 options only (the contract minimum is 3)', () => {
+  it('2 to 8 options (V3 allows 2): 2 options load, 0, 1 and 9 are quarantined', () => {
     expect(rejected(row({}, []))).toBe('INVALID_VALUE:options')
-    expect(rejected(row({}, four().slice(0, 2)))).toBe('INVALID_VALUE:options')
+    expect(rejected(row({}, four().slice(0, 1)))).toBe('INVALID_VALUE:options')
+    const two = plan(row({}, four().slice(0, 2)))
+    expect(two.options).toHaveLength(2)
+    expect(two.notes).toContain('two_options')
     const three = four().slice(0, 3)
     expect(plan(row({}, three)).options).toHaveLength(3)
     const eight = 'ABCDEFGH'.split('').map((l, i) => opt(l, `P${i}`, i === 7 ? '1' : '0'))
-    expect(plan(row({}, eight)).correct).toBe('H')
+    expect(plan(row({}, eight)).correct).toEqual(['H'])
     expect(rejected(row({}, [...eight, opt('I', 'Lebih', '0')]))).toBe('INVALID_VALUE:options')
   })
 
@@ -175,11 +192,15 @@ describe('transformQuestion: rejects', () => {
     expect(rejected(row({}, o))).toBe('INVALID_VALUE:options.body')
   })
 
-  it('exactly one correct option', () => {
+  it('no correct option is quarantined (never guessed); several correct options are an mcq_multi; all correct is a reject', () => {
     expect(rejected(row({}, four().map((o) => ({ ...o, is_correct: '0' }))))).toBe('INVALID_VALUE:is_correct')
     expect(rejected(row({}, four().map((o) => ({ ...o, is_correct: '1' }))))).toBe('INVALID_VALUE:is_correct')
     expect(rejected(row({}, four().map((o, i) => ({ ...o, is_correct: i === 0 ? 'mungkin' : '0' }))))).toBe('INVALID_VALUE:is_correct')
-    expect(plan(row({}, four().map((o, i) => ({ ...o, is_correct: i === 3 ? 'true' : 'false' })))).correct).toBe('D')
+    expect(plan(row({}, four().map((o, i) => ({ ...o, is_correct: i === 3 ? 'true' : 'false' })))).correct).toEqual(['D'])
+    const multi = plan(row({}, four().map((o, i) => ({ ...o, is_correct: i === 0 || i === 2 ? 'ya' : 'tidak' }))))
+    expect(multi).toMatchObject({ qtype: 'mcq_multi', correct: ['A', 'C'] })
+    expect(multi.notes).toContain('mcq_multi')
+    expect(QuestionLeafPartSchema.safeParse({ label: '1', prompt: { ms: 'x' }, marks: 1, mode: 'mcq', modeConfig: { multi: true }, options: multi.options.map((o) => ({ label: o.label, body: { ms: o.body } })), key: { kind: 'options', correctOptionIds: multi.correct } }).success).toBe(true)
   })
 
   it('labels: normalised, digits renumbered, bad and duplicate labels rejected', () => {
@@ -190,11 +211,17 @@ describe('transformQuestion: rejects', () => {
     expect(normaliseLabels([null])).toEqual([null])
     const digits = ['1', '2', '3', '4'].map((l, i) => opt(l, `P${i}`, i === 1 ? '1' : '0'))
     const p = plan(row({}, digits))
-    expect(p.correct).toBe('B')
+    expect(p.correct).toEqual(['B'])
     expect(p.notes).toContain('label_renumbered')
-    expect(rejected(row({}, four().map((o, i) => (i === 3 ? { ...o, label: 'Z' } : o))))).toBe('INVALID_VALUE:label')
-    expect(rejected(row({}, four().map((o, i) => (i === 3 ? { ...o, label: null } : o))))).toBe('INVALID_VALUE:label')
-    expect(rejected(row({}, four().map((o, i) => (i === 3 ? { ...o, label: 'a.' } : o))))).toBe('DUPLICATE_KEY:label')
+    // Still not A to H and unique: positional A..H in option order; the key follows is_correct, so no answer changes.
+    for (const bad of ['Z', null, 'a.']) {
+      const r = plan(row({}, four().map((o, i) => (i === 3 ? { ...o, label: bad } : o))))
+      expect(r.notes).toContain('label_relabelled')
+      expect(r.options.map((o) => o.label)).toEqual(['A', 'B', 'C', 'D'])
+      expect(r.correct).toEqual(['B'])
+    }
+    const noisy = plan(row({}, [opt('a)', 'P0', '0'), opt('a)', 'P1', '0'), opt('x', 'P2', '1'), opt('', 'P3', '0')]))
+    expect(noisy.correct).toEqual(['C'])
   })
 
   it('positions follow the label order whatever the source order', () => {
@@ -353,7 +380,7 @@ describe('transformQuestion: text masked by the anonymiser (redact-pii, A1-LEAK)
     expect(o.notes).toContain('held_pii_suspect')
     expect(o.import_issues).toEqual([{ code: 'pii_suspect', target: 'option', label: 'B', kind: 'redacted' }])
     // the masked option is the CORRECT one: the question is held all the same
-    expect(o.correct).toBe('B')
+    expect(o.correct).toEqual(['B'])
   })
 
   it('holds a question whose explanation was masked', () => {

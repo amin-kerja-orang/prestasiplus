@@ -28,6 +28,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/kertas-subjektif/dokumen/:id',
+    name: SUBJEKTIF_ROUTES.dokumen,
+    component: () => import('../admin/papers/SubjektifDokumenPreviewPage.vue'),
+    meta: {
+      ...base,
+      title: 'Kertas Subjektif - Admin Panel',
+      header: { title: 'Kertas Subjektif' },
+    },
+  },
+  {
     path: '/admin/kertas-subjektif/:id',
     name: SUBJEKTIF_ROUTES.detail,
     component: () => import('../admin/papers/SubjektifPaperDetailPage.vue'),

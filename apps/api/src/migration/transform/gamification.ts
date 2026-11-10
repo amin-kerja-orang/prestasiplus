@@ -190,6 +190,13 @@ export const REWARD_SETTING_COLUMNS = {
   current_session_year: { column: 'session_year', min: 2020, max: 2100 },
   games_award_syiling: { column: 'mini_games_give_coins', min: 0, max: 1 },
 } as const
+/**
+ * T-B5b: V2 never enforces a redeem budget. `reward_budget_sen_month` (300 on the real row, RM3) is shown on the admin Reward Control page only;
+ * GamificationStudentController::redeem checks stock and wallet balance and nothing else. V3 enforces `redeem_budget_sen` as ONE total over the
+ * session year for all pupils, so its 300 default would block every redemption (the 7 pending V2 redemptions alone are RM50). To keep V2 behaviour
+ * the load sets the budget to the top of its range (RM1000, DM-48 0..100000); an admin who saved the row (`updated_by`) keeps their value.
+ */
+export const REDEEM_BUDGET_UNENFORCED_SEN = 100000
 export type RewardSettingKey = keyof typeof REWARD_SETTING_COLUMNS
 export const REWARD_SETTING_KEYS = Object.keys(REWARD_SETTING_COLUMNS) as RewardSettingKey[]
 

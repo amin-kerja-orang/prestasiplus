@@ -82,7 +82,7 @@ beforeAll(async () => {
     (2, ${u[0]}, 5, 5, 4, 4, 'Komen dua', '2026-05-20T10:00:00Z'),
     (3, ${u[0]}, 3, 3, null, null, null, '2026-04-15T10:00:00Z'),
     (4, ${u[1]}, 3, 6, 3, 3, null, '2026-03-10T10:00:00Z'),
-    (5, ${u[1]}, 9, 3, 3, 3, null, '2026-07-01T10:00:00Z'),
+    (5, ${u[1]}, 11, 3, 3, 3, null, '2026-07-01T10:00:00Z'),
     (6, ${u[1]}, 3, 3, 3, 3, null, '2026-06-01T00:00:00Z'),
     (7, 99999, 3, 3, 3, 3, null, '2026-06-01T00:00:00Z'),
     (8, ${u[1]}, 5, 5, 5, 5, 'Komen lapan', '2026-06-15T00:00:00Z')`)
@@ -161,12 +161,12 @@ describe('timeline_posts', () => {
 })
 
 describe('feedback', () => {
-  it('keeps the newest row per user and Malaysia month, nps null, role and school from the user', async () => {
+  it('keeps the newest row per user and Malaysia month, the 0-10 score as nps, role and school from the user', async () => {
     const rows = await h.q<{ legacy_id: string; month: string; role: string; nps: number | null; satisfaction: number; comment: string | null }>(
       `select legacy_id, month::text, role, nps, satisfaction, comment from feedback order by legacy_id::bigint`,
     )
     expect(rows.map((r) => `${r.legacy_id}@${r.month}`)).toEqual(['2@2026-05-01', '3@2026-04-01', '8@2026-06-01'])
-    expect(rows.every((r) => r.nps === null)).toBe(true)
+    expect(rows.map((r) => r.nps)).toEqual([5, 3, 5]) // the staged `score` of rows 2, 3 and 8
     expect(rows[0]?.role).toBe(ROLE_MAP[role0.toLowerCase()])
     expect(rows[0]?.comment).toBe('Komen dua')
   })
