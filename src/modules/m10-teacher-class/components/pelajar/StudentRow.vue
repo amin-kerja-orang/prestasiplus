@@ -111,7 +111,7 @@ function removeIdOf(chip: StudentChip): number | undefined {
                   variant="ghost"
                   icon="i-ph-x"
                   :aria-label="`Keluarkan daripada ${chip.name}`"
-                  class="size-11 min-h-11 min-w-11 shrink-0 justify-center"
+                  class="size-11 justify-center"
                   :disabled="busy"
                   data-testid="student-remove"
                   @click="$emit('remove', student.id, removeIdOf(chip) as number)"

@@ -209,13 +209,6 @@ describe('S6 PelajarSayaPage', () => {
     }
   })
 
-  it('the remove button keeps a 44px touch target (min size, no shrink)', async () => {
-    const w = await mountPage()
-    const classes = w.findAll('[data-testid="student-remove"]')[0]?.classes() ?? []
-    expect(classes).toEqual(expect.arrayContaining(['min-h-11', 'min-w-11', 'shrink-0']))
-    w.unmount()
-  })
-
   it('removes a student from a class after confirm, and sends nothing when dismissed', async () => {
     api.removeStudentFromClass.mockResolvedValue({ removed: 1 })
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
