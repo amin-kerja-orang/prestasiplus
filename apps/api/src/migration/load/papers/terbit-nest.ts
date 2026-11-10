@@ -14,7 +14,7 @@ import { defineAppModule } from '../../../app.module'
 import { BijakPapersModule } from '../../../modules/bijak/papers'
 import { ExamBlueprintsModule } from '../../../modules/exam/blueprints'
 import { BuilderService, ExamBuilderModule } from '../../../modules/exam/builder'
-import { LEGACY_PUBLISH_BODY, type PaperPublisher } from './terbit-pass'
+import type { PaperPublisher } from './terbit-pass'
 
 /** The first Admin Pusat user (the audit row needs a real actor); null when the database has none. */
 export async function findMigrationActor(pool: Pick<pg.Pool, 'query'>): Promise<string | null> {
@@ -28,8 +28,9 @@ export async function openTerbitPublisher(actorUserId: string): Promise<{ publis
   const actor = { userId: actorUserId, role: 'admin', requestId: null, ip: null, isTest: false }
   return {
     async publish(paperId) {
-      // The audited override of the Studio (V2 parity, see terbit-pass.ts): lifts only the Kontrak lines, never a hard blocker.
-      const r = await builder.publish(actor, paperId, LEGACY_PUBLISH_BODY)
+      // KP-14: a V2-published paper keeps the status V2 gave its questions; the legacy publish drops only the lines caused by that status (and the
+      // Kontrak lines) and still refuses every structural blocker. Audited with `LEGACY_V2_PUBLISH_REASON`.
+      const r = await builder.publishLegacyV2(actor, paperId)
       return { ok: r.ok, errors: r.errors, overridden: r.overridden }
     },
     close: () => app.close(),
