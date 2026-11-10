@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import {
@@ -216,5 +216,28 @@ describe('DsPillNav', () => {
     expect(w.get('[data-testid="p-1"]').attributes('href')).toBe('/')
     await w.get('[data-testid="p-1"]').trigger('click')
     expect(w.emitted('select')).toBeUndefined()
+  })
+})
+
+describe('DsPageHeader slots that appear after the first render (C-8)', () => {
+  it('renders the header and the action once a conditional #actions slot turns on', async () => {
+    const show = ref(false)
+    const Parent = defineComponent({
+      setup: () => () =>
+        h(
+          DsPageHeader,
+          { showTitle: false },
+          show.value ? { actions: () => h('button', { 'data-testid': 'late-action' }, 'Tambah') } : {},
+        ),
+    })
+    const w = mount(Parent)
+    expect(w.find('[data-ds="page-header"]').exists()).toBe(false)
+    show.value = true
+    await nextTick()
+    expect(w.find('[data-ds="page-header"]').exists()).toBe(true)
+    expect(w.get('[data-testid="late-action"]').text()).toBe('Tambah')
+    show.value = false
+    await nextTick()
+    expect(w.find('[data-testid="late-action"]').exists()).toBe(false)
   })
 })
