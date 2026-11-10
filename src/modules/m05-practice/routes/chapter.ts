@@ -15,10 +15,8 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Soalan by Chapter - PRESTASIPLUS',
-      header: {
-        title: 'Soalan by Chapter',
-        subtitle: 'Latihan tersusun ikut bab buku teks dan DSKP',
-      },
+      // V2 latih-tubi/bab.blade.php and guru/practice-chapter.blade.php have no subheading (role default).
+      header: { title: 'Soalan by Chapter' },
       module: 'M05',
       v2: true,
     },
