@@ -914,3 +914,32 @@ Deviations from the spec text: the full-`i-ph-*` icon check of R13 is reported b
 | 5 forms, imports, selectors | 70 | 1819 |
 | 6 detail and print | 8 | 698 |
 | 7 shell | 5 | 106 |
+
+## 12. Alignment and focus rules fixed at the source (2026-11-09)
+
+Product-owner approved; one change in the shared theme corrects every screen.
+
+- **One focus indicator on fields.** Input, Textarea, Select, SelectMenu, InputMenu, InputNumber... show only the inset 2px primary ring (`filled` in `ui.config.ts`). The global outline in `ds-extras.css` skips any element carrying `focus-visible:ring-inset`. Menu and listbox rows show focus as the highlighted fill, never an outline.
+- **Menu rows (dropdown, select, select menu, input menu, command palette).** `px-3 py-2`, gap 2.5, `text-label` (14px staff, 15px learner), highlight fill `bg-elevated`; the label/heading row uses the same `px-3`, so headings and icons share a left edge. Nuxt UI applies size variants after slot classes, so these live in `menuVariants` (size and `active`) in `ui/components.ts`, never only in slots. Rule: any slot padding, text or gap override goes in the size variants.
+- **Icon-only buttons are square** (`square: true` compound variants in `ui.config.ts`): 44px, 40px from `md` (staff); learner md 52px, lg 56px. Pager controls and `DsRowActions` use the same footprint.
+- **Modal and slide-over.** Header `px-6 pt-6 pb-0`, body `px-6 py-4`, footer `px-6 pb-6 pt-0`. The close X is centred on the title row and its glyph sits on the 24px content edge.
+- **Filter bar.** From `md` one grid track (`repeat(auto-fill, minmax(11rem, 1fr))`, gap 12px), search spans two tracks, panel padding `p-4 md:p-5`; no per-field widths in pages.
+- **Badge** never spills out of its pill: the label truncates (full text in `title`); a table column holding a badge must be wide enough for its text.
+- **Callout** icon sits in a box as tall as the first text line. **Stat tile**: the chip is pinned to the first line on every staff tile (`items-start`); default density padding is `p-4`.
+- **Doughnut charts** centre their legend. **Shell navbars** use sentence-case crumbs and horizontal padding equal to the page gutter.
+
+## 13. Layout and placement defects fixed at the source (2026-11-10)
+
+Product-owner approved second pass, from two audits (admin and learning portals). Layout, size and spacing only: no copy, colour or menu change. Each rule lives in the shared component or theme, so every page gets it.
+
+- **No orphan tile row at any width.** `tile-layout.ts` (`tileLayout(n, cols)`) splits n tiles into rows of near-equal size (k and k+1), takes the least common multiple of the row sizes as the track (2, 6 or 12) and gives each tile `track / rowSize` columns. 4 tiles are 2 + 2 until `xl` then 4; 5 are 1 + 2 + 2, 3 + 2, 5; 7 are 1 + 2 + 2 + 2, 3 + 2 + 2, 4 + 3; 11 are 4 + 4 + 3. `DsStatRow` uses it for every count (`cols` = most tiles per row at `xl`); `DsGrid :tiles="n"` plus `tileLayout(n).span[i]` on the tiles does the same for pages that lay their own tiles out (admin dashboard, studio status strip, analytics, pupil dashboard stats, panduan roles).
+- **Card lists of any length** (video, artikel, misi harian, command-center rows, dashboard card pairs) use `data-ds-fill="2|3"` (`DsGrid :balanced="3"`): 1 column below `md`, 2 from `md`, 3 from `xl`; the last card of an odd row spans the row, and on the 3-column track a lone last card spans all, the last two span half each. Catalogue grids (marketplace products) keep a fixed column count.
+- **Stat strips use the full content width.** The staff cap (`max-w-3xl` / `max-w-6xl`) is removed, so the strip edge equals the filter bar and table edge.
+- **Selected stat tile** shows one 2px primary ring. The global focus outline skips DS composites that draw their own box-shadow ring (stat tile, native select, pill nav, media card).
+- **Form bar** uses `padding="sm"` (about 68px instead of 84px) and stays in flow at the end of the form, so the last field scrolls clear of it.
+- **Filter bar.** Fields align on the bottom edge, a label is one line (ellipsis), a checkbox field spans two tracks, every button in `[data-ds='filter-actions']` is 44px like the fields. Below `md` the search field (`flex-1 basis-40`) and the "Penapis" button share one row.
+- **Table cells** use one padding token: `px-4`, `px-5` from `sm` (the card padding), in `UTable` (`ui.config.ts`) and `DsDataTable`; the `card` variant bleeds the table to the card edge (`-mx-4 sm:-mx-5`), so the first column lines up with the card padding in every variant.
+- **Touch targets (44px) below `md`**: button `xs` and `sm` sizes (`min-h-11 md:min-h-9` / `md:min-h-10`), every tab size, `DsLink` (`max-md:py-3`), the switch hit area (`after:-inset-x-2 after:-inset-y-3`). Icon-only buttons and the row-action trigger share one footprint (44 / 40px from `md`).
+- **Link buttons** (`variant="link"`, "Lihat semua →") never wrap or shrink (`shrink-0 whitespace-nowrap`); `DsPanel` header title truncates and its actions are `nowrap`; `DsSection` actions do not wrap.
+- **Learning shell.** The bottom tab bar has a fixed `h-14` and one-line truncated labels, so icons share a baseline; the navbar `left` slot is `flex-1 min-w-0` (title takes the free width); the Mod Pelajar bar text wraps and the bar publishes its height as `--mod-bar-h` for the shell offset; sidebar rows are `min-h-10` with a wrapping label and a `shrink-0` pill; the "Pilih rakan belajar" prompt sits top-right under the navbar from `lg`, and above the tab bar below `lg` with the page reserving `pb-72`.
+- **Sidebar rows** (both shells) show keyboard focus as the highlighted row fill (`navigationMenu.link` `focus-visible:bg-elevated`), no outline ring.

@@ -54,19 +54,30 @@ describe('authentication', () => {
   })
 })
 
-describe('rankings', () => {
-  it('a student sees short names and only the own id; a teacher sees full names; no-store', async () => {
-    const own = w.ids['pelajar@demo.test']
-    const s = await (as.pelajar as Client).get('/api/rankings')
-    expect(s.status).toBe(200)
-    expect(String(s.headers['cache-control'])).toContain('no-store')
-    const data = parseData(s, PerformanceRankingSchema)
-    expect(data.rows[0]).toMatchObject({ userId: own })
-    expect(data.rows[1]?.userId).toBeNull()
-    expect(data.rows[1]?.name).toMatch(/^Murid P[.]$/)
+describe('rankings (Kedudukan, R1-MUR-18)', () => {
+  it('a pupil gets the rank per scope by wallet syiling and Sekitar anda with first names only; no-store', async () => {
+    const res = await (as.pelajar as Client).get('/api/rankings')
+    expect(res.status).toBe(200)
+    expect(String(res.headers['cache-control'])).toContain('no-store')
+    const data = parseData(res, PerformanceRankingSchema)
+    const nation = data.scopes.find((s) => s.scope === 'kebangsaan')
+    expect(nation?.rank).toBeGreaterThanOrEqual(1)
+    expect(nation?.total).toBeGreaterThanOrEqual(nation?.rank ?? 0)
+    const mine = nation?.nearby.filter((n) => n.me) ?? []
+    expect(mine).toHaveLength(1)
+    expect(mine[0]).toMatchObject({ rank: nation?.rank, syiling: data.syiling })
+    expect(nation?.nearby.length).toBeLessThanOrEqual(5)
+    // every other pupil: first name only, no id, no school
+    for (const n of (nation?.nearby ?? []).filter((x) => !x.me)) expect(n.name).not.toContain(' ')
+    expect(JSON.stringify(data)).not.toMatch(/userId|schoolName/)
+    // ranks are consecutive around the pupil
+    const ranks = nation?.nearby.map((n) => n.rank) ?? []
+    expect(ranks).toEqual(ranks.map((_, i) => (ranks[0] ?? 0) + i))
+  })
+
+  it('a teacher has no standing: no scopes (the page shows "Kedudukan belum tersedia")', async () => {
     const t = parseData(await (as.guru as Client).get('/api/rankings'), PerformanceRankingSchema)
-    expect(t.rows[1]?.name).toBe('Murid Ujian 2 Penuh')
-    expect(t.rows[1]?.userId).not.toBeNull()
+    expect(t).toEqual({ syiling: 0, scopes: [] })
   })
 })
 

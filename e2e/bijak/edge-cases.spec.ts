@@ -7,7 +7,14 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll } from '../support'
-import { HTTP_MODE, PAPER_ID, pickOption, pressedOptions, startPaper } from './bijak-flow'
+import {
+  clickNext,
+  HTTP_MODE,
+  PAPER_ID,
+  pickOption,
+  pressedOptions,
+  startPaper,
+} from './bijak-flow'
 
 test.skip(
   HTTP_MODE,
@@ -34,14 +41,14 @@ async function answeredFlags(page: Page, count: number): Promise<boolean[]> {
   const out: boolean[] = []
   for (let i = 0; i < count; i++) {
     out.push((await pressedOptions(page)).includes('true'))
-    if (i < count - 1) await page.getByTestId('next').click()
+    if (i < count - 1) await clickNext(page)
   }
   return out
 }
 
 /** Hantar from wherever we are; returns the result URL and the first section score text. */
 async function submitAndRead(page: Page): Promise<{ url: string; score: string }> {
-  while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
+  while (await page.getByTestId('next').isVisible()) await clickNext(page)
   await page.getByTestId('submit').click()
   await page.getByTestId('confirm-submit').click()
   await expect(page.getByTestId('win-screen')).toBeVisible()
@@ -69,7 +76,7 @@ test.describe('Bijak SPM edge cases @bijak', () => {
 
     // Answer Q1 and Q2, leave Q3+ empty.
     await pickOption(page, 0)
-    await page.getByTestId('next').click()
+    await clickNext(page)
     await pickOption(page, 1)
     await expect(page.getByTestId('save-status')).toHaveText('disimpan')
 

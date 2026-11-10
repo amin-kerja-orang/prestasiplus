@@ -1,7 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import { rolesOf } from './access'
-import { ALL_MOUNTS } from './mount'
+import { ALL_MOUNTS, GURU_MOUNT } from './mount'
 
 /**
  * M12 route fragment: S7 Intervensi on `/admin/kirkpatrick/interventions` and the `/guru` twin (M12-T4). GET on
@@ -18,10 +18,10 @@ const routes: RouteRecordRaw[] = ALL_MOUNTS.map((mount): RouteRecordRaw => ({
     roles: rolesOf(mount),
     module: 'M12',
     v2: true,
-    title: 'Intervensi — Kirkpatrick',
+    title: 'Intervensi',
     header: {
-      title: 'Intervensi Pelajar',
-      subtitle: 'Rekod tindakan intervensi berdasarkan amaran Kirkpatrick',
+      title: mount === GURU_MOUNT ? 'Intervensi Pelajar' : 'Intervensi',
+      subtitle: 'Kirkpatrick — Cadangan & rekod intervensi',
     },
   },
 }))

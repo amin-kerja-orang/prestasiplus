@@ -98,11 +98,11 @@ const hasHeader = computed(() => Boolean(props.title))
       <div v-if="title" class="flex min-w-0 grow basis-32 items-center gap-3 sm:basis-0">
         <DsIconChip v-if="icon" :icon="icon" :accent="accent" size="sm" />
         <div class="min-w-0">
-          <DsHeading :level="2" variant="subheading">{{ title }}</DsHeading>
+          <DsHeading :level="2" variant="subheading" class="truncate" :title="title">{{ title }}</DsHeading>
           <DsText v-if="description" variant="caption" tone="muted">{{ description }}</DsText>
         </div>
       </div>
-      <div v-if="$slots.actions || moreTo" class="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+      <div v-if="$slots.actions || moreTo" class="ml-auto flex shrink-0 flex-wrap items-center gap-2 whitespace-nowrap">
         <slot name="actions" />
         <UButton
           v-if="moreTo"

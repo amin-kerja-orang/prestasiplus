@@ -7,6 +7,7 @@
  */
 
 import { api } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import type { ListResult } from '@/api/envelope'
 
 import type {
@@ -26,6 +27,10 @@ import type {
 
 type Options = { signal?: AbortSignal }
 const withSignal = (o: Options) => (o.signal ? { signal: o.signal } : {})
+
+/** A route R1 does not build (backlog): refused without a request in http mode, where it would only be a 404. */
+const deferredRejection = <T>(): Promise<T> =>
+  Promise.reject(new Error('Fungsi ini belum tersedia dalam mod API sebenar.'))
 
 /**
  * #19 `GET /api/hadiah-digital/items` (`?cat=`; S10): `data` is always `[]`; `meta.activeCat` says which
@@ -57,9 +62,14 @@ export function fetchMysteryBoxes(options: Options = {}): Promise<MysteryBoxesVi
   return api.get<MysteryBoxesView>('/api/gamification/mystery-boxes', withSignal(options))
 }
 
-/** #11 `POST /api/gamification/mystery-boxes/:id/open` (404 box; 409 `INSUFFICIENT_TOKENS`). */
-export function openMysteryBox(boxId: number): Promise<MysteryBoxOpened> {
-  return api.post<MysteryBoxOpened>(`/api/gamification/mystery-boxes/${String(boxId)}/open`)
+/**
+ * #11 `POST /api/gamification/mystery-boxes/:id/open` with `{clientUuid}` (404 box; 409 `INSUFFICIENT_BALANCE` |
+ * `BOX_UNAVAILABLE`; 429 `MYSTERY_DAILY_LIMIT`). The same `clientUuid` answers the first opening and moves nothing.
+ */
+export function openMysteryBox(boxId: number, clientUuid: string): Promise<MysteryBoxOpened> {
+  return api.post<MysteryBoxOpened>(`/api/gamification/mystery-boxes/${String(boxId)}/open`, {
+    body: { clientUuid },
+  })
 }
 
 /** #12 `GET /api/cabutan` (S7). */
@@ -67,22 +77,28 @@ export function fetchCabutan(options: Options = {}): Promise<CabutanView> {
   return api.get<CabutanView>('/api/cabutan', withSignal(options))
 }
 
-/** #13 `POST /api/cabutan/:drawId/tickets` (201; 409 `DRAW_CLOSED` | `TICKET_LIMIT` | `INSUFFICIENT_BALANCE`). */
-export function buyCabutanTicket(drawId: number): Promise<TicketBought> {
-  return api.post<TicketBought>(`/api/cabutan/${String(drawId)}/tickets`)
+/**
+ * #13 `POST /api/cabutan/:drawId/tickets` (201; 409 `DRAW_CLOSED` | `TICKET_LIMIT` | `INSUFFICIENT_BALANCE`).
+ * `clientUuid` is the idempotency key of one press (DM-78): a repeat buys no second ticket.
+ */
+export function buyCabutanTicket(drawId: number, clientUuid: string): Promise<TicketBought> {
+  return api.post<TicketBought>(`/api/cabutan/${String(drawId)}/tickets`, { body: { clientUuid } })
 }
 
 /** #14 `GET /api/parent/hadiah-approvals` (S8; scoped to the viewer's linked children). */
 export function fetchParentApprovals(options: Options = {}): Promise<ParentApprovalsView> {
+  if (isHttpMode()) return deferredRejection()
   return api.get<ParentApprovalsView>('/api/parent/hadiah-approvals', withSignal(options))
 }
 
 /** #15 `POST /api/parent/hadiah-approvals/:id/approve` (404 not a child's; 409 not pending consent). */
 export function approveParentRequest(id: number): Promise<ApproveResult> {
+  if (isHttpMode()) return deferredRejection()
   return api.post<ApproveResult>(`/api/parent/hadiah-approvals/${String(id)}/approve`)
 }
 
 /** #16 `POST /api/parent/hadiah-approvals/:id/reject` (404; 409). */
 export function rejectParentRequest(id: number): Promise<CancelResult> {
+  if (isHttpMode()) return deferredRejection()
   return api.post<CancelResult>(`/api/parent/hadiah-approvals/${String(id)}/reject`)
 }

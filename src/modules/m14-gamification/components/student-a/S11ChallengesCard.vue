@@ -10,11 +10,11 @@ defineProps<{ challenges: readonly ChallengeProgress[] }>()
 </script>
 
 <template>
-  <UCard class="min-w-0 lg:col-span-2" data-testid="s11-challenges">
+  <UCard class="min-w-0 lg:col-span-3" data-testid="s11-challenges">
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between gap-3">
-        <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
-          <DsIconChip icon="target" accent="heat" size="sm" />Cabaran Hari Ini
+        <h2 class="flex min-w-0 items-center gap-2 font-display text-subheading font-bold text-highlighted">
+          <DsIconChip icon="target" accent="heat" size="sm" /><span class="truncate">Cabaran Hari Ini</span>
         </h2>
         <UButton
           to="/gamification/challenges"

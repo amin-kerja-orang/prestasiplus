@@ -18,6 +18,16 @@ export const GAMES_LIMITS = {
   soloCheck: { bucket: 'games.solo.check', env: 'THROTTLE_GAMES_SOLO_CHECK_PER_MINUTE', default: 600, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
 
+/** Audit actions of the admin game settings (FR-GM-00.10, FR-ADM-H0.3). */
+export const GAMES_AUDIT = {
+  SETTINGS_UPDATED: 'games.settings.updated',
+  SPIN_SEGMENTS_UPDATED: 'games.spin_segments.updated',
+  GAME_ACTIVE_UPDATED: 'games.game_active.updated',
+} as const
+
+/** The admin saves wait a little longer than the default for a connection: they are rare and must not fail on a busy pool. */
+export const GAMES_ADMIN_WRITE_TX = { maxWait: 10_000, timeout: 15_000 } as const
+
 /** M14 game tokens (as BE-23 `gameRow` expects them) by room game. */
 export const GAME_TOKENS = {
   'papan-bijak': 'papan_bijak',
@@ -27,9 +37,6 @@ export const GAME_TOKENS = {
   'kuiz-relay': 'kuiz_relay',
   'teka-silang-kata': 'teka_silang_kata',
 } as const
-
-/** Bot answer accuracy when the platform has no figure (the mock's `botAccuracy` falls back to 0 with no answers). */
-export const BOT_ACCURACY_FALLBACK = 0
 
 /** Default of `game_settings.boardgame_quiz_tiles` (mock SEED_QUIZ_TILES); max is 38. */
 export const DEFAULT_QUIZ_TILES = 35

@@ -27,7 +27,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
-import { AnswerLogPort, type WritableAnswerMode } from '../../practice'
+import { AnswerLogPort, coinsPerCorrect, type WritableAnswerMode } from '../../practice'
 import {
   AUTO_SUBMIT_TOLERANCE_SECONDS,
   BIJAK_ATTEMPTS_MESSAGES as MSG,
@@ -60,10 +60,13 @@ import {
   gradeAttempt,
   type LeafIndex,
   lockedParts,
+  rewardMarks,
+  withPaidFigures,
   questionIdsOf,
   revealedOnly,
   sameAnswersAsCheck,
   semakParts,
+  XP_PER_MARK,
 } from './marking'
 import { bijakCodeOf } from '../papers/subject-codes'
 import { assertAttemptPayload } from './payload-limits'
@@ -91,7 +94,11 @@ interface ClosedEvent {
   /** A late sync re-graded an attempt that was already closed. */
   regraded: boolean
   /** D94: set when the regrade is a pupil's self-mark of one part (the reward of the best-N gain, no other regrade pays); `base` is the best-N score of the automatic grading. */
-  selfMark?: { base: number }
+  selfMark?: { base: number; partId: string }
+  /** Syiling per mark resolved when the event was made (`coinsPerCorrect()`). */
+  coinRate?: number
+  /** DM-68: ids of the parts whose scheme "Semak" has shown (the answers at the time of the event). Absent = none. */
+  revealed?: ReadonlySet<string>
 }
 
 export interface CallerInfo {
@@ -234,6 +241,25 @@ export class BijakAttemptsService {
     return new Map([...answers].map(([k, v]) => [k, v.answer]))
   }
 
+  /** Read at the time of each close or self-mark (not cached): a later change of the rate never touches a sitting already closed. */
+  private coinRate(): Promise<number> {
+    return coinsPerCorrect(this.prisma.client, this.now().getTime())
+  }
+
+  private revealedParts(answers: ReadonlyMap<string, AnswerRow>): Set<string> {
+    return new Set([...answers].filter(([, v]) => v.answer.revealed === true).map(([k]) => k))
+  }
+
+  /** Revealed parts of a closing attempt: the DM-68 flag, plus (Mod Latihan) every part "Semak" reveals of a question it was used on (FR-PA-16, also a part answered after the check). An essay or working part has no "Semak" (46 section 3.5), so it is never revealed and stays paid. */
+  private async revealedAtClose(row: AttemptRow, answers: ReadonlyMap<string, AnswerRow>, bundles: Bundles): Promise<Set<string>> {
+    const revealed = this.revealedParts(answers)
+    if (row.mode === 'latihan') {
+      const index = buildLeafIndex(row.composition, bundles)
+      for (const qid of (await this.repo.checkCounts(row.id)).order) for (const id of semakParts(index, qid)) revealed.add(id)
+    }
+    return revealed
+  }
+
   private toMeta(row: AttemptRow, answers: ReadonlyMap<string, AnswerRow>, checks: { order: string[]; counts: Map<string, number> }): BijakAttemptMeta {
     return {
       id: row.id,
@@ -371,7 +397,7 @@ export class BijakAttemptsService {
       if (partId === undefined || !leaf || !a.text.trim()) continue
       answers.set(partId, { partId, answer: structuredAnswerOf(leaf.kind, a.text), rev: 1, savedAt: now })
     }
-    const result = gradeAttempt(composition, bundles, this.answerMap(answers))
+    const result = gradeAttempt(composition, bundles, this.answerMap(answers), await this.coinRate())
     const attempt = await this.prisma.transaction(async () => {
       const row = await this.repo.create({
         userId: who.userId,
@@ -549,6 +575,8 @@ export class BijakAttemptsService {
       // 46 section 3.4: a part a person marks (scheme points or rubric, or any part left `belum_dimarkah`, K20); an
       // automatically marked part answers 409.
       if (!isSelfMarkable(scheme, found.p.status)) throw ApiError.of('CONFLICT', { message: MSG.selfMarkNotSubjective })
+      // This response carries the result with its schemes, so a later late sync must not rewrite the answers (`lateSync`).
+      if (!row.resultViewedAt) await this.repo.markResultViewed(row.id, this.now())
       const marks = found.p.marks
       let mark = clamp(body.mark, 0, marks)
       if (body.band !== undefined) {
@@ -580,8 +608,11 @@ export class BijakAttemptsService {
               this.now(),
             )
           }
+        } else {
+          await this.writeAnswerRows(row, result, answers)
         }
-        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition) } })
+        const coinRate = await this.coinRate()
+        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition, bundles), partId: body.partId }, revealed: this.revealedParts(answers), coinRate })
       }
       const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)!
       return {
@@ -650,7 +681,7 @@ export class BijakAttemptsService {
     await this.sweepUser(userId)
     const now = this.now().getTime()
     const rows = await this.repo.history(userId, HISTORY_LIMIT)
-    return rows.map(({ row, score, max }) => ({
+    return rows.map(({ row, score, max, coins }) => ({
       attemptId: row.id,
       title: row.title,
       subject: row.subject,
@@ -662,6 +693,7 @@ export class BijakAttemptsService {
       startedAt: ts(row.startedAt),
       durationSeconds: Math.max(0, Math.round(((row.submittedAt?.getTime() ?? now) - row.startedAt.getTime()) / 1000)),
       ...(score !== null && max !== null ? { score, max } : {}),
+      coins,
     }))
   }
 
@@ -766,11 +798,14 @@ export class BijakAttemptsService {
     const changed = await this.merge(row, answers, ok, index, new Set())
     if (!changed) return false
     const bundles = await load() // memoised by `lazyBundles`: one load for the grading and the self-marks
-    const base = gradeAttempt(row.composition, bundles, this.answerMap(answers))
+    const coinRate = await this.coinRate()
+    // The stored coins/points of a Latihan result are the PAID figures (unrevealed marks only), as at the first close.
+    const base = withPaidFigures(row.paperKind === 'subjektif' ? 'exam' : row.mode, gradeAttempt(row.composition, bundles, this.answerMap(answers), coinRate), await this.revealedAtClose(row, answers, bundles), coinRate)
     // A self-mark made in between (R1-B12) stays: the new automatic grading gets the pupil's marks on top again.
     const selfMarks = (await this.repo.gradedWithMarks(row.id))?.selfMarks ?? {}
     const result = applySelfMarks(base, row.composition, selfMarks, bundles)
     await this.repo.saveResult(row.id, base, selfMarks, result)
+    await this.writeAnswerRows(row, result, answers)
     events.push({ attempt: row, status: 'auto_submitted', result, swept: false, regraded: true })
     return true
   }
@@ -793,12 +828,18 @@ export class BijakAttemptsService {
       // A sweep closes long after the deadline; the lateness it records stops at the grace period.
       late = opts.swept ? Math.min(seconds, GRACE_SECONDS) : seconds
     }
-    const result = gradeAttempt(row.composition, await load(), this.answerMap(answers))
+    const bundles = await load()
+    const coinRate = await this.coinRate()
+    // FR-PA-16: "Semak" shows the scheme of the whole question, so every part of a checked question counts as revealed.
+    const revealed = await this.revealedAtClose(row, answers, bundles)
+    // The stored result carries the PAID figures: a Latihan sitting shows what the ledger credits (unrevealed marks only). Exam and Kertas Subjektif keep score x rate.
+    const result = withPaidFigures(row.paperKind === 'subjektif' ? 'exam' : row.mode, gradeAttempt(row.composition, bundles, this.answerMap(answers), coinRate), revealed, coinRate)
     const closed = await this.repo.close(row.id, { status, submittedAt: at, lateBySeconds: late, idempotencyKey: opts.key })
     if (!closed) throw new Error('Attempt was closed by another request while locked')
     await this.repo.saveResult(row.id, result)
+    await this.writeAnswerRows(row, result, answers)
     const next: AttemptRow = { ...row, status, submittedAt: at, lateBySeconds: late, idempotencyKey: opts.key ?? row.idempotencyKey }
-    events.push({ attempt: next, status, result, swept: opts.swept, regraded: false })
+    events.push({ attempt: next, status, result, swept: opts.swept, regraded: false, revealed, coinRate })
     return next
   }
 
@@ -992,6 +1033,46 @@ export class BijakAttemptsService {
     return out
   }
 
+
+  /* ------------------------------------------------------------------ answer rows (D-A1, DM-44) */
+
+  /**
+   * S3-T04 (FR-MUR-13-21, API-BIJAK-04 c): one `practice_answers` row per ANSWERED leaf part, written through the one
+   * `AnswerLogPort` in the transaction that closes (or re-grades) the attempt, so a failure rolls the close back and the rows
+   * never lag the result. Mode `simulasi`, `attempt_id` = the attempt. Idempotent on `(attempt_id, user_id, question_id, part_ref)`:
+   * a second call (lateSync, self-mark) updates the rows. A blank part has no row; a part awaiting a human mark has
+   * `marks_awarded = null` and is not correct. `part_ref` is the leaf id of a structured part, null for an MCQ (leaf id = question id).
+   */
+  private async writeAnswerRows(row: AttemptRow, result: BijakAttemptResult, answers: ReadonlyMap<string, AnswerRow>): Promise<void> {
+    // A structured attempt's rows belong to `writeStructuredRows` (mode `structured` / `tracking_a`); never write them again here as `simulasi`.
+    if (row.paperKind === 'structured') return
+    const versions = new Map<string, number>()
+    for (const s of row.composition) for (const [qid, v] of Object.entries(s.versions ?? {})) versions.set(qid, v)
+    for (const q of result.questions) {
+      for (const part of q.parts) {
+        if (part.status === 'kosong' || part.marks <= 0) continue
+        const stored = answers.get(part.partId)
+        const pending = part.status === 'belum_dimarkah'
+        const choice = stored?.answer.choice
+        const version = versions.get(q.questionId)
+        await this.answerLog.record({
+          userId: row.userId,
+          attemptId: row.id,
+          questionId: q.questionId,
+          partRef: part.partId === q.questionId ? null : part.partId,
+          mode: 'simulasi',
+          isCorrect: !pending && part.awarded === part.marks,
+          marksAwarded: pending ? null : part.awarded,
+          marksMax: part.marks,
+          answeredAt: stored?.savedAt ?? row.submittedAt ?? this.now(),
+          isTest: row.isTest,
+          selectedLabel: choice !== undefined && /^[A-H]$/.test(choice) ? choice : null,
+          ...(version !== undefined && Number.isInteger(version) && version >= 1 ? { questionVersionNo: version } : {}),
+        })
+      }
+    }
+  }
+
   /* -------------------------------------------------------------------- after-commit effects */
 
   private async record(action: string, auth: AuthContext | null, attemptId: string, who: CallerInfo | null, details: Record<string, unknown>): Promise<void> {
@@ -1047,17 +1128,20 @@ export class BijakAttemptsService {
           swept: e.swept,
           isTestAttempt: a.isTest,
         })
-        // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward. A Kertas Subjektif
-        // sitting has no "Semak" (its scheme comes after Hantar), so it is paid at Hantar like an exam (46 section 3.6, B6).
+        // Fail closed: only a timed exam, or a Mod Latihan on the parts "Semak" never revealed (46 D-PA-13, FR-PA-16), may earn the reward.
+        // A Kertas Subjektif sitting has no "Semak" (its scheme comes after Hantar), so it is paid at Hantar like an exam (46 section 3.6, B6).
+        // A structured sitting (A9) is paid by its own port (`payStructured`), never by this rule.
+        const revealed = e.revealed ?? new Set<string>()
+        const payable = a.paperKind === 'structured' ? null : rewardMarks(a.paperKind === 'subjektif' ? 'exam' : a.mode, e.result, revealed)
         if (a.paperKind === 'structured') await this.payStructured(e, true)
-        else if (a.mode === 'exam' || a.paperKind === 'subjektif') {
+        else if (payable !== null) {
           try {
             await this.ports.reward.award({
               attemptId: a.id,
               userId: a.userId,
               isTest: a.isTest,
-              coins: e.result.coins,
-              points: e.result.points,
+              coins: payable * (e.coinRate ?? 0),
+              points: payable * XP_PER_MARK,
               submittedAt: a.submittedAt,
               score: e.result.score,
               max: e.result.max,
@@ -1071,7 +1155,7 @@ export class BijakAttemptsService {
       }
       // D94: a self-mark that raises a part pays the gain (exam attempts only, none in Mod Pelajar); no other regrade pays.
       if (e.regraded && e.selfMark && a.paperKind === 'structured') await this.payStructured(e, false)
-      else if (e.regraded && e.selfMark && (a.mode === 'exam' || a.paperKind === 'subjektif')) {
+      else if (e.regraded && e.selfMark && (a.mode === 'exam' || a.paperKind === 'subjektif') && !e.revealed?.has(e.selfMark.partId)) {
         try {
           await this.ports.reward.awardSelfMark({
             attemptId: a.id,
@@ -1080,6 +1164,7 @@ export class BijakAttemptsService {
             base: e.selfMark.base,
             score: e.result.score,
             max: e.result.max,
+            coinRate: e.coinRate ?? 0,
             description: BIJAK_REWARD_DESCRIPTION,
           })
         } catch (err) {

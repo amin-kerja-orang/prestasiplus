@@ -21,7 +21,7 @@ The profile is the whole `seedModules` registry in `apps/api/prisma/seed/index.t
 11. `poc-classes`: classes and rosters
 12. `poc-bijak-sittings`: submitted Bijak SPM sittings, results, aggregates
 13. `battle` (BE-44): battle arena demo rows
-14. `games` (BE-45): Permainan rooms, solo sessions, leagues, Sekolah Bersaing
+14. `games` (BE-45): Permainan rooms, solo sessions, leagues (the Sekolah Bersaing board is live since S7-T02; no weekly rows are seeded)
 15. `poc-cikgu`
 16. `pksk` (BE-42): PKSK demo rows (2 access grants, 2 T1 attempts, 7 mastery values; the 15 domains and 3 packages are inserted by migration 0028)
 17. `poc-performance` (BE-19): headcount configs and entries, timeline posts
@@ -43,7 +43,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 <!-- poc-counts:begin -->
 | Table | Rows |
 |---|---:|
-| achievements | 25 |
+| achievements | 26 |
 | answer_keys | 1275 |
 | articles | 3 |
 | attempt_answers | 122 |
@@ -54,12 +54,12 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | blueprint_evidence | 16 |
 | blueprint_sections | 23 |
 | blueprints | 11 |
-| challenges | 10 |
+| challenges | 15 |
 | chapters | 1311 |
 | chat_threads | 1 |
 | classrooms | 15 |
 | coin_ledger | 53 |
-| curriculum_nodes | 2844 |
+| curriculum_nodes | 3652 |
 | curriculum_tp_descriptors | 1394 |
 | draw_prizes | 2 |
 | draws | 1 |
@@ -67,7 +67,9 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | education_levels | 11 |
 | enrolments | 34 |
 | essay_markings | 1 |
+| essay_review_proposals | 1 |
 | exam_attempts | 15 |
+| feature_flags | 32 |
 | game_room_players | 8 |
 | game_rooms | 4 |
 | game_sessions | 3 |
@@ -91,6 +93,8 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | marketplace_products | 10 |
 | marketplace_sellers | 1 |
 | mastery | 8 |
+| mystery_box_prizes | 7 |
+| mystery_boxes | 5 |
 | paper_placements | 31 |
 | paper_sections | 9 |
 | papers | 5 |
@@ -118,11 +122,10 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | rph_plans | 2 |
 | school_packages | 4 |
 | schools | 4 |
-| sekolah_bersaing_weeks | 16 |
 | spin_segments | 8 |
 | spin_stats | 8 |
 | spm_subject_configs | 19 |
-| spm_tracking_set_questions | 493 |
+| spm_tracking_set_questions | 370 |
 | spm_tracking_sets | 10 |
 | stimuli | 2 |
 | stimulus_group_options | 4 |
@@ -144,7 +147,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 100 of 205. Total rows: 22033.
+Tables with rows: 103 of 215. Total rows: 22753.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

@@ -9,7 +9,7 @@ import type { LegacySource } from '../../kit/types'
 import { assertCorePreflight, PreflightError, RUN_CORE_FIRST } from '../activity/preflight'
 
 const NEEDED: Record<string, readonly string[]> = {
-  questions: ['id', 'subject_id', 'education_level_id', 'chapter_id', 'topic_id', 'difficulty_level', 'type', 'status', 'body', 'explanation', 'image_path', 'created_at', 'updated_at'],
+  questions: ['id', 'subject_id', 'education_level_id', 'chapter_id', 'topic_id', 'difficulty_level', 'type', 'status', 'body', 'explanation', 'image_path', 'created_at', 'updated_at', 'external_ref', 'dskp_tagged', 'created_by', 'approved_by'],
   question_options: ['id', 'question_id', 'label', 'body', 'image_path', 'is_correct'],
 }
 

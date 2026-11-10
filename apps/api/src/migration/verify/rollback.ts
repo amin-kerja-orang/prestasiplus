@@ -270,12 +270,15 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
   }
 
   // ---- 1b. v2 edits INSIDE a migrated question: a later version, a changed live version or an extra version row would
-  // cascade away with the question. The loader writes version 1 only (latest 1, live 1), so anything else came from v2.
+  // cascade away with the question. The loader writes version 1 only (latest 1, live 1 for an approved question; live NULL for an archived,
+  // draft or review one: T-B9), so anything else came from v2.
   if (inSet.has('questions')) {
     const edited = await db.query<{ n: number }>(
       `SELECT count(*)::int AS n FROM questions q
         WHERE q.legacy_source = $1
-          AND (q.latest_version_no IS DISTINCT FROM 1 OR q.live_version_no IS DISTINCT FROM 1
+          AND (q.latest_version_no IS DISTINCT FROM 1
+               OR (q.live_version_no IS NOT NULL AND q.live_version_no <> 1)
+               OR (q.live_version_no IS NULL AND EXISTS (SELECT 1 FROM question_versions v WHERE v.question_id = q.id AND v.status = 'approved'))
                OR (SELECT count(*) FROM question_versions v WHERE v.question_id = q.id) <> 1)`,
       [source],
     )
@@ -341,6 +344,23 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
         `Refusing rollback: ${left.rows[0]?.n} migrated ${table} row(s) remain after their users were deleted (append-only table). Nothing was changed.`,
       )
     }
+  }
+
+  // ---- 4b. the stimulus groups and stimuli that migrate:questions made (they carry no legacy pair; the id map names them). The questions are gone
+  // by now; a group or stimulus that a v2 admin has since used for another question is kept.
+  if (inSet.has('questions')) {
+    await db.query(
+      `DELETE FROM stimulus_groups g WHERE g.id IN (SELECT new_id::bigint FROM etl_id_map WHERE legacy_source = $1 AND entity = 'stimulus_groups')
+          AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id)`,
+      [source],
+    )
+    await db.query(
+      `DELETE FROM stimuli s WHERE s.id IN (SELECT new_id::bigint FROM etl_id_map WHERE legacy_source = $1 AND entity = 'question_stimuli')
+          AND NOT EXISTS (SELECT 1 FROM stimulus_group_stimuli x WHERE x.stimulus_id = s.id)
+          AND NOT EXISTS (SELECT 1 FROM question_version_stimuli x WHERE x.stimulus_id = s.id)
+          AND NOT EXISTS (SELECT 1 FROM question_parts x WHERE x.stimulus_id = s.id)`,
+      [source],
+    )
   }
 
   // ---- 5. the id map of the source (the audit tables etl_runs / etl_recon / etl_rejects / etl_checkpoints stay)

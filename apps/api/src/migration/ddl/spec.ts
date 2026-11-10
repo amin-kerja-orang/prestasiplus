@@ -19,7 +19,9 @@
  * timestamps (lookups carry only `id` and `slug`). The loader REFUSES a dump that carries a column missing here
  * (see staging/load.ts) instead of dropping it silently.
  *
- * 127 tables: 89 in `staging_cloud` and 38 in `archive_cloud`.
+ * 134 tables (all of .cloud per the reference migrations): 89 in `staging_cloud` and 45 in `archive_cloud` (the 38
+ * question-bank tables and lookups, plus the 7 added by T-B2: the 6 Laravel runtime tables and `school_battle_rankings`,
+ * counts and profile only).
  */
 
 export type ColumnType = 'id' | 'i' | 't' | 'n' | 'ts' | 'd' | 'j'
@@ -103,6 +105,8 @@ const STAGING: TableSpec[] = [
   s('classrooms', [
     'name:t', 'code:t', 'teacher_id:id:fk=users', 'school_id:id:fk=schools', 'subject_id:id:fk=subjects',
     'session_year:t:enum',
+    // T-B7: the real .cloud class carries its level.
+    'education_level_id:id:fk=education_levels',
   ]),
   s('classroom_student', ['classroom_id:id:fk=classrooms', 'student_id:id:fk=users'], pivot),
   // Curriculum
@@ -175,9 +179,9 @@ const STAGING: TableSpec[] = [
     'challenge_id:id:fk=challenges', 'user_id:id:fk=users', 'progress:i', 'completed_at:ts', 'claimed_on:d',
   ], pivot),
   s('gifts', [
-    'name:t', 'price_rm:n', 'price_token:i', 'cost_value_sen:i', 'stock:i', 'status:t:enum', 'redemptions:i',
+    'name:t', 'category:t:enum', 'price_rm:n', 'price_token:i', 'cost_value_sen:i', 'stock:i', 'status:t:enum', 'redemptions:i',
   ]),
-  s('gift_redemptions', ['gift_id:id:fk=gifts', 'user_id:id:fk=users', 'status:t:enum']),
+  s('gift_redemptions', ['gift_id:id:fk=gifts', 'user_id:id:fk=users', 'token_spent:i', 'status:t:enum']),
   s('teacher_badges', ['name:t', 'threshold:i', 'bonus_coins:i']),
   s('teacher_badge_user', ['teacher_badge_id:id:fk=teacher_badges', 'user_id:id:fk=users', 'awarded_at:ts'], pivot),
   s('achievements', ['name:t', 'criteria:t']),
@@ -205,14 +209,19 @@ const STAGING: TableSpec[] = [
     'title:t', 'type:t:enum', 'target:t', 'image_path:t', 'starts_at:ts', 'ends_at:ts', 'sort_order:i',
     'is_active:t:enum',
   ]),
+  // T-B6: the real .cloud `articles` and `notes` carry `body` (not `content`), the level as `education_level_id`, and no excerpt.
   s('articles', [
-    'slug:t', 'category:t:enum', 'title:t', 'views:i', 'is_published:t:enum', 'author_id:id:fk=users',
+    'slug:t', 'category:t:enum', 'title:t', 'body:t', 'education_level_id:id:fk=education_levels', 'views:i',
+    'is_published:t:enum', 'author_id:id:fk=users',
   ]),
-  s('notes', ['title:t', 'note_type:t:enum', 'body:t', 'views:i', 'is_published:t:enum']),
+  s('notes', [
+    'title:t', 'note_type:t:enum', 'subject_id:id:fk=subjects', 'education_level_id:id:fk=education_levels', 'body:t',
+    'views:i', 'is_published:t:enum',
+  ]),
   s('videos', ['title:t', 'url:t', 'duration_seconds:i']),
   s('audio_kbat', ['title:t', 'audio_path:t', 'status:t:enum']),
   s('notifications', ['title:t', 'target:t:enum', 'recipients:i', 'sent_at:ts']),
-  s('support_tickets', ['user_id:id:fk=users', 'subject:t', 'status:t:enum', 'admin_reply:t']),
+  s('support_tickets', ['user_id:id:fk=users', 'subject:t', 'body:t', 'status:t:enum', 'admin_reply:t']),
   s('chatbot_conversations', ['user_id:id:fk=users']),
   s('chatbot_messages', ['chatbot_conversation_id:id:fk=chatbot_conversations', 'sender:t:enum', 'rating:i']),
   // System
@@ -276,47 +285,90 @@ const ARCHIVE: TableSpec[] = [
     'topic_id:id:fk=topics', 'difficulty_level:t:enum', 'type:t:enum', 'status:t:enum', 'body:t',
     // QLOAD (LEAD 24 Oct, #113): loaded into the v2 bank at cutover, so the archive keeps them.
     'explanation:t', 'image_path:t',
+    // T-B9-0 (v2-question-bank-migration.md section 2): all statuses, the rajah planner and the owners are read.
+    // `source_pdf_path` is counted, never copied; `created_by` / `approved_by` are ids (mapped to v3 users when present).
+    'compliance_status:t:enum', 'source:t:enum', 'dskp_tagged:t:enum', 'external_ref:t', 'source_pdf_path:t',
+    'created_by:id:fk=users', 'approved_by:id:fk=users',
   ]),
   a('question_options', ['question_id:id:fk=questions:idx', 'label:t', 'body:t', 'image_path:t', 'is_correct:t:enum']),
-  a('structured_questions', ['subject_id:id:fk=subjects', 'status:t:enum', 'stimulus:t']),
-  a('structured_sub_questions', ['structured_question_id:id:fk=structured_questions', 'number:t', 'marks:i']),
-  a('structured_rubric_points', ['structured_sub_question_id:id:fk=structured_sub_questions', 'marks:i', 'text:t']),
-  a('pksk_questions', ['bahagian:t:enum', 'domain:t:enum', 'body:t', 'status:t:enum']),
+  // T-B9-6 (structured loader): level, KBAT, declared marks, creator; sub-question body and Skema; rubric point code and order.
+  a('structured_questions', [
+    'subject_id:id:fk=subjects', 'status:t:enum', 'stimulus:t',
+    'education_level_id:id:fk=education_levels', 'kbat_level:t:enum', 'total_marks:i', 'created_by:id:fk=users',
+  ]),
+  a('structured_sub_questions', ['structured_question_id:id:fk=structured_questions', 'number:t', 'marks:i', 'body:t', 'scheme:t']),
+  a('structured_rubric_points', ['structured_sub_question_id:id:fk=structured_sub_questions', 'marks:i', 'text:t', 'code:t', 'position:i']),
+  a('pksk_questions', ['bahagian:t:enum', 'domain:t:enum', 'body:t', 'status:t:enum', 'education_level_id:id:fk=education_levels']),
   a('question_reports', ['question_id:id:fk=questions', 'reporter_id:id:fk=users', 'status:t:enum', 'report_type:t:enum', 'description:t']),
   a('question_submissions', ['teacher_id:id:fk=users', 'status:t:enum']),
   a('question_imports', ['imported_by:id:fk=users', 'status:t:enum']),
   a('question_set_items', ['question_set_id:id:fk=question_sets', 'question_id:id:fk=questions', 'sort_order:i']),
-  a('spm_sets', ['subject_id:id:fk=subjects']),
+  a('spm_sets', ['subject_id:id:fk=subjects', 'year:i', 'set_number:i', 'kind:t:enum', 'target_count:i']),
   a('spm_set_question', ['spm_set_id:id:fk=spm_sets', 'question_id:id:fk=questions', 'position:i'], { pk: null, ts: false }),
   // canonical bank
-  a('exam_papers', ['status_id:id:fk=paper_statuses', 'title:t']),
-  a('paper_sections', ['exam_paper_id:id:fk=exam_papers', 'label:t', 'position:i', 'selection_rule_id:id:fk=selection_rules']),
+  // T-B10-3 (papers loader): paper identity, duration, instructions and reference sheets; section instruction, count and budget.
+  a('exam_papers', [
+    'status_id:id:fk=paper_statuses', 'title:t', 'subject_id:id:fk=subjects', 'kertas:t', 'cover_code:t', 'is_composite:t',
+    'duration_minutes:i', 'instructions:j', 'reference_assets:j', 'import_issues:j', 'created_by:id:fk=users',
+  ]),
+  a('paper_sections', [
+    'exam_paper_id:id:fk=exam_papers', 'label:t', 'position:i', 'selection_rule_id:id:fk=selection_rules',
+    'instruction_text:t', 'select_count:i', 'mark_budget:i', 'paper_document_id:id',
+  ]),
+  // T-B9-7 / T-B10-3 (canonical-only bank and placements): position, stem json, topic, difficulty; placement order, label and marks.
   a('exam_questions', [
     'source_paper_id:id:fk=source_papers', 'exam_paper_id:id:fk=exam_papers', 'paper_section_id:id:fk=paper_sections',
-    'status_id:id:fk=question_statuses', 'number_label:t',
+    'status_id:id:fk=question_statuses', 'number_label:t', 'position:i', 'stem:j', 'chapter_id:id:fk=chapters', 'topic:t', 'difficulty:t',
   ]),
-  a('exam_paper_questions', ['exam_question_id:id:fk=exam_questions', 'paper_section_id:id:fk=paper_sections']),
-  a('question_stimulus', ['exam_question_id:id:fk=exam_questions', 'stimulus_id:id:fk=stimuli']),
-  a('question_parts', ['exam_question_id:id:fk=exam_questions', 'answer_mode_id:id:fk=answer_modes', 'marks:i']),
-  a('part_options', ['question_part_id:id:fk=question_parts', 'label:t', 'body:t']),
-  a('part_answer_keys', ['question_part_id:id:fk=question_parts', 'answer_key_kind_id:id:fk=answer_key_kinds', 'content:t']),
-  a('stimuli', ['stimulus_kind_id:id:fk=stimulus_kinds', 'body:t']),
-  a('media_assets', ['path:t', 'kind:t:enum']),
+  a('exam_paper_questions', [
+    'exam_question_id:id:fk=exam_questions', 'paper_section_id:id:fk=paper_sections', 'sort_order:i', 'number_label:t', 'marks_override:i',
+  ]),
+  a('question_stimulus', ['exam_question_id:id:fk=exam_questions', 'stimulus_id:id:fk=stimuli', 'position:i']),
+  a('question_parts', [
+    'exam_question_id:id:fk=exam_questions', 'answer_mode_id:id:fk=answer_modes', 'marks:i', 'parent_part_id:id', 'position:i', 'label:t',
+    'prompt:j', 'word_limit:i', 'config:j', 'stimulus_id:id:fk=stimuli',
+  ]),
+  a('part_options', ['question_part_id:id:fk=question_parts', 'label:t', 'body:t', 'is_correct:t', 'is_distractor:t', 'position:i']),
+  a('part_answer_keys', ['question_part_id:id:fk=question_parts', 'answer_key_kind_id:id:fk=answer_key_kinds', 'content:t', 'marks:i']),
+  // T-B9-0: the canonical stimulus model (S1 signal of the rajah planner, section 7) and the files behind it.
+  a('stimuli', ['stimulus_kind_id:id:fk=stimulus_kinds', 'body:t', 'editor_json:j', 'asset_id:id:fk=media_assets', 'caption:t', 'source_citation:t', 'meta:j']),
+  a('media_assets', ['path:t', 'kind:t:enum', 'alt:t', 'width:i', 'height:i', 'source_ref:t', 'sha:t']),
   a('question_revisions', ['exam_question_id:id:fk=exam_questions']),
   a('question_snapshots', ['exam_question_id:id:fk=exam_questions', 'content:j']),
   a('source_papers', [
     'natural_key:t', 'file_hash:t', 'year:i', 'exam_board_id:id:fk=exam_boards', 'exam_type_id:id:fk=exam_types',
+    // T-B9-0: provenance of canonical questions and papers.
+    'subject_id:id:fk=subjects', 'paper_code:t', 'kertas:i', 'duration_minutes:i', 'is_marking_scheme:t:enum', 'source_kind:t:enum',
+    'needs_review:t:enum', 'import_issues:j',
   ]),
   a('import_batches', ['status:t:enum']),
   a('import_items', ['import_batch_id:id:fk=import_batches', 'exam_question_id:id:fk=exam_questions', 'review_status:t:enum']),
   a('legacy_canonical_map', ['source:t:enum', 'legacy_id:t', 'canonical_type:t:enum', 'canonical_id:id']),
   a('unify_quarantine', ['source:t:enum', 'legacy_id:t', 'reason:t:enum']),
-  a('paper_documents', []),
-  a('paper_document_pages', ['paper_document_id:id:fk=paper_documents', 'position:i']),
-  a('paper_blueprints', ['subject_id:id:fk=subjects']),
-  a('blueprint_sections', ['paper_blueprint_id:id:fk=paper_blueprints', 'label:t', 'position:i', 'selection_rule_id:id:fk=selection_rules']),
+  // 0265 (Kertas Subjektif documents, V2 parity): the document header and its page images.
+  a('paper_documents', [
+    'subject_id:id:fk=subjects', 'kertas:i', 'title:t', 'negeri:t', 'year:i', 'source_file:t', 'duration_minutes:i', 'marks_total:i',
+    'page_count:i', 'scheme_page_count:i', 'published_at:ts',
+  ]),
+  a('paper_document_pages', ['paper_document_id:id:fk=paper_documents', 'kind:t:enum', 'position:i', 'path:t', 'sha:t', 'width:i', 'height:i']),
+  // T-B10-2 (blueprints loader).
+  a('paper_blueprints', ['subject_id:id:fk=subjects', 'kertas:i', 'paper_code:t', 'duration_minutes:i', 'total_marks:i', 'auto_markable:t', 'source:t:enum']),
+  a('blueprint_sections', [
+    'paper_blueprint_id:id:fk=paper_blueprints', 'label:t', 'position:i', 'selection_rule_id:id:fk=selection_rules',
+    'instruction:t', 'select_count:i', 'mark_budget:i', 'expected_answer_modes:j',
+  ]),
   a('teacher_reference_documents', ['teacher_id:id:fk=users']),
   a('teacher_reference_papers', ['teacher_id:id:fk=users']),
+  // T-B2 (10 Nov 2026): the .cloud tables that were never staged. Counts and profile only, never the payload:
+  // columns that can hold a secret or personal text (token, payload, exception, value, owner, name) are NOT listed,
+  // so the column-level grants never expose them. None of these is migrated (v2-data-migration.md section 3).
+  a('school_battle_rankings', ['school_id:id:fk=schools', 'battles_played:i', 'wins:i', 'draws:i', 'losses:i', 'accuracy:n', 'score:i']),
+  a('personal_access_tokens', ['tokenable_type:t:enum', 'tokenable_id:i', 'last_used_at:ts', 'expires_at:ts']),
+  a('jobs', ['queue:t:enum', 'attempts:i'], noTs),
+  a('failed_jobs', ['queue:t:enum', 'failed_at:ts'], noTs),
+  a('job_batches', ['total_jobs:i', 'pending_jobs:i', 'failed_jobs:i'], { pk: null, ts: false }),
+  a('cache', ['expiration:i'], { pk: null, ts: false }),
+  a('cache_locks', ['expiration:i'], { pk: null, ts: false }),
   // Lookups (id, slug): referenced by `source_papers`, `paper_sections` and `blueprint_sections`
   a('exam_boards', ['slug:t'], noTs),
   a('exam_types', ['slug:t'], noTs),

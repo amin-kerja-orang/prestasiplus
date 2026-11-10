@@ -22,7 +22,7 @@ const props = defineProps<{
 }>()
 
 /** Whether the Subjek + Tingkatan has chapters; Bab is required before Terbit only then (FR-ADM-QE4.5). */
-const emit = defineEmits<{ chapters: [has: boolean | null]; failed: [failed: boolean] }>()
+const emit = defineEmits<{ chapters: [has: boolean | null]; failed: [failed: boolean]; list: [chapters: ChapterOption[]] }>()
 
 /** The chosen chapter id as text (`''` = none); posted as `curriculumChapterId`. */
 const chapterId = defineModel<string>({ required: true })
@@ -38,17 +38,20 @@ async function load(): Promise<void> {
   emit('chapters', null)
   if (props.subjectId === '' || props.levelId === '') {
     chapters.value = []
+    emit('list', [])
     return
   }
   try {
     const list = await fetchChapters({ subjectId: props.subjectId, educationLevelId: props.levelId })
     if (token === seq) {
       chapters.value = list
+      emit('list', list)
       emit('chapters', list.length > 0)
     }
   } catch {
     if (token === seq) {
       chapters.value = []
+      emit('list', [])
       failed.value = true
       emit('failed', true)
     }

@@ -6,8 +6,9 @@
  * panels. The page always starts on "Hari Ini" (the `?period=` query is ignored), reloads the period every
  * 30 s and keeps an open school drill. The alias hides "Sekolah" and its drill (admin only, #5).
  */
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 
+import { usePageMeta } from '@/composables/usePageMeta'
 import { DsGrid, DsPage, DsStack } from '@/ds'
 
 import type { CcPeriod } from '../api/command-center-board'
@@ -29,6 +30,16 @@ const props = withDefaults(defineProps<{ alias?: boolean }>(), { alias: false })
 const paths = computed(() => boardPaths(props.alias))
 const { period, data, status, setPeriod } = useDailyBoard()
 const drill = useSchoolDrill(period)
+
+// V2 `command-center-daily`: title "Aktiviti Platform" / "Aktiviti Sekolah", subtitle "Ringkasan aktiviti — {period}".
+const pageMeta = usePageMeta()
+watchEffect(() => {
+  const label = S3_TABS.find((t) => t.period === period.value)?.label ?? ''
+  pageMeta.setHeader({
+    title: props.alias ? 'Aktiviti Sekolah' : 'Aktiviti Platform',
+    subtitle: `Ringkasan aktiviti — ${label}`,
+  })
+})
 
 function pick(next: CcPeriod): void {
   drill.close()
@@ -66,7 +77,7 @@ function pick(next: CcPeriod): void {
         <PulseCards :data="data" :period="period" />
 
         <!-- Row 1: where the activity is. The school list shares its column with the top pupils. -->
-        <DsGrid min-item="md" gap="md" data-testid="cc-row-1">
+        <DsGrid :balanced="3" gap="md" data-testid="cc-row-1">
           <DsStack gap="md">
             <DailySchoolsPanel
               v-if="!alias"
@@ -89,7 +100,7 @@ function pick(next: CcPeriod): void {
         </DsGrid>
 
         <!-- Row 2: who is active (feed, logins) and how they feel (mood, badges). -->
-        <DsGrid min-item="md" gap="md" data-testid="cc-row-2">
+        <DsGrid :balanced="3" gap="md" data-testid="cc-row-2">
           <DailyFeedPanel :data="data" :status="status" :base-path="paths.basePath" />
           <DailyLoginsPanel :data="data" :status="status" :base-path="paths.basePath" />
           <DsStack gap="md">

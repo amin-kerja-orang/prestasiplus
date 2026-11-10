@@ -110,6 +110,14 @@ export const roomPath = (game: RoomGame, code: string): string => `/${game}/${co
 /** Exact flash/refusal text of every refused join and unknown room (BR-M16-18). */
 export const ROOM_NOT_FOUND = 'Bilik tidak dijumpai.'
 
+/** ERR-GAME-06 (48 section 3.8): a code that is not 6 characters A-Z0-9 is refused before any request. */
+export const ROOM_CODE_INVALID = 'Kod bilik tidak sah.'
+export const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/
+
+/** 48 GAME-R: `Keluar` leaves a room; the robot countdown for the host of a waiting room (marked † in 48). */
+export const ROOM_LEAVE = 'Keluar'
+export const robotCountdown = (seconds: number): string => `Robot akan menyertai dalam ${String(seconds)} saat.`
+
 // --- subjects -------------------------------------------------------------------------------------------------------
 
 export const PB_SUBJECTS: readonly { value: RoomSubject; label: string; emoji: string }[] = [
@@ -174,14 +182,9 @@ export const QM_MESSAGES = {
   network: 'Ralat rangkaian. Sila cuba lagi.',
 } as const
 
-/** Papan Bijak "Cara Bermain:" lines (FN-M16-5.1.5). */
-export const PB_HOW_TO = [
-  '🎲 1. Gulung dadu dan bergerak di papan',
-  '📝 2. Jatuh di petak kuiz — jawab soalan!',
-  '🪜 3. Naik tangga untuk shortcut',
-  '🐍 4. Elak ular yang menarik turun',
-  '🏆 5. Sampai petak 50 dulu = MENANG!',
-] as const
+/** Papan Bijak "Cara Bermain:" text (48 GAME-02 Copy, D113 `†`): one paragraph. */
+export const PB_HOW_TO =
+  'Gulung dadu dan bergerak ke petak 50. Petak soalan: jawab dengan betul untuk kekal di petak itu; jawapan salah membawa anda kembali.'
 
 /** `USelect` items of the grade select: a label row per group, then its options. */
 export const GRADE_ITEMS: readonly (

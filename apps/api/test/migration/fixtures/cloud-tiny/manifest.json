@@ -420,6 +420,27 @@
       "rows": 1,
       "file": "teacher_reference_papers.ndjson"
     },
+    "school_battle_rankings": {
+      "rows": 0
+    },
+    "personal_access_tokens": {
+      "rows": 0
+    },
+    "jobs": {
+      "rows": 0
+    },
+    "failed_jobs": {
+      "rows": 0
+    },
+    "job_batches": {
+      "rows": 0
+    },
+    "cache": {
+      "rows": 0
+    },
+    "cache_locks": {
+      "rows": 0
+    },
     "exam_boards": {
       "rows": 1,
       "file": "exam_boards.ndjson"

@@ -107,9 +107,9 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
   test('E2E-M04-30 shell title/subtitle, file hints, defaults, format card suffixes (AC-13.1, 13.2, 13.3, 13.4)', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Import Soalan Secara Pukal')
+    await expect(byId(page, 'shell-admin-title')).toHaveText('Import CSV')
     await expect(byId(page, 'shell-admin-subtitle')).toHaveText(
-      'Muat naik fail CSV untuk menambah soalan secara pukal',
+      'Import soalan secara pukal dari fail CSV',
     )
     await expect(page.getByText('Saiz maksimum: 5MB. Format: CSV atau TXT')).toBeVisible()
     await expect(page.getByText('Tetapan Lalai (Opsional)')).toBeVisible()

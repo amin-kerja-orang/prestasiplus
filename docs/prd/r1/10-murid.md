@@ -194,7 +194,7 @@ Notes: V2 "Dashboard" heading is also used wrongly as the page title on Headcoun
 Left: sidebar toggle and breadcrumb "{Section} / {Page title}". Right: search "Cari menu" (CTRL K, lists only the 1.0 items), streak pill "{n} hari", coin pill "{n} Koin" (mata is shown on Dashboard and Prestasi), light/dark toggle, avatar button. No notification bell (Notifikasi is out of 1.0). The page title and subtitle come from the module (the V2 subtitles are quoted in each module).
 
 ### 2.3 Account menu (avatar, or user card at the foot of the sidebar)
-Shows the name and school. Entries, in order: Profil Saya, Tetapan Peribadi, Panduan, light/dark theme, Log Keluar. "Tiket Bantuan" (A4) is hidden. "Tukar Rakan Belajar" (V3-only mascot chooser) is covered by OQ-MUR-3.
+Shows the name and school. Entries, in order: Profil Saya, Tetapan Peribadi, Panduan, light/dark theme, Log Keluar. ~~"Tiket Bantuan" (A4) is hidden.~~ **Changed 2026-11-08 (gap analysis 8 Nov, MURID.md A5 + LIVE-VERIFY section 4):** V3-local already shows "Tiket Bantuan" in the account menu and its page works (A4 is a ticked matrix row, D100/D108(4)); the entry is therefore part of the menu once R1-MUR-A4 is delivered, and it is not "hidden". In V2 "Tiket Bantuan" is a pupil feature that Admin Pusat can switch off in Kawalan Ciri (R1-ADM-N-06), not a permanently hidden item; when that switch is OFF the entry is removed and the URL answers 404 (D108(6)). "Tukar Rakan Belajar" (V3-only mascot chooser) is covered by OQ-MUR-3.
 
 ### 2.4 Responsive behaviour (mandatory, all modules)
 | Width | Required behaviour |
@@ -887,10 +887,10 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   | Sebelum / Selepas / difference | read-only | - | - | Sebelum = pooled accuracy of the subject before the drill; Selepas = the drill accuracy; difference with sign and colour, whole numbers | - | - | - | - |
   - Behaviour: the drill is the Latih Tubi engine (46 section 4.10); archived questions drop out; an empty page shows the exact copy of the screen specification.
   - New requirements: FR-MUR-12-7 The drill selection and top-up rule above is the only selection rule. FR-MUR-12-8 A pupil with 0 answers sees the empty state and no error.
-  - New acceptance criteria: AC-MUR-12-5 Given a subject with 3 wrong servable questions and a weak topic, then the drill has 3 wrong questions first and is topped up from the weakest topic up to 20 or the topic's size. AC-MUR-12-6 Given a wrong question later answered correctly, then it is not in the next drill.
+  - New acceptance criteria: AC-MUR-12-5 Given a subject with 3 wrong servable questions and a weak topic, then the drill has 3 wrong questions first and is topped up from the weakest topic up to 20 or the topic's size. AC-MUR-12-6 Given a wrong question later answered correctly, then it is not in the next drill. AC-MUR-12-7 (added 2026-11-08, gap analysis 8 Nov) Given a pupil whose pooled accuracy in Sejarah is 40% and whose Analisa Item lists Sejarah as needing attention, when the pupil opens Remedial, then a card "Perlu Pemulihan" for Sejarah shows with the same accuracy and "{n} soalan" as Analisa Item (FR-MUR-12-2), and "Tiada topik lemah!" is not shown while any subject is below 60%.
 - **Name**: "Remedial" (page "Ujian Remedial Saya", sub "Ujian khas untuk topik yang perlu diperbaiki")
 - **Route**: `/remedial/saya`, `/remedial/:id`. **Matrix row**: 12. **Priority**: P1.
-- **Current status**: V3 both: "Tiada ujian remedial. Bagus" (only teacher-assigned tests). V2 auto-generates cards from weak subjects.
+- **Current status**: V3 both: "Tiada ujian remedial. Bagus" (only teacher-assigned tests). V2 auto-generates cards from weak subjects. **Re-verified 2026-11-08 on V3-local: still open** (a pupil with Sejarah at 40%, listed by Analisa Item as needing attention, sees "Tiada topik lemah!"; no completed-set list); the requirement above is unchanged, AC-MUR-12-7 added.
 - **Outcome**: a clear list of what to remedy and a way to do it.
 - **Reference behaviour (V2 `pelajar/remedial.blade.php`)**: header "Ujian Remedial Saya"; list of completed remedial sets (revision drills): "Remedial Set {n} — {Subjek} — {name}", badge "Selesai", "{n} soalan", "Sebelum: {x}%", "Selepas: {y}% ({+/-d}%)" (green if not negative, else red), chip "{Subjek} (Umum)", "🎯 Ulang Latihan →". Section "Perlu Pemulihan Sekarang": one card per subject with pooled accuracy below 60% (V2: mean of session accuracy, FD-MUR-38): colour square, subject, badge "Perlu Pemulihan", "{n} soalan", "Ketepatan: {acc}%", "Sasaran: 60%", bar, "🎯 Latihan Pemulihan →". Empty with no sets: 🎉 "Tiada topik lemah!" / "Prestasi anda baik merentas semua subjek. Teruskan!" and button "Terus Berlatih →". Teacher-assigned remedial tests (V3 `remedial-tests/mine`, V2 Command Center) are listed too, with their own status.
 - **Functional requirements**
@@ -1603,9 +1603,9 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
   | Rows | list | - | `Belum ada pelajar dalam {kelas|sekolah} anda` | 10 ranked places in all: podium of 3 (ranks 1-3) plus table rows for ranks 4-10, the own row appended when outside the top 10; order = the tie-break chain of 48 GAME-16 (Syiling desc, accuracy desc, longest streak desc, display name asc, user id asc), which gives every pupil a distinct position; first names only | - | - | - | same |
   - Behaviour: `/leaderboard` and `GET /api/leaderboard` are canonical; `/gamification/leaderboard` redirects to `/leaderboard` and `GET /api/gamification/leaderboard` is removed (D113).
   - New requirements: FR-MUR-33-6 Absent or unknown `period` is `all`.
-  - New acceptance criteria: AC-MUR-33-5 Given `?period=xyz`, then the chip "Semua Masa" is active.
+  - New acceptance criteria: AC-MUR-33-5 Given `?period=xyz`, then the chip "Semua Masa" is active. AC-MUR-33-6 (added 2026-11-08, gap analysis 8 Nov) Given the pupil menu, then exactly one "Papan Pendahulu" entry exists and it opens `/leaderboard` with the scope tabs, the period chips and the "Kedudukan Anda" figures; given `/gamification/leaderboard`, then it redirects to `/leaderboard`; the board and the "Kedudukan Anda" rank agree with the pupil's own sessions (no "1 peserta" or "#-" for a pupil who has sessions).
 - **Name**: "Papan Pendahulu" (sub "Kedudukan pelajar terbaik mengikut syiling"; V3 "🏆 Papan Pendahulu"). **Route**: `/leaderboard` (canonical, D113); `/gamification/leaderboard` redirects to it. **Row**: 33. **Priority**: P1. **Delivery**: 1.0 (linked from R1-MUR-8 and R1-MUR-18).
-- **Current status**: V3 podium plus 3 rows, no period or scope filter, no own rank; V2 tabs Kelas/Sekolah and Semua Masa/Minggu/Bulan, own rank, podium.
+- **Current status**: V3 podium plus 3 rows, no period or scope filter, no own rank; V2 tabs Kelas/Sekolah and Semua Masa/Minggu/Bulan, own rank, podium. **Re-verified 2026-11-08 on V3-local: still two boards.** The menu entry opens `/gamification/leaderboard` (podium and 8 rows, no filters); `/leaderboard` has the period filter but shows "1 peserta" and "Kedudukan Anda #-" for a pupil with sessions. FR-MUR-33-5 and the single-route decision are unchanged; AC-MUR-33-6 added.
 - **Outcome**: see top pupils and own place.
 - **Reference (V2 `leaderboard.blade.php`)**: scope `?skop=kelas|sekolah`, period tabs, podium for top 3, table, own rank row; empty "Belum ada pelajar dalam {kelas|sekolah} anda".
 - **FRs**: FR-MUR-33-1 scope tabs Kelas and Sekolah and period tabs "Semua Masa", "Minggu", "Bulan". FR-MUR-33-2 ranking by syiling earned in the period (all time = balance) with ties broken by the chain of 48 GAME-16 (accuracy, longest streak, display name, user id), so positions are distinct. FR-MUR-33-3 own rank always visible even outside the top. FR-MUR-33-4 rows show the display name (first name only, section 4.3) and syiling only; the "Ketepatan" and "Streak" columns show the pupil's own values to that pupil and, for others, the same pooled whole-number accuracy (FR-X4-5) and streak, never a school. FR-MUR-33-5 the duplicate route redirects to the single page.
@@ -2002,9 +2002,10 @@ Facts: the DSKP tree (`curriculum_nodes`: Tajuk DSKP, SK, SP, TP; the word "Unit
 | 11 | `src/modules/m28-bijak-spm/lib/kuiz.ts:34` ("Skema jawapan belum tersedia untuk soalan ini.") | a Kuiz question without a scheme | 13 | a question without scheme is not served in Kuiz (4.6); the text is defensive only and stays as an allow-list entry of 40 AC-X2-3 ("Skema jawapan belum tersedia untuk soalan ini.", shown only if a Kuiz question without a scheme is reached) |
 | 12 | `src/modules/m28-bijak-spm/server/errors.ts:14` and `server/http-admin.ts:153` ("Fungsi ini belum tersedia dalam demo") | demo server message | 13 (admin side) | must never reach a pupil; remove from the real path |
 | 13 | UAT `GET /api/config/support` 404 | Panduan loads with an API error | A3 | seed the support row (admin settings) |
-| 14 | Prestasi / Headcount / Analisa Item routes: 403 or redirect (see modules) | pupil blocked | 3, 4, 6 | per modules |
+| 14 | Prestasi / Headcount / Analisa Item routes: 403 or redirect (see modules) | pupil blocked | 3, 4, 6 | per modules. **Closed 2026-11-08 on V3-local** (Headcount, Prestasi 360 and Analisa Item are real pupil pages; `/prestasi/sekolah` and `/analisa-item/kelas` answer 403 to a pupil); kept for the CI proof |
+| 15 | Kedai Hadiah page (observed 2026-11-08; source file not located) | with no catalogue the pupil sees the waiting text "Hadiah akan ditambah tidak lama lagi" | 31, 38 | replace by the V2 empty copy of R1-MUR-31 ("Tiada Hadiah Tersedia" / "Katalog hadiah belum dibuka untuk kategori ini."); no "akan ditambah" or "tidak lama lagi" wording on any pupil page (40 AC-X2-3) |
 
-The banned strings and the single allow-list are defined only in 40 AC-X2-3 (master; plan table C, card S0-T04 and FAQ Q26 cite it and restate no other list); this table never restates them. Items 9 to 11 are lock or defensive states, not feature stubs; 1 to 8 and 13 are gaps. Owners: items 1 to 5 are removed together by card S5-T01 (it owns `lower-form.ts` and the four pages; FR-MUR-16-13 and AC-MUR-16-9 are verified on its PR); item 6 (`rules.ts`, found by the symbol names `SPM_LEVEL_CODES` and `OFFERED_LEVEL_CODES`) is changed by S4-T06 alone (its card line; S5-T03 does not touch level codes; FR-MUR-16-13 stays verified by S5-T01); item 7 by S0-T05, and items 8 and 14 by S0-T05, S0-T06 and S10-T01 to S10-T03 as the plan lists; no page keeps a copy of the gate.
+The banned strings and the single allow-list are defined only in 40 AC-X2-3 (master; plan table C, card S0-T04 and FAQ Q26 cite it and restate no other list); this table never restates them. Items 9 to 11 are lock or defensive states, not feature stubs; 1 to 8, 13 and 15 are gaps (14 is closed, see its row). Owners: items 1 to 5 are removed together by card S5-T01 (it owns `lower-form.ts` and the four pages; FR-MUR-16-13 and AC-MUR-16-9 are verified on its PR); item 6 (`rules.ts`, found by the symbol names `SPM_LEVEL_CODES` and `OFFERED_LEVEL_CODES`) is changed by S4-T06 alone (its card line; S5-T03 does not touch level codes; FR-MUR-16-13 stays verified by S5-T01); item 7 by S0-T05, and items 8 and 14 by S0-T05, S0-T06 and S10-T01 to S10-T03 as the plan lists; no page keeps a copy of the gate.
 
 ---
 
@@ -2094,20 +2095,20 @@ Counts are unique IDs written in this document (`FR-MUR-...` and `AC-MUR-...`). 
 | R1-MUR-A3 | Panduan | P2 | 1.0 | OK / OK, config API 404 | 6 | 6 |
 | R1-MUR-A5 | Log Keluar | P0 | 1.0 | OK / OK | 4 | 5 |
 | R1-MUR-2 | Dashboard | P1 | 1.0 | Partial / Partial | 13 | 9 |
-| R1-MUR-3 | Headcount | P0 | 1.0 | Missing (403) / Missing | 11 | 9 |
-| R1-MUR-4 | Prestasi | P0 | 1.0 | Wrong (school data) / Wrong | 14 | 9 |
+| R1-MUR-3 | Headcount | P0 | 1.0 | Missing (403) / Missing; 8 Nov 2026: present on V3-local (page and detail), closed | 11 | 9 |
+| R1-MUR-4 | Prestasi | P0 | 1.0 | Wrong (school data) / Wrong; 8 Nov 2026: Prestasi 360 on V3-local, school page 403 for a pupil, closed | 14 | 9 |
 | R1-MUR-5 | Analitik Adaptif | P1 | 1.0 | OK / OK, SP data empty | 8 | 6 |
-| R1-MUR-6 | Analisa Item | P0 | 1.0 | Missing / Missing | 11 | 8 |
+| R1-MUR-6 | Analisa Item | P0 | 1.0 | Missing / Missing; 8 Nov 2026: personal page on V3-local, closed | 11 | 8 |
 | R1-MUR-7 | Video | P2 | 1.0 | OK / OK | 7 | 5 |
 | R1-MUR-8 | Kelas Saya | P1 | 1.0 | OK / OK | 7 | 5 |
 | R1-MUR-9 | Soalan by Chapter | P0 | 1.0 | Empty / Empty ("Tiada subjek bab"), T1 gate | 14 | 12 |
-| R1-MUR-12 | Remedial | P1 | 1.0 | Partial / Partial | 8 | 6 |
+| R1-MUR-12 | Remedial | P1 | 1.0 | Partial / Partial; 8 Nov 2026: still open | 8 | 7 |
 | R1-MUR-13 | SPM (Bijak, Databank, Tracking A, Subjektif, Kertas Subjektif) | P0 | 1.0 | Partial / No Bijak papers; 375 px gaps | 36 | 32 |
-| R1-MUR-14 | Heatmap Topik Lemah | P1 | 1.0 | OK / Empty | 8 | 5 |
+| R1-MUR-14 | Heatmap Topik Lemah | P1 | 1.0 | OK / Empty; 8 Nov 2026: empty for a pupil with 15 answers, function or data not confirmed (to verify with a second pupil) | 8 | 5 |
 | R1-MUR-16 | Latih Tubi | P0 | 1.0 | OK / OK (T5), T1 gate; figure-less items served | 16 | 11 |
 | R1-MUR-21 | Permainan | P1 | 1.0 | OK / OK | 9 | 7 |
-| R1-MUR-54 | Laporan Soalan | P0 | 1.0 | Hidden / Hidden | 10 | 7 |
-| **Subtotal 1.0 columns (18 modules)** | | | | | **202** | **161** |
+| R1-MUR-54 | Laporan Soalan | P0 | 1.0 | Hidden / Hidden; 8 Nov 2026: menu, submit and "Laporan Soalan Saya" work on V3-local, closed | 10 | 7 |
+| **Subtotal 1.0 columns (18 modules)** | | | | | **202** | **162** |
 | R1-MUR-A4 | Tiket Bantuan | P2 | After 1.0 | OK / OK, reply missing | 7 | 7 |
 | R1-MUR-17 | Soalan Berstruktur | P1 | 1.0 (linked from 13) | Seed only / seed only | 7 | 5 |
 | R1-MUR-18 | Kedudukan | P1 | 1.0 (linked from 33) | Empty list / same | 7 | 5 |
@@ -2124,23 +2125,23 @@ Counts are unique IDs written in this document (`FR-MUR-...` and `AC-MUR-...`). 
 | R1-MUR-30 | Cabaran Harian | P1 | 1.0 (linked from 2, 28) | OK / OK | 6 | 5 |
 | R1-MUR-31 | Kedai Hadiah | P1 | 1.0 (linked from 28) | Empty catalogue / empty | 6 | 5 |
 | R1-MUR-32 | Marketplace | P2 | After 1.0 | Sample data / sample | 6 | 5 |
-| R1-MUR-33 | Papan Pendahulu | P1 | 1.0 (linked from 8, 18) | No filters / same | 6 | 5 |
+| R1-MUR-33 | Papan Pendahulu | P1 | 1.0 (linked from 8, 18) | No filters / same; 8 Nov 2026: two boards still exist | 6 | 6 |
 | R1-MUR-34 | Pencapaian | P2 | After 1.0 | OK / OK | 5 | 4 |
 | R1-MUR-35 | Kotak Misteri | P2 | After 1.0 | Model differs / same | 6 | 5 |
 | R1-MUR-36 | Rujuk Kawan | P2 | After 1.0 | Rule differs / same | 6 | 5 |
 | R1-MUR-38 | Kedai Hadiah DIGITAL | P2 | After 1.0 | Empty catalogue / empty | 5 | 4 |
 | R1-MUR-39 | Timeline Saya | P2 | After 1.0 | Manual model / same | 6 | 5 |
 | R1-MUR-40 | Jemput Ibu Bapa | P2 | After 1.0 | OK / OK | 6 | 5 |
-| **Subtotal rest of the matrix (23 modules)** | | | | | **138** | **112** |
+| **Subtotal rest of the matrix (23 modules)** | | | | | **138** | **113** |
 | R1-MUR-AUTH | Shared sign-in screens (3C: login, register, reset) | P0 | 1.0 | Built in code, first written spec | 4 | 4 |
 | Common | Common rules for the rest of the matrix (P2) | P1 | | | 5 | 3 |
 | Shell | Shared shell (SH) | P0 | | Partial | 12 | 6 |
 | Cross-cutting | Question-paper contract (QP, 4.8) | P0 | | Gaps seen live | 17 | 17 |
 | Cross-cutting | DSKP level per module (DK, 4.10) | P1 | | UAT 0 mapping | 5 | 4 |
 | Cross-cutting responsive | Responsive rows of 4.9 (AC-MUR-RS-1..18) | P0 | | | 0 | 18 |
-| **Total (41 modules + sign-in block, common, shell, cross-cutting)** | | | | | **383** | **325** |
+| **Total (41 modules + sign-in block, common, shell, cross-cutting)** | | | | | **383** | **327** |
 
-Arithmetic: FR 202 + 138 + 4 + 5 + 12 + 17 + 5 = 383; AC 161 + 112 + 4 + 3 + 6 + 17 + 4 + 18 = 325.
+Arithmetic: FR 202 + 138 + 4 + 5 + 12 + 17 + 5 = 383; AC 162 + 113 + 4 + 3 + 6 + 17 + 4 + 18 = 327 (was 325 before AC-MUR-12-7 and AC-MUR-33-6 were added on 2026-11-08). The "Current status" column keeps the 4 Nov reading; where it carries "8 Nov 2026" the gap analysis of 8 Nov re-verified the row on V3-local.
 
 P0 modules (1.0 columns): R1-MUR-A5, 3, 4, 6, 9, 13, 16, 54, plus the QP contract that 9, 13 and 16 depend on. Row 15 and row 37 stay hidden (D102) and have no section.
 

@@ -1,129 +1,54 @@
 /**
- * S19 `/ranking` "Kedudukan" helpers (SRS M08 FR-M08-108..112, BR-M08-27; DV-22): the query string is
- * the state (a GET form on live), the scope pills keep the other filters, and the hero subtitle / tab
- * title say which scope is shown.
+ * S19 `/ranking` "Kedudukan" helpers (R1-MUR-18, API-RPT-13): the card title and icon of each scope, the
+ * texts of a rank card, and the order the cards are shown in. The V3-only filters (Skop, Subjek, Tingkatan)
+ * and the scope pills are gone (FR-MUR-18-6); the page has no query string.
  */
 
-import { isHttpMode } from '@/api/mode'
-
-import type { RankingScope } from '../api/types'
+import type { KedudukanScope, KedudukanScopeCard } from '../api/types'
 
 export const RANKING_PATH = '/ranking'
 
-export interface ScopePill {
-  id: RankingScope
-  label: string
+/** Page name of the tab title ("Kedudukan | PRESTASIPLUS", the shell format; V2 wrote "Kedudukan — PRESTASIPLUS"). */
+export const RANKING_TITLE = 'Kedudukan'
+
+/** Sub-heading of the page header (V2 `pelajar/ranking.blade.php`). */
+export const RANKING_SUBTITLE = 'Di mana anda berdiri — dalam kelas, sekolah, negeri dan seluruh negara'
+
+export const SYILING_NOTE = 'Kedudukan dikira berdasarkan baki syiling.'
+export const EMPTY_TITLE = 'Kedudukan belum tersedia'
+export const EMPTY_TEXT = 'Akaun anda belum dikaitkan dengan sekolah atau kelas.'
+export const UNAVAILABLE = 'Belum tersedia'
+export const FULL_BOARD_LABEL = 'Lihat papan pendahulu penuh'
+export const FULL_BOARD_PATH = '/leaderboard'
+
+/** Card titles and icons, as V2 (the class card reads "Dalam kelas"). */
+export const SCOPE_META: Readonly<Record<KedudukanScope, { label: string; icon: string; accent: string }>> = {
+  kelas: { label: 'Dalam kelas', icon: 'users', accent: 'friend' },
+  sekolah: { label: 'Dalam sekolah', icon: 'student', accent: 'win' },
+  negeri: { label: 'Dalam negeri', icon: 'map-pin', accent: 'heat' },
+  kebangsaan: { label: 'Kebangsaan', icon: 'flag', accent: 'action' },
 }
 
-/** The four scope pills, in the live order. */
-export const SCOPE_PILLS: readonly ScopePill[] = [
-  { id: 'nasional', label: 'Nasional' },
-  { id: 'negeri', label: 'Negeri' },
-  { id: 'daerah', label: 'Daerah' },
-  { id: 'sekolah', label: 'Sekolah' },
-]
+const nf = new Intl.NumberFormat('en-US')
 
-export const TINGKATAN_OPTIONS = [
-  { value: '', label: 'Semua' },
-  { value: 'T4', label: 'Tingkatan 4' },
-  { value: 'T5', label: 'Tingkatan 5' },
-] as const
+/** "#{rank}"; null without a rank (the tile prints "-" and "Belum tersedia" under it). */
+export const rankText = (c: Pick<KedudukanScopeCard, 'rank'>): string | null =>
+  c.rank === null ? null : `#${nf.format(c.rank)}`
 
-/** The URL filters of S19 (`subject_id`, `tingkatan`, `negeri`; empty = not set). */
-export interface RankingFilters {
-  subjectId: string
-  tingkatan: string
-  negeri: string
-}
+/** "/ {total} · Kumpulan {p}% teratas"; "Belum tersedia" without a rank. */
+export const rankSub = (c: Pick<KedudukanScopeCard, 'total' | 'percentile'>): string =>
+  c.total === null || c.percentile === null
+    ? UNAVAILABLE
+    : `/ ${nf.format(c.total)} · Kumpulan ${String(c.percentile)}% teratas`
 
-export interface RankingState extends RankingFilters {
-  /** The raw `scope` of the URL ('' when absent). */
-  scope: string
-}
-
-type QueryValue = string | null | (string | null)[] | undefined
-
-const text = (v: QueryValue): string => {
-  const first = Array.isArray(v) ? v[0] : v
-  return first ?? ''
-}
-
-export function readRankingState(query: Record<string, QueryValue>): RankingState {
-  return {
-    scope: text(query.scope),
-    subjectId: text(query.subject_id),
-    tingkatan: text(query.tingkatan),
-    negeri: text(query.negeri),
+/**
+ * "Sekitar anda" shows the tightest scope the pupil belongs to (V2: the class, else the school, else the nation); the
+ * sub-label names it.
+ */
+export function nearbyCard(scopes: readonly KedudukanScopeCard[]): KedudukanScopeCard | null {
+  for (const scope of ['kelas', 'sekolah', 'kebangsaan'] as const) {
+    const card = scopes.find((s) => s.scope === scope && s.rank !== null)
+    if (card) return card
   }
+  return null
 }
-
-/** The known scope of a raw value, or `null` (an unknown scope activates no pill, FR-M08-109). */
-export function knownScope(scope: string): RankingScope | null {
-  return SCOPE_PILLS.find((p) => p.id === scope)?.id ?? null
-}
-
-/** An absent `scope` is the nasional list with the nasional pill active (BR-M08-27). */
-export function activeScope(scope: string): RankingScope | null {
-  return scope === '' ? 'nasional' : knownScope(scope)
-}
-
-/** FR-M08-108 (DV-22): the negeri value on the negeri scope when set, else the active pill label. */
-export function scopeLabel(state: RankingState): string {
-  const scope = activeScope(state.scope)
-  if (scope === null) return 'Nasional'
-  if (scope === 'negeri' && state.negeri !== '') return state.negeri
-  return SCOPE_PILLS.find((p) => p.id === scope)?.label ?? 'Nasional'
-}
-
-/** Hero subtitle is the label; the tab title is "Kedudukan {x}" (FR-M08-108). */
-export const tabTitle = (state: RankingState): string => `Kedudukan ${scopeLabel(state)}`
-
-/** Non-empty filters in the order the live pills write them. */
-function filterParams(f: RankingFilters): [string, string][] {
-  const out: [string, string][] = []
-  if (f.subjectId !== '') out.push(['subject_id', f.subjectId])
-  if (f.tingkatan !== '') out.push(['tingkatan', f.tingkatan])
-  if (f.negeri !== '') out.push(['negeri', f.negeri])
-  return out
-}
-
-/** `{current non-empty filters}&scope={scope}` as a vue-router query object (FR-M08-109). */
-export function scopeQuery(f: RankingFilters, scope: string): Record<string, string> {
-  return Object.fromEntries([...filterParams(f), ['scope', scope]])
-}
-
-/** The form submit: the same URL the GET form builds (hidden `scope` + the non-empty selects). */
-export function formQuery(f: RankingFilters, scope: string): Record<string, string> {
-  return Object.fromEntries([['scope', scope], ...filterParams(f)])
-}
-
-/** The `fetchRankings` query for the URL state (absent values are not sent). */
-export function apiQuery(state: RankingState): {
-  scope?: string
-  subjectId?: number | string
-  tingkatan?: string
-  negeri?: string
-} {
-  const q: { scope?: string; subjectId?: number | string; tingkatan?: string; negeri?: string } = {}
-  if (state.scope !== '') q.scope = state.scope
-  // The real API takes the opaque id string as it is (BE-19 `subjectId`); mock mode keeps the number.
-  if (isHttpMode()) {
-    if (state.subjectId !== '') q.subjectId = state.subjectId
-  } else {
-    const subject = Number.parseInt(state.subjectId, 10)
-    if (Number.isFinite(subject)) q.subjectId = subject
-  }
-  if (state.tingkatan !== '') q.tingkatan = state.tingkatan
-  if (state.negeri !== '') q.negeri = state.negeri
-  return q
-}
-
-export const MEDALS: Record<number, { emoji: string; cls: string }> = {
-  1: { emoji: '🥇', cls: 'text-highlighted' },
-  2: { emoji: '🥈', cls: 'text-highlighted' },
-  3: { emoji: '🥉', cls: 'text-highlighted' },
-}
-
-/** "Tepat" colour: success from 50 %, error below (INFERRED threshold, FR-M08-112). */
-export const accuracyClass = (accuracy: number): string =>
-  accuracy >= 50 ? 'text-success' : 'text-error'

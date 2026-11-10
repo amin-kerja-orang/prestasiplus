@@ -66,9 +66,20 @@ export interface ArticleValues {
   updated_at: string
 }
 
+/** The Darjah of a source level name (`Darjah 3`) as the article grade code, else `SEMUA` (an article has no Tingkatan grade). */
+export function articleGradeOfLevel(nameBm: string | null | undefined): string {
+  const m = /^\s*darjah\s*([1-6])\s*$/i.exec(nameBm ?? '')
+  return m ? `DARJAH_${m[1]}` : 'SEMUA'
+}
+
+/**
+ * T-B6: the real .cloud article keeps its text in `body` (NULL on all 92 rows: the source never held article text; the rebuild keeps it as an
+ * empty page the admin can fill in, nothing is invented), its level in `education_level_id` (`gradeLevel`, resolved by the loader) and has no
+ * excerpt; a blank author is the configured content owner (`authorId` is already resolved by the loader).
+ */
 export function transformArticle(
   row: Staged,
-  parents: { authorId: string | undefined; sanitizer?: HtmlSanitizer },
+  parents: { authorId: string | undefined; gradeLevel?: string | null; sanitizer?: HtmlSanitizer },
 ): Outcome<ArticleValues> {
   const title = squash(row.title)
   if (title === null) return invalid('title')
@@ -77,16 +88,15 @@ export function transformArticle(
   const category = articleCategory(row.category)
   if (!category.ok) return category
   if (category.value === null) return invalid('category')
-  const grade = articleGrade(row.grade_level)
+  const grade = parents.gradeLevel !== undefined ? { ok: true as const, value: parents.gradeLevel } : articleGrade(row.grade_level)
   if (!grade.ok) return grade
   if (parents.authorId === undefined) return orphan('author_id')
   const published = flag(row.is_published, false)
   if (published === 'invalid') return invalid('is_published')
   const views = nonNegativeInt(row.views)
   if (views === 'invalid') return invalid('views')
-  const raw = optText(row, 'content')
-  if (raw === null) return invalid('content')
-  const content = (parents.sanitizer ?? DEFAULT_SANITIZER).sanitize(raw)
+  const raw = optText(row, 'body') ?? optText(row, 'content')
+  const content = raw === null ? '' : (parents.sanitizer ?? DEFAULT_SANITIZER).sanitize(raw)
   const s = stamps(row)
   return ok({
     title,
@@ -122,6 +132,8 @@ export const BANNER_TYPE_MAP: Readonly<Record<string, string>> = {
 }
 const bannerType = enumMapper('type', BANNER_TYPE_MAP)
 
+export const BANNER_AUDIENCES: readonly string[] = ['ALL', 'STUDENT', 'TEACHER', 'ADMIN']
+
 const HTTP_URL = /^https?:\/\/[^\s]{1,2040}$/i
 
 export interface BannerValues {
@@ -132,6 +144,8 @@ export interface BannerValues {
   banner_type: string
   link_type: string
   external_url: string | null
+  /** T-B6: the real .cloud `target` is the audience (ALL, STUDENT, ...), not a link. */
+  target_audience: string
   display_order: number
   start_date: string | null
   end_date: string | null
@@ -156,7 +170,8 @@ export function transformBanner(row: Staged, dates: { start: string | null; end:
   const hadImage = text(row.image_path) !== null
   const target = text(row.target)
   const external = target !== null && HTTP_URL.test(target)
-  const droppedTarget = target !== null && !external
+  const audience = target !== null && BANNER_AUDIENCES.includes(target.toUpperCase()) ? target.toUpperCase() : null
+  const droppedTarget = target !== null && !external && audience === null
   const fail = (o: Outcome<never>): BannerOutcome => ({ out: o, hadImage, droppedTarget })
   const title = squash(row.title)
   if (title === null) return fail(invalid('title'))
@@ -178,6 +193,7 @@ export function transformBanner(row: Staged, dates: { start: string | null; end:
       banner_type: type.value,
       link_type: external ? 'EXTERNAL' : 'NONE',
       external_url: external ? target : null,
+      target_audience: audience ?? 'ALL',
       display_order: order ?? 0,
       start_date: dates.start,
       end_date: dates.end,
@@ -215,8 +231,23 @@ export interface NoteValues {
   updated_at: string
 }
 
-/** `ownerId` is the configured content owner (LEAD Q7): undefined rejects ORPHAN_PARENT. `subject` and `grade` have no staged source. */
-export function transformNote(row: Staged, parents: { ownerId: string | undefined; sanitizer?: HtmlSanitizer }): Outcome<NoteValues> {
+/** V2 subject code -> the five note subjects of v3 (`ck_notes_subject`); any other subject is not a note subject. */
+export const NOTE_SUBJECT_BY_CODE: Readonly<Record<string, string>> = { BM: 'bahasa_melayu', BI: 'bahasa_inggeris', MATH: 'matematik', SCI: 'sains', SEJ: 'sejarah' }
+
+/** The note grade code of a source level name: `Darjah N` -> `DARJAH_N`, `Tingkatan N` -> `TINGKATAN_N`, else null. */
+export function noteGradeOfLevel(nameBm: string | null | undefined): string | null {
+  const m = /^\s*(darjah|tingkatan)\s*(\d)\s*$/i.exec(nameBm ?? '')
+  return m ? `${(m[1] as string).toUpperCase()}_${m[2]}` : null
+}
+
+/**
+ * `ownerId` is the configured content owner (LEAD Q7): undefined rejects ORPHAN_PARENT. T-B6: the real note has `subject_id` and
+ * `education_level_id` (resolved by the loader into `subject` / `grade`) and `body`, which is NULL on all 10 rows: the page stays empty.
+ */
+export function transformNote(
+  row: Staged,
+  parents: { ownerId: string | undefined; subject?: string | null; grade?: string | null; sanitizer?: HtmlSanitizer },
+): Outcome<NoteValues> {
   if (parents.ownerId === undefined) return orphan('author_id')
   const title = squash(row.title)
   if (title === null) return invalid('title')
@@ -227,13 +258,12 @@ export function transformNote(row: Staged, parents: { ownerId: string | undefine
   if (published === 'invalid') return invalid('is_published')
   const views = nonNegativeInt(row.views)
   if (views === 'invalid') return invalid('views')
-  const subject = optText(row, 'subject')?.toLowerCase() ?? null
+  const subject = (parents.subject !== undefined ? parents.subject : optText(row, 'subject'))?.toLowerCase() ?? null
   if (subject === null || !NOTE_SUBJECTS.includes(subject)) return invalid('subject')
-  const grade = optText(row, 'grade')
+  const grade = parents.grade !== undefined ? parents.grade : optText(row, 'grade')
   if (grade === null) return invalid('grade')
   const raw = optText(row, 'body')
-  if (raw === null) return invalid('content')
-  const content = (parents.sanitizer ?? DEFAULT_SANITIZER).sanitize(raw)
+  const content = raw === null ? '' : (parents.sanitizer ?? DEFAULT_SANITIZER).sanitize(raw)
   return ok({
     title,
     summary: optText(row, 'summary'),

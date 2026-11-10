@@ -125,7 +125,7 @@ async function apply(value: { schoolId: string; state: string }) {
       @remove-chip="filters.removeChip"
       @reset="router.push(paths.overview)"
     >
-      <DsFormField v-slot="{ id }" native label="Sekolah" class="w-full md:w-64">
+      <DsFormField v-slot="{ id }" native label="Sekolah" class="w-full">
         <DsNativeSelect
           :id="id"
           v-model="filters.school.value"
@@ -138,7 +138,7 @@ async function apply(value: { schoolId: string; state: string }) {
           </option>
         </DsNativeSelect>
       </DsFormField>
-      <DsFormField v-slot="{ id }" native label="Negeri" class="w-full md:w-48">
+      <DsFormField v-slot="{ id }" native label="Negeri" class="w-full">
         <DsNativeSelect
           :id="id"
           v-model="filters.state.value"

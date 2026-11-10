@@ -3,7 +3,7 @@
  * excluded counters, preflight, the source lock and the printed report. Synthetic archive rows only.
  */
 import { randomBytes } from 'node:crypto'
-import { readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -18,12 +18,17 @@ import { createStagingDb } from '../staging/helpers'
 import { addArchive, AS_OF, bootQuestions, four, questionTableCounts, type QuestionsHarness } from './helpers'
 
 let h: QuestionsHarness
+// The command writes its report, plan and quarantine files to <cwd>/.migration-out: remove what THIS file created (and the folder when it did not exist before).
+const OUT_ROOT = join(process.cwd(), '.migration-out')
+const outBefore = existsSync(OUT_ROOT) ? new Set(readdirSync(OUT_ROOT)) : null
 
 beforeAll(async () => {
   h = await bootQuestions()
 }, 300_000)
 afterAll(async () => {
   await h?.close()
+  if (outBefore === null) rmSync(OUT_ROOT, { recursive: true, force: true })
+  else if (existsSync(OUT_ROOT)) for (const f of readdirSync(OUT_ROOT)) if (!outBefore.has(f)) rmSync(join(OUT_ROOT, f), { recursive: true, force: true })
 })
 
 const rejects = async (runId: string): Promise<Record<string, number>> => {
@@ -95,7 +100,7 @@ describe('dry-run, apply, reconciliation and the data written', () => {
       { id: ids.held, image: 'questions/gambar.png', options: four().map((o, i) => (i === 2 ? { ...o, image: 'options/c.png' } : o)) },
       { id: ids.t4, level: 2, subject: 2, chapter: 3, topic: 3, options: four(2) },
       { id: ids.noChapter, chapter: null, topic: null, difficulty: 'x' },
-      // excluded (status / type)
+      // other statuses are loaded with their status (KP-5); a non-MCQ is another loader's
       { id: 20, status: 'draf' }, { id: 21, status: 'ditolak' }, { id: 22, status: 'diarkib' }, { id: 23, type: 'subjective', options: [] },
       // rejected
       { id: 30, options: four().slice(0, 2) },
@@ -119,25 +124,25 @@ describe('dry-run, apply, reconciliation and the data written', () => {
     const applied = await h.run('apply')
     expect(applied.report.status).toBe('succeeded')
     const recon = applied.report.recon[0]
-    expect(recon).toMatchObject({ entity: 'questions', sourceCount: 17, eligibleCount: 13, loaded: 4, rejected: 9, expectedDelta: 0, status: 'ok' })
+    expect(recon).toMatchObject({ entity: 'questions', sourceCount: 17, eligibleCount: 16, loaded: 10, rejected: 6, expectedDelta: 0, status: 'ok' })
     expect(await rejects(applied.report.runId)).toEqual({
-      'INVALID_VALUE:options': 1, 'INVALID_VALUE:is_correct': 2, 'INVALID_VALUE:body': 1, 'ORPHAN_PARENT:subject_id': 1,
-      'ORPHAN_PARENT:education_level_id': 1, 'DUPLICATE_KEY:label': 1, 'INVALID_VALUE:options.body': 1, 'INVALID_VALUE:label': 1,
-    })
+      'INVALID_VALUE:is_correct': 2, 'INVALID_VALUE:body': 1, 'ORPHAN_PARENT:subject_id': 1, 'ORPHAN_PARENT:education_level_id': 1, 'INVALID_VALUE:options.body': 1,
+    }) // 2 options load, a repeated or bad label is re-assigned A..D (30, 36, 38 are no longer rejects)
     expect(Object.fromEntries([...applied.notes].filter(([k]) => k.includes('excluded')))).toEqual({
-      'questions.excluded.status.draf': 1, 'questions.excluded.status.ditolak': 1, 'questions.excluded.status.diarkib': 1, 'questions.excluded.type.subjective': 1,
+      'questions.excluded.type.subjective': 1,
     })
+    expect(Object.fromEntries([...applied.notes].filter(([k]) => k.startsWith('questions.status.')))).toMatchObject({ 'questions.status.draft': 2, 'questions.status.archived': 1 })
     expect(applied.notes.get('questions.held_image')).toBe(1)
     expect(applied.notes.get('questions.difficulty_missing')).toBe(1)
     expect(applied.notes.get('questions.chapter_missing')).toBe(1)
     // The run is recorded with its commit (best effort) and the id map points at the new questions.
     const run = await h.q<{ mode: string; status: string; entity_set: string[] }>(`select mode, status, entity_set from etl_runs where id = $1::bigint`, [applied.report.runId])
-    expect(run[0]).toMatchObject({ mode: 'apply', status: 'succeeded', entity_set: ['questions'] })
-    expect(await h.count('etl_id_map', `t.entity = 'questions'`)).toBe(4)
+    expect(run[0]).toMatchObject({ mode: 'apply', status: 'succeeded', entity_set: ['questions', 'question_stimuli', 'stimulus_groups'] })
+    expect(await h.count('etl_id_map', `t.entity = 'questions'`)).toBe(10)
 
     expect(await questionTableCounts(h.pool)).toEqual({
-      questions: before.questions + 4, question_versions: before.question_versions + 4, question_parts: before.question_parts + 4,
-      part_options: before.part_options + 16, answer_keys: before.answer_keys + 4, question_tags: before.question_tags + 1,
+      questions: before.questions + 10, question_versions: before.question_versions + 10, question_parts: before.question_parts + 10,
+      part_options: before.part_options + 38, answer_keys: before.answer_keys + 10, question_tags: before.question_tags + 1,
     })
   })
 
@@ -156,12 +161,12 @@ describe('dry-run, apply, reconciliation and the data written', () => {
          join question_parts p on p.question_version_id = v.id
         where q.legacy_source = 'cloud' order by q.legacy_id::int`,
     )
-    expect(rows.map((r) => r.legacy_id)).toEqual(['10', '11', '12', '13'])
-    const [ok, held, t4, none] = rows as [Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, Record<string, unknown>]
+    expect(rows.map((r) => r.legacy_id)).toEqual(['10', '11', '12', '13', '30', '36', '38']) // the live (approved) ones; 20, 21, 22 are draft/archived: loaded, not live
+    const [ok, held, t4, none] = rows as [Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, ...Record<string, unknown>[]]
     const map = async (entity: string, legacy: string) => (await h.q<{ new_id: string }>(`select new_id from etl_id_map where legacy_source = 'cloud' and entity = $1 and legacy_id = $2`, [entity, legacy]))[0]?.new_id
     expect(ok).toMatchObject({
       is_active: true, live_version_no: 1, latest_version_no: 1, created_by_id: null, source_type: null, group_id: null, status: 'approved', published: true,
-      type: 'mcq', stem_ms: 'Apakah warna langit?', prompt_ms: 'Apakah warna langit?', explanation_ms: 'Kerana contoh.', language: 'ms', form_origin: 't1_t3',
+      type: 'mcq', stem_ms: 'Apakah warna langit?', prompt_ms: '', explanation_ms: 'Kerana contoh.', language: 'ms', form_origin: 't1_t3',
       difficulty_tp: 4, cognitive_level: null, unit_node_id: null, sp_nodes: 0, rights_status: 'unclear', import_issues: null,
       part_label: '1', marks: 1, mode: 'mcq', depth: 1, key: 'option:A', tags: null,
     })
@@ -185,8 +190,8 @@ describe('dry-run, apply, reconciliation and the data written', () => {
   it('a second run changes nothing: every row unchanged, no new row in any table', async () => {
     const before = await questionTableCounts(h.pool)
     const { dry, apply } = await h.both()
-    for (const r of [dry, apply]) expect(r.recon[0]).toMatchObject({ eligibleCount: 13, loaded: 4, rejected: 9, status: 'ok' })
-    expect(apply.counters.questions).toMatchObject({ inserted: 0, updated: 0, unchanged: 4 })
+    for (const r of [dry, apply]) expect(r.recon[0]).toMatchObject({ eligibleCount: 16, loaded: 10, rejected: 6, status: 'ok' })
+    expect(apply.counters.questions).toMatchObject({ inserted: 0, updated: 0, unchanged: 10 })
     expect(await questionTableCounts(h.pool)).toEqual(before)
   })
 })
@@ -235,15 +240,16 @@ describe('the command', () => {
     const text = lines.join('\n')
     expect(text).toContain('migrate:questions dry-run')
     expect(text).toContain('entity | source | eligible | loaded | rejected | status')
-    expect(text).toMatch(/questions \| 2 \| 1 \| 1 \| 0 \| ok/)
-    expect(text).toContain('note questions.excluded.status.draf: 1')
+    expect(text).toMatch(/questions \| 2 \| 2 \| 2 \| 0 \| ok/)
+    expect(text).toContain('note questions.status.draft: 1')
     expect(text).not.toMatch(/RAHSIA/)
   })
 
   it('writes a counts-only JSON report to --out-dir and exits 1 when the archive has rows but none is eligible', async () => {
     await h.reset()
-    await addArchive(h.pool, [{ id: 300, status: 'draf', body: 'TEKS-RAHSIA-2' }, { id: 301, type: 'subjective', options: [] }])
+    await addArchive(h.pool, [{ id: 300, type: 'subjective', body: 'TEKS-RAHSIA-2', options: [] }, { id: 301, type: 'subjective', options: [] }])
     const dir = join(process.cwd(), '.migration-out', `qload-test-${randomBytes(3).toString('hex')}`)
+    try {
     const { lines, ctx } = ctxOf()
     expect(await migrateQuestions.run(args('dry-run', [['core-as-of', AS_OF], ['out-dir', dir]]), ctx)).toBe(1)
     expect(lines.join('\n')).toMatch(/migrate:questions FAILED: eligible = 0 of 2/)
@@ -252,10 +258,12 @@ describe('the command', () => {
     const text = readFileSync(join(dir, files[0] as string), 'utf8')
     const report = JSON.parse(text) as { recon: { entity: string; sourceCount: number; eligibleCount: number }[]; notes: Record<string, number>; rejects: unknown[] }
     expect(report.recon[0]).toMatchObject({ entity: 'questions', sourceCount: 2, eligibleCount: 0 })
-    expect(report.notes['questions.excluded.status.draf']).toBe(1)
+    expect(report.notes['questions.excluded.type.subjective']).toBe(2)
     expect(text).not.toMatch(/RAHSIA/)
     expect(statSync(join(dir, files[0] as string)).mode & 0o777).toBe(0o600)
-    rmSync(dir, { recursive: true, force: true })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it('refuses an unknown flag and a bad value (exit 2 family)', async () => {
@@ -293,7 +301,7 @@ describe('statistics after the load', () => {
     expect(await analyzeCount()).toBe(before)
     const apply = await h.run('apply', { progress: (l) => lines.push(l) })
     expect(apply.report.status).toBe('succeeded')
-    expect(lines.filter((l) => l.startsWith('analyzed'))).toEqual(['analyzed 7 tables: questions, question_versions, question_parts, part_options, answer_keys, question_tags, etl_id_map'])
+    expect(lines.filter((l) => l.startsWith('analyzed'))).toEqual(['analyzed 11 tables: questions, question_versions, question_parts, part_options, answer_keys, question_tags, stimuli, stimulus_groups, stimulus_group_stimuli, question_version_stimuli, etl_id_map'])
     expect(await analyzeCount()).toBeGreaterThanOrEqual(before + 7)
   })
 })

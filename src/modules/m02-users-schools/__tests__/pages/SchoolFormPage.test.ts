@@ -27,6 +27,7 @@ const SCHOOL: AdminSchool = {
   state: 'Selangor',
   district: 'PPD CONTOH',
   city: 'BANDAR CONTOH',
+  joinCode: 'JOIN1042',
   isActive: false,
   createdAt: '2026-01-01T00:00:00+08:00',
   updatedAt: '2026-01-01T00:00:00+08:00',
@@ -165,7 +166,7 @@ describe('SchoolFormPage edit (M02 S11)', () => {
     expect(w.get('[data-testid=school-active]').attributes('aria-checked')).toBe('false')
     expect(w.get('[data-testid=form-submit]').text()).toBe('Kemaskini')
     expect(usePageMeta().state.header).toEqual({
-      title: 'Edit Sekolah',
+      title: 'Sunting Sekolah',
       subtitle: 'SK TAMAN CONTOH',
     })
   })

@@ -131,7 +131,7 @@ describe('Q11: accounts without a way to log in', () => {
     expect(core.notes.counters.get('flaggedWithoutLoginId')).toBe(2)
     // the per-reason flag counts exist already
     expect(core.notes.counters.get('must_reset.non_bcrypt')).toBeGreaterThanOrEqual(3)
-    expect(core.notes.counters.get('must_reset.roster_account')).toBe(1) // user 3: username in the staged row, no e-mail
+    expect(core.notes.counters.get('must_reset.roster_account')).toBe(0) // KP-7: user 3 (username, no e-mail) is not flagged as a roster account; it is flagged only because its duplicate username was dropped
     expect(core.notes.counters.get('must_reset.shared_default')).toBe(0) // present as 0, not absent (night check C5)
     // ids are not in the aggregate notes
     expect(core.notes.ids.has('nullHashAccounts')).toBe(false)
@@ -143,9 +143,9 @@ describe('Q11: accounts without a way to log in', () => {
     expect(ledger.users, 'the runner counters are kept').toMatchObject({ read: 15 })
     expect(notes).toMatchObject({
       rosterDefaultHashes: 0, rosterDefaultHashesWarning: 1, nullHashAccounts: 3, flaggedWithoutLoginId: 2,
-      'must_reset.roster_account': 1, 'must_reset.shared_default': 0,
+      'must_reset.roster_account': 0, 'must_reset.shared_default': 0,
     })
-    expect(Object.keys(notes).every((k) => /^(must_reset\.|users\.role_rejected\.|nullHashAccounts$|flaggedWithoutLoginId$|rosterDefaultHashes|countsFromCommittedRows$)/.test(k))).toBe(true)
+    expect(Object.keys(notes).every((k) => /^(must_reset\.|users\.role_rejected\.|users\.loaded_inactive_role\.|users\.grade_from_sibling_class$|classrooms\.|nullHashAccounts$|flaggedWithoutLoginId$|rosterDefaultHashes|countsFromCommittedRows$)/.test(k))).toBe(true)
     expect(JSON.stringify(ledger.notes)).not.toMatch(/\[|"[0-9]+"/) // no id list, no id as a value
 
     expect(restrictedFile).toBeDefined()
@@ -243,13 +243,13 @@ describe('Q11 after an interrupted and resumed apply', () => {
     expect(resumed.core.notes.counters.get('countsFromCommittedRows')).toBe(1)
     // user 3 was committed in batch 2, before the failure, and its username was dropped as a duplicate afterwards: it is a roster
     // account by the staged row (transform / C5 definition), which neither this process' notes nor the committed row alone show.
-    expect(resumed.core.notes.counters.get('must_reset.roster_account')).toBe(1)
+    expect(resumed.core.notes.counters.get('must_reset.roster_account')).toBe(0)
     expect((await env2.pool.query(`select username, email from users where legacy_id = '3'`)).rows).toEqual([{ username: null, email: null }])
     expect(resumed.report.runId).toBe(failedRun.rows[0]?.id) // the resume continues the failed run, so notes and counts share one row
     const finalLedger = await ledgerNotes(env2.pool, resumed.report.runId)
     expect(finalLedger.users, 'the runner counters survive the notes merge').toMatchObject({ read: 15 })
     const final = expectNumbersOnly(finalLedger.notes)
-    expect(final).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1, 'must_reset.roster_account': 1 })
+    expect(final).toMatchObject({ nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1, 'must_reset.roster_account': 0 })
     const body = JSON.parse(readFileSync(resumed.restrictedFile as string, 'utf8')) as { ids: Record<string, string[]> }
     expect(body.ids).toEqual({ flaggedWithoutLoginId: ['3', '10'], nullHashAccounts: ['9', '10', '11'] })
   }, 300_000)
@@ -298,12 +298,12 @@ describe('Q10 after an interrupted and resumed apply: role rejects', () => {
     expect((await runCore({ ...base, mode: 'dry-run' })).report.status).toBe('succeeded')
 
     // Users are read two per batch: batch 7 holds users 13 (unknown role `super_guru`, counted as `other`) and 14, committed;
-    // batch 8 holds user 15 (`agent`, not migrated), which fails after being noted and is rolled back.
+    // batch 8 holds user 15 (`agent`, loaded as an inactive student), which fails after being noted and is rolled back.
     await expect(runCore({ ...base, mode: 'apply', transformSteps: failOnce('users', 8) })).rejects.toThrow('injected failure')
     const failedRun = await env3.pool.query<{ id: string }>(`select id::text from etl_runs where mode = 'apply' order by id desc limit 1`)
     const failed = expectNumbersOnly((await ledgerNotes(env3.pool, failedRun.rows[0]?.id as string)).notes)
     expect(failed['users.role_rejected.other'], 'committed reject of user 13').toBe(1)
-    expect(failed['users.role_rejected.agent'], 'the rolled-back batch is not counted').toBeUndefined()
+    expect(failed['users.loaded_inactive_role.agent'], 'the rolled-back batch is not counted').toBeUndefined()
 
     const resumed = await runCore({ ...base, mode: 'apply' })
     expect(resumed.report.status).toBe('succeeded')
@@ -311,13 +311,13 @@ describe('Q10 after an interrupted and resumed apply: role rejects', () => {
     expect(resumed.report.runId).toBe(failedRun.rows[0]?.id)
     // This process only loaded batch 8: the `other` reject of batch 7 comes from the rebuild, not from this process.
     expect(resumed.core.notes.counters.get('users.role_rejected.other')).toBe(1)
-    expect(resumed.core.notes.counters.get('users.role_rejected.agent')).toBe(1)
+    expect(resumed.core.notes.counters.get('users.loaded_inactive_role.agent')).toBe(1)
     const saved = expectNumbersOnly((await ledgerNotes(env3.pool, resumed.report.runId)).notes)
     expect(saved).toMatchObject({
-      'users.role_rejected.other': 1, 'users.role_rejected.agent': 1, // rebuilt from the run's rejects
-      nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1, 'must_reset.roster_account': 1, // Q10/Q11 recount
+      'users.role_rejected.other': 1, 'users.loaded_inactive_role.agent': 1, // rebuilt from the run's rejects and the loaded users
+      nullHashAccounts: 3, flaggedWithoutLoginId: 2, countsFromCommittedRows: 1, 'must_reset.roster_account': 0, // Q10/Q11 recount
     })
-    expect(Object.keys(saved).filter((k) => k.startsWith('users.role_rejected')).sort()).toEqual(['users.role_rejected.agent', 'users.role_rejected.other'])
+    expect(Object.keys(saved).filter((k) => k.startsWith('users.role_rejected')).sort()).toEqual(['users.role_rejected.other'])
   }, 300_000)
 })
 

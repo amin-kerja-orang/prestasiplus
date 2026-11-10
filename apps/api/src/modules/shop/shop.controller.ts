@@ -55,8 +55,8 @@ export class ShopController {
   @Post('gamification/mystery-boxes/:id/open')
   @HttpCode(200)
   @RateLimit(SHOP_LIMITS.write)
-  async open(@Actor() actor: ShopActor, @Param('id') id: string) {
-    return ok(await guard(() => this.shop.openBox(actor, id)))
+  async open(@Actor() actor: ShopActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await guard(() => this.shop.openBox(actor, id, body)))
   }
 
   @Get('cabutan')

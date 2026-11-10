@@ -15,6 +15,8 @@ import type { PkskLevel, QuestionType } from '../types'
 import { ARENA_QUESTIONS, arenaPoints, M16Error } from './common'
 
 export interface BattleParams {
+  /** 5, 10, 15 or 20 (the chip); default 10. */
+  questionCount?: number
   questionType: QuestionType
   subjectId: number | null
   pkskDomainId: number | null
@@ -44,6 +46,11 @@ export function parseBattleParams(body: unknown, viewer: UserRow | undefined): B
     throw new M16Error('VALIDATION_ERROR', 'Jenis soalan tidak sah.', 'question_type')
   }
   const openToAll = b.open_to_all === true
+  const rawCount = b.question_count
+  if (rawCount !== undefined && !(isInt(rawCount) && [5, 10, 15, 20].includes(rawCount))) {
+    throw new M16Error('VALIDATION_ERROR', 'Nilai di luar julat.', 'question_count')
+  }
+  const questionCount = rawCount === undefined ? ARENA_QUESTIONS : rawCount
   const subject = isInt(b.subject_id) ? b.subject_id : null
   if (type === 'biasa') {
     if (subject === null || subject < 1 || subject > 31) {
@@ -55,6 +62,7 @@ export function parseBattleParams(body: unknown, viewer: UserRow | undefined): B
       pkskDomainId: null,
       pkskTargetLevel: null,
       openToAll,
+      questionCount,
     }
   }
   if (type === 'pksk') {
@@ -72,6 +80,7 @@ export function parseBattleParams(body: unknown, viewer: UserRow | undefined): B
       pkskDomainId: domain,
       pkskTargetLevel: level,
       openToAll,
+      questionCount,
     }
   }
   // spm: Tingkatan 4 or 5 only.
@@ -92,12 +101,13 @@ export function parseBattleParams(body: unknown, viewer: UserRow | undefined): B
     pkskDomainId: null,
     pkskTargetLevel: null,
     openToAll,
+    questionCount,
   }
 }
 
 /** The M04 draw filter of a battle (BR-M16-03): `levelId` is the queue owner's level. */
 export function poolFilter(
-  p: Omit<BattleParams, 'openToAll'>,
+  p: Omit<BattleParams, 'openToAll' | 'questionCount'>,
   levelId: number | null,
 ): SampleFilter {
   if (p.questionType === 'pksk') {
@@ -118,14 +128,15 @@ export function poolFilter(
   }
 }
 
-/** Draws the 10 arena question ids; `null` when the pool has fewer than 10 (BR-M16-03). */
+/** Draws the arena question ids; `null` when the pool has fewer than the count (BR-M16-03). */
 export function drawQuestionIds(
   p: Omit<BattleParams, 'openToAll'>,
   levelId: number | null,
   rng: Prng,
 ): number[] | null {
-  const rows = questions.sampleKeyless(poolFilter(p, levelId), ARENA_QUESTIONS, rng)
-  return rows.length < ARENA_QUESTIONS ? null : rows.map((r) => r.id)
+  const count = p.questionCount ?? ARENA_QUESTIONS
+  const rows = questions.sampleKeyless(poolFilter(p, levelId), count, rng)
+  return rows.length < count ? null : rows.map((r) => r.id)
 }
 
 export interface ArenaQuestion {
@@ -188,11 +199,15 @@ export interface BotAnswer {
   points: number
 }
 
-/** The 10 bot answers of a battle, from the stream `m16:battle:<uuid>`. */
-export function botAnswers(prng: PrngRegistry, battleUuid: string): BotAnswer[] {
+/** The bot answers of a battle (one per round), from the stream `m16:battle:<uuid>`. */
+export function botAnswers(
+  prng: PrngRegistry,
+  battleUuid: string,
+  count: number = ARENA_QUESTIONS,
+): BotAnswer[] {
   const rng = prng.fresh(`m16:battle:${battleUuid}`)
   const p = botAccuracy()
-  return Array.from({ length: ARENA_QUESTIONS }, () => {
+  return Array.from({ length: count }, () => {
     const seconds = Math.min(15, Math.floor(2 + 10 * rng.next()))
     const correct = rng.next() < p
     return { seconds, correct, points: correct ? arenaPoints(seconds) : 0 }

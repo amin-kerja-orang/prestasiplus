@@ -28,7 +28,6 @@ import {
 import { formatNumber } from '@/lib/number'
 
 import { fetchQualitySummary, runQualityAudit } from '../api/quality'
-import QuestionAreaTabs from '../components/QuestionAreaTabs.vue'
 import { averageColor } from '../lib/import-quality'
 import { questionEditPath } from '../lib/question-list'
 import { errorLines, LOAD_ERROR } from '../lib/ui-errors'
@@ -189,8 +188,6 @@ const actionCardFields: CardField[] = [
         {{ running ? 'Sedang audit...' : 'Jalankan Audit Semula' }}
       </UButton>
     </template>
-
-    <QuestionAreaTabs />
 
     <DsLoadError
       v-if="error"

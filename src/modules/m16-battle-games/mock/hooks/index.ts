@@ -3,13 +3,14 @@
  *
  * | Hook | Effect |
  * |---|---|
- * | `battleSim({mode, afterPolls?})` | the NEXT battle queue: `match` (default, 3rd poll), `incoming` (challenge on the 2nd), `never`, `expired`, `not_found`, `error:<status>` (every poll answers that HTTP status) |
+ * | `battleSim({mode, afterPolls?, robot?})` | the NEXT battle queue (`robot: true` with `match`: the matched poll carries `robot: true` and seat B is the robot): `match` (default, 3rd poll), `incoming` (challenge on the 2nd), `never`, `expired`, `not_found`, `error:<status>` (every poll answers that HTTP status) |
  * | `battleWaiting({targetUserId, outcome, viewerId?})` | DV-M16-06: a waiting queue of `targetUserId` with a join request of `viewerId` (default 1) whose decision is `matched`, `rejected` or `expired`; returns `{queueId}` |
  * | `m16Fixture(name, options?)` | `tournaments`, `invitation` (`{viewerId?}`, default 1), `openRoom` (Papan Bijak `PB1234`, waiting, host 4320), `settingCoins` (M14 `games_award_syiling` = 1), `spinNothing` / `spinSyiling5` (the next spin lands on segment 5 / 2) — the §6.11.7 fixtures |
  * | `setBattleScores(uuid, {a, b})` | sets the scores of a battle |
  * | `m16Standings()` | the standings of every period, for assertions |
  * | `pbQuickMatch({mode})` | the NEXT Papan Bijak quick match: `match` (3rd poll, default) or `expired` (first poll) |
  * | `roomBots({count, code?})` | adds `count` bots to the waiting room `code` (default the newest); returns how many joined |
+ * | `roomRobots({enabled?, fallbackSeconds?})` | the room-robot switches (default on, 30 s); off or 0 s = no robot after the wait, a leaver's seat is skipped |
  * | `spinNext(segmentIndex)` | the next Roda Nasib spin lands on this 0-based segment (0-7) |
  * | `resetM16()` | forgets the pending `battleSim`, `pbQuickMatch` and `spinNext` |
  *
@@ -18,6 +19,8 @@
  */
 
 import { settings } from '@/modules/m14-gamification/mock'
+
+import { resetRoomRobotSettings, roomRobotSettings } from '../data/games'
 
 import {
   battleStandingsRepo,
@@ -40,7 +43,7 @@ const FIXTURES = [
   'spinSyiling5',
 ] as const
 
-export function battleSim(opts: { mode: string; afterPolls?: number }): void {
+export function battleSim(opts: { mode: string; afterPolls?: number; robot?: boolean }): void {
   if (typeof opts !== 'object' || opts === null || typeof opts.mode !== 'string') {
     throw new TypeError('battleSim: expected {mode}')
   }
@@ -59,6 +62,12 @@ export function battleSim(opts: { mode: string; afterPolls?: number }): void {
       throw new RangeError('battleSim: afterPolls must be a positive integer')
     }
     spec.afterPolls = opts.afterPolls
+  }
+  if (opts.robot !== undefined) {
+    if (typeof opts.robot !== 'boolean' || (opts.robot && spec.mode !== 'match')) {
+      throw new RangeError("battleSim: robot is a boolean and only applies to mode 'match'")
+    }
+    if (opts.robot) spec.robot = true
   }
   setPendingSim(spec)
 }
@@ -111,6 +120,15 @@ export function roomBots(opts: { count: number; code?: string }): number {
   return roomsRepo.addBots(opts.count, m16Prng(), opts.code)
 }
 
+/** Sets the room-robot switches (`games_room_bots_enabled`, `battle_bot_fallback_seconds`) of the M16 mock. */
+export function roomRobots(opts: { enabled?: boolean; fallbackSeconds?: number }): void {
+  if (opts.fallbackSeconds !== undefined && (!Number.isInteger(opts.fallbackSeconds) || opts.fallbackSeconds < 0)) {
+    throw new RangeError('roomRobots: fallbackSeconds must be a non-negative integer')
+  }
+  if (opts.enabled !== undefined) roomRobotSettings.botsEnabled = opts.enabled
+  if (opts.fallbackSeconds !== undefined) roomRobotSettings.fallbackSeconds = opts.fallbackSeconds
+}
+
 export function spinNext(segmentIndex: number): void {
   if (!Number.isInteger(segmentIndex) || segmentIndex < 0 || segmentIndex > 7) {
     throw new RangeError('spinNext: segmentIndex must be an integer 0-7')
@@ -135,6 +153,7 @@ export function m16Standings() {
 export function resetM16(): void {
   setPendingSim(null)
   roomsRepo.resetSim()
+  resetRoomRobotSettings()
   gameResultsRepo.setSpinNext(null)
 }
 
@@ -146,6 +165,7 @@ export const m16Hooks = {
   m16Standings,
   pbQuickMatch,
   roomBots,
+  roomRobots,
   spinNext,
   resetM16,
 }

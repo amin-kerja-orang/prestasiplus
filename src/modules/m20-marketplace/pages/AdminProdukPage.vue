@@ -23,6 +23,7 @@ import {
   DsPage,
   DsCluster,
   DsPanel,
+  DsRowActions,
   DsStack,
   DsStatRow,
   DsText,
@@ -31,6 +32,7 @@ import {
   useConfirm,
   type CardField,
   type DsStatus,
+  type RowAction,
   type StatItem,
 } from '@/ds'
 
@@ -221,6 +223,35 @@ const tableRows = computed<TableRow[]>(() =>
   })),
 )
 
+/** Row actions: Buka (active products), edit, Nyahaktif / Aktifkan and delete (every action of the old row). */
+function rowActions(row: MarketplaceAdminProductRow): RowAction[] {
+  const actions: RowAction[] = []
+  if (row.status === 'active')
+    actions.push({ label: 'Buka', icon: 'arrow-square-out', to: `/marketplace/${row.slug}`, testid: 'admin-product-open' })
+  actions.push({
+    label: ADMIN_COPY.edit,
+    icon: 'pencil-simple',
+    to: { name: ADMIN_ROUTES.productEdit, params: { id: row.id } },
+    testid: 'admin-product-edit',
+  })
+  actions.push({
+    label: row.status === 'active' ? MARKETPLACE_ADMIN_PROPOSED.productDeactivateLabel : MARKETPLACE_ADMIN_PROPOSED.productActivateLabel,
+    icon: row.status === 'active' ? 'i-ph-x-circle' : 'i-ph-check-circle',
+    disabled: busyId.value !== null,
+    testid: 'admin-product-toggle',
+    onSelect: () => void toggle(row),
+  })
+  actions.push({
+    label: ADMIN_COPY.delete,
+    icon: 'i-ph-trash',
+    danger: true,
+    disabled: busyId.value !== null,
+    testid: 'admin-product-delete',
+    onSelect: () => void remove(row),
+  })
+  return actions
+}
+
 const columns: TableColumn<TableRow>[] = [
   { id: 'product', header: 'Produk' },
   { accessorKey: 'priceText', header: 'Harga' },
@@ -296,7 +327,6 @@ const cardFields: CardField[] = [
     <DsDataTable
       v-else
       variant="flush"
-      layout="fixed"
       :data="tableRows"
       :columns="columns"
       caption="Senarai produk Marketplace"
@@ -329,12 +359,13 @@ const cardFields: CardField[] = [
         <DsStatusBadge :status="BADGE[row.original.raw.status]" data-testid="admin-product-status" />
       </template>
       <template #actions-cell="{ row }">
-        <DsCluster gap="2xs" justify="end" :wrap="false">
-          <UButton v-if="row.original.raw.status === 'active'" :to="`/marketplace/${row.original.raw.slug}`" color="neutral" variant="ghost" aria-label="Buka" title="Buka" data-testid="admin-product-open"><DsIcon name="arrow-square-out" /></UButton>
-          <UButton :to="{ name: ADMIN_ROUTES.productEdit, params: { id: row.original.id } }" color="neutral" variant="ghost" :aria-label="ADMIN_COPY.edit" :title="ADMIN_COPY.edit" data-testid="admin-product-edit"><DsIcon name="pencil-simple" /></UButton>
-          <UButton type="button" color="neutral" variant="ghost" :label="row.original.raw.status === 'active' ? MARKETPLACE_ADMIN_PROPOSED.productDeactivateLabel : MARKETPLACE_ADMIN_PROPOSED.productActivateLabel" :disabled="busyId !== null" data-testid="admin-product-toggle" @click="toggle(row.original.raw)" />
-          <UButton type="button" color="error" variant="ghost" :aria-label="ADMIN_COPY.delete" :title="ADMIN_COPY.delete" :disabled="busyId !== null" data-testid="admin-product-delete" @click="remove(row.original.raw)"><DsIcon name="trash" /></UButton>
-        </DsCluster>
+        <!-- Open and edit stay icons; the status toggle (text) and delete sit in the "..." menu. -->
+        <DsRowActions
+          :actions="rowActions(row.original.raw)"
+          :inline="row.original.raw.status === 'active' ? 2 : 1"
+          :label="`Tindakan lain untuk ${row.original.name}`"
+          testid="admin-product-menu"
+        />
       </template>
       <template #card="{ row }">
         <DsStack gap="sm">

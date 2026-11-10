@@ -5,6 +5,13 @@
  */
 import {
   SERVABILITY_ACTIVITY_LABELS,
+  TRACKING_A_KIND,
+  TRACKING_A_MESSAGES,
+  TRACKING_A_PROPOSED_COPY,
+  TRACKING_A_YEAR_MIN,
+  trackingSetAttentionMs,
+  type SpmAdminTrackingACandidate,
+  type SpmAdminTrackingASet,
   SERVABILITY_HUB_CARDS,
   SERVABILITY_HUB_LANES,
   servabilityReasonMs,
@@ -23,7 +30,8 @@ import { toIsoMyt } from '@/lib/time/zone'
 
 import type { AdminPaperSummary, BankRow } from '../../domain/admin-types'
 import { bijakAdminServer } from '../../server/client'
-import type { KandunganApi, LanePage, LaneQuery, LaneSubject } from './api'
+import { BijakError } from '../../server/errors'
+import { KANDUNGAN_ROUTES, TrackingRefusal, laneRouteOf, type KandunganApi, type LanePage, type LaneQuery, type LaneSubject, type TrackingLanePage } from './api'
 
 const ACTIVITIES: ServabilityActivity[] = [
   'databank',
@@ -57,9 +65,92 @@ function page<T>(all: T[], q: LaneQuery, subjects: LaneSubject[], count = all.le
   return { rows: all.slice((p - 1) * pageSize, p * pageSize), page: p, pageSize, total: all.length, subjects, count }
 }
 
+/** The mock bank has no `spm_subject_configs`: one small target, so a set can be filled on screen. */
+const MOCK_TRACKING_TARGET = 6
+const BAHASA_CODES: readonly string[] = ['BM', 'BI']
+
+interface MockTrackingSet {
+  id: string
+  subject: string
+  subjectName: string
+  year: number
+  setNo: number
+  /** Units in set order, by key `kind:id`. */
+  units: { kind: 'question' | 'group'; id: string }[]
+}
+
 export function createMockKandungan(): KandunganApi {
   const admin = bijakAdminServer()
   const bank = async (): Promise<BankRow[]> => admin.listBank({ status: 'semua' })
+
+  const trackingSets: MockTrackingSet[] = []
+  /**
+   * The servable units of a subject (D-10): the published, text-only, ungrouped objective questions of the bank. Same temporary limit as the
+   * API's `trackingAFilter`: a stimulus question (group member) and a figure question are not candidates.
+   */
+  // TODO(S5-T03, S5-T15): lift when the pupil start serves stimulus questions (a group is one unit again, D90).
+  const trackingUnits = async (subject: string): Promise<SpmAdminTrackingACandidate[]> => {
+    const rows = (await bank()).filter(
+      (r) => r.subject === subject && r.kind === 'objektif' && r.status === 'terbit' && r.groupId === undefined && !/<(img|svg|figure)\b/i.test(r.preview),
+    )
+    return rows.map((r) => ({
+      kind: 'question' as const,
+      id: r.id,
+      questions: 1,
+      label: r.previewPlain.slice(0, 200),
+      members: [{ id: r.id, stem: r.previewPlain.slice(0, 200), servable: true, statusWord: null }],
+    }))
+  }
+  const trackingKey = (u: { kind: string; id: string }): string => `${u.kind}:${u.id}`
+  const trackingView = async (set: MockTrackingSet): Promise<SpmAdminTrackingASet> => {
+    const units = await trackingUnits(set.subject)
+    const byKey = new Map(units.map((u) => [trackingKey(u), u]))
+    const held = new Set(trackingSets.filter((s) => s !== set && s.subject === set.subject && s.year === set.year).flatMap((s) => s.units.map(trackingKey)))
+    let position = 1
+    const items = set.units.flatMap((u) => {
+      const unit = byKey.get(trackingKey(u))
+      if (!unit) return []
+      const item = { ...unit, position }
+      position += unit.questions
+      return [item]
+    })
+    const filled = position - 1
+    return {
+      id: set.id,
+      subjectId: set.subject,
+      subject: set.subjectName,
+      year: set.year,
+      setNo: set.setNo,
+      kind: TRACKING_A_KIND,
+      targetCount: MOCK_TRACKING_TARGET,
+      filled,
+      attention: filled >= MOCK_TRACKING_TARGET ? [] : [trackingSetAttentionMs(filled, MOCK_TRACKING_TARGET)],
+      items,
+      candidates: units.length,
+      excludedBySibling: units.filter((u) => held.has(trackingKey(u)) && !set.units.some((o) => trackingKey(o) === trackingKey(u))).reduce((n, u) => n + u.questions, 0),
+      candidateItems: units.filter((u) => !held.has(trackingKey(u))).slice(0, 200),
+    }
+  }
+  const trackingSubjects = (): LaneSubject[] => admin.subjects().map((s) => ({ id: s.code, name: s.name }))
+  const trackingOptions = (): LaneSubject[] => trackingSubjects().filter((s) => !BAHASA_CODES.includes(s.id))
+  const trackingRows = async (q: LaneQuery): Promise<ServabilityLaneRow[]> => {
+    const views = await Promise.all(trackingSets.map(trackingView))
+    const term = q.search?.trim().toLowerCase() ?? ''
+    return views
+      .map((v) => ({
+        id: v.id,
+        title: `${v.subject} · ${String(v.year)} Set ${String(v.setNo)}`,
+        meta: `#${v.id} · ${TRACKING_A_KIND} · ${String(v.filled)} soalan`,
+        status: v.attention.length > 0 ? 'belum_cukup' : 'bersih',
+        attention: v.attention,
+        actions: ['edit' as const],
+        subjectId: v.subjectId,
+      }))
+      .filter((r) => !q.subjectId || r.subjectId === q.subjectId)
+      .filter((r) => !term || r.title.toLowerCase().includes(term))
+      .sort((a, b) => a.title.localeCompare(b.title, 'ms', { numeric: true }))
+      .map((r) => ({ id: r.id, title: r.title, meta: r.meta, status: r.status, attention: r.attention, actions: r.actions }))
+  }
 
   /** Hub card measured on its unfiltered lane: total = rows, attention = rows with a reason (as the API). */
   const cardOf = (
@@ -178,7 +269,8 @@ export function createMockKandungan(): KandunganApi {
       const approved = rows.filter((r) => r.status === 'terbit').length
       const papers = allPapers.filter((p) => p.status === 'terbit')
       const cells = latihTubiCells(rows, {})
-      /** Lanes the mock has rows for; Tracking A and Kertas Subjektif have none. */
+      const tracking = await trackingRows({})
+      /** Lanes the mock has rows for, Tracking A aside; Kertas Subjektif has none. */
       const cardRows: Partial<Record<ServabilityHubLane, { attention: readonly unknown[] }[]>> = {
         databank: databankRows(rows, {}),
         subjektif: subjektifRows(rows, {}),
@@ -205,7 +297,7 @@ export function createMockKandungan(): KandunganApi {
           }
         }),
         cards: SERVABILITY_HUB_LANES.map((lane) =>
-          cardOf(lane, cardRows[lane] ?? [], lane === 'latih-tubi' ? cells.reduce((sum, c) => sum + c.total, 0) : undefined),
+          cardOf(lane, laneRouteOf(lane) === KANDUNGAN_ROUTES.trackingA ? tracking : (cardRows[lane] ?? []), lane === 'latih-tubi' ? cells.reduce((sum, c) => sum + c.total, 0) : undefined),
         ),
       }
     },
@@ -230,6 +322,53 @@ export function createMockKandungan(): KandunganApi {
     async latihTubiLane(q: LaneQuery): Promise<LanePage<ServabilityLatihTubiCell>> {
       const cells = latihTubiCells(await bank(), q)
       return page(cells, q, admin.subjects().map((s) => ({ id: s.code, name: s.name })), cells.reduce((sum, c) => sum + c.total, 0))
+    },
+
+    async trackingLane(q: LaneQuery): Promise<TrackingLanePage> {
+      return { ...page(await trackingRows(q), q, trackingSubjects()), setSubjects: trackingOptions() }
+    },
+
+    async trackingSet(id) {
+      const set = trackingSets.find((s) => s.id === id)
+      if (!set) throw new BijakError('not_found', 'Tidak dijumpai')
+      return trackingView(set)
+    },
+
+    async createTrackingSet(body) {
+      const subject = trackingOptions().find((s) => s.id === body.subjectId)
+      if (!subject) throw new TrackingRefusal({ subjectId: TRACKING_A_MESSAGES.subjectRequired })
+      const maxYear = new Date().getFullYear() + 1
+      if (body.year < TRACKING_A_YEAR_MIN || body.year > maxYear) throw new TrackingRefusal({ year: TRACKING_A_PROPOSED_COPY.yearRange(maxYear) })
+      if (trackingSets.some((s) => s.subject === subject.id && s.year === body.year && s.setNo === body.setNo)) {
+        throw new TrackingRefusal({ setNo: TRACKING_A_MESSAGES.setExists(body.setNo) })
+      }
+      const set: MockTrackingSet = { id: String(trackingSets.length + 1), subject: subject.id, subjectName: subject.name, year: body.year, setNo: body.setNo, units: [] }
+      trackingSets.push(set)
+      return trackingView(set)
+    },
+
+    async saveTrackingSet(id, body) {
+      const set = trackingSets.find((s) => s.id === id)
+      if (!set) throw new BijakError('not_found', 'Tidak dijumpai')
+      if (body.items.length === 0) throw new TrackingRefusal({ items: TRACKING_A_MESSAGES.saveEmpty })
+      const byKey = new Map((await trackingUnits(set.subject)).map((u) => [trackingKey(u), u]))
+      const siblings = trackingSets.filter((s) => s !== set && s.subject === set.subject && s.year === set.year)
+      let position = 1
+      for (const item of body.items) {
+        const unit = byKey.get(trackingKey(item))
+        if (!unit) throw new TrackingRefusal({ items: TRACKING_A_PROPOSED_COPY.notServable(position) })
+        const sibling = siblings.find((s) => s.units.some((u) => trackingKey(u) === trackingKey(item)))
+        if (sibling) throw new TrackingRefusal({ items: TRACKING_A_MESSAGES.siblingClash(position, sibling.setNo) })
+        const free = MOCK_TRACKING_TARGET - position + 1
+        if (unit.questions > free) {
+          throw new TrackingRefusal({
+            items: unit.kind === 'group' ? TRACKING_A_MESSAGES.groupNoFit(unit.label, unit.questions, free) : TRACKING_A_PROPOSED_COPY.overTarget(MOCK_TRACKING_TARGET, 1),
+          })
+        }
+        position += unit.questions
+      }
+      set.units = body.items.map((i) => ({ kind: i.kind, id: i.id }))
+      return trackingView(set)
     },
   }
   return api

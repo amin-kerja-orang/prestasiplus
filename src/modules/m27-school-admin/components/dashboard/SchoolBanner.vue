@@ -31,6 +31,15 @@ defineProps<{ school: SchoolDashboard['school']; roleLabel: string }>()
           <li v-if="school.code" data-testid="sd-chip-code">
             <UBadge color="neutral" variant="soft" :label="`# Kod: ${school.code}`" />
           </li>
+          <li v-if="school.joinCode" data-testid="sd-chip-join-code">
+            <UBadge
+              color="primary"
+              variant="outline"
+              class="font-mono"
+              icon="i-ph-key"
+              :label="`Kod Daftar: ${school.joinCode}`"
+            />
+          </li>
         </ul>
       </div>
     </div>

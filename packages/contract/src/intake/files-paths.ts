@@ -161,7 +161,7 @@ export function registerIntakeFilesPaths(registry: OpenAPIRegistry): void {
     summary: 'Upload one or more PDF files to a submission',
     description:
       `Card BE-37. ${ROLES} multipart/form-data, parts named \`files\` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, \`fields.files\`, one BM message). Refusals: "${INTAKE_FILE_MESSAGES.type}", "${INTAKE_FILE_MESSAGES.size(30)}" (INTAKE_MAX_FILE_MB), "${INTAKE_FILE_MESSAGES.pages(200)}" (OCR_MAX_PAGES), "${INTAKE_FILE_MESSAGES.encrypted}", "${INTAKE_FILE_MESSAGES.corrupt}", "${INTAKE_FILE_MESSAGES.tooComplex}", "${INTAKE_FILE_MESSAGES.duplicate}" (same hash as a file in another batch that is not failed or cancelled), "${INTAKE_FILE_MESSAGES.tooManyFiles(10)}" [PROPOSED copy]. ` +
-      `A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT "${INTAKE_FILE_MESSAGES.batchClosed}". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED "${INTAKE_FILE_MESSAGES.quota}". On success processing is queued and the batch becomes \`processing\`; the response lists the stored files.`,
+      `A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT "${INTAKE_FILE_MESSAGES.batchClosed}". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 INTAKE_DAILY_PAGE_QUOTA (ERR-QUOTA-05) "${INTAKE_FILE_MESSAGES.dailyPageQuota(500)}" (500 = default limit). On success processing is queued and the batch becomes \`processing\`; the response lists the stored files.`,
     request: {
       headers: csrf,
       params: idParams,

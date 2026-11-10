@@ -238,7 +238,7 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
       '/admin/kirkpatrick/learning',
     ])
     expect(tiles(w).map((x) => [x.label, x.value])).toEqual([
-      ['Pelajar Berdaftar (T4/T5)', '4,158'],
+      ['Pelajar Berdaftar', '4,158'],
       ['Soalan Dijawab', '306,133'],
       ['Guru Aktif', '277/522'],
       ['Ketepatan Keseluruhan', '83%'],

@@ -2,7 +2,7 @@
 /** "Misi Harian" (lime "win" card; FR-M05-12…15): progress, the quest list and the chest dots. */
 import { computed } from 'vue'
 
-import { DsCharacterCard } from '@/ds'
+import { DsCharacterCard, DsGrid } from '@/ds'
 
 import type { DashboardQuest } from '../../api/types'
 import {
@@ -42,7 +42,7 @@ const BADGE_COLOR = { easy: 'success', medium: 'warning', hard: 'error' } as con
         aria-label="Progres misi harian"
       />
     </div>
-    <ul class="mt-3 flex flex-col gap-2" data-testid="dash-quest-list">
+    <DsGrid as="ul" :balanced="2" gap="sm" class="mt-3" data-testid="dash-quest-list">
       <li
         v-for="q in quests"
         :key="q.key"
@@ -88,7 +88,7 @@ const BADGE_COLOR = { easy: 'success', medium: 'warning', hard: 'error' } as con
           </div>
         </UCard>
       </li>
-    </ul>
+    </DsGrid>
     <div
       class="mt-3 flex flex-col gap-2"
       :data-state="chestOpen ? 'open' : 'locked'"

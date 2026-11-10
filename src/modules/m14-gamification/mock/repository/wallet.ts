@@ -120,6 +120,12 @@ export function bindSessionHook(fn: (input: Record<string, unknown>) => unknown)
   sessionHook = fn
 }
 
+/** DM-79 in the mock: the first result per `userId:clientUuid`. */
+const convertReplays = new Map<
+  string,
+  { syilingDebited: number; tokensCredited: number; transactionId: number }
+>()
+
 export const walletRepo = defineRepository({
   owner: 'M14',
   name: 'wallet',
@@ -250,13 +256,17 @@ export const walletRepo = defineRepository({
       },
 
       /**
-       * #6 (BR-M14-10/11): rate ≤ s ≤ currentSyiling (integer) else `VALIDATION_ERROR`; atomic
-       * debit, floor(s ÷ rate) tokens, `convert` row "Tukar {s} syiling → {t} token".
+       * #6 (GAME-18): rate ≤ s ≤ currentSyiling (integer) else `VALIDATION_ERROR`; atomic debit of
+       * tokens × rate (FR-GM-18.1), floor(s ÷ rate) tokens, `convert` row "Tukar {s} syiling → {t} token".
+       * A repeat with the same `clientUuid` answers the first result before any check and moves nothing.
        */
-      convert(userId: number, syilingAmount: number) {
+      convert(userId: number, syilingAmount: number, clientUuid: string | null = null) {
         const at = nowMs()
         return tx(() => {
           const w = walletState(userId)
+          const key = clientUuid === null ? null : `${String(userId)}:${clientUuid.toLowerCase()}`
+          const first = key === null ? undefined : convertReplays.get(key)
+          if (first) return { ...first, currentSyiling: w.currentSyiling, tokenBalance: w.tokenBalance }
           // FR-MUR-29-5: the rate of the lifetime tier, the one `convertView` shows.
           const tierKey = upgradedTier(allTiers(), w.tierKey, w.totalSyilingEarned)
           const tier = allTiers().find((t) => t.tierName === tierKey) ?? defaultTier(allTiers())
@@ -269,13 +279,14 @@ export const walletRepo = defineRepository({
             throw new M14Error('VALIDATION_ERROR', 'Jumlah syiling tidak sah.')
           }
           const tokens = Math.floor(syilingAmount / rate)
+          const debit = tokens * rate
           const { row } = debitSyilingOp(
             userId,
-            syilingAmount,
+            debit,
             {
               type: 'convert',
               source: 'token_conversion',
-              description: `Tukar ${String(syilingAmount)} syiling → ${String(tokens)} token`,
+              description: `Tukar ${String(debit)} syiling → ${String(tokens)} token`,
               tokens,
             },
             at,
@@ -283,8 +294,15 @@ export const walletRepo = defineRepository({
           const after = walletState(userId)
           after.tokenBalance += tokens
           const wallet = saveWallet(userId, after, at)
+          if (key !== null) {
+            convertReplays.set(key, {
+              syilingDebited: debit,
+              tokensCredited: tokens,
+              transactionId: row.id,
+            })
+          }
           return {
-            syilingDebited: syilingAmount,
+            syilingDebited: debit,
             tokensCredited: tokens,
             currentSyiling: wallet.currentSyiling,
             tokenBalance: wallet.tokenBalance,

@@ -2,8 +2,9 @@
  * `migrate:core` roles added by FIT-FIX, against a real PostgreSQL on the `cloud-tiny` fixture (FIT-FIX G4):
  *   - `jpn_officer` is loaded as a `ppd_officer` with a STATE scope from the state of the user's school; a school without a
  *     state leaves the officer unscoped and listed under `ppd_officer_without_scope`;
- *   - `agent` is not migrated: rejected on `role` (UNKNOWN_ENUM) and counted by name (`users.role_rejected.agent`);
- *   - that count is rebuilt after a resumed apply (batches committed before a crash are skipped by the resume).
+ *   - `agent` (T-B5, PO: everything not deleted comes over) is loaded as an INACTIVE `student` and counted by name
+ *     (`users.loaded_inactive_role.agent`);
+ *   - that count survives a resumed apply (batches committed before a crash are skipped by the resume).
  * The users are planted here (copies of staged user 1 with the role, school and login overridden; fictitious values), after
  * any `agent` / `jpn_officer` rows of the fixture are removed, so the counts do not depend on the shared fixture.
  */
@@ -99,20 +100,20 @@ describe('jpn_officer and agent, fresh run', () => {
     expect(ids.get('ppd_officer_without_scope')).not.toContain('9101')
   })
 
-  it('does not migrate the agents: rejected UNKNOWN_ENUM on role, counted by name, nothing loaded', async () => {
-    expect(await b.q(`select 1 from users where legacy_source = 'cloud' and legacy_id in ('9103','9104')`)).toEqual([])
-    const rej = await b.q(
-      `select legacy_id, reason, column_name from etl_rejects where run_id = $1 and entity = 'users' and legacy_id in ('9103','9104') order by 1`,
-      [runId],
+  it('loads the agents as inactive students, counted by name, none rejected', async () => {
+    const rows = await b.q(
+      `select u.legacy_id, u.is_active, r.role from users u join user_roles r on r.user_id = u.id
+        where u.legacy_source = 'cloud' and u.legacy_id in ('9103','9104') order by 1`,
     )
-    expect(rej).toEqual([
-      { legacy_id: '9103', reason: 'UNKNOWN_ENUM', column_name: 'role' },
-      { legacy_id: '9104', reason: 'UNKNOWN_ENUM', column_name: 'role' },
+    expect(rows).toEqual([
+      { legacy_id: '9103', is_active: false, role: 'student' },
+      { legacy_id: '9104', is_active: false, role: 'student' },
     ])
-    expect(notes.get('users.role_rejected.agent')).toBe(2)
-    // The fixture's unplanned role (super_guru) is counted apart, never under a name.
+    expect(await b.q(`select 1 from etl_rejects where run_id = $1 and entity = 'users' and legacy_id in ('9103','9104')`, [runId])).toEqual([])
+    expect(notes.get('users.loaded_inactive_role.agent')).toBe(2)
+    // The fixture's unplanned role (super_guru) is still counted apart, never under a name.
     expect(notes.get('users.role_rejected.other')).toBeGreaterThanOrEqual(1)
-    expect([...notes.keys()].filter((k) => k.startsWith('users.role_rejected.')).sort()).toEqual(['users.role_rejected.agent', 'users.role_rejected.other'])
+    expect([...notes.keys()].filter((k) => k.startsWith('users.role_rejected.')).sort()).toEqual(['users.role_rejected.other'])
   })
 })
 
@@ -128,7 +129,7 @@ describe('the agent count after a resumed apply', () => {
     await fresh?.env.close()
   })
 
-  it('equals the uninterrupted run: the batches committed before the crash are recounted from etl_rejects', async () => {
+  it('equals the uninterrupted run: the notes of the batches committed before the crash come back from the ledger', async () => {
     expect((await run(fresh, 'dry-run')).report.status).toBe('succeeded')
     const want = (await run(fresh, 'apply')).core.notes.counters
 
@@ -139,14 +140,14 @@ describe('the agent count after a resumed apply', () => {
     await b.q(`create trigger crash_on_gagal before insert on users for each row execute function crash_on_gagal()`)
     await expect(run(b, 'apply')).rejects.toThrow(/SQLSTATE P0001/) // the trigger's RAISE EXCEPTION, as the kit reports it
     expect(await b.q(`select 1 from users where legacy_source = 'cloud' and legacy_id = '9199'`)).toEqual([])
-    expect(await b.q(`select 1 from etl_rejects where entity = 'users' and legacy_id = '9103' and run_id in (select id from etl_runs where mode = 'apply')`)).toHaveLength(1)
+    expect(await b.q(`select 1 from users where legacy_source = 'cloud' and legacy_id = '9103'`)).toHaveLength(1)
     await b.q(`drop trigger crash_on_gagal on users`)
 
     const resumed = await run(b, 'apply')
     expect(resumed.report.status).toBe('succeeded')
     expect(resumed.report.resumedBatches).toBeGreaterThanOrEqual(1)
-    expect(resumed.core.notes.counters.get('users.role_rejected.agent')).toBe(2)
-    const roleNotes = (m: Map<string, number>) => Object.fromEntries([...m].filter(([k]) => k.startsWith('users.role_rejected.')).sort(([x], [y]) => (x < y ? -1 : 1)))
+    expect(resumed.core.notes.counters.get('users.loaded_inactive_role.agent')).toBe(2)
+    const roleNotes = (m: Map<string, number>) => Object.fromEntries([...m].filter(([k]) => k.startsWith('users.role_rejected.') || k.startsWith('users.loaded_inactive_role.')).sort(([x], [y]) => (x < y ? -1 : 1)))
     expect(roleNotes(resumed.core.notes.counters)).toEqual(roleNotes(want))
   }, 300_000)
 })

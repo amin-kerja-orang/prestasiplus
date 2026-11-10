@@ -193,7 +193,9 @@ export const isRouteFile = (p) => /^src\/(?:.*\/)?routes\/[^/]+\.ts$/.test(p) &&
 export const isCoreRouteFile = (p) => p === 'src/app/router/core-routes.ts'
 export const isRouterSource = (p) => isRouteFile(p) || isCoreRouteFile(p)
 export const isNavFile = (p) => /^src\/shells\/(?:.*\/)?nav\/[^/]+\.ts$/.test(p) && !/out-of-scope\.ts$/.test(p)
-export const isPentadbiranMenu = (p) => p === 'src/shells/pentadbiran/menu.ts'
+export const isPentadbiranComposer = (p) => p === 'src/shells/pentadbiran/menu.ts'
+export const isPentadbiranFragment = (p) => /^src\/shells\/pentadbiran\/menu\/fragments\/[^/]+\.ts$/.test(p) && !/\.(test|spec)\.ts$/.test(p)
+export const isPentadbiranMenu = (p) => isPentadbiranComposer(p) || isPentadbiranFragment(p)
 export const isMenuSource = (p) => isNavFile(p) || isPentadbiranMenu(p)
 export const isSchemaFile = (p) => /^apps\/api\/prisma\/schema\/[^/]+\.prisma$/.test(p)
 export const isControllerFile = (p) => /^apps\/api\/src\/.*\.controllers?\.ts$/.test(p)
@@ -252,6 +254,18 @@ function parseRoles(raw, table) {
   return id && table.has(id[1]) ? table.get(id[1]) : null
 }
 
+/** Pentadbiran composer: doc id -> group key, from `key: '...'` headings followed by `pick('ID', ...)` lists. */
+export function menuGroupsOf(text) {
+  const src = stripComments(text)
+  const groupKeys = [...src.matchAll(/\bkey\s*:\s*'([^']+)'/g)].map((m) => ({ at: m.index, key: m[1] }))
+  const out = new Map()
+  for (const m of src.matchAll(/\bpick\(([^)]*)\)/g)) {
+    const grp = [...groupKeys].reverse().find((g) => g.at < m.index)
+    for (const id of m[1].matchAll(/'([A-Z]{2}-\d+)'/g)) if (grp) out.set(id[1], grp.key)
+  }
+  return out
+}
+
 /** Menu entries (items only) of one nav/menu source file. Returns [{source,id,label,route,roles,built?,group?,file}]. */
 export function extractMenus(file, text) {
   const f = norm(file)
@@ -259,8 +273,10 @@ export function extractMenus(file, text) {
   const out = []
 
   if (isPentadbiranMenu(f)) {
-    // rows: ['PM-01', 'Langsung', '/admin/command-center', K],  inside groups { key: '...', label: '...', items: items([ ... ]) }
+    // rows: ['PM-01', 'Langsung', '/admin/command-center', 'Kirkpatrick'],  in a fragment file (menu/fragments/s<n>.ts);
+    // the composer (menu.ts) only lists ids per group (pick('PM-01', ...)), read by menuGroupsOf(); old inline rows still parse.
     const groupKeys = [...src.matchAll(/\bkey\s*:\s*'([^']+)'/g)].map((m) => ({ at: m.index, key: m[1] }))
+    if (isPentadbiranComposer(f) && /\bpick\(/.test(src)) return out
     const end = src.indexOf('export const FULL_ITEMS')
     const area = end > 0 ? src.slice(0, end) : src
     for (const m of area.matchAll(/\[\s*'([A-Z]{2}-\d+)'\s*,\s*'((?:\\'|[^'])*)'\s*(?:,\s*(?:'([^']*)'|undefined))?\s*(?:,\s*([A-Za-z'][^\]]*?))?\s*\]/g)) {
@@ -401,6 +417,12 @@ export function scanTree(fs) {
     else if (isSchemaFile(p)) models.push(...extractModels(p, fs.read(p)))
     else if (isControllerFile(p) && !/\.(spec|test)\.ts$/.test(p)) apis.push(...extractApis(p, fs.read(p)))
   }
+  // Pentadbiran rows sit in fragment files; their group comes from the composer's pick() lists.
+  const composer = fs.files.find(isPentadbiranComposer)
+  if (composer) {
+    const groups = menuGroupsOf(fs.read(composer))
+    for (const m of menus) if (m.source === 'pentadbiran' && !m.group && groups.has(m.id)) m.group = groups.get(m.id)
+  }
   return { routes: dedupe(routes, routeKey), menus: dedupe(menus, menuKey), models, apis: dedupe(apis, apiKey) }
 }
 
@@ -479,10 +501,14 @@ export const SEED_ROUTE_DECISIONS = [
   { rx: /^\/admin\/questions\/:id[^/]*\/edit$/, status: 'redirect-to:/admin/studio/questions/:id/sunting', note: `${REG} M-06 (D113): old flat form (see /admin/questions/create)` },
   { path: '/leaderboard', status: 'canonical', note: `${REG} R-01 (D113): the one Papan Pendahulu page (dashboard link)` },
   { path: '/gamification/leaderboard', status: 'redirect-to:/leaderboard', note: `${REG} R-01 (D113): duplicate page; redirects to /leaderboard` },
-  { path: '/admin/questions/quality', status: 'canonical', note: `tab "Kualiti" of Senarai Soalan (/admin/questions); ${PRD30} 3.3 BS-04` },
-  { path: '/admin/question-reports', status: 'canonical', note: `tab "Laporan" of Senarai Soalan (/admin/questions); ${PRD30} 3.3 BS-05` },
+  { path: '/admin/questions/quality', status: 'canonical', note: `menu row BS-04 under Bank Soalan (Studio); Bank Lama retired 2026-11-09 (PO: one bank, DSKP format); ${PRD30} 3.3 BS-04` },
+  { path: '/admin/questions/regroup', status: 'canonical', note: 'menu row BS-11: work-list of migrated V2 questions that need regrouping (PRD45 6.6); was the Perlu dikumpulkan semula tab of Senarai Soalan' },
+  { path: '/admin/question-reports', status: 'canonical', note: `menu row BS-05 under Bank Soalan (Studio); Bank Lama retired 2026-11-09 (PO: one bank, DSKP format); ${PRD30} 3.3 BS-05` },
+  { rx: /^\/admin\/questions\/:id$/, status: 'redirect-to:/admin/studio/questions/:id/sunting', note: 'Bank Lama retired 2026-11-09 (PO: one bank, DSKP format): old detail page is the Studio editor' },
+  { rx: /^\/admin\/structured-questions\/:id$/, status: 'redirect-to:/admin/spm/subjektif/:id/sunting', note: 'Bank Lama retired 2026-11-09 (PO: one bank, DSKP format): old structured detail is the Subjektif editor' },
   { path: '/admin/question-submissions', status: 'canonical', note: `tab "Kiriman Guru" of Import & Semakan; ${PRD30} 3.3` },
-  { path: '/admin/structured-questions', status: 'canonical', note: `read view of the SAME questions store, not a second table (register section 6); sub-item of Bank Lama` },
+  { path: '/admin/structured-questions', status: 'redirect-to:/admin/spm/subjektif', note: 'Bank Lama retired (PO: one bank, DSKP format): the Subjektif lane lists structured questions; the page component stays only for the guru mount /guru/soalan-berstruktur' },
+  { path: '/admin/questions', status: 'redirect-to:/admin/studio', note: 'Bank Lama list retired (PO: one bank, DSKP format); ?tab=regroup goes to /admin/questions/regroup' },
   { name: 'dev.preview-hub-admin', status: 'retire', note: 'D113 F-07, delete previewHubRoutes (S0-T05)' },
   { name: 'dev.preview-hub-user', status: 'retire', note: 'D113 F-07, delete previewHubRoutes (S0-T05)' },
   { path: '/prestasi', status: 'canonical', note: 'Today redirects every role to /prestasi/sekolah (defect); target is a role-dependent redirect: a pupil goes to /prestasi/{ownId} (docs/prd/r1/10-murid.md row 3)' },
@@ -495,11 +521,11 @@ export const SEED_ROUTE_DECISIONS = [
 
 /** Menu decisions by source + id (PRD 30 sections 3.3 and 3.4, register). */
 export const SEED_MENU_DECISIONS = {
-  'pentadbiran|BS-01': { status: 'canonical', target_label: 'Senarai Soalan', note: 'MERGE (rename) into Bank Lama; removes the duplicate "Bank Soalan" (30 §3.3; register M-01)' },
+  'pentadbiran|BS-01': { status: 'retire', note: 'Bank Lama retired 2026-11-09 (PO: one bank, DSKP format); /admin/questions redirects to /admin/studio (30 §3.3; register M-01)' },
   'pentadbiran|BS-02': { status: 'canonical', note: 'KEEP (retab): tabs Kelompok Item, Kertas Diimport, Kiriman Guru (30 §3.3; register M-02)' },
   'pentadbiran|BS-03': { status: 'canonical', note: 'KEEP (build P2) as Sumber Kertas (30 §3.3)' },
-  'pentadbiran|BS-04': { status: 'redirect-to:/admin/questions', note: 'MERGE: tab "Kualiti" of Senarai Soalan, route /admin/questions/quality stays (30 §3.3; register M-07)' },
-  'pentadbiran|BS-05': { status: 'redirect-to:/admin/questions', note: 'MERGE: tab "Laporan" of Senarai Soalan, route /admin/question-reports stays (30 §3.3; register M-07)' },
+  'pentadbiran|BS-04': { status: 'canonical', target_label: 'Kualiti Soalan', note: 'KEEP: own menu row under Bank Soalan (Studio), route /admin/questions/quality (30 §3.3; register M-07; Bank Lama retired 2026-11-09)' },
+  'pentadbiran|BS-05': { status: 'canonical', target_label: 'Laporan Soalan', note: 'KEEP: own menu row under Bank Soalan (Studio), route /admin/question-reports (30 §3.3; register M-07; Bank Lama retired 2026-11-09)' },
   'pentadbiran|BS-06': { status: 'canonical', target_label: 'PKSK Soalan', note: 'KEEP (move) to group Premium (30 §3.3)' },
   'pentadbiran|BS-07': { status: 'canonical', note: 'KEEP (move) to the top shortcuts (30 §3.3)' },
   'pentadbiran|BS-08': { status: 'canonical', note: 'KEEP: canonical question bank (30 §3.3)' },
@@ -1029,13 +1055,15 @@ function selfTest() {
       ] },
     ]`)
   eq('menus: roles + group inherit', ms.map((m) => [m.id, m.roles.join()]), [['a', 'student'], ['c', 'teacher']])
-  const pm = extractMenus('src/shells/pentadbiran/menu.ts', `export const PENTADBIRAN_FULL_MENU = [ { key: 'g1', label: 'G', items: items([
+  const pm = extractMenus('src/shells/pentadbiran/menu/fragments/s0.ts', `export const S0_ROWS: readonly Row[] = [
       ['PM-01', 'Langsung', '/admin/command-center'],
       ['PM-04', 'Analitik'],
-      ['PM-05', 'Ringkasan', '/admin/kirkpatrick', K],
-    ]) } ]
-    export const FULL_ITEMS = 1`)
-  eq('pentadbiran rows', pm.map((m) => [m.id, m.route, m.built]), [['PM-01', '/admin/command-center', true], ['PM-04', '/admin/p/pm-04', false], ['PM-05', '/admin/kirkpatrick', true]])
+      ['PM-05', 'Ringkasan', '/admin/kirkpatrick', 'Kirkpatrick'],
+    ]`)
+  eq('pentadbiran fragment rows', pm.map((m) => [m.id, m.route, m.built, m.file]), [['PM-01', '/admin/command-center', true, 'src/shells/pentadbiran/menu/fragments/s0.ts'], ['PM-04', '/admin/p/pm-04', false, 'src/shells/pentadbiran/menu/fragments/s0.ts'], ['PM-05', '/admin/kirkpatrick', true, 'src/shells/pentadbiran/menu/fragments/s0.ts']])
+  const composerSrc = `export const PENTADBIRAN_FULL_MENU = [ { key: 'g1', label: 'G', items: pick('PM-01', 'PM-04') }, { key: 'g2', items: pick('PM-05') } ]`
+  eq('pentadbiran composer yields no rows', extractMenus('src/shells/pentadbiran/menu.ts', composerSrc), [])
+  eq('pentadbiran composer groups', [...menuGroupsOf(composerSrc)], [['PM-01', 'g1'], ['PM-04', 'g1'], ['PM-05', 'g2']])
   const md = extractModels('x.prisma', 'model A {\n  id Int @id\n  @@map("a_tbl")\n}\n\nmodel B {\n  id Int @id\n}\n')
   eq('models', md.map((m) => [m.name, m.table]), [['A', 'a_tbl'], ['B', null]])
   const ap = extractApis('apps/api/src/x/x.controller.ts', `@Controller('q')

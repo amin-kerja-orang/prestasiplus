@@ -127,7 +127,7 @@ function goToPage(page: number): void {
       <h2 class="text-heading text-highlighted" data-testid="artikel-hot-heading">
         {{ ARTIKEL_COPY.hotHeading }}
       </h2>
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
+      <div class="grid gap-4 md:gap-6" data-ds-fill="3">
         <ArtikelHotCardView v-for="item in hot" :key="item.id" :article="item" />
       </div>
     </section>
@@ -158,7 +158,7 @@ function goToPage(page: number): void {
 
       <template v-else>
         <div
-          class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3"
+          class="grid gap-4 md:gap-6" data-ds-fill="3"
           data-testid="artikel-grid"
         >
           <ArtikelCardView v-for="item in rows" :key="item.id" :article="item" :guest="guest" />

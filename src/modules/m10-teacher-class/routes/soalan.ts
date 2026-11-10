@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import { GURU_STRUCTURED_ROUTES, structuredPages } from '@/modules/m04-question-bank'
+import { GURU_API_ROLES } from './roles'
 
 /**
  * M10 route fragment: S21–S24 Sumbang Soalan (`/guru/soalan…`), M10-T6. User shell; Guru and Admin.
@@ -19,6 +20,8 @@ export const SOALAN_ROUTES = {
   edit: 'm10.soalan.edit',
   berstrukturCreate: 'm10.soalan.berstruktur.cipta',
   berstrukturEdit: 'm10.soalan.berstruktur.edit',
+  /** S6-T19 Databank Soalan (R1-GUR-44d): teacher only, the API answers 403 to an admin. */
+  databank: 'm10.databank',
 } as const
 
 const base = {
@@ -121,6 +124,17 @@ const routes: RouteRecordRaw[] = [
       ...base,
       title: 'Edit Soalan Berstruktur - PRESTASIPLUS',
       header: { title: 'Edit Soalan Berstruktur' },
+    },
+  },
+  {
+    path: '/guru/databank',
+    name: SOALAN_ROUTES.databank,
+    component: () => import('../pages/DatabankGuruPage.vue'),
+    meta: {
+      ...base,
+      roles: GURU_API_ROLES,
+      title: 'Databank Soalan — PRESTASIPLUS',
+      header: { title: 'Databank Soalan' },
     },
   },
 ]

@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { isXs3Teacher, XS_PUPIL_SQL, xsPupilScopeSql } from '../../school-admin/xs-queries'
 import { BANK_VISIBLE_SQL } from '../../questions/learner-visibility'
 import { M1_START_MS } from './domain/rules'
 
@@ -138,12 +139,15 @@ export class AnalyticsRepository {
     return ids === null ? Prisma.empty : Prisma.sql`AND ${column} = ANY(${toIds(ids)}::bigint[])`
   }
 
-  /** The T4/T5 segment (BR-M11-01): active pupils of grade 10 or 11 with a school, in scope. */
+  /**
+   * The pupil segment of Monitoring: the XS-1 pupils (`XS_PUPIL_SQL`: student role, active, not suspended, Tingkatan 1-5) with a
+   * school, in scope. One definition on every screen (T-C5, AC-XS-1): this was a private "T4/T5" cut (grade 10/11), which showed
+   * 17 pupils where Dashboard, Senarai Pelajar and Command Center showed 20.
+   */
   private segment(schoolIds: readonly string[] | null): Prisma.Sql {
     return Prisma.sql`SELECT u.id AS user_id, u.school_id
       FROM users u
-      WHERE u.is_active AND u.grade IN (10, 11) AND u.school_id IS NOT NULL
-        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')
+      WHERE ${XS_PUPIL_SQL('u')} AND u.school_id IS NOT NULL
         ${this.clause(schoolIds, Prisma.sql`u.school_id`)}`
   }
 
@@ -170,6 +174,14 @@ export class AnalyticsRepository {
     return rows.map((r) => r.id)
   }
 
+  /** Registered secondary-stage schools, all and active: the Sekolah list figures (primary types stay hidden). */
+  async schoolTotals(): Promise<{ total: number; active: number }> {
+    const rows = await this.db.$queryRaw<{ total: number; active: number }[]>`
+      SELECT count(*)::int AS total, (count(*) FILTER (WHERE s.is_active))::int AS active
+      FROM schools s WHERE s.type IS NULL OR s.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')`
+    return rows[0] ?? { total: 0, active: 0 }
+  }
+
   /** Registered T4/T5 pupils per school (Q-M11-T45). */
   async registeredBySchool(ids: readonly string[] | null): Promise<Map<string, number>> {
     if (ids !== null && ids.length === 0) return new Map()
@@ -178,14 +190,13 @@ export class AnalyticsRepository {
     return new Map(rows.map((r) => [r.school_id, r.n]))
   }
 
-  /** Teachers and teachers who logged in per school (Q-M11-TEACHERS). */
+  /** XS-3 teachers and those who logged in, per school (Q-M11-TEACHERS). */
   async teachersBySchool(ids: readonly string[] | null): Promise<Map<string, { n: number; logged: number }>> {
     if (ids !== null && ids.length === 0) return new Map()
     const rows = await this.db.$queryRaw<{ school_id: string; n: number; logged: number }[]>`
       SELECT u.school_id::text AS school_id, count(*)::int AS n, count(*) FILTER (WHERE u.last_login_at IS NOT NULL)::int AS logged
       FROM users u
-      WHERE u.is_active AND u.school_id IS NOT NULL
-        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'teacher')
+      WHERE u.school_id IS NOT NULL AND ${isXs3Teacher('u')}
         ${this.clause(ids, Prisma.sql`u.school_id`)}
       GROUP BY u.school_id`
     return new Map(rows.map((r) => [r.school_id, { n: r.n, logged: r.logged }]))
@@ -241,8 +252,7 @@ export class AnalyticsRepository {
     const rows = await this.db.$queryRaw<{ id: string; name: string; email: string | null; last_login_at: Date | null; created_at: Date }[]>`
       SELECT u.id::text AS id, u.name, u.email, u.last_login_at, u.created_at
       FROM users u
-      WHERE u.is_active AND u.school_id = ${idFromString(schoolId)}
-        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'teacher')
+      WHERE u.school_id = ${idFromString(schoolId)} AND ${isXs3Teacher('u')}
       ORDER BY u.id`
     return rows.map((r) => ({ id: r.id, name: r.name, email: r.email ?? '', lastLoginAt: r.last_login_at, createdAt: r.created_at }))
   }
@@ -663,5 +673,131 @@ export class AnalyticsRepository {
         AND a.answered_at >= ${from} AND a.answered_at <= ${to}
       GROUP BY 1, 2`
     return rows.map((r) => ({ subjectId: r.subject_id, userId: r.user_id, answers: r.answers, correct: r.correct }))
+  }
+
+  // --- Admin Pusat central screens (S6-T11): platform-wide aggregates, no per-user lists ---------------------------------------
+
+  /** Platform pupils = XS-1 over the platform scope (S6-T03 `xs-queries.ts`: active, not suspended, Tingkatan 1-5, no primary-school pupils). Alias `u`. */
+  private static readonly PUPIL = xsPupilScopeSql({ kind: 'platform' }, 'u')
+
+  /** Platform pupils, those with a recorded login and those with a completed non-test session (any time). */
+  async pupilTotals(): Promise<{ pupils: number; accessed: number; practised: number }> {
+    const rows = await this.db.$queryRaw<{ pupils: number; accessed: number; practised: number }[]>`
+      SELECT count(*)::int AS pupils, (count(*) FILTER (WHERE u.last_login_at IS NOT NULL))::int AS accessed,
+        (count(*) FILTER (WHERE EXISTS (SELECT 1 FROM practice_sessions s WHERE s.user_id = u.id AND s.status = 'completed' AND NOT s.is_test)))::int AS practised
+      FROM users u WHERE ${AnalyticsRepository.PUPIL}`
+    return rows[0] ?? { pupils: 0, accessed: 0, practised: 0 }
+  }
+
+  /**
+   * Platform teachers, XS-3 (`isXs3Teacher` of S6-T03 `xs-queries.ts`) with a school; and those with a recorded login. The one
+   * teacher definition of the dashboard, Analitik and the Laporan.
+   */
+  async teacherTotals(): Promise<{ teachers: number; accessed: number }> {
+    const rows = await this.db.$queryRaw<{ teachers: number; accessed: number }[]>`
+      SELECT count(*)::int AS teachers, (count(*) FILTER (WHERE u.last_login_at IS NOT NULL))::int AS accessed
+      FROM users u
+      WHERE u.school_id IS NOT NULL AND ${isXs3Teacher('u')}`
+    return rows[0] ?? { teachers: 0, accessed: 0 }
+  }
+
+  /**
+   * Answer rows of the platform pupils in the window (XS-4 rows: all modes, no test rows, no session filter, XS-8), grouped by practice mode (label only: the session join never filters) and MYT day. The shape
+   * is `SessionDayRow` with `sessions` = answer rows and `questions` = answer rows, so the Laporan reuses the one tally (AC-ADM-M06.2:
+   * Jumlah Aktiviti counts answers). Answers without a session have mode `unknown`.
+   */
+  async platformAnswersByModeDay(from: Date, to: Date): Promise<Omit<SessionDayRow, 'userId'>[]> {
+    const rows = await this.db.$queryRaw<{ mode: string; day: string; answers: number; correct: number }[]>`
+      SELECT coalesce(s.mode, 'unknown') AS mode, to_char(a.answered_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day,
+        count(*)::int AS answers, (count(*) FILTER (WHERE a.is_correct))::int AS correct
+      FROM practice_answers a LEFT JOIN practice_sessions s ON s.id = a.session_id JOIN users u ON u.id = a.user_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY 1, 2`
+    return rows.map((r) => ({ mode: r.mode, day: r.day, sessions: r.answers, correct: r.correct, questions: r.answers }))
+  }
+
+  /** The most active pupils (answer rows in the window) with their school; ties by name then id. Names go to the admin only. */
+  async topPupilsByAnswers(from: Date, to: Date, limit: number): Promise<{ id: string; name: string; schoolId: string | null; schoolName: string | null; answers: number }[]> {
+    const rows = await this.db.$queryRaw<{ id: string; name: string; school_id: string | null; school_name: string | null; answers: number }[]>`
+      SELECT u.id::text AS id, u.name, u.school_id::text AS school_id, sc.name AS school_name, count(*)::int AS answers
+      FROM practice_answers a JOIN users u ON u.id = a.user_id LEFT JOIN schools sc ON sc.id = u.school_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY u.id, u.name, u.school_id, sc.name
+      ORDER BY answers DESC, u.name ASC, u.id ASC LIMIT ${limit}`
+    return rows.map((r) => ({ id: r.id, name: r.name, schoolId: r.school_id, schoolName: r.school_name, answers: r.answers }))
+  }
+
+  /** Answer rows and distinct answering pupils per school in the window, most answers first. */
+  async answersBySchool(from: Date, to: Date, limit: number): Promise<{ schoolId: string; name: string; answers: number; pupils: number }[]> {
+    const rows = await this.db.$queryRaw<{ school_id: string; name: string; answers: number; pupils: number }[]>`
+      SELECT sc.id::text AS school_id, sc.name, count(*)::int AS answers, count(DISTINCT u.id)::int AS pupils
+      FROM practice_answers a JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY sc.id, sc.name
+      ORDER BY answers DESC, sc.name ASC, sc.id ASC LIMIT ${limit}`
+    return rows.map((r) => ({ schoolId: r.school_id, name: r.name, answers: r.answers, pupils: r.pupils }))
+  }
+
+  /** Answers, correct answers and answering pupils of the platform pupils in the window (XS-4 rows: all modes, no test rows, no session filter, XS-8). */
+  async answerTotals(from: Date, to: Date): Promise<{ answered: number; correct: number; pupils: number }> {
+    const rows = await this.db.$queryRaw<{ answered: number; correct: number; pupils: number }[]>`
+      SELECT count(*)::int AS answered, (count(*) FILTER (WHERE a.is_correct))::int AS correct, count(DISTINCT a.user_id)::int AS pupils
+      FROM practice_answers a JOIN users u ON u.id = a.user_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}`
+    return rows[0] ?? { answered: 0, correct: 0, pupils: 0 }
+  }
+
+  /** Answers per MYT day (`YYYY-MM-DD`) in the window. */
+  async answersByDay(from: Date, to: Date): Promise<Map<string, number>> {
+    const rows = await this.db.$queryRaw<{ day: string; n: number }[]>`
+      SELECT to_char(a.answered_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day, count(*)::int AS n
+      FROM practice_answers a JOIN users u ON u.id = a.user_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY 1`
+    return new Map(rows.map((r) => [r.day, r.n]))
+  }
+
+  /** Schools with the most answers in the window. */
+  async topSchoolsByAnswers(from: Date, to: Date, limit: number): Promise<{ schoolId: string; name: string; answered: number }[]> {
+    const rows = await this.db.$queryRaw<{ school_id: string; name: string; answered: number }[]>`
+      SELECT sc.id::text AS school_id, sc.name, count(*)::int AS answered
+      FROM practice_answers a JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY sc.id, sc.name
+      ORDER BY answered DESC, sc.name ASC, sc.id ASC LIMIT ${limit}`
+    return rows.map((r) => ({ schoolId: r.school_id, name: r.name, answered: r.answered }))
+  }
+
+  /** Pupils with the most answers in the window (V2 "Pelajar Teratas"). */
+  async topPupilsAnalitik(from: Date, to: Date, limit: number): Promise<{ userId: string; name: string; school: string | null; answered: number }[]> {
+    const rows = await this.db.$queryRaw<{ user_id: string; name: string; school: string | null; answered: number }[]>`
+      SELECT u.id::text AS user_id, u.name, sc.name AS school, count(*)::int AS answered
+      FROM practice_answers a JOIN users u ON u.id = a.user_id LEFT JOIN schools sc ON sc.id = u.school_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY u.id, u.name, sc.name
+      ORDER BY answered DESC, u.name ASC, u.id ASC LIMIT ${limit}`
+    return rows.map((r) => ({ userId: r.user_id, name: r.name, school: r.school, answered: r.answered }))
+  }
+
+  /** All-time mood check-ins per stored mood value (test rows excluded). */
+  async moodTotals(): Promise<Map<string, number>> {
+    const rows = await this.db.$queryRaw<{ mood: string; n: number }[]>`
+      SELECT m.mood, count(*)::int AS n FROM mood_checkins m WHERE NOT m.is_test GROUP BY m.mood`
+    return new Map(rows.map((r) => [r.mood, r.n]))
+  }
+
+  /** Question reports: still waiting (`pending`) and the rest (`reviewed`, `fixed`, `dismissed`); test rows excluded. */
+  async questionReportCounts(): Promise<{ baru: number; selesai: number }> {
+    const rows = await this.db.$queryRaw<{ baru: number; selesai: number }[]>`
+      SELECT (count(*) FILTER (WHERE r.status = 'pending'))::int AS baru, (count(*) FILTER (WHERE r.status <> 'pending'))::int AS selesai
+      FROM question_reports r WHERE NOT r.is_test`
+    return rows[0] ?? { baru: 0, selesai: 0 }
+  }
+
+  /** Schools with an active subscription on `today` (`YYYY-MM-DD`). */
+  async activeSubscriptionCount(today: string): Promise<number> {
+    const rows = await this.db.$queryRaw<{ n: number }[]>`
+      SELECT count(DISTINCT school_id)::int AS n FROM school_subscriptions WHERE status = 'active' AND ends_on >= ${today}::date`
+    return rows[0]?.n ?? 0
   }
 }

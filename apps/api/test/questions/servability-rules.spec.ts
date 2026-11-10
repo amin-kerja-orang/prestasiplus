@@ -138,15 +138,35 @@ describe('servability rules (pure)', () => {
     expect(evaluate(noDatabank, 'latih_tubi_spm').served).toBe(true)
   })
 
-  it('Bab needs a chapter; text-only shape reasons are classified (D87 U2)', () => {
+  // A surface list WITHOUT the drills: the text-only practice rule (what a test list, or the games, still get).
+  const TEXT_ONLY = ['simulasi_paper', 'jana_kertas'] as const
+  const codesText = (f: ServabilityFacts, a: (typeof SERVABILITY_ACTIVITIES)[number]) => evaluate(f, a, TEXT_ONLY).reasons.map((r) => r.code)
+
+  it('Bab needs a chapter; on a surface without groups the text-only shape reasons are classified (D87 U2)', () => {
     const noChapter = record({}, { chapterId: null })
     expect(codes(facts({ live: noChapter, latest: noChapter }), 'bab')).toEqual(['no_chapter'])
     const grouped = record({ groupId: '5' })
-    expect(codes(facts({ live: grouped, latest: grouped }), 'bab')).toEqual(['has_stimulus'])
+    expect(codesText(facts({ live: grouped, latest: grouped }), 'bab')).toEqual(['has_stimulus'])
     const withImage = record({}, { parts: [{ ...mcqPart, options: mcqPart.options.map((o, i) => ({ ...o, imageId: i === 0 ? '9' : null })) }] })
-    expect(codes(facts({ live: withImage, latest: withImage }), 'bab')).toEqual(['has_option_image'])
+    expect(codesText(facts({ live: withImage, latest: withImage }), 'bab')).toEqual(['has_option_image'])
     const structured = record({}, { type: 'structured', parts: [mcqPart, mcqPart] })
     expect(codes(facts({ live: structured, latest: structured }), 'bab')).toEqual(['shape_unsupported'])
+  })
+
+  it('T-C13 (D105): by default the three drills serve a figure question, an option picture and a whole group, with no text-only reason', () => {
+    const withImage = record({}, { parts: [{ ...mcqPart, options: mcqPart.options.map((o, i) => ({ ...o, imageId: i === 0 ? '9' : null })) }] })
+    const grouped = record({ groupId: '5' })
+    for (const activity of ['bab', 'latih_tubi_spm', 'databank'] as const) {
+      for (const r of [withImage, grouped]) {
+        const reasons = codes(facts({ live: r, latest: r }), activity)
+        expect(reasons, activity).not.toContain('has_stimulus')
+        expect(reasons, activity).not.toContain('has_option_image')
+      }
+    }
+    // A group with a member that is not approved is excluded as a whole, with the group reason.
+    expect(codes(facts({ live: grouped, latest: grouped, groupIncomplete: 1 }), 'bab')).toEqual(['group_incomplete'])
+    // Games never serve a group or a figure.
+    expect(codes(facts({ live: grouped, latest: grouped }), 'permainan')).toEqual(['image_games'])
   })
 
   it('Simulasi (kertas) needs a published paper and the bridge to accept the question', () => {
@@ -156,8 +176,10 @@ describe('servability rules (pure)', () => {
 
   it('every reason comes with its BM sentence from the one copy table, and the report counts served activities', () => {
     const report = evaluateAll(facts({ onPublishedPaper: true }))
-    expect(report.total).toBe(SERVABILITY_ACTIVITIES.length)
-    expect(report.servedCount).toBe(report.activities.filter((a) => a.served).length)
+    expect(report.activities).toHaveLength(SERVABILITY_ACTIVITIES.length)
+    // FR-QA-45: jana_kertas is listed for admin use but neither served nor counted: "n daripada 6".
+    expect(report.total).toBe(6)
+    expect(report.servedCount).toBe(report.activities.filter((a) => a.served && a.activity !== 'jana_kertas').length)
     const draft = record({ liveVersionNo: null }, { status: 'draft' })
     const r = evaluate(facts({ live: null, latest: draft }), 'bab').reasons[0]
     expect(r?.message).toBe(SERVABILITY_REASON_MS.not_approved)

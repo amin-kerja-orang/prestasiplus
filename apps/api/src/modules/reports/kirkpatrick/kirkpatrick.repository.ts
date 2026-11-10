@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { isXs3Teacher, XS_PUPIL_SQL } from '../../school-admin/xs-queries'
 
 /**
  * The one doorway to the M12 tables (`feedback`, `interventions`) and the read-only aggregates behind the Kirkpatrick
@@ -176,12 +177,14 @@ export class KirkpatrickRepository {
     return schoolIds === null ? Prisma.empty : Prisma.sql`AND ${column} = ANY(${toIds(schoolIds)}::bigint[])`
   }
 
-  /** The T4/T5 segment (BR-M12-01): active pupils of grade 10 or 11 with a school, in scope. */
+  /**
+   * The pupil segment of Kirkpatrick: the XS-1 pupils (`XS_PUPIL_SQL`: student role, active, not suspended, Tingkatan 1-5) with a
+   * school, in scope. One definition on every screen (T-C5, AC-XS-1); it was a private "T4/T5" cut (grade 10/11) before.
+   */
   private segment(schoolIds: readonly string[] | null): Prisma.Sql {
     return Prisma.sql`SELECT u.id AS user_id, u.school_id
       FROM users u
-      WHERE u.is_active AND u.grade IN (10, 11) AND u.school_id IS NOT NULL
-        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')
+      WHERE ${XS_PUPIL_SQL('u')} AND u.school_id IS NOT NULL
         ${this.schoolClause(schoolIds, Prisma.sql`u.school_id`)}`
   }
 
@@ -217,22 +220,27 @@ export class KirkpatrickRepository {
 
   // --- populations and practice ---------------------------------------------------------------------------
 
-  /** Per-school populations of a scope: T4/T5 pupils, never logged in, teachers, teachers logged in. */
+  /** Per-school populations of a scope: XS-1 pupils (field `t4t5` is the historical name), never logged in, XS-3 teachers, teachers logged in. */
   async populations(schoolIds: readonly string[] | null): Promise<SchoolPopulationRow[]> {
     if (schoolIds !== null && schoolIds.length === 0) return []
     const rows = await this.db.$queryRaw<
       { school_id: string; t4t5: number; never: number; teachers: number; teachers_logged_in: number }[]
     >`
-      SELECT u.school_id::text AS school_id,
-        count(*) FILTER (WHERE r.role = 'student' AND u.grade IN (10, 11))::int AS t4t5,
-        count(*) FILTER (WHERE r.role = 'student' AND u.grade IN (10, 11) AND u.last_login_at IS NULL)::int AS never,
-        count(*) FILTER (WHERE r.role = 'teacher')::int AS teachers,
-        count(*) FILTER (WHERE r.role = 'teacher' AND u.last_login_at IS NOT NULL)::int AS teachers_logged_in
-      FROM users u
-      JOIN user_roles r ON r.user_id = u.id AND r.role IN ('student', 'teacher')
-      WHERE u.is_active AND u.school_id IS NOT NULL ${this.schoolClause(schoolIds, Prisma.sql`u.school_id`)}
-      GROUP BY u.school_id
-      ORDER BY u.school_id`
+      WITH pop AS (
+        SELECT u.school_id, 'student' AS kind, u.last_login_at FROM users u
+        WHERE ${XS_PUPIL_SQL('u')} AND u.school_id IS NOT NULL ${this.schoolClause(schoolIds, Prisma.sql`u.school_id`)}
+        UNION ALL
+        SELECT u.school_id, 'teacher' AS kind, u.last_login_at FROM users u
+        WHERE ${isXs3Teacher('u')} AND u.school_id IS NOT NULL ${this.schoolClause(schoolIds, Prisma.sql`u.school_id`)}
+      )
+      SELECT school_id::text AS school_id,
+        count(*) FILTER (WHERE kind = 'student')::int AS t4t5,
+        count(*) FILTER (WHERE kind = 'student' AND last_login_at IS NULL)::int AS never,
+        count(*) FILTER (WHERE kind = 'teacher')::int AS teachers,
+        count(*) FILTER (WHERE kind = 'teacher' AND last_login_at IS NOT NULL)::int AS teachers_logged_in
+      FROM pop
+      GROUP BY school_id
+      ORDER BY school_id`
     return rows.map((r) => ({ schoolId: r.school_id, t4t5: r.t4t5, never: r.never, teachers: r.teachers, teachersLoggedIn: r.teachers_logged_in }))
   }
 

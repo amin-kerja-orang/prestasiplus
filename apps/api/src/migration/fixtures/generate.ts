@@ -22,6 +22,8 @@ import { createHash } from 'node:crypto'
 
 import { TABLES, type TableSpec } from '../ddl/spec'
 import { DUMP_FORMAT } from '../staging/readers'
+import { rajahCaseRows } from './rajah-cases'
+import { addBankExtras } from './bank-extras'
 import { Rng } from './rng'
 
 export type FixtureSize = 'tiny' | 'small' | 'medium'
@@ -350,15 +352,26 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
 
   // Question bank (archive)
   const Q = Math.max(24, Math.round(U / 5))
-  put('questions', Array.from({ length: Q }, (_, i) => ({
-    id: i + 1, subject_id: (i % 6) + 1, education_level_id: (i % 4) + 1, chapter_id: (i % 18) + 1, topic_id: (i % 54) + 1,
-    difficulty_level: ['mudah', 'sederhana', 'sukar'][i % 3], type: 'objektif', status: i % 17 === 0 ? 'diarkib' : 'diluluskan', body: `Soalan contoh ${i + 1}.`,
-  })))
+  // T-B1: a question sits in a chapter, one of that chapter's own topics, and the chapter's own subject and level (as in .cloud), so
+  // the loaded bank is servable by chapter practice; the raw 1 to 5 difficulty scale (OD-26) is what the ETL reads.
+  put('questions', Array.from({ length: Q }, (_, i) => {
+    const ch = chapters[i % chapters.length] as Row
+    return {
+      id: i + 1, subject_id: ch.subject_id, education_level_id: ch.education_level_id, chapter_id: ch.id, topic_id: ((ch.id as number) - 1) * 3 + (i % 3) + 1,
+      difficulty_level: String((i % 5) + 1), type: 'objektif', status: i % 17 === 0 ? 'diarkib' : 'diluluskan', body: `Soalan contoh ${i + 1}.`,
+    }
+  }))
   const options: Row[] = []
   for (let q = 1; q <= Q; q++) for (let o = 0; o < 4; o++) options.push({ id: options.length + 1, question_id: q, label: 'ABCD'[o], body: `Pilihan contoh ${q}${'ABCD'[o]}`, is_correct: o === 0 ? '1' : '0' })
   for (let k = 0; k < B; k++) {
     ;(options[k] as Row).question_id = 930_000 + k
     bump(planted.orphans, 'question_options.question_id')
+  }
+  // T-B9: the rajah and repair cases of `migrate:questions` (not in the committed tiny sample).
+  if (size !== 'tiny') {
+    const extra = rajahCaseRows(chapters[0] as Row)
+    ;(tables.get('questions') as Row[]).push(...extra.questions)
+    options.push(...extra.options)
   }
   put('question_options', options)
   put('source_papers', Array.from({ length: 3 }, (_, i) => ({ id: i + 1, natural_key: `contoh-2025-${i + 1}`, file_hash: String(i).repeat(64).slice(0, 64), year: 2025, exam_board_id: 1, exam_type_id: 1 })))
@@ -475,6 +488,7 @@ function build(size: FixtureSize, seed: number): { tables: Map<string, Row[]>; p
   for (const [name, slugs] of Object.entries(LOOKUPS)) put(name, slugs.map((slug, i) => ({ id: i + 1, slug })))
   put('exam_attempts', pupils.filter((_, i) => i % 5 === 0).map((id, i) => ({ id: i + 1, user_id: id, exam_paper_id: (i % 3) + 1, mode: 'latihan', status_id: LOOKUPS.attempt_statuses.indexOf('submitted') + 1, score: i % 40, max_score: 40, section_scores: { a: i % 20, b: i % 20 }, section_selections: null, served_composition: null, created_at: created(i), updated_at: created(i) })))
 
+  addBankExtras(tables, B)
   return { tables, planted }
 }
 

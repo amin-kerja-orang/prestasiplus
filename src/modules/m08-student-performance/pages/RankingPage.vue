@@ -1,317 +1,143 @@
 <script setup lang="ts">
 /**
- * S19 `/ranking` "Kedudukan" (M08-T4; FR-M08-108..112, BR-M08-27, DV-22, DV-23; FN-M08-7.1.*).
+ * S19 `/ranking` "Kedudukan" (R1-MUR-18, API-RPT-13; card S7-T06).
  *
- * - Hero "Kedudukan" with the scope label (Nasional, Negeri, Daerah, Sekolah, or the chosen state);
- *   the tab title is "Kedudukan {x}" (DV-22).
- * - Four scope pills in a scrolling row; each keeps the non-empty filters. An unknown `scope` activates
- *   no pill and ranks nationally.
- * - GET form: Subjek, Tingkatan and (negeri / daerah scopes) Negeri, submitting on change.
- * - Ranked rows (12-column grid) or the empty state; the footer only on the nasional scope.
- * - Names are plain text: the ranking entries are not linked (FR-M08-112), and a row without a user id
- *   must never become a `/pelajar/null` link.
- * - The query string is the state (a GET form on live).
+ * - Top line "Syiling anda" with the balance and the note "Kedudukan dikira berdasarkan baki syiling.".
+ * - One rank card per applicable scope ("Dalam kelas" only for a pupil in a class, "Dalam sekolah", "Dalam
+ *   negeri", "Kebangsaan"): "#{rank}", "/ {total}" and "Kumpulan {p}% teratas"; "Belum tersedia" without a state.
+ * - "Sekitar anda" with the scope as sub-label: up to 2 pupils above, the own row marked "ANDA", up to 2 below
+ *   (other pupils by first name only).
+ * - Link "Lihat papan pendahulu penuh" (Papan Pendahulu). No scopes: "Kedudukan belum tersedia".
+ * - No filters and no query string (FR-MUR-18-6).
  */
-import type { TableColumn } from '@nuxt/ui'
-import { computed, ref, watch, watchEffect } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, watchEffect } from 'vue'
 
 import { useApi, usePageMeta } from '@/composables'
 import {
-  DsDataTable,
   DsEmptyState,
-  DsIdentity,
+  DsLeaderRow,
   DsLoadError,
   DsPage,
   DsPanel,
-  DsPillNav,
-  type PillItem,
+  DsStatRow,
+  type StatItem,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchRankings } from '../api/performance'
 import {
-  MEDALS,
-  RANKING_PATH,
-  SCOPE_PILLS,
-  TINGKATAN_OPTIONS,
-  activeScope,
-  apiQuery,
-  formQuery,
-  readRankingState,
-  scopeLabel,
-  scopeQuery,
-  tabTitle,
+  EMPTY_TEXT,
+  EMPTY_TITLE,
+  FULL_BOARD_LABEL,
+  FULL_BOARD_PATH,
+  RANKING_SUBTITLE,
+  RANKING_TITLE,
+  SCOPE_META,
+  SYILING_NOTE,
+  nearbyCard,
+  rankSub,
+  rankText,
 } from '../lib/ranking'
 import { LOAD_ERROR } from '../lib/prestasi/load'
-import { fetchSubjectOptions } from '../lib/subject-options'
 
-const route = useRoute()
-const router = useRouter()
 const pageMeta = usePageMeta()
-
-const state = computed(() => readRankingState(route.query))
-const active = computed(() => activeScope(state.value.scope))
-const label = computed(() => scopeLabel(state.value))
-
-const { data, error, reload } = useApi(
-  (signal) => fetchRankings(apiQuery(state.value), { signal }),
-  () => route.fullPath,
-)
-const { data: subjects } = useApi((signal) => fetchSubjectOptions(signal))
-
 watchEffect(() => {
-  pageMeta.setTitle(tabTitle(state.value))
+  pageMeta.setTitle(RANKING_TITLE)
 })
+
+const { data, error, reload } = useApi((signal) => fetchRankings({ signal }))
 
 const firstLoad = computed(() => data.value === null && error.value === null)
-const rows = computed(() => data.value?.rows ?? [])
-const footer = computed(() =>
-  data.value?.showFooter === true ? { total: data.value.total } : null,
-)
-const showNegeri = computed(() => active.value === 'negeri' || active.value === 'daerah')
-/** The hidden `scope` of the form: what the URL says, else the default. */
-const formScope = computed(() => (state.value.scope === '' ? 'nasional' : state.value.scope))
+const scopes = computed(() => data.value?.scopes ?? [])
 
-const subjectId = ref(state.value.subjectId)
-const tingkatan = ref(state.value.tingkatan)
-const negeri = ref(state.value.negeri)
-watch(state, (s) => {
-  subjectId.value = s.subjectId
-  tingkatan.value = s.tingkatan
-  negeri.value = s.negeri
-})
-
-function submitForm(): void {
-  void router.push({
-    path: RANKING_PATH,
-    query: formQuery(
-      { subjectId: subjectId.value, tingkatan: tingkatan.value, negeri: negeri.value },
-      formScope.value,
-    ),
-  })
-}
-
-const PILL_ICONS: Record<string, string> = {
-  nasional: 'i-ph-globe',
-  negeri: 'i-ph-map-pin-area',
-  daerah: 'i-ph-map-pin',
-  sekolah: 'i-ph-student',
-}
-
-/** A select cannot hold an empty value, so "no filter" travels as `all` and is query-less. */
-const ALL = 'all'
-const subjectItems = computed(() => [
-  { label: 'Semua Subjek', value: ALL },
-  ...(subjects.value ?? []).map((s) => ({ label: s.name, value: String(s.id) })),
-])
-const tingkatanItems = TINGKATAN_OPTIONS.map((o) => ({
-  label: o.label,
-  value: o.value === '' ? ALL : o.value,
-}))
-const negeriItems = computed(() => [
-  { label: 'Pilih Negeri', value: ALL },
-  ...(data.value?.states ?? []).map((n) => ({ label: n, value: n })),
-])
-
-function bindFilter(target: typeof subjectId) {
-  return computed({
-    get: () => (target.value === '' ? ALL : target.value),
-    set: (v: string | undefined) => {
-      target.value = v === undefined || v === ALL ? '' : v
-      submitForm()
-    },
-  })
-}
-const subjectModel = bindFilter(subjectId)
-const tingkatanModel = bindFilter(tingkatan)
-const negeriModel = bindFilter(negeri)
-
-const scopePills = computed<PillItem<string>[]>(() =>
-  SCOPE_PILLS.map((p) => ({
-    key: p.id,
-    label: p.label,
-    icon: PILL_ICONS[p.id],
-    to: { path: RANKING_PATH, query: scopeQuery(state.value, p.id) },
-  })),
+const cards = computed<StatItem[]>(() =>
+  scopes.value.map((c) => {
+    const meta = SCOPE_META[c.scope]
+    return {
+      key: c.scope,
+      label: meta.label,
+      icon: meta.icon,
+      accent: meta.accent as StatItem['accent'],
+      value: rankText(c),
+      sub: rankSub(c),
+    }
+  }),
 )
 
-type Row = NonNullable<typeof data.value>['rows'][number]
-const tableRows = computed<Row[]>(() => rows.value)
-const columns: TableColumn<Row>[] = [
-  { accessorKey: 'rank', header: '#' },
-  { accessorKey: 'name', header: 'Pelajar' },
-  { accessorKey: 'tahap', header: 'Tahap' },
-  { accessorKey: 'correct', header: 'Betul' },
-  { accessorKey: 'accuracy', header: 'Tepat' },
-]
+const nearby = computed(() => nearbyCard(scopes.value))
 </script>
 
 <template>
-  <DsPage
-    title="Kedudukan"
-    :subtitle="label"
-    subtitle-testid="ranking-subtitle"
-    data-testid="ranking-page"
-  >
-    <DsPillNav
-      :items="scopePills"
-      :active="active"
-      label="Skop kedudukan"
-      testid-prefix="ranking-pill"
-      data-testid="ranking-pills"
-    />
-
-    <!-- Filters (GET form): submit on change -->
-    <DsPanel data-testid="ranking-filter">
-      <form
-        method="get"
-        :action="RANKING_PATH"
-        :class="showNegeri ? 'grid grid-cols-1 gap-4 sm:grid-cols-3' : 'grid grid-cols-2 gap-4'"
-        @submit.prevent="submitForm"
-      >
-        <UFormField label="Subjek" for="ranking-subject" class="min-w-0">
-          <USelect
-            id="ranking-subject"
-            v-model="subjectModel"
-            name="subject_id"
-            :items="subjectItems"
-            size="lg"
-            class="w-full"
-            data-testid="ranking-subject"
-          />
-        </UFormField>
-        <UFormField label="Tingkatan" for="ranking-tingkatan" class="min-w-0">
-          <USelect
-            id="ranking-tingkatan"
-            v-model="tingkatanModel"
-            name="tingkatan"
-            :items="tingkatanItems"
-            size="lg"
-            class="w-full"
-            data-testid="ranking-tingkatan"
-          />
-        </UFormField>
-        <UFormField v-if="showNegeri" label="Negeri" for="ranking-negeri" class="min-w-0">
-          <USelect
-            id="ranking-negeri"
-            v-model="negeriModel"
-            name="negeri"
-            :items="negeriItems"
-            size="lg"
-            class="w-full"
-            data-testid="ranking-negeri"
-          />
-        </UFormField>
-      </form>
-    </DsPanel>
-
+  <DsPage title="Kedudukan" :subtitle="RANKING_SUBTITLE" data-testid="ranking-page">
     <DsLoadError v-if="error" :message="LOAD_ERROR" testid="ranking-error" @retry="reload()" />
 
-    <!-- Loading -->
     <div
       v-else-if="firstLoad"
-      class="flex flex-col gap-2"
+      class="flex flex-col gap-3"
       aria-busy="true"
       data-testid="ranking-loading"
     >
-      <USkeleton v-for="n in 3" :key="n" class="h-12 w-full" />
+      <USkeleton class="h-24 w-full" />
+      <USkeleton class="h-32 w-full" />
     </div>
 
-    <!-- Empty -->
-    <div v-else-if="rows.length === 0" data-testid="ranking-empty">
-      <DsEmptyState
-        title="Tiada data kedudukan"
-        description="Mula menjawab soalan untuk muncul di papan kedudukan!"
-        icon="trophy"
-        friend="aiman"
-      >
-        <template #actions>
-          <UButton to="/practice" label="Mula Latihan" size="lg" data-testid="ranking-start" />
-        </template>
-      </DsEmptyState>
-      <span class="sr-only">🏆</span>
-    </div>
-
-    <!-- List -->
-    <div v-else class="flex min-w-0 flex-col gap-3" data-testid="ranking-list">
-      <DsDataTable
-        :data="tableRows"
-        :columns="columns"
-        :page-size="tableRows.length"
-        variant="flush"
-        layout="fixed"
-        caption="Kedudukan"
-      >
-        <template #rank-cell="{ row }">
-          <span data-testid="ranking-rank">
-            <UBadge
-              v-if="MEDALS[row.original.rank]"
-              color="primary"
-              variant="solid"
-              :label="MEDALS[row.original.rank]?.emoji"
-            />
-            <span v-else class="text-label text-muted">{{ row.original.rank }}</span>
-          </span>
-        </template>
-        <template #name-cell="{ row }">
-          <DsIdentity :name="row.original.name" :sub="row.original.schoolName">
-            <template #name>
-              <span class="truncate" data-testid="ranking-name">{{ row.original.name }}</span>
-            </template>
-          </DsIdentity>
-        </template>
-        <template #tahap-cell="{ row }">
-          <UBadge color="neutral" variant="subtle" size="sm" data-testid="ranking-tahap"
-            >L{{ row.original.tahap }}</UBadge
-          >
-        </template>
-        <template #correct-cell="{ row }">
-          <span class="text-label text-highlighted" data-testid="ranking-betul">{{
-            formatNumber(row.original.correct)
-          }}</span>
-        </template>
-        <template #accuracy-cell="{ row }">
-          <span
-            class="text-label"
-            :class="row.original.accuracy >= 50 ? 'text-success' : 'text-error'"
-            data-testid="ranking-tepat"
-            >{{ row.original.accuracy.toFixed(2) }}%</span
-          >
-        </template>
-        <template #card="{ row }">
-          <div class="flex min-w-0 items-center gap-3">
-            <UBadge
-              :color="MEDALS[row.rank] ? 'primary' : 'neutral'"
-              :variant="MEDALS[row.rank] ? 'solid' : 'subtle'"
-              :label="MEDALS[row.rank]?.emoji ?? String(row.rank)"
-            />
-            <DsIdentity :name="row.name" :sub="row.schoolName" />
+    <template v-else>
+      <!-- Syiling anda -->
+      <DsPanel data-testid="ranking-syiling">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <p class="text-caption font-semibold tracking-wide text-muted uppercase">Syiling anda</p>
+            <p class="tabular font-display text-display text-highlighted" data-testid="ranking-syiling-value">
+              {{ formatNumber(data?.syiling ?? 0) }}
+            </p>
+            <p class="text-caption text-muted">{{ SYILING_NOTE }}</p>
           </div>
-          <dl class="grid grid-cols-3 gap-x-3">
-            <div>
-              <dt class="text-caption text-muted">Tahap</dt>
-              <dd class="tabular text-label">L{{ row.tahap }}</dd>
-            </div>
-            <div>
-              <dt class="text-caption text-muted">Betul</dt>
-              <dd class="tabular text-label text-highlighted">{{ formatNumber(row.correct) }}</dd>
-            </div>
-            <div>
-              <dt class="text-caption text-muted">Tepat</dt>
-              <dd
-                class="tabular text-label"
-                :class="row.accuracy >= 50 ? 'text-success' : 'text-error'"
-              >
-                {{ row.accuracy.toFixed(2) }}%
-              </dd>
-            </div>
-          </dl>
-        </template>
-      </DsDataTable>
-      <p v-if="footer" class="text-center text-caption text-muted" data-testid="ranking-footer">
-        Menunjukkan {{ rows.length }} dari {{ footer.total }} pelajar
-      </p>
-    </div>
+          <UIcon name="i-ph-ranking" class="size-10 shrink-0 text-primary-t" aria-hidden="true" />
+        </div>
+      </DsPanel>
+
+      <!-- Empty -->
+      <div v-if="scopes.length === 0" data-testid="ranking-empty">
+        <DsEmptyState :title="EMPTY_TITLE" :description="EMPTY_TEXT" icon="ranking" />
+      </div>
+
+      <template v-else>
+        <!-- One card per applicable scope -->
+        <DsStatRow :items="cards" prefix="ranking-card" :cols="4" data-testid="ranking-cards" />
+
+        <!-- Sekitar anda -->
+        <DsPanel v-if="nearby" data-testid="ranking-nearby">
+          <h2 class="text-heading text-highlighted">Sekitar anda</h2>
+          <p class="mb-3 text-caption text-muted" data-testid="ranking-nearby-scope">
+            {{ SCOPE_META[nearby.scope].label }}
+          </p>
+          <p v-if="nearby.nearby.length <= 1" class="text-body text-muted" data-testid="ranking-nearby-alone">
+            Tiada pelajar lain untuk dibandingkan dalam skop ini.
+          </p>
+          <ul v-else class="flex flex-col gap-2" data-testid="ranking-nearby-list">
+            <DsLeaderRow
+              v-for="n in nearby.nearby"
+              :key="n.rank"
+              :rank="n.rank"
+              :name="n.name"
+              :points="formatNumber(n.syiling)"
+              :own="n.me"
+              own-label="ANDA"
+              data-testid="ranking-nearby-row"
+            />
+          </ul>
+        </DsPanel>
+
+        <p class="text-center">
+          <UButton
+            :to="FULL_BOARD_PATH"
+            :label="FULL_BOARD_LABEL"
+            trailing-icon="i-ph-arrow-right"
+            variant="link"
+            data-testid="ranking-full-board"
+          />
+        </p>
+      </template>
+    </template>
   </DsPage>
 </template>

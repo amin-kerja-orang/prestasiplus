@@ -384,7 +384,9 @@ function readMaps(dist) {
 /** Runs `cmd`, collecting its output; `onChild` receives the child so a signal handler can kill it. */
 function runCapture(cmd, args, options, onChild) {
   return new Promise((resolveRun) => {
-    const child = spawn(cmd, args, { ...options, stdio: ['ignore', 'pipe', 'pipe'] })
+    // Windows: Node 20.12+ refuses to spawn a .cmd file without a shell (EINVAL).
+    const shell = process.platform === 'win32'
+    const child = spawn(cmd, args, { ...options, shell, stdio: ['ignore', 'pipe', 'pipe'] })
     onChild(child)
     let out = ''
     child.stdout.on('data', (d) => (out += d))

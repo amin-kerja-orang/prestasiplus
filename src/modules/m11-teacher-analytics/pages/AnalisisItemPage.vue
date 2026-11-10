@@ -177,7 +177,7 @@ const reset = (): void => {
           native
           :label="ITEM_COPY.subjectLabel"
           for="filter-subject"
-          class="w-full md:w-56"
+          class="w-full"
         >
           <DsNativeSelect
             :id="id"
@@ -197,7 +197,7 @@ const reset = (): void => {
           native
           :label="ITEM_COPY.classLabel"
           for="filter-classroom"
-          class="w-full md:w-56"
+          class="w-full"
         >
           <DsNativeSelect
             :id="id"
@@ -217,7 +217,7 @@ const reset = (): void => {
           native
           :label="ITEM_COPY.tahapLabel"
           for="filter-tahap"
-          class="w-full md:w-56"
+          class="w-full"
         >
           <DsNativeSelect
             :id="id"
@@ -236,7 +236,7 @@ const reset = (): void => {
           native
           :label="ITEM_COPY.sortLabel"
           for="filter-sort"
-          class="w-full md:w-56"
+          class="w-full"
         >
           <DsNativeSelect
             :id="id"
@@ -255,7 +255,7 @@ const reset = (): void => {
           native
           :label="ITEM_COPY.searchLabel"
           for="filter-search"
-          class="w-full md:w-64"
+          class="w-full"
           :error="tooShort ? ITEM_COPY.searchTooShort : undefined"
         >
           <UInput

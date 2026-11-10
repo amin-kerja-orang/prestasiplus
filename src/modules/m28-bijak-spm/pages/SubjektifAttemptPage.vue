@@ -37,6 +37,8 @@ import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../l
 import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { browserStorage, bijakServer } from '../server/client'
+import { kertasDokumenServer } from '../server/documents-client'
+import type { KertasDokumenSummary } from '../server/documents-types'
 import type { ListedPaper } from '../server/types'
 
 useLearnerTheme()
@@ -44,6 +46,7 @@ const route = useRoute()
 const router = useRouter()
 const user = useBijakUser()
 const server = bijakServer()
+const dokumenServer = kertasDokumenServer()
 const paperId = computed(() => (route.params.paperId ? String(route.params.paperId) : ''))
 
 /* ------------------------------------------------------------------ screen 1: the list */
@@ -85,23 +88,67 @@ const {
   reload: reloadList,
 } = useApi(() => server.listPapers(user.value, 'subjektif'), undefined, { immediate: false })
 
-/** Papers by Kertas, then negeri; grouped by subject, the biggest group first (ties keep the subject name order). */
+/**
+ * The V2 page-image documents (migration 0265) are part of the same list. They are additive: if they cannot be read, the question-based
+ * papers still list (the failure is not shown as a load error of the whole screen).
+ */
+const { data: dokumen, reload: reloadDokumen } = useApi<KertasDokumenSummary[]>(
+  () => dokumenServer.list().catch(() => []),
+  undefined,
+  { immediate: false },
+)
+
+/** One card of the list: a question-based paper (`Mula`) or a page-image document (`Buka`). */
+interface ListItem {
+  key: string
+  kind: 'soalan' | 'dokumen'
+  title: string
+  kertas: number
+  negeri: string
+  paper?: ListedPaper
+  doc?: KertasDokumenSummary
+}
+const OTHER_GROUP = 'LAIN'
+
+/** The negeri of a document is free text as V2 printed it: ranked by its label in the list order, unknown last. */
+const labelRank = (label: string | null): number => {
+  const i = NEGERI.findIndex(([, l]) => l === label)
+  return i < 0 ? NEGERI.length : i
+}
+
+/** Items by Kertas, then negeri; grouped by subject, the biggest group first (ties keep the subject name order). */
 const groups = computed(() => {
-  const rows = [...(papers.value ?? [])].sort(
-    (a, b) =>
-      a.kertas - b.kertas ||
-      negeriRank(a.examBoard) - negeriRank(b.examBoard) ||
-      a.title.localeCompare(b.title, 'ms'),
-  )
-  const map = new Map<string, { code: string; name: string; papers: ListedPaper[] }>()
-  for (const p of rows) {
-    if (!map.has(p.subject)) map.set(p.subject, { code: p.subject, name: p.subjectName, papers: [] })
-    map.get(p.subject)!.papers.push(p)
+  const items: ListItem[] = [
+    ...(papers.value ?? []).map((p) => ({
+      key: `p-${p.id}`,
+      kind: 'soalan' as const,
+      title: p.title,
+      kertas: p.kertas,
+      negeri: negeriLabel(p.examBoard),
+      paper: p,
+    })),
+    ...(dokumen.value ?? []).map((d) => ({
+      key: `d-${d.id}`,
+      kind: 'dokumen' as const,
+      title: d.title,
+      kertas: d.kertas,
+      negeri: d.negeri ?? '',
+      doc: d,
+    })),
+  ].sort((a, b) => {
+    const rankOf = (x: ListItem): number => (x.paper ? negeriRank(x.paper.examBoard) : labelRank(x.negeri))
+    return a.kertas - b.kertas || rankOf(a) - rankOf(b) || a.title.localeCompare(b.title, 'ms')
+  })
+  const map = new Map<string, { code: string; name: string; items: ListItem[] }>()
+  for (const it of items) {
+    const code = it.paper ? it.paper.subject : (it.doc?.subject ?? OTHER_GROUP)
+    const name = it.paper ? it.paper.subjectName : (it.doc?.subjectName ?? 'Lain-lain')
+    if (!map.has(code)) map.set(code, { code, name, items: [] })
+    map.get(code)!.items.push(it)
   }
-  return [...map.values()].sort(
-    (a, b) => b.papers.length - a.papers.length || a.name.localeCompare(b.name, 'ms'),
-  )
+  return [...map.values()].sort((a, b) => b.items.length - a.items.length || a.name.localeCompare(b.name, 'ms'))
 })
+const itemCount = computed(() => (papers.value?.length ?? 0) + (dokumen.value?.length ?? 0))
 
 function statusText(p: ListedPaper): string {
   if (p.status === 'sedang') return 'Sedang dijawab'
@@ -250,6 +297,7 @@ function enter(): void {
     dispose()
     view.value = null
     void reloadList()
+    void reloadDokumen()
   }
 }
 watch(paperId, enter)
@@ -350,14 +398,14 @@ const saveText = computed(
     />
     <DsStateView v-else-if="!papers" status="loading" skeleton="list" :rows="3" data-testid="list-loading" />
     <DsEmptyState
-      v-else-if="!papers.length"
+      v-else-if="!itemCount"
       title="Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi."
       icon="i-ph-files"
       data-testid="list-empty"
     />
     <template v-else>
       <DsText variant="caption" tone="muted" role="status" data-testid="paper-count">
-        {{ papers.length }} kertas
+        {{ itemCount }} kertas
       </DsText>
       <DsSection
         v-for="g in groups"
@@ -366,30 +414,52 @@ const saveText = computed(
         variant="subheading"
         :data-testid="`group-${g.code}`"
       >
-        <UCard v-for="p in g.papers" :key="p.id" :data-testid="`paper-${p.id}`">
-          <DsCluster justify="between" stack-below="sm" align="start">
-            <DsStack gap="sm">
-              <DsHeading :level="3" variant="label">{{ p.title }}</DsHeading>
-              <DsCluster gap="sm">
-                <DsBadge tone="neutral" :label="`Kertas ${p.kertas}`" />
-                <DsBadge v-if="p.examBoard" tone="neutral" :label="negeriLabel(p.examBoard)" />
-                <DsBadge tone="neutral" :label="String(p.year)" />
-                <DsBadge tone="neutral" :label="`${p.marks} markah`" />
-                <DsBadge
-                  :tone="p.status === 'belum' ? 'neutral' : p.status === 'sedang' ? 'info' : 'success'"
-                  :label="statusText(p)"
-                  data-testid="paper-status"
-                />
-              </DsCluster>
-            </DsStack>
-            <UButton
-              :to="{ name: 'm28.kertas-subjektif.paper', params: { paperId: p.id } }"
-              size="lg"
-              :data-testid="`open-${p.id}`"
-              >{{ p.status === 'sedang' ? 'Sambung' : 'Mula' }}</UButton
-            >
-          </DsCluster>
-        </UCard>
+        <template v-for="it in g.items" :key="it.key">
+          <UCard v-if="it.paper" :data-testid="`paper-${it.paper.id}`">
+            <DsCluster justify="between" stack-below="sm" align="start">
+              <DsStack gap="sm">
+                <DsHeading :level="3" variant="label">{{ it.paper.title }}</DsHeading>
+                <DsCluster gap="sm">
+                  <DsBadge tone="neutral" :label="`Kertas ${it.paper.kertas}`" />
+                  <DsBadge v-if="it.paper.examBoard" tone="neutral" :label="negeriLabel(it.paper.examBoard)" />
+                  <DsBadge tone="neutral" :label="String(it.paper.year)" />
+                  <DsBadge tone="neutral" :label="`${it.paper.marks} markah`" />
+                  <DsBadge
+                    :tone="it.paper.status === 'belum' ? 'neutral' : it.paper.status === 'sedang' ? 'info' : 'success'"
+                    :label="statusText(it.paper)"
+                    data-testid="paper-status"
+                  />
+                </DsCluster>
+              </DsStack>
+              <UButton
+                :to="{ name: 'm28.kertas-subjektif.paper', params: { paperId: it.paper.id } }"
+                size="lg"
+                :data-testid="`open-${it.paper.id}`"
+                >{{ it.paper.status === 'sedang' ? 'Sambung' : 'Mula' }}</UButton
+              >
+            </DsCluster>
+          </UCard>
+          <!-- A V2 page-image document: the card of V2 (negeri or title, Kertas, m/s, markah, min) and `Buka`. -->
+          <UCard v-else-if="it.doc" :data-testid="`dokumen-${it.doc.id}`">
+            <DsCluster justify="between" stack-below="sm" align="start">
+              <DsStack gap="sm">
+                <DsHeading :level="3" variant="label">{{ it.doc.negeri || it.doc.title }}</DsHeading>
+                <DsCluster gap="sm">
+                  <DsBadge tone="neutral" :label="`Kertas ${it.doc.kertas}`" />
+                  <DsBadge tone="neutral" :label="`${it.doc.pageCount} m/s`" />
+                  <DsBadge v-if="it.doc.marks" tone="neutral" :label="`${it.doc.marks} markah`" />
+                  <DsBadge v-if="it.doc.durationMinutes" tone="neutral" :label="`${it.doc.durationMinutes} min`" />
+                </DsCluster>
+              </DsStack>
+              <UButton
+                :to="{ name: 'm28.kertas-subjektif.dokumen', params: { id: it.doc.id } }"
+                size="lg"
+                :data-testid="`open-dokumen-${it.doc.id}`"
+                >Buka</UButton
+              >
+            </DsCluster>
+          </UCard>
+        </template>
       </DsSection>
     </template>
   </DsPage>

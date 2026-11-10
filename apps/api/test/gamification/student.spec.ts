@@ -105,12 +105,12 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
   })
 
   describe('GET /api/gamification/challenges (S13)', () => {
-    it('10 active in (sortOrder, id) order, nothing done: meta {completed 0, active 10}', async () => {
+    it('15 active in (sortOrder, id) order, nothing done: meta {completed 0, active 15}', async () => {
       const res = await student.get('/gamification/challenges')
       const body = GamificationChallengesResponseSchema.parse(res.body)
-      expect(body.meta).toEqual({ completed: 0, active: 10, claimed: 0 })
-      expect(body.data).toHaveLength(10)
-      expect(body.data.map((c) => c.title).slice(0, 5)).toEqual(['Rajin Berlatih', 'Si Tepat', 'Penjelajah Topik', 'Kilat Matematik', 'Mula Hari Ini'])
+      expect(body.meta).toEqual({ completed: 0, active: 15, claimed: 0 })
+      expect(body.data).toHaveLength(15)
+      expect(body.data.map((c) => c.title).slice(0, 5)).toEqual(['Rajin Berlatih', 'Si Tepat', 'Penjelajah Topik', 'Kilat Matematik', 'Selesai 5 Kuiz'])
       expect(body.data.every((c) => c.progress === 0 && c.pct === 0 && !c.completed)).toBe(true)
     })
 
@@ -160,19 +160,19 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
   })
 
   describe('GET /api/gamification/achievements (S15)', () => {
-    it('25 cards in catalogue order, 0 unlocked, progress only on the 5 "kuiz" badges', async () => {
+    it('26 cards in catalogue order, 0 unlocked, progress only on the 5 "kuiz" badges', async () => {
       const d = GamificationAchievementsSchema.parse(dataOf(await student.get('/gamification/achievements')))
-      expect(d).toMatchObject({ unlocked: 0, total: 25 })
-      expect(d.items).toHaveLength(25)
+      expect(d).toMatchObject({ unlocked: 0, total: 26 })
+      expect(d.items).toHaveLength(26)
       expect(d.items[0]).toMatchObject({ name: 'Langkah Pertama', rarityLabel: 'Biasa', rarityColor: '#9ca3af', progress: { value: 0, target: 1 }, unlocked: false, unlockedAt: null })
       expect(d.items.filter((i) => i.progress !== null)).toHaveLength(5)
     })
 
-    it('filters by rarity (6 / 8 / 6 / 5) while total stays 25; an unknown rarity answers no card', async () => {
+    it('filters by rarity (6 / 9 / 6 / 5) while total stays 26; an unknown rarity answers no card', async () => {
       const count = async (r: string) => GamificationAchievementsSchema.parse(dataOf(await student.get(`/gamification/achievements?rarity=${r}`))).items.length
-      expect([await count('common'), await count('rare'), await count('epic'), await count('legendary')]).toEqual([6, 8, 6, 5])
+      expect([await count('common'), await count('rare'), await count('epic'), await count('legendary')]).toEqual([6, 9, 6, 5])
       const none = GamificationAchievementsSchema.parse(dataOf(await student.get('/gamification/achievements?rarity=mythic')))
-      expect(none).toMatchObject({ items: [], total: 25 })
+      expect(none).toMatchObject({ items: [], total: 26 })
     })
 
     it('an unlock shows with its time and progress caps at the target; the progress value follows the practice count', async () => {
@@ -219,6 +219,9 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
     const walletOf2 = async (userId: string) => (await t.db.query<{ current_syiling: number }>(`select current_syiling from wallets where user_id = $1`, [userId]))[0]
     const referralRow = async (refereeId: string) =>
       (await t.db.query<{ referrer_id: string; rewarded: boolean }>(`select referrer_id::text, rewarded from referrals where referee_id = $1::bigint`, [refereeId]))[0]
+    /** Syiling the badges paid (a referrer's lifetime total can cross a badge after the reward: FR-GM-25.2, its own ledger row). */
+    const badgeSyilingOf = async (userId: string): Promise<number> =>
+      Number((await t.db.query<{ n: string }>(`select coalesce(sum(amount), 0)::text as n from coin_ledger where user_id = $1::bigint and source = 'achievement'`, [userId]))[0]!.n)
     const ledgerOf = (userId: string) => t.db.query<{ amount: number; source_id: string }>(`select amount, source_id from coin_ledger where user_id = $1::bigint and source = 'referral'`, [userId])
     /** A setting row for the test; the reader answers the 48 section 2 default for a key with no row. */
     const setSetting = (key: string, value: number) =>
@@ -268,7 +271,10 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       expect(await t.gamification.applyReferral(referrer, code, { isTest: false })).toEqual({ applied: false }) // not your own code
       expect(await walletOf2(friend)).toBeUndefined()
       expect(await ledgerOf(friend)).toEqual([])
-      expect((await walletOf2(referrer))!.current_syiling).toBe(470)
+      // 370 + 100 for the referral, and the referral pushed the lifetime total over a badge (evaluated for the referrer after the reward, FR-GM-25.2): its +10 is its own ledger row.
+      const badges = await t.db.query<{ amount: number; description: string }>(`select amount, description from coin_ledger where user_id = $1 and source = 'achievement'`, [referrer])
+      expect(badges).toEqual([{ amount: 10, description: 'Pencapaian: Pengumpul Syiling' }])
+      expect((await walletOf2(referrer))!.current_syiling).toBe(470 + 10)
       expect(await ledgerOf(referrer)).toEqual([{ amount: 100, source_id: `referral:${friend}` }])
       const r = GamificationReferralSchema.parse(dataOf(await student.get('/gamification/referral')))
       expect(r.stats).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 100 })
@@ -302,7 +308,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
         for (const f of friends) expect(await t.gamification.applyReferral(f, code, { isTest: false })).toEqual({ applied: true })
         expect((await Promise.all(friends.map((f) => referralRow(f)))).map((r) => r?.rewarded)).toEqual([true, true, false])
         expect(await ledgerOf(friends[2]!)).toEqual([])
-        expect((await walletOf2(referrer))!.current_syiling).toBe(200)
+        expect((await walletOf2(referrer))!.current_syiling).toBe(200 + (await badgeSyilingOf(referrer)))
         const view = await t.gamification.referral(referrer)
         expect(view.maxRewarded).toBe(2)
         expect(view.stats).toEqual({ referrals: 3, rewarded: 2, syilingEarned: 200 })
@@ -323,7 +329,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
         expect(rows.every((r) => r !== undefined)).toBe(true) // every unrewarded referral is still stored
         expect(rows.filter((r) => r?.rewarded)).toHaveLength(3)
         expect(rows.filter((r) => r && !r.rewarded)).toHaveLength(5)
-        expect((await walletOf2(referrer))!.current_syiling).toBe(3 * 100)
+        expect((await walletOf2(referrer))!.current_syiling).toBe(3 * 100 + (await badgeSyilingOf(referrer)))
         expect(await ledgerOf(referrer)).toHaveLength(3)
       } finally {
         await unsetSetting('referral_max_rewarded')

@@ -21,6 +21,7 @@ import {
   SchoolOptionsQuerySchema,
   SchoolSearchQuerySchema,
   SchoolSummarySchema,
+  SchoolJoinCodeResultSchema,
   SchoolToggleResultSchema,
   SchoolTypeSchema,
   statusEnvelopeOf,
@@ -36,6 +37,7 @@ export const SCHOOLS_COMPONENT_SCHEMAS = {
   SchoolListQuery: SchoolListQuerySchema,
   SchoolInput: SchoolInputSchema,
   SchoolToggleResult: SchoolToggleResultSchema,
+  SchoolJoinCodeResult: SchoolJoinCodeResultSchema,
   SchoolOptionsQuery: SchoolOptionsQuerySchema,
   SchoolSearchQuery: SchoolSearchQuerySchema,
   Jpn: JpnSchema,
@@ -69,7 +71,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
     path: '/admin/schools',
     tags,
     summary: 'List schools (30 per page, name A to Z)',
-    description: `${access('GET /admin/schools')} \`meta.counts\` {total, active, inactive} covers all schools; \`meta.types\` lists the distinct types present. Responses carry the join code (a bearer secret): no-store.`,
+    description: `${access('GET /admin/schools')} \`meta.counts\` {total, active, inactive} covers all visible schools; \`meta.types\` lists the distinct visible types. Primary types (SK, SJK(C), SJK(T)) are hidden by default; \`includePrimary=true\`, or a \`type\` filter naming one of them, shows them and counts/types follow the same set (rows are never deleted). \`/admin/schools/options\` and the public search stay secondary-only. Responses carry the join code (a bearer secret): no-store.`,
     request: { query: SchoolListQuerySchema },
     responses: {
       200: jsonNoStore(z.object({ data: z.array(AdminSchoolSchema), meta: SchoolListMetaSchema }), 'A page of schools.'),
@@ -140,6 +142,22 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
     request: { headers: csrf, params: idParam },
     responses: {
       200: json(statusEnvelopeOf(SchoolToggleResultSchema), 'New value.'),
+      401: unauthorized,
+      403: forbidden,
+      404: notFound,
+      429: limited,
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/schools/{id}/join-code',
+    tags,
+    summary: 'Rotate the join code of a school (Admin Pusat only; the old code stops working)',
+    description: `${access('POST /admin/schools/{id}/join-code')} status: "Kod pendaftaran <school> ditukar kepada <code>. Kod lama tidak lagi sah.". No-store: a join code is a bearer secret.`,
+    request: { headers: csrf, params: idParam },
+    responses: {
+      200: jsonNoStore(statusEnvelopeOf(SchoolJoinCodeResultSchema), 'New code.'),
       401: unauthorized,
       403: forbidden,
       404: notFound,

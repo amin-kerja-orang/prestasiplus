@@ -8,7 +8,6 @@ import {
   SUPPORT_ADMIN_FLASH,
   SUPPORT_BODY_MAX,
   SUPPORT_MESSAGES,
-  SUPPORT_NEW_TICKET_NOTIFICATION,
   SUPPORT_QUEUE_PER_PAGE,
   SUPPORT_SETTINGS_MESSAGES,
   SUPPORT_SUBJECT_MAX,
@@ -59,9 +58,11 @@ describe('ticket', () => {
     expect(SUPPORT_TICKET_STATUS_LABELS.menunggu_balas).toBe('Menunggu Balas')
   })
 
-  it('list meta is { total }, not ListMeta', () => {
-    expect(SupportTicketListResponseSchema.safeParse({ data: [ticket], meta: { total: 3 } }).success).toBe(true)
-    expect(SupportTicketListResponseSchema.safeParse({ data: [ticket], meta: { total: 3, page: 1 } }).success).toBe(false)
+  it('list meta is { total, counts }, not ListMeta; a count may be 0', () => {
+    const counts = [{ status: 'dibuka', count: 3 }, { status: 'selesai', count: 0 }]
+    expect(SupportTicketListResponseSchema.safeParse({ data: [ticket], meta: { total: 3, counts } }).success).toBe(true)
+    expect(SupportTicketListResponseSchema.safeParse({ data: [ticket], meta: { total: 3 } }).success).toBe(false)
+    expect(SupportTicketListResponseSchema.safeParse({ data: [ticket], meta: { total: 3, counts, page: 1 } }).success).toBe(false)
     expect(SupportTicketListResponseSchema.safeParse({ data: [ticket] }).success).toBe(false)
   })
 })
@@ -83,12 +84,6 @@ describe('create request', () => {
 
   it('keeps the flash and the admin notification copy', () => {
     expect(SUPPORT_TICKET_CREATED_FLASH).toBe('Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.')
-    expect(SUPPORT_NEW_TICKET_NOTIFICATION).toEqual({
-      type: 'new_ticket',
-      category: null,
-      title: 'Tiket baru',
-      body: 'Tiket sokongan baharu telah diterima.',
-    })
   })
 
   it('error body carries the field messages', () => {
@@ -175,6 +170,9 @@ describe('support settings (API-ADM-10)', () => {
     expect(issues({ whatsapp: '12345678' })).toEqual({ whatsapp: SUPPORT_SETTINGS_MESSAGES.phoneInvalid })
     expect(issues({ whatsapp: '60 10 000' })).toEqual({ whatsapp: SUPPORT_SETTINGS_MESSAGES.phoneInvalid })
     expect(issues({ email: 5 })).toEqual({ email: SUPPORT_SETTINGS_MESSAGES.emailInvalid })
+    expect(issues({ hours: 'x'.repeat(121) })).toEqual({ hours: SUPPORT_SETTINGS_MESSAGES.hoursTooLong })
+    expect(issues({ hours: 'x'.repeat(120) })).toEqual({})
+    expect(SupportSettingsUpdateRequestSchema.parse({ hours: ' Isnin - Jumaat ' })).toEqual({ hours: 'Isnin - Jumaat' })
   })
 
   it('the answer has the four keys and nothing else', () => {

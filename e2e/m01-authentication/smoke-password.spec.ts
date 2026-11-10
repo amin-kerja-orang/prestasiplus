@@ -82,7 +82,7 @@ test.describe('M01 password pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expect(page.getByTestId('auth-footer')).toContainText('© 2026 PRESTASIPLUS.')
     await expect(page.getByTestId('reset-password')).toHaveAttribute(
       'placeholder',
-      'Minimum 6 aksara',
+      'Minimum 8 aksara',
     )
     await expect(page.getByTestId('reset-confirm')).toHaveAttribute(
       'placeholder',

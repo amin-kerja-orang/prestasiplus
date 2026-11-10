@@ -63,6 +63,69 @@ export function textPdf(pages: number, linesPerPage = 6): Buffer {
   return assemble(bodies)
 }
 
+/** Digital-born paper: one A4 page per entry of `pages`, each entry the exact lines of that page (Helvetica, 14 pt leading). */
+export function paperPdf(pages: string[][]): Buffer {
+  const bodies: Buffer[] = [Buffer.alloc(0), Buffer.alloc(0), latin1('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')]
+  const kids: string[] = []
+  pages.forEach((lines, i) => {
+    const pageObj = 4 + i * 2
+    kids.push(`${pageObj} 0 R`)
+    bodies.push(
+      latin1(
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${pageObj + 1} 0 R >>`,
+      ),
+    )
+    bodies.push(streamObj('', textContent(lines)))
+  })
+  bodies[0] = latin1('<< /Type /Catalog /Pages 2 0 R >>')
+  bodies[1] = latin1(`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${pages.length} >>`)
+  return assemble(bodies)
+}
+
+/**
+ * Scanned paper: one image-only A4 page per entry of `pages`; the lines are drawn as dark text on white with
+ * `@napi-rs/canvas` at 150 dpi, so the PDF has no text layer and only OCR can read it. Needs a system font on the host
+ * (DejaVu, Arial or Liberation); `null` when the canvas library is missing.
+ */
+export async function scannedPaperPdf(pages: string[][]): Promise<Buffer | null> {
+  let canvasLib: typeof import('@napi-rs/canvas')
+  try {
+    canvasLib = await import('@napi-rs/canvas')
+  } catch {
+    return null
+  }
+  const W = 1240
+  const H = 1754
+  const bodies: Buffer[] = [Buffer.alloc(0), Buffer.alloc(0)]
+  const kids: string[] = []
+  pages.forEach((lines, i) => {
+    const canvas = canvasLib.createCanvas(W, H)
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, W, H)
+    ctx.fillStyle = '#000000'
+    ctx.font = '34px "DejaVu Sans", "Liberation Sans", Arial, sans-serif'
+    lines.forEach((line, n) => ctx.fillText(line, 100, 130 + n * 52))
+    const rgba = ctx.getImageData(0, 0, W, H).data
+    const gray = Buffer.alloc(W * H)
+    for (let p = 0; p < W * H; p++) gray[p] = rgba[p * 4] as number
+    const base = 3 + i * 3
+    kids.push(`${base} 0 R`)
+    bodies.push(
+      latin1(
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 ${base + 1} 0 R >> >> /Contents ${base + 2} 0 R >>`,
+      ),
+    )
+    bodies.push(
+      streamObj(`/Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode`, deflateSync(gray)),
+    )
+    bodies.push(streamObj('', latin1('q 595 0 0 842 0 0 cm /Im0 Do Q')))
+  })
+  bodies[0] = latin1('<< /Type /Catalog /Pages 2 0 R >>')
+  bodies[1] = latin1(`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${pages.length} >>`)
+  return assemble(bodies)
+}
+
 /** Image-only "scan-like" PDF: each page is one raw FlateDecode RGB image, no text layer. */
 export function scanPdf(pages: number, imgW = 80, imgH = 112): Buffer {
   const rgb = Buffer.alloc(imgW * imgH * 3)

@@ -590,8 +590,8 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
     // [path, h1, subtitle under the title or null]
     const pairs: Array<[string, string, string | null]> = [
       ['/admin/questions/564159/edit', 'Edit Soalan', 'Kemaskini maklumat soalan #564159'],
-      ['/admin/questions/import', 'Import Soalan Secara Pukal', null],
-      ['/admin/questions/quality', 'Dashboard Kualiti Soalan', null],
+      ['/admin/questions/import', 'Import CSV', 'Import soalan secara pukal dari fail CSV'],
+      ['/admin/questions/quality', 'Dashboard Kualiti Soalan', 'Metrik kualiti berdasarkan status pematuhan & DSKP'],
       ['/admin/structured-questions', 'Soalan Berstruktur', 'Semua soalan berstruktur SPM dalam sistem'],
       [
         '/admin/question-submissions',

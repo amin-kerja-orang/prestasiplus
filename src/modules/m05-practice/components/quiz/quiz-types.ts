@@ -6,6 +6,7 @@
 
 import type {
   CheckAnswerResponse,
+  QuizStimulus,
   StartSessionRequest,
   StartSessionResponse,
   SubmitSessionResponse,
@@ -66,6 +67,8 @@ export interface QuizAnswerRecord {
   correctLabel: string
   isCorrect: boolean
   explanation: string | null
+  /** The stimuli the question was shown with: every member of a group keeps its rajah in the review (T-C13). */
+  stimuli?: readonly QuizStimulus[]
 }
 
 /** The check result of the current question as the screen uses it. */

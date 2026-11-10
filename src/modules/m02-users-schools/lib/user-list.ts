@@ -138,3 +138,29 @@ export function errorLines(err: unknown): string[] {
   }
   return [err.message]
 }
+
+/** FR-ADM-U02.4: the minimum length of a typed password (create, reset, import). */
+export const PASSWORD_MIN_LENGTH = 8
+export const PASSWORD_SHORT_MESSAGE = 'Kata laluan mesti sekurang-kurangnya 8 aksara.'
+
+/** True for a typed (non-empty) password shorter than the minimum; empty is the server's concern. */
+export function isPasswordTooShort(password: string): boolean {
+  return password !== '' && [...password].length < PASSWORD_MIN_LENGTH
+}
+
+/** U-01 account state: `Menunggu kelulusan` (inactive, not suspended), `Digantung`, else `Aktif` (no `Ditolak`). */
+export type UserAccountState = 'pending' | 'suspended' | 'active'
+
+export function accountState(user: {
+  isActive: boolean
+  isSuspended?: boolean | undefined
+}): UserAccountState {
+  if (user.isSuspended === true) return 'suspended'
+  return user.isActive ? 'active' : 'pending'
+}
+
+export const ACCOUNT_STATE_LABELS: Record<UserAccountState, string> = {
+  pending: 'Menunggu kelulusan',
+  suspended: 'Digantung',
+  active: 'Aktif',
+}

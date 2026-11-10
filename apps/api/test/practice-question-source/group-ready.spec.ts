@@ -9,6 +9,7 @@ import { QuestionsRepository, QuestionsService } from '../../src/modules/questio
 import { GROUP_SURFACES } from '../../src/modules/questions/serving'
 import type { UsersRepository } from '../../src/modules/users'
 import { adminActor, mcqInput, tagOf, type Tag } from '../questions/fixtures'
+import { filesOf } from '../support/files-stub'
 import { bootQuestionsApp, type QuestionsTestApp } from '../questions/helpers'
 
 /**
@@ -17,6 +18,8 @@ import { bootQuestionsApp, type QuestionsTestApp } from '../questions/helpers'
  * an incomplete group is out as a whole, and figures are served only where the surface allows them.
  */
 const DRILLS: readonly PracticeDrillActivity[] = ['latih_tubi_spm', 'databank', 'bab']
+/** A surface list WITHOUT the drills: the text-only rule (T-C13: the shipped `GROUP_SURFACES` now lists them; this is what a list that does not keeps). */
+const TEXT_ONLY: readonly ServabilityActivity[] = ['simulasi_paper', 'jana_kertas']
 const WITH_DRILLS: readonly ServabilityActivity[] = [...GROUP_SURFACES, ...DRILLS]
 
 let t: QuestionsTestApp
@@ -29,7 +32,7 @@ const made: Record<string, string> = {}
 let seq = 0
 
 const q = (sql: string, params: unknown[] = []) => t.db.query<{ id: string }>(sql, params)
-const sourceOf = (surfaces: readonly ServabilityActivity[]) => new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, surfaces)
+const sourceOf = (surfaces: readonly ServabilityActivity[]) => new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, surfaces, filesOf(t.db) as never)
 
 async function fileRow(): Promise<string> {
   seq += 1
@@ -83,7 +86,7 @@ beforeAll(async () => {
   await publish('optionImage')
   await q(`update part_options set image_file_id = $2 where id = (select o.id from part_options o join question_parts p on p.id = o.part_id join question_versions v on v.id = p.question_version_id where v.question_id = $1 order by o.id limit 1)`, [made.optionImage, await fileRow()])
 
-  today = sourceOf(GROUP_SURFACES)
+  today = sourceOf(TEXT_ONLY)
   ready = sourceOf(WITH_DRILLS)
 }, 180_000)
 
@@ -91,9 +94,9 @@ afterAll(async () => {
   await t.close()
 })
 
-describe('today\'s surfaces: behaviour unchanged (regression)', () => {
-  it('the drills are not group surfaces', () => {
-    for (const d of DRILLS) expect(GROUP_SURFACES).not.toContain(d)
+describe('a surface list without the drills: the text-only behaviour (regression)', () => {
+  it('T-C13: the shipped GROUP_SURFACES lists the three drills', () => {
+    for (const d of DRILLS) expect(GROUP_SURFACES).toContain(d)
   })
 
   it('a draw serves the ungrouped text questions only; a group member, a figure and an option image are never drawn', async () => {
@@ -109,7 +112,7 @@ describe('today\'s surfaces: behaviour unchanged (regression)', () => {
   })
 
   it('the overview cards count ungrouped questions only', async () => {
-    const repoOv = new OverviewRepository({ client: t.db.prisma } as never)
+    const repoOv = new OverviewRepository({ client: t.db.prisma } as never, TEXT_ONLY)
     const cells = await repoOv.bankMatrix()
     expect(cells.filter((c) => c.subjectId === tag.subjectId).reduce((s, c) => s + c.n, 0)).toBe(6 + 2) // + the figure and the option-image question (ungrouped)
     expect((await repoOv.chapterQuestionCounts([chapterId])).get(chapterId)).toBe(8)
@@ -188,8 +191,8 @@ describe('with the drills in the surface list: whole groups and figures', () => 
     // A mode with no drill surface (revision, mission, remedial) stays text-only, even with the drills in the list.
     expect([...(await ready.live(wanted)).keys()]).toEqual([])
     // Only the drill that is in the list: a list with `bab` alone serves nothing extra on Latih Tubi.
-    expect([...(await sourceOf([...GROUP_SURFACES, 'bab']).live(wanted, 'latih_tubi_spm')).keys()]).toEqual([])
-    expect([...(await sourceOf([...GROUP_SURFACES, 'bab']).live(wanted, 'bab')).keys()].sort()).toEqual([...wanted].sort())
+    expect([...(await sourceOf([...TEXT_ONLY, 'bab']).live(wanted, 'latih_tubi_spm')).keys()]).toEqual([])
+    expect([...(await sourceOf([...TEXT_ONLY, 'bab']).live(wanted, 'bab')).keys()].sort()).toEqual([...wanted].sort())
   })
 
   it('chapterPage: a group with an answered member is left for the history fill; whole groups only, within the limit', async () => {

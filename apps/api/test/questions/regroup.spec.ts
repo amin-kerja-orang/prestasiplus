@@ -335,6 +335,7 @@ describe('stimulus flags, regroup and undo (S1-T07 part 2, real database)', () =
       const mixed = await admin.post('/api/admin/questions/regroup', { stimulus: { kind: 'passage', body: { ms: 'x' } }, memberQuestionIds: [a, sci] })
       expect(mixed.status).toBe(422)
       expect(mixed.body.error.fields.memberQuestionIds).toBe(STIMULUS_MESSAGES.memberMixed)
+      // a new stimulus without a label still works on the regroup path (G-01 is for POST /api/stimuli only)
       const grouped = await admin.post('/api/admin/questions/regroup', { stimulus: { kind: 'passage', body: { ms: 'x' } }, memberQuestionIds: [a] })
       expect(grouped.status, JSON.stringify(grouped.body)).toBe(200)
       const taken = await admin.post('/api/admin/questions/regroup', { stimulus: { kind: 'passage', body: { ms: 'x' } }, memberQuestionIds: [a] })

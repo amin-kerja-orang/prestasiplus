@@ -12,7 +12,7 @@ const props = defineProps<{ kpi: Behavior['kpi'] }>()
 const items = computed<StatItem[]>(() => [
   {
     key: 't4t5',
-    label: 'Pelajar T4/T5',
+    label: 'Pelajar',
     value: count(props.kpi.t4t5),
     icon: 'i-ph-graduation-cap',
     accent: 'friend',

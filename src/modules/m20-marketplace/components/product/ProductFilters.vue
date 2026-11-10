@@ -93,7 +93,7 @@ function reset(): void {
           name="q"
           size="lg"
           icon="i-ph-magnifying-glass-duotone"
-          class="w-full md:w-72"
+          class="w-full"
           :placeholder="MARKETPLACE_COPY.searchPlaceholder"
           :aria-label="MARKETPLACE_COPY.searchPlaceholder"
           data-testid="marketplace-q"
@@ -103,7 +103,7 @@ function reset(): void {
         :model-value="category === '' ? ANY : category"
         :items="categoryItems"
         size="lg"
-        class="w-full md:w-48"
+        class="w-full"
         data-testid="marketplace-category"
         @update:model-value="category = $event === ANY ? '' : String($event)"
       />
@@ -111,7 +111,7 @@ function reset(): void {
         :model-value="condition === '' ? ANY : condition"
         :items="conditionItems"
         size="lg"
-        class="w-full md:w-40"
+        class="w-full"
         data-testid="marketplace-condition"
         @update:model-value="condition = $event === ANY ? '' : String($event)"
       />
@@ -119,7 +119,7 @@ function reset(): void {
         :model-value="sort"
         :items="sortItems"
         size="lg"
-        class="w-full md:w-48"
+        class="w-full"
         data-testid="marketplace-sort"
         @update:model-value="sort = String($event)"
       />

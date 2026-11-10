@@ -788,6 +788,7 @@ export const BijakAttemptHistoryRowSchema = z
     }),
     score: NonNegInt.optional().meta({ description: 'Present when the attempt has a result.' }),
     max: NonNegInt.optional(),
+    coins: NonNegInt.optional().meta({ description: 'Syiling actually credited for this attempt (quiz_spm ledger rows of the attempt); 0 when none.' }),
   })
   .meta({ id: 'BijakAttemptHistoryRow' })
 export type BijakAttemptHistoryRow = z.infer<typeof BijakAttemptHistoryRowSchema>

@@ -244,3 +244,39 @@ describe('openapi registration', () => {
     expect(PRACTICE_MODES).toContain('pksk')
   })
 })
+
+describe('T-C13 (D105, D90): the rajah and the group on a served question', () => {
+  const rajah = { id: 'G3-1', kind: 'diagram', label: 'Rajah 1', alt: 'Graf halaju lawan masa', image: { url: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' } }
+  const member = (id: string, index: number) => ({ ...question, id, stimuli: [rajah], group: { id: 'G3', index, size: 3 } })
+
+  it('every member of a group carries the same stimuli, with its place in the group', () => {
+    const parsed = StartSessionResponseSchema.parse({ ...start, mode: 'chapter', questions: [member('1', 1), member('2', 2), member('3', 3)] })
+    expect(parsed.questions.map((q) => q.group?.index)).toEqual([1, 2, 3])
+    for (const q of parsed.questions) expect(q.stimuli?.[0]?.image?.url).toBe('/api/files/Zk3x9QmT1bVnR0aYc7LpDw')
+  })
+
+  it('a text-only question stays valid without stimuli, group or option picture', () => {
+    expect(StartSessionResponseSchema.safeParse(start).success).toBe(true)
+  })
+
+  it('a picture is only a file token URL (never an outside address or markup), kinds are the seven', () => {
+    const bad = (stimulus: unknown) => StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...question, stimuli: [stimulus] }] }).success
+    expect(bad({ ...rajah, image: { url: 'https://example.org/x.png' } })).toBe(false)
+    expect(bad({ ...rajah, image: { url: '/api/files/../secret' } })).toBe(false)
+    expect(bad({ ...rajah, kind: 'video' })).toBe(false)
+    expect(bad({ ...rajah, html: '<svg onload=x>' })).toBe(false)
+    expect(bad({ ...rajah, kind: 'table', image: undefined, table: { head: ['x'], rows: [['1']] } })).toBe(true)
+    expect(bad({ ...rajah, kind: 'passage', image: undefined, text: 'Petikan.', source: 'Sumber: SPM' })).toBe(true)
+  })
+
+  it('an option picture is a token URL and the key still cannot leak', () => {
+    const withOption = (imageUrl: string) => ({ ...question, options: [{ id: 0, label: 'A', text: 'Segi tiga', imageUrl }, { id: 1, label: 'B', text: 'Bulatan' }] })
+    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [withOption('/api/files/abcDEF123456789012345')] }).success).toBe(true)
+    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [withOption('http://x/y.png')] }).success).toBe(false)
+    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...question, correctOptionId: 1 }] }).success).toBe(false)
+  })
+
+  it('the group place is 1-based', () => {
+    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...question, group: { id: 'G', index: 0, size: 2 } }] }).success).toBe(false)
+  })
+})

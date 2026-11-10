@@ -5,6 +5,8 @@
  * (FE-P12 / FE-P13), do not edit the components.
  */
 
+import type { PadTemplate } from './lib/drawing'
+
 export type StimulusKind = 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph'
 
 export interface StimulusTable {
@@ -47,7 +49,7 @@ export interface McqOptionData {
   imageHeight?: number
 }
 
-export type AnswerMode = 'mcq' | 'short_text' | 'numeric' | 'extended_essay' | 'essay_choice'
+export type AnswerMode = 'mcq' | 'mcq_multi' | 'true_false' | 'short_text' | 'numeric' | 'extended_essay' | 'essay_choice'
 
 export interface EssayTopic {
   id: string
@@ -121,4 +123,34 @@ export interface PaperSection {
   marks?: number
   compulsory?: boolean
   questions: PaperQuestion[]
+}
+
+/** Bilingual rich text (contract: `{ms, en?}`): `en` is optional. */
+export interface BilingualString {
+  ms: string
+  en?: string
+}
+
+/**
+ * Optional answer-mode fields of a leaf (contract `modeConfig`, PR #679). Local until it merges.
+ * `maxWords`: short_text soft maximum; `hardLimit`: essay stops accepting words past `wordRange.max`;
+ * `preFill`: a read-only answer template shown above the answer area (never part of the answer).
+ */
+export interface LeafModeExtras {
+  maxWords?: number
+  hardLimit?: boolean
+  preFill?: string
+  /** `drawing` template for the Papan Lukisan, resolved by the page adapter from `modeConfig.answerTemplate` (image URL or graph grid). */
+  answerTemplate?: PadTemplate
+}
+
+/** Optional English twins of the texts a question shows (FR-PA-04); until the contract's `{ms, en?}` reaches the views. */
+export interface QuestionTwins {
+  stemEn?: string
+}
+export interface PartTwins {
+  promptEn?: string
+}
+export interface OptionTwins {
+  textEn?: string
 }

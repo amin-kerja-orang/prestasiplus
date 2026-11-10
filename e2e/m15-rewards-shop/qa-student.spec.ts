@@ -27,9 +27,11 @@ async function openFullMenu(page: Page): Promise<void> {
   if (!isDesktopShell(page)) await page.locator('[data-nav-id="tab-lagi"]').click()
 }
 
+/** V2: one "Kedai Hadiah" nav entry (DIGITAL badge) -> /gamification/rewards; no entry points at /cikgu/hadiah. */
 async function openNavEntry(page: Page): Promise<void> {
   await openFullMenu(page)
-  const link = page.locator('a[href="/cikgu/hadiah"]:visible').first()
+  await expect(page.locator('a[href="/cikgu/hadiah"]')).toHaveCount(0)
+  const link = page.locator('a[href="/gamification/rewards"]:visible').first()
   await link.scrollIntoViewIfNeeded()
   await expect(link).toContainText('Kedai Hadiah')
   await expect(link).toContainText('DIGITAL')
@@ -37,18 +39,16 @@ async function openNavEntry(page: Page): Promise<void> {
 }
 
 test.describe('M15 QA student rows', MODULE, () => {
-  test('AC-24.4 nav entry "Kedai Hadiah DIGITAL" opens S10, not the 404 page @m15', async ({
+  test('AC-24.4 the single nav entry "Kedai Hadiah DIGITAL" opens the shop (no /cikgu/hadiah entry) @m15', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
     await loginAs(PELAJAR)
-    await gotoApp('/gamification/rewards')
-    await expect(page.getByTestId('shop-empty')).toBeVisible()
+    await gotoApp('/cabutan')
     await openNavEntry(page)
-    await expect(page).toHaveURL(/\/cikgu\/hadiah$/)
-    await expect(page.getByTestId('digital-title')).toHaveText('🎁 Kedai Hadiah Digital')
-    await expect(page).toHaveTitle('Kedai Hadiah Digital | PRESTASIPLUS')
+    await expect(page).toHaveURL(/\/gamification\/rewards$/)
+    await expect(page.getByTestId('shop-title')).toHaveText('🎁 Kedai Hadiah')
   })
 
   test('AC-24.5 "Kedai Hadiah" (plain) entry still opens S5 with its own copy @m15', async ({
@@ -89,11 +89,14 @@ test.describe('M15 QA student rows', MODULE, () => {
     const buy = page.getByTestId('draw-buy')
     await expect(page.getByTestId('cabutan-balance')).toHaveText('1000')
     await buy.click()
-    await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 1/2')
+    await expectNoHorizontalScroll(page) // the confirm dialog is open
+    await page.getByTestId('draw-confirm-buy').click()
+    await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 1 / 2')
     await expect(page.getByTestId('cabutan-balance')).toHaveText('950')
     await expect(buy).toBeEnabled()
     await buy.click()
-    await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 2/2')
+    await page.getByTestId('draw-confirm-buy').click()
+    await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 2 / 2')
     await expect(page.getByTestId('cabutan-balance')).toHaveText('900')
     await expect(buy).toBeDisabled()
     const ledger = await mock.hook<{ description: string; amount: number }[]>('ledger', PELAJAR_ID)
@@ -128,18 +131,19 @@ test.describe('M15 QA student rows', MODULE, () => {
     page,
     gotoApp,
     loginAs,
+    mock,
   }) => {
     await loginAs(PELAJAR)
+    await mock.hook('setWallet', PELAJAR_ID, { syiling: 40 })
     await gotoApp('/gamification/mystery-box')
-    for (const id of [1, 2, 3, 4]) {
-      const btn = page.getByTestId(`box-${String(id)}-btn`)
-      await expect(btn).toBeDisabled()
-      const [fg, bg] = await btn.evaluate((el) => {
-        const s = getComputedStyle(el)
-        return [s.color, s.backgroundColor]
-      })
-      expect(contrast(parseRgb(fg), parseRgb(bg))).toBeGreaterThanOrEqual(4.5)
-    }
+    const btn = page.getByTestId('box-btn')
+    await expect(btn).toBeDisabled()
+    await expect(btn).toHaveText('Syiling Tidak Cukup')
+    const [fg, bg] = await btn.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return [s.color, s.backgroundColor]
+    })
+    expect(contrast(parseRgb(fg), parseRgb(bg))).toBeGreaterThanOrEqual(4.5)
   })
 
   // B06 (79b5fa2dc) replaced the dark hero gradients by plain cards, so the check is readability on

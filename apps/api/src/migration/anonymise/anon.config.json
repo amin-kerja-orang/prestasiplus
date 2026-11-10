@@ -62,7 +62,8 @@
       "teacher_id": "keep",
       "school_id": "keep",
       "subject_id": "keep",
-      "session_year": "keep"
+      "session_year": "keep",
+      "education_level_id": "keep"
     },
     "classroom_student": {
       "classroom_id": "keep",
@@ -262,6 +263,7 @@
     },
     "gifts": {
       "name": "keep",
+      "category": "keep",
       "price_rm": "keep",
       "price_token": "keep",
       "cost_value_sen": "keep",
@@ -272,6 +274,7 @@
     "gift_redemptions": {
       "gift_id": "keep",
       "user_id": "keep",
+      "token_spent": "keep",
       "status": "keep"
     },
     "teacher_badges": {
@@ -374,6 +377,8 @@
       "slug": "slug-from-id",
       "category": "keep",
       "title": "redact-pii",
+      "body": "redact-pii",
+      "education_level_id": "keep",
       "views": "keep",
       "is_published": "keep",
       "author_id": "keep"
@@ -381,7 +386,9 @@
     "notes": {
       "title": "keep",
       "note_type": "keep",
-      "body": "keep",
+      "subject_id": "keep",
+      "education_level_id": "keep",
+      "body": "redact-pii",
       "views": "keep",
       "is_published": "keep"
     },
@@ -404,6 +411,7 @@
     "support_tickets": {
       "user_id": "keep",
       "subject": "scrub-text",
+      "body": "scrub-text",
       "status": "keep",
       "admin_reply": "scrub-text"
     },
@@ -564,7 +572,14 @@
       "status": "keep",
       "body": "redact-pii",
       "explanation": "redact-pii",
-      "image_path": "pseudonym:path"
+      "image_path": "pseudonym:path",
+      "compliance_status": "keep",
+      "source": "keep",
+      "dskp_tagged": "keep",
+      "external_ref": "redact-pii",
+      "source_pdf_path": "pseudonym:path",
+      "created_by": "keep",
+      "approved_by": "keep"
     },
     "question_options": {
       "question_id": "keep",
@@ -576,23 +591,32 @@
     "structured_questions": {
       "subject_id": "keep",
       "status": "keep",
-      "stimulus": "redact-pii"
+      "stimulus": "redact-pii",
+      "education_level_id": "keep",
+      "kbat_level": "keep",
+      "total_marks": "keep",
+      "created_by": "keep"
     },
     "structured_sub_questions": {
       "structured_question_id": "keep",
       "number": "keep",
-      "marks": "keep"
+      "marks": "keep",
+      "body": "redact-pii",
+      "scheme": "redact-pii"
     },
     "structured_rubric_points": {
       "structured_sub_question_id": "keep",
       "marks": "keep",
-      "text": "keep"
+      "text": "keep",
+      "code": "keep",
+      "position": "keep"
     },
     "pksk_questions": {
       "bahagian": "keep",
       "domain": "keep",
       "body": "keep",
-      "status": "keep"
+      "status": "keep",
+      "education_level_id": "keep"
     },
     "question_reports": {
       "question_id": "keep",
@@ -615,7 +639,11 @@
       "sort_order": "keep"
     },
     "spm_sets": {
-      "subject_id": "keep"
+      "subject_id": "keep",
+      "year": "keep",
+      "set_number": "keep",
+      "kind": "keep",
+      "target_count": "keep"
     },
     "spm_set_question": {
       "spm_set_id": "keep",
@@ -624,51 +652,94 @@
     },
     "exam_papers": {
       "status_id": "keep",
-      "title": "keep"
+      "title": "keep",
+      "subject_id": "keep",
+      "kertas": "keep",
+      "cover_code": "keep",
+      "is_composite": "keep",
+      "duration_minutes": "keep",
+      "instructions": "redact-pii",
+      "reference_assets": "scrub-json",
+      "import_issues": "redact-pii",
+      "created_by": "keep"
     },
     "paper_sections": {
       "exam_paper_id": "keep",
       "label": "keep",
       "position": "keep",
-      "selection_rule_id": "keep"
+      "selection_rule_id": "keep",
+      "instruction_text": "redact-pii",
+      "select_count": "keep",
+      "mark_budget": "keep",
+      "paper_document_id": "keep"
     },
     "exam_questions": {
       "source_paper_id": "keep",
       "exam_paper_id": "keep",
       "paper_section_id": "keep",
       "status_id": "keep",
-      "number_label": "keep"
+      "number_label": "keep",
+      "position": "keep",
+      "stem": "redact-pii",
+      "chapter_id": "keep",
+      "topic": "redact-pii",
+      "difficulty": "keep"
     },
     "exam_paper_questions": {
       "exam_question_id": "keep",
-      "paper_section_id": "keep"
+      "paper_section_id": "keep",
+      "sort_order": "keep",
+      "number_label": "keep",
+      "marks_override": "keep"
     },
     "question_stimulus": {
       "exam_question_id": "keep",
-      "stimulus_id": "keep"
+      "stimulus_id": "keep",
+      "position": "keep"
     },
     "question_parts": {
       "exam_question_id": "keep",
       "answer_mode_id": "keep",
-      "marks": "keep"
+      "marks": "keep",
+      "parent_part_id": "keep",
+      "position": "keep",
+      "label": "keep",
+      "prompt": "redact-pii",
+      "word_limit": "keep",
+      "config": "scrub-json",
+      "stimulus_id": "keep"
     },
     "part_options": {
       "question_part_id": "keep",
       "label": "keep",
-      "body": "redact-pii"
+      "body": "redact-pii",
+      "is_correct": "keep",
+      "is_distractor": "keep",
+      "position": "keep"
     },
     "part_answer_keys": {
       "question_part_id": "keep",
       "answer_key_kind_id": "keep",
-      "content": "redact-pii"
+      "content": "redact-pii",
+      "marks": "keep"
     },
     "stimuli": {
       "stimulus_kind_id": "keep",
-      "body": "redact-pii"
+      "body": "redact-pii",
+      "editor_json": "redact-pii",
+      "asset_id": "keep",
+      "caption": "redact-pii",
+      "source_citation": "redact-pii",
+      "meta": "scrub-json"
     },
     "media_assets": {
       "path": "pseudonym:path",
-      "kind": "keep"
+      "kind": "keep",
+      "alt": "redact-pii",
+      "width": "keep",
+      "height": "keep",
+      "source_ref": "null-content",
+      "sha": "keep"
     },
     "question_revisions": {
       "exam_question_id": "keep"
@@ -682,7 +753,15 @@
       "file_hash": "keep",
       "year": "keep",
       "exam_board_id": "keep",
-      "exam_type_id": "keep"
+      "exam_type_id": "keep",
+      "subject_id": "keep",
+      "paper_code": "keep",
+      "kertas": "keep",
+      "duration_minutes": "keep",
+      "is_marking_scheme": "keep",
+      "source_kind": "keep",
+      "needs_review": "keep",
+      "import_issues": "redact-pii"
     },
     "import_batches": {
       "status": "keep"
@@ -703,19 +782,46 @@
       "legacy_id": "keep",
       "reason": "keep"
     },
-    "paper_documents": {},
+    "paper_documents": {
+      "subject_id": "keep",
+      "kertas": "keep",
+      "title": "keep",
+      "negeri": "keep",
+      "year": "keep",
+      "source_file": "keep",
+      "duration_minutes": "keep",
+      "marks_total": "keep",
+      "page_count": "keep",
+      "scheme_page_count": "keep",
+      "published_at": "keep"
+    },
     "paper_document_pages": {
       "paper_document_id": "keep",
-      "position": "keep"
+      "kind": "keep",
+      "position": "keep",
+      "path": "pseudonym:path",
+      "sha": "keep",
+      "width": "keep",
+      "height": "keep"
     },
     "paper_blueprints": {
-      "subject_id": "keep"
+      "subject_id": "keep",
+      "kertas": "keep",
+      "paper_code": "keep",
+      "duration_minutes": "keep",
+      "total_marks": "keep",
+      "auto_markable": "keep",
+      "source": "keep"
     },
     "blueprint_sections": {
       "paper_blueprint_id": "keep",
       "label": "keep",
       "position": "keep",
-      "selection_rule_id": "keep"
+      "selection_rule_id": "keep",
+      "instruction": "redact-pii",
+      "select_count": "keep",
+      "mark_budget": "keep",
+      "expected_answer_modes": "keep"
     },
     "teacher_reference_documents": {
       "teacher_id": "keep"
@@ -731,6 +837,40 @@
     },
     "selection_rules": {
       "slug": "keep"
+    },
+    "school_battle_rankings": {
+      "school_id": "keep",
+      "battles_played": "keep",
+      "wins": "keep",
+      "draws": "keep",
+      "losses": "keep",
+      "accuracy": "keep",
+      "score": "keep"
+    },
+    "personal_access_tokens": {
+      "tokenable_type": "keep",
+      "tokenable_id": "keep",
+      "last_used_at": "keep",
+      "expires_at": "keep"
+    },
+    "jobs": {
+      "queue": "keep",
+      "attempts": "keep"
+    },
+    "failed_jobs": {
+      "queue": "keep",
+      "failed_at": "keep"
+    },
+    "job_batches": {
+      "total_jobs": "keep",
+      "pending_jobs": "keep",
+      "failed_jobs": "keep"
+    },
+    "cache": {
+      "expiration": "keep"
+    },
+    "cache_locks": {
+      "expiration": "keep"
     }
   }
 }

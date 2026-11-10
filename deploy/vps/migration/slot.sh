@@ -96,6 +96,15 @@ check_out_dir() {
   [ "$got" = "$want" ] || pp_die "PP_MIGRATION_OUT $out_dir is $got, needs owner:mode $want: sudo install -d -o ${want%:*} -g ${want%:*} -m 700 $out_dir" 3
 }
 
+# apifiles_volume_names -> the api uploads volume of THIS compose project (the project of the running db container; on a host
+# that runs several compose projects the label of the volume name alone is not unique).
+apifiles_volume_names() {
+  local cid proj
+  cid="$(pp_compose ps -q db | head -n1)"
+  proj="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$cid" 2>/dev/null || true)"
+  docker volume ls -q --filter label=com.docker.compose.volume=apifiles ${proj:+--filter label=com.docker.compose.project=$proj}
+}
+
 # migrate_run ENV_ARGS... -- COMMAND...: the migrate image, on the compose network, with the reports volume.
 RUN_EXTRA=()   # extra `compose run` arguments of the current command (mounts), set by cmd_etl
 migrate_run() {
@@ -333,8 +342,8 @@ cmd_wipe_dump() {
 cmd_etl() {
   local c="${1:-}"; [ $# -eq 0 ] || shift
   case "$c" in
-    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:questions|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
-    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:questions | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
+    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:questions|migrate:structured|migrate:papers|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
+    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:questions | migrate:structured | migrate:papers | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
   esac
   local a apply=0 envs=(NODE_ENV=production "PP_MIGRATE_TARGET_DB=$target_db") argv=() files_host="" files_seen=0 out_given=0 i=0
   local args=("$@")
@@ -382,7 +391,7 @@ cmd_etl() {
     RUN_EXTRA+=(-v "$files_host:/files:ro")
     if [ "$apply" = 1 ]; then
       # An apply copies the files into the v2 file storage = the volume of the api (cutover plan P5, FILE_STORAGE_DIR).
-      local vol; vol="$(docker volume ls -q --filter label=com.docker.compose.volume=apifiles)"
+      local vol; vol="$(apifiles_volume_names)"
       [ -n "$vol" ] && [ "$(wc -l <<<"$vol")" = 1 ] || pp_die "cannot find the api uploads volume (compose volume apifiles) exactly once: $(wc -l <<<"$vol") found" 3
       RUN_EXTRA+=(-v "$vol:/var/lib/pretasiplus/files")
       envs+=(FILE_STORAGE_DIR=/var/lib/pretasiplus/files)
@@ -403,7 +412,14 @@ cmd_etl() {
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
   local t0=$SECONDS rc=0
   pp_log "etl: $c ${argv[*]} (env: ${envs[*]})"
-  migrate_run "${envs[@]}" -- npm run "$c" -w @pp/api -- ${argv[@]+"${argv[@]}"} || rc=$?
+  # migrate:structured and migrate:papers have no npm alias yet (T-B9, T-B10): their kit entry points are run through tsx.
+  # (An alias added later does not change this: the entry point file is the stable contract.)
+  local runner=(npm run "$c" -w @pp/api --)
+  case "$c" in
+    migrate:structured) runner=(npm exec -w @pp/api -- tsx src/migration/load/questions/structured-cli.ts) ;;
+    migrate:papers) runner=(npm exec -w @pp/api -- tsx src/migration/load/papers/cli.ts) ;;
+  esac
+  migrate_run "${envs[@]}" -- "${runner[@]}" ${argv[@]+"${argv[@]}"} || rc=$?
   pp_log "ETL STEP $c exit=$rc duration_s=$((SECONDS - t0)) (reports in $out_dir)"
   return "$rc"
 }

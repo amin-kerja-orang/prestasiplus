@@ -2,7 +2,7 @@
 /** The five stat cards (FR-M05-10, 11): Syiling Kamu, Mata (Lvl n), Hari Berturut, Sesi Minggu Ini, Ketepatan. */
 import { computed } from 'vue'
 
-import { DsStatTile } from '@/ds'
+import { DsStatTile, tileLayout } from '@/ds'
 
 import type { Dashboard } from '../../api/types'
 import { accuracyDisplay, COUNT_RULES } from '../dashboard/dashboard-lib'
@@ -22,19 +22,24 @@ const accuracy = useDisplayCount(
 const accuracyText = computed(() =>
   props.accuracyPct === null ? accuracyDisplay(null) : `${accuracy.value}%`,
 )
+
+// Five tiles: 1 + 2 + 2 below md, 3 + 2 at md, five across at xl (no orphan cell).
+const layout = tileLayout(5)
 </script>
 
 <template>
   <ul
-    class="grid grid-cols-2 gap-3 md:grid-cols-3"
+    class="grid gap-3"
+    :class="layout.grid"
     aria-label="Statistik awak"
     data-testid="dash-stats"
   >
-    <li class="min-w-0" data-testid="dash-stat-coins">
-      <DsStatTile :value="coins" unit="Syiling Kamu" icon="coins" accent="win" />
+    <li class="min-w-0" :class="layout.span[0]" data-testid="dash-stat-coins">
+      <DsStatTile class="h-full" :value="coins" unit="Syiling Kamu" icon="coins" accent="win" />
     </li>
-    <li class="min-w-0" data-testid="dash-stat-points">
+    <li class="relative min-w-0" :class="layout.span[1]" data-testid="dash-stat-points">
       <DsStatTile
+        class="h-full pb-8"
         :value="points"
         :unit="`Mata (Lvl ${wallet.level})`"
         icon="lightning"
@@ -44,24 +49,26 @@ const accuracyText = computed(() =>
         :model-value="wallet.levelProgressPct"
         :max="100"
         size="sm"
-        class="mt-2"
+        class="absolute inset-x-4 bottom-3 w-auto!"
         aria-label="Kemajuan tahap"
         data-testid="dash-level-bar"
       />
     </li>
-    <li class="min-w-0" data-testid="dash-stat-streak">
-      <DsStatTile :value="streak" unit="Hari Berturut" icon="fire" accent="heat" />
+    <li class="min-w-0" :class="layout.span[2]" data-testid="dash-stat-streak">
+      <DsStatTile class="h-full" :value="streak" unit="Hari Berturut" icon="fire" accent="heat" />
     </li>
-    <li class="min-w-0" data-testid="dash-stat-sessions">
+    <li class="min-w-0" :class="layout.span[3]" data-testid="dash-stat-sessions">
       <DsStatTile
+        class="h-full"
         :value="sessions"
         unit="Sesi Minggu Ini"
         icon="books"
         accent="friend"
       />
     </li>
-    <li class="col-span-2 min-w-0 md:col-span-1" data-testid="dash-stat-accuracy">
+    <li class="min-w-0" :class="layout.span[4]" data-testid="dash-stat-accuracy">
       <DsStatTile
+        class="h-full"
         :value="accuracyText"
         unit="Ketepatan"
         icon="star"

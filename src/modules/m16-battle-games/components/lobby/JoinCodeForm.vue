@@ -8,7 +8,7 @@
  */
 import { ref } from 'vue'
 
-import type { RoomColor } from './lobby-config'
+import { ROOM_CODE_INVALID, ROOM_CODE_PATTERN, type RoomColor } from './lobby-config'
 
 defineProps<{
   heading: string
@@ -26,13 +26,22 @@ defineProps<{
 const emit = defineEmits<{ submit: [code: string] }>()
 
 const code = ref('')
+/** ERR-GAME-06 (inline): shown when the code is not 6 characters A-Z0-9; no request is sent. */
+const invalid = ref(false)
 
 function onInput(e: Event): void {
   code.value = (e.target as HTMLInputElement).value.toUpperCase()
+  invalid.value = false
 }
 
 function onSubmit(): void {
-  emit('submit', code.value.trim().toUpperCase())
+  const value = code.value.trim().toUpperCase()
+  if (!ROOM_CODE_PATTERN.test(value)) {
+    invalid.value = true
+    return
+  }
+  invalid.value = false
+  emit('submit', value)
 }
 </script>
 
@@ -45,7 +54,7 @@ function onSubmit(): void {
       data-testid="join-form"
       @submit.prevent="onSubmit"
     >
-      <UFormField :label="label" class="min-w-0 flex-1">
+      <UFormField :label="label" :error="invalid ? ROOM_CODE_INVALID : undefined" class="min-w-0 flex-1">
         <UInput
           :model-value="code"
           type="text"
@@ -53,6 +62,7 @@ function onSubmit(): void {
           maxlength="6"
           autocomplete="off"
           :required="required"
+          :aria-invalid="invalid"
           :placeholder="placeholder"
           size="xl"
           class="w-full"

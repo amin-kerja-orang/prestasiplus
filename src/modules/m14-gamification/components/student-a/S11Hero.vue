@@ -29,7 +29,11 @@ const titleChip = computed(() =>
   <UCard data-testid="s11-hero">
     <div class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex min-w-0 items-center gap-3 sm:gap-4">
+        <div class="flex min-w-0 flex-col items-start gap-2">
+          <UBadge variant="soft" color="primary" data-testid="s11-title-chip">{{
+            titleChip
+          }}</UBadge>
+          <div class="flex min-w-0 items-center gap-3 sm:gap-4">
           <UAvatar
             :text="wallet.tier.icon"
             size="3xl"
@@ -37,9 +41,6 @@ const titleChip = computed(() =>
             data-testid="s11-tier-icon"
           />
           <div class="flex min-w-0 flex-col items-start gap-1">
-            <UBadge variant="soft" color="primary" data-testid="s11-title-chip">{{
-              titleChip
-            }}</UBadge>
             <h1
               class="font-display text-title font-extrabold text-highlighted"
               data-testid="s11-tier-name"
@@ -47,6 +48,7 @@ const titleChip = computed(() =>
               {{ wallet.tier.labelMs }} Tier
             </h1>
             <p class="text-label text-muted" data-testid="s11-level">Level {{ wallet.level }}</p>
+          </div>
           </div>
         </div>
         <div class="flex shrink-0 gap-4 text-center">

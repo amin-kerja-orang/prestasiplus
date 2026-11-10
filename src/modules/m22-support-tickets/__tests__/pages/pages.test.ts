@@ -19,6 +19,7 @@ const api = vi.hoisted(() => ({
   fetchTickets: vi.fn(),
   createTicket: vi.fn(),
   fetchQueue: vi.fn(),
+  fetchSupportContact: vi.fn(),
   fetchSupportSettings: vi.fn(),
   saveSupportSettings: vi.fn(),
   fetchTicketDetail: vi.fn(),
@@ -26,6 +27,11 @@ const api = vi.hoisted(() => ({
   replyToTicket: vi.fn(),
 }))
 vi.mock('../../api/tickets', () => api)
+const session = vi.hoisted(() => ({ role: 'student' }))
+vi.mock('@/composables/useSession', async () => {
+  const { computed } = await import('vue')
+  return { useSession: () => ({ role: computed(() => session.role), isLoggedIn: computed(() => true) }) }
+})
 
 const ticket = (over: Partial<Ticket> = {}): Ticket => ({
   id: 1,
@@ -37,7 +43,19 @@ const ticket = (over: Partial<Ticket> = {}): Ticket => ({
   createdAt: '2026-09-24T10:12:00+08:00',
   ...over,
 })
-const list = (data: Ticket[], total = data.length): TicketList => ({ data, meta: { total } })
+const list = (data: Ticket[], total = data.length): TicketList => ({
+  data,
+  meta: {
+    total,
+    counts: [
+      { status: 'dibuka', count: total },
+      { status: 'dalam_proses', count: 0 },
+      { status: 'menunggu_balas', count: 0 },
+      { status: 'selesai', count: 0 },
+      { status: 'ditutup', count: 0 },
+    ],
+  },
+})
 
 async function open(path: string, comp: object): Promise<{ w: VueWrapper; router: Router }> {
   const router = createRouter({
@@ -64,6 +82,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-09-25T15:40:00+08:00'))
   for (const f of Object.values(api)) f.mockReset()
+  session.role = 'student'
 })
 
 describe('routes (FR-M22-01, 28, 36, 27)', () => {
@@ -103,12 +122,12 @@ describe('S1 list (AC-M22-01, 02, 03, 05)', () => {
     expect(tid(w, 'tk-total').text()).toBe('Jumlah tiket: 2')
     const tabs = w.findAll('[data-testid="tk-tabs"] a')
     expect(tabs.map((a) => a.text())).toEqual([
-      'Semua',
-      'Dibuka',
-      'Dalam Proses',
-      'Menunggu Balas',
-      'Selesai',
-      'Ditutup',
+      'Semua (2)',
+      'Dibuka (2)',
+      'Dalam Proses (0)',
+      'Menunggu Balas (0)',
+      'Selesai (0)',
+      'Ditutup (0)',
     ])
     expect(tabs.map((a) => a.attributes('href'))).toEqual([
       '/pusat-tuisyen/tiket',
@@ -529,16 +548,62 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
   })
 })
 
-describe('S3 settings (R1-ADM-N-07)', () => {
-  const contact = { email: 'sokongan@demo.test', phone: '', whatsapp: '60100000000', hours: '' }
+describe('S1 chips and contact block (S7-T10, rulings on #508)', () => {
+  it('chips show "{label} ({n})" from meta.counts for every status', async () => {
+    api.fetchTickets.mockResolvedValue(list([ticket()], 1))
+    const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(w.findAll('[data-testid="tk-tabs"] a').map((a) => a.text())).toEqual([
+      'Semua (1)',
+      'Dibuka (1)',
+      'Dalam Proses (0)',
+      'Menunggu Balas (0)',
+      'Selesai (0)',
+      'Ditutup (0)',
+    ])
+  })
 
-  it('shows the section with the saved values and no field for hours', async () => {
+  it('a pupil gets no contact block and makes no contact request', async () => {
+    session.role = 'student'
+    api.fetchTickets.mockResolvedValue(list([], 0))
+    const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(tid(w, 'tk-contact').exists()).toBe(false)
+    expect(api.fetchSupportContact).not.toHaveBeenCalled()
+  })
+
+  it.each(['teacher', 'school_admin'])('%s sees the block with the links that have a value', async (role) => {
+    session.role = role
+    api.fetchTickets.mockResolvedValue(list([], 0))
+    api.fetchSupportContact.mockResolvedValue({ email: 'sokongan@demo.test', whatsapp: '' })
+    const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(tid(w, 'tk-contact').text()).toContain('Hubungi pasukan sokongan kami')
+    expect(tid(w, 'tk-contact-email').attributes('href')).toBe('mailto:sokongan@demo.test')
+    expect(tid(w, 'tk-contact-whatsapp').exists()).toBe(false)
+  })
+
+  it('all values empty or a failed call hides the block, with no error', async () => {
+    session.role = 'teacher'
+    api.fetchTickets.mockResolvedValue(list([], 0))
+    api.fetchSupportContact.mockResolvedValue({ email: '', whatsapp: '' })
+    const a = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(tid(a.w, 'tk-contact').exists()).toBe(false)
+    api.fetchSupportContact.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
+    const b = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(tid(b.w, 'tk-contact').exists()).toBe(false)
+    expect(tid(b.w, 'tk-error').exists()).toBe(false)
+  })
+})
+
+describe('S3 settings (R1-ADM-N-07)', () => {
+  const contact = { email: 'sokongan@demo.test', phone: '', whatsapp: '60100000000', hours: 'Isnin - Jumaat' }
+
+  it('shows the section with the saved values', async () => {
     api.fetchSupportSettings.mockResolvedValue(contact)
     const { w } = await open('/admin/settings', AdminSettingsPage)
     expect(w.text()).toContain('Hubungi Sokongan')
     expect(w.text()).toContain('E-mel sokongan')
     expect(w.text()).toContain('Telefon / WhatsApp sokongan')
-    expect(w.text()).not.toContain('Waktu perkhidmatan')
+    expect(w.text()).toContain('Waktu perkhidmatan')
+    expect((tid(w, 'st-hours').element as HTMLInputElement).value).toBe(contact.hours)
     expect((tid(w, 'st-email').element as HTMLInputElement).value).toBe(contact.email)
     expect((tid(w, 'st-whatsapp').element as HTMLInputElement).value).toBe(contact.whatsapp)
     expect(tid(w, 'st-save').text()).toBe('Simpan Tetapan')
@@ -551,7 +616,11 @@ describe('S3 settings (R1-ADM-N-07)', () => {
     await tid(w, 'st-email').setValue('bantuan@demo.test')
     await tid(w, 'st-form').trigger('submit')
     await flushPromises()
-    expect(api.saveSupportSettings).toHaveBeenCalledWith({ email: 'bantuan@demo.test', whatsapp: contact.whatsapp })
+    expect(api.saveSupportSettings).toHaveBeenCalledWith({
+      email: 'bantuan@demo.test',
+      whatsapp: contact.whatsapp,
+      hours: contact.hours,
+    })
     expect(tid(w, 'st-flash').text()).toContain('Tetapan disimpan.')
   })
 

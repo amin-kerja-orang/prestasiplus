@@ -270,11 +270,19 @@ describe('filters, pinned versions and the contributor', () => {
     expect((await c.source.versions([{ questionId: id, versionNo: 1 }])).size).toBe(1)
   })
 
-  it('a stimulus-group MCQ (seeded) is never served: the practice screen cannot show its stimulus', async () => {
-    const grouped = (await c.t.db.query<{ id: string }>(`select question_id::text id from question_versions where number_label = 'SEED-GRP-PASAR-1'`))[0]?.id as string
+  it('a stimulus-group MCQ (seeded) is served WHOLE on a drill surface (D105, T-C13) and never on a mode with no drill surface', async () => {
+    const ids = (await c.t.db.query<{ id: string }>(`select question_id::text id from question_versions where number_label like 'SEED-GRP-PASAR-%' order by number_label`)).map((r) => r.id)
+    const grouped = ids[0] as string
+    // Ramalan / Misi ask with no surface: text-only, the group is refused.
     expect((await c.source.live([grouped])).size).toBe(0)
+    // A drill surface serves every member with the rajah.
+    const live = await c.source.live(ids, 'bab')
+    expect([...live.keys()].sort()).toEqual([...ids].sort())
+    for (const q of live.values()) expect(q.stimuli?.length).toBeGreaterThan(0)
     const subject = (await c.t.db.query<{ id: string }>(`select subject_id::text id from question_versions where number_label = 'SEED-GRP-PASAR-1'`))[0]?.id as string
-    expect(await c.source.sample({ subjectId: subject }, 1000, prngStream('g'))).not.toContain(grouped)
+    const drawn = await c.source.sample({ subjectId: subject }, 1000, prngStream('g'))
+    // Whole group or none, never a single member.
+    expect(ids.filter((id) => drawn.includes(id)).length === 0 || ids.every((id) => drawn.includes(id))).toBe(true)
   })
 
   it('contributor: a teacher creator is "Soalan oleh:" with a null profileUrl; an admin creator is null', async () => {

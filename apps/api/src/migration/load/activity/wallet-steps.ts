@@ -31,16 +31,6 @@ export const idOf = (row: StagedRow): string => {
   return id
 }
 
-/** The v2 user ids (text) in `userIds` that hold the student role. */
-export async function studentUsers(ctx: BatchContext, userIds: readonly string[]): Promise<Set<string>> {
-  if (userIds.length === 0) return new Set()
-  const res = await ctx.db.query<{ id: string }>(
-    `SELECT DISTINCT user_id::text AS id FROM user_roles WHERE role = 'student' AND user_id = ANY($1::bigint[])`,
-    [[...new Set(userIds)]],
-  )
-  return new Set(res.rows.map((r) => r.id))
-}
-
 // ---------------------------------------------------------------- wallets
 
 export function walletsStep(a: ActivityContext): AnyEntityStep {
@@ -55,14 +45,12 @@ export function walletsStep(a: ActivityContext): AnyEntityStep {
       // Tiers are registered by the catalogue group under the entity name `tiers`. A tier that was not adopted (no seeded
       // match, rejected UNSUPPORTED there) leaves the wallet with a null tier: it is counted, never dropped.
       const tiers = await ctx.idMap.resolveMany('tiers', distinctValues(rows, 'gamification_tier_id'))
-      const students = await studentUsers(ctx, [...users.values()])
       const items: { legacyId: string; values: WalletValues; tierUnmapped: boolean }[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
         const userId = resolveFk(row.user_id, users) ?? undefined
         const out = transformWallet(row, {
           userId,
-          isStudent: userId !== undefined && students.has(userId),
           tierId: resolveFk(row.gamification_tier_id, tiers),
         })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
@@ -95,12 +83,11 @@ export function coinLedgerStep(a: ActivityContext): AnyEntityStep {
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const users = await ctx.idMap.resolveMany('users', distinctValues(rows, 'user_id'))
-      const students = await studentUsers(ctx, [...users.values()])
       const items: LegacyRow[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
         const userId = resolveFk(row.user_id, users) ?? undefined
-        const out = transformLedger(row, { userId, isStudent: userId !== undefined && students.has(userId) })
+        const out = transformLedger(row, { userId })
         if (!out.ok) {
           rejectRow(ctx, entity, legacyId, out.reject)
           // A wrong sign is reported by count: the row is never flipped (AC3).

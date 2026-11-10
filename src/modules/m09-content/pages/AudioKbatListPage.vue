@@ -119,7 +119,7 @@ function reset(): void {
         v-model="levelModel"
         :items="levelItems"
         name="education_level_id"
-        class="w-full md:w-56"
+        class="w-full"
         aria-label="Tahap"
         data-testid="filter-level"
       />
@@ -127,7 +127,7 @@ function reset(): void {
         v-model="subjectModel"
         :items="subjectItems"
         name="subject_id"
-        class="w-full md:w-56"
+        class="w-full"
         aria-label="Subjek"
         data-testid="filter-subject"
       />

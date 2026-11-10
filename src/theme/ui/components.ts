@@ -21,14 +21,40 @@ export const disabledState =
 /** Floating panel (menus, selects, popovers): raised layer, no line, one step below modals. */
 const panel = 'z-50 rounded-lg bg-default p-1.5 shadow-modal ring-0'
 
-/** Menu / listbox row shared by dropdown, select, input menu and command palette. */
+/**
+ * Menu / listbox row shared by dropdown, select, input menu and command palette. Keyboard focus is the
+ * highlighted fill (Reka moves `data-highlighted` with the arrow keys), never an outline: the menu
+ * focuses its first row on open, and an outline there drew a thick off-centre frame (PO 2026-11-09).
+ */
 const item = [
   'min-h-11 gap-2.5 rounded-sm px-3 py-2 text-label transition-colors duration-fast before:inset-0 before:rounded-sm md:min-h-10',
-  'data-highlighted:before:bg-elevated data-[state=open]:before:bg-elevated',
+  'data-highlighted:before:bg-elevated data-highlighted:not-data-disabled:before:bg-elevated data-[state=open]:before:bg-elevated',
   'data-[state=checked]:text-primary-t',
+  'outline-none',
   disabledState,
-  focusInset,
 ].join(' ')
+
+/**
+ * Nuxt UI applies its size variants (p-1.5 text-sm gap-1.5) and its active variant (before:bg-elevated/50)
+ * AFTER the slot classes, so a slot-only override loses (measured: 6px padding, 14px text, 50% highlight).
+ * The same row metrics are therefore repeated in every size variant; the label row shares the row's
+ * left edge (px-3) so headings and icons line up.
+ */
+const itemSize = 'min-h-11 gap-2.5 px-3 py-2 text-label md:min-h-10'
+const labelSize = 'gap-2.5 px-3 py-2 text-overline'
+const sizes = ['xs', 'sm', 'md', 'lg', 'xl'] as const
+export const menuSizeVariants = Object.fromEntries(
+  sizes.map((s) => [s, { item: itemSize, label: labelSize }]),
+)
+export const menuVariants = {
+  size: menuSizeVariants,
+  active: {
+    true: { item: 'before:bg-elevated' },
+    false: {
+      item: 'data-highlighted:before:bg-elevated data-highlighted:not-data-disabled:before:bg-elevated data-[state=open]:before:bg-elevated',
+    },
+  },
+}
 
 const menuSlots = {
   content: panel,
@@ -134,7 +160,7 @@ export const componentDefaults = {
     },
   },
 
-  dropdownMenu: { slots: menuSlots },
+  dropdownMenu: { slots: menuSlots, variants: menuVariants },
 
   popover: {
     slots: {
@@ -254,6 +280,7 @@ export const componentDefaults = {
       itemDescription: 'text-caption text-muted',
       footer: 'p-1.5',
     },
+    variants: menuVariants,
   },
 
   collapsible: {

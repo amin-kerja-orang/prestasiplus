@@ -431,7 +431,25 @@ export interface QuizQuestion {
   contributor: { name: string; profileUrl: string | null } | null
   /** "Rujukan" link of a personal question in a mission (FR-GUR-44a-9). */
   referenceUrl?: string | null
-  options: { id: number; label: string; text: string }[]
+  options: { id: number; label: string; text: string; /** File token URL of an option picture (T-C13). */ imageUrl?: string }[]
+  /** Rajah, petikan or jadual shown with the question, on every member of a group (T-C13, D105). */
+  stimuli?: QuizStimulus[]
+  /** Place of the question in its stimulus group, members contiguous and in order (D90). */
+  group?: { id: string; index: number; size: number } | null
+}
+
+/** The wire stimulus of a drill question (contract `PracticeQuizStimulus`). */
+export interface QuizStimulus {
+  id: string
+  kind: 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph'
+  label: string
+  title?: string
+  caption?: string
+  alt: string
+  text?: string
+  source?: string
+  table?: { head: string[]; rows: string[][] }
+  image?: { url: string }
 }
 
 export interface StartSessionResponse {

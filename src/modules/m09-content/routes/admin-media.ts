@@ -24,9 +24,9 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/banners',
     name: MEDIA_ROUTES.bannerList,
     component: () => import('../pages/BannerListPage.vue'),
-    meta: meta('Pengurusan Banner - Admin PRESTASIPLUS', {
-      title: 'Pengurusan Banner',
-      subtitle: 'Urus banner promosi dan pengumuman',
+    meta: meta('Banner', {
+      title: 'Banner',
+      subtitle: 'Pengurusan banner',
     }),
   },
   {
@@ -62,7 +62,7 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/audio-kbat',
     name: MEDIA_ROUTES.audioList,
     component: () => import('../pages/AudioSetListPage.vue'),
-    meta: meta('Set Audio KBAT', { title: 'Set Audio KBAT' }),
+    meta: meta('Audio KBAT', { title: 'Audio KBAT', subtitle: 'Pustaka audio KBAT' }),
   },
   {
     path: '/admin/audio-kbat/create',
@@ -75,22 +75,22 @@ const routes: RouteRecordRaw[] = [
     name: MEDIA_ROUTES.audioTemplate,
     component: () => import('../pages/AudioTemplatePage.vue'),
     props: { format: 'xlsx' },
-    meta: meta('Set Audio KBAT', { title: 'Set Audio KBAT' }),
+    meta: meta('Audio KBAT', { title: 'Audio KBAT', subtitle: 'Pustaka audio KBAT' }),
   },
   {
     path: '/admin/audio-kbat/template-word',
     name: MEDIA_ROUTES.audioTemplateWord,
     component: () => import('../pages/AudioTemplatePage.vue'),
     props: { format: 'docx' },
-    meta: meta('Set Audio KBAT', { title: 'Set Audio KBAT' }),
+    meta: meta('Audio KBAT', { title: 'Audio KBAT', subtitle: 'Pustaka audio KBAT' }),
   },
   {
     path: '/admin/tools/screenshots',
     name: MEDIA_ROUTES.screenshots,
     component: () => import('../pages/ScreenshotsPage.vue'),
-    meta: meta('Upload Screenshot - Admin PRESTASIPLUS', {
-      title: 'Upload Screenshot',
-      subtitle: 'Tool admin untuk upload & urus gambar (private)',
+    meta: meta('Alat — Tangkap Skrin', {
+      title: 'Alat — Tangkap Skrin',
+      subtitle: 'Muat naik & urus fail gambar',
     }),
   },
 ]

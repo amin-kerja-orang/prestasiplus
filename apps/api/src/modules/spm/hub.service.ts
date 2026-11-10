@@ -263,8 +263,8 @@ export class SpmHubService {
     if ((BAHASA_CODES as readonly string[]).includes(s.code)) {
       return { redirect: `/latihan-berstruktur?subject_id=${s.subjectId}&scope=spm&track=bahasa` }
     }
-    const sets = await this.tracking.setsOf(s.subjectId, TRACKING_YEAR)
-    const startable = sets.filter((x) => isStartable(x.status))
+    // D-14: every year, year descending then set number.
+    const sets = await this.tracking.setsOf(s.subjectId)
     return {
       code: s.code,
       name: s.name,
@@ -279,8 +279,9 @@ export class SpmHubService {
         readyQuestions: sumReady(sets),
         belumCukup: sets.filter((x) => x.status === 'belum_cukup').length,
       },
-      // Startable first, then locked, each by set number (FR-M06-49).
-      sets: [...startable, ...sets.filter((x) => !isStartable(x.status))].map((x) => ({
+      // FR-MUR-13-18, AC-MUR-13-11: a set that is not complete is not listed (D-18).
+      sets: sets.filter((x) => isStartable(x.status)).map((x) => ({
+        year: x.year,
         setNo: x.setNo,
         status: x.status,
         readyCount: x.readyCount,

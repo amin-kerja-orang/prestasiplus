@@ -10,7 +10,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useFriend } from '@/composables/useFriend'
 import { DsFloatScore, DsFriendAvatar, DsSpeechBubble, DsWinScreen, type WinSticker } from '@/ds'
 
+import type { QuizStimulus } from '../../api/types'
 import { resultMessage, scoreBand } from './quiz-lib'
+import { StimulusGroup } from '../../lib/question-display'
+import { toStimuliData } from './stimulus-adapter'
 import type { QuizAnswerRecord, QuizLabels } from './quiz-types'
 
 const props = defineProps<{
@@ -46,6 +49,18 @@ const band = computed(() => scoreBand(props.percent))
 const message = computed(() => resultMessage(props.percent, props.labels.messages))
 const strong = computed(() => props.percent >= 60)
 const expanded = ref(false)
+/** Questions whose rajah is open in the review: every member of a group can show it (T-C13, D90). */
+const shown = ref(new Set<number>())
+function toggleStimulus(id: number): void {
+  const next = new Set(shown.value)
+  if (!next.delete(id)) next.add(id)
+  shown.value = next
+}
+/** "Rajah 1" or "Rajah 1 dan Petikan A": the labels of the stimuli, else "Rajah". */
+function stimulusLabel(list: readonly QuizStimulus[]): string {
+  const labels = list.map((s) => s.label).filter((l) => l !== '')
+  return labels.length > 0 ? labels.join(' dan ') : list[0]?.kind === 'passage' ? 'Petikan' : 'Rajah'
+}
 
 const subtitle = computed(() =>
   props.subjectName
@@ -245,6 +260,25 @@ onMounted(() => win.value?.focus())
               >
               <div class="flex min-w-0 flex-1 flex-col gap-1">
                 <p class="text-body break-words text-highlighted">{{ answer.questionText }}</p>
+                <div v-if="answer.stimuli && answer.stimuli.length > 0" class="flex flex-col gap-2" data-testid="review-stimulus">
+                  <UButton
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                    class="min-h-11 self-start"
+                    :icon="shown.has(answer.questionId) ? 'i-ph-caret-up-bold' : 'i-ph-image-duotone'"
+                    :aria-expanded="shown.has(answer.questionId) ? 'true' : 'false'"
+                    data-testid="review-stimulus-toggle"
+                    @click="toggleStimulus(answer.questionId)"
+                    >Lihat {{ stimulusLabel(answer.stimuli) }}</UButton
+                  >
+                  <StimulusGroup
+                    v-if="shown.has(answer.questionId)"
+                    :stimuli="toStimuliData(answer.stimuli)"
+                    :hint="false"
+                    data-testid="review-stimulus-panel"
+                  />
+                </div>
                 <p class="text-body text-default">
                   <span class="text-muted">Jawapan anda:{{ ' ' }}</span>
                   <span class="break-words text-highlighted">{{ answer.selectedLabel }}</span>

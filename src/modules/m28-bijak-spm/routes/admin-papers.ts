@@ -29,15 +29,12 @@ const routes: RouteRecordRaw[] = [
       header: { title: 'Semak Soalan' },
     },
   },
+  // PRD47 Bank-lists, KS-02: the list redirects to the Databank lane (the query is dropped by design); `/:qid/sunting` Quick Edit below stays.
+  { path: '/admin/spm/soalan', name: ADMIN_ROUTES.bank, redirect: { path: '/admin/spm/databank', query: {} } },
   {
-    path: '/admin/spm/soalan',
-    name: ADMIN_ROUTES.bank,
-    component: () => import('../admin/papers/BankPage.vue'),
-    meta: {
-      ...base,
-      title: 'Bank Soalan SPM - Admin PRESTASIPLUS',
-      header: { title: 'Bank Soalan SPM', subtitle: 'Soalan SPM yang diterbitkan' },
-    },
+    // PRD30 Q-24: the pupil preview of a bank question is the Studio preview.
+    path: '/admin/spm/soalan/:qid/pratonton',
+    redirect: (to) => `/admin/studio/questions/${String(to.params.qid)}/sunting?pratonton=1`,
   },
   {
     path: '/admin/spm/soalan/:qid/sunting',

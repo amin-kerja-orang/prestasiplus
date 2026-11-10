@@ -14,10 +14,10 @@ const routes: RouteRecordRaw[] = ALL_MOUNTS.map((mount): RouteRecordRaw => ({
     roles: mount.roles,
     module: 'M12',
     v2: true,
-    title: 'Tahap 1: Reaksi — Kirkpatrick',
+    title: 'T1: Reaksi',
     header: {
-      title: 'Tahap 1: Reaksi',
-      subtitle: 'Kepuasan dan persepsi pengguna terhadap platform',
+      title: 'T1: Reaksi',
+      subtitle: 'Kirkpatrick Tahap 1 — Kepuasan pengguna',
     },
   },
 }))

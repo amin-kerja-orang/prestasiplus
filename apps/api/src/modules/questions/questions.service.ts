@@ -5,11 +5,16 @@ import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
-  QuestionPartSchema,
+  QuestionPartReadV3Schema,
   QuestionWritePartSchema,
+  CHAPTER_UNIT_MISMATCH_MESSAGE,
+  unitsOfChapter,
   type QuestionPart,
+  type QuestionSchemeRules,
+  type QuestionSchemeValidateResult,
 } from '@pp/contract'
 
+import { validateSchemeBody } from './scheme-validate'
 import { ApiError } from '../../common/errors/api-error'
 import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock } from '../../db/clock'
@@ -34,7 +39,8 @@ import {
   type FlatType,
 } from './projection'
 import { MAX_SP_NODES } from './publish-gate'
-import { gateDataOf } from './gate-data'
+import { detectStimulusFlag } from './effective-leaf'
+import { flagPartsOf, gateDataOf } from './gate-data'
 import { GATES } from './workflow/lifecycle/gates'
 import { GroupMembers } from './group-members'
 import { assertServableSomewhere } from './serving/approval-guard'
@@ -42,6 +48,8 @@ import { ServabilityService } from './serving/servability.service'
 import { BANK_ONLY, QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
+import { applyRubric, rubricSubs, type RubricSubInput, type StructuredRubricView } from './structured-rubric'
+import { deepestIssue, type UnionLike } from './issue-path'
 import type {
   AdminListFilter,
   AdminListResult,
@@ -107,39 +115,11 @@ const parse = (text: string): bigint | null => {
 
 const fail = (fields: Record<string, string>): ApiError => ApiError.of('VALIDATION_ERROR', { fields })
 
-interface FlatIssue {
-  path: PropertyKey[]
-  message: string
-}
-interface UnionLike {
-  code: string
-  path: readonly PropertyKey[]
-  message: string
-  errors?: readonly (readonly UnionLike[])[]
-}
-
-/**
- * A failed `z.union` reports only "Invalid input" at the union. This walks into the branches and keeps
- * the issue that got furthest into the value (longest path), so an `mcq` leaf with a `rubric` key
- * names `key.kind` instead of the whole part.
- */
-function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIssue {
-  const path = [...prefix, ...issue.path]
-  if (issue.code === 'invalid_union' && issue.errors && issue.errors.length > 0) {
-    let best: FlatIssue | undefined
-    for (const branch of issue.errors) {
-      for (const inner of branch) {
-        const flat = deepestIssue(inner, path)
-        if (!best || flat.path.length > best.path.length) best = flat
-      }
-    }
-    if (best) return best
-  }
-  return { path, message: issue.message }
-}
-
 /** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
 export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
+
+/** The subjective lane holds these types: an edit re-derives the type from the part tree, so a one-leaf essay saved from a structured row is `essay`. */
+const RUBRIC_TYPES: ReadonlySet<string> = new Set(['structured', 'working', 'essay'])
 
 const MAX_TOP_PARTS = 20
 const MAX_TOTAL_PARTS = 200
@@ -180,12 +160,14 @@ function statusAfterEdit(current: QuestionStatus): QuestionStatus {
 interface Normalized {
   subjectId: string
   educationLevelId: string
-  /** 1..6, stored in `difficulty_tp`. Working default: still falls back to the typed Kesukaran when no `tag.tp` is sent (S1-T01's save path). */
-  tp: number
+  /** 1..6, stored in `difficulty_tp`; null when no `tag.tp` is sent (TP is separate from Kesukaran, #685). */
+  tp: number | null
   /** DM-47: the typed Kesukaran 1..5, stored in `difficulty_level` on every save. */
   difficultyLevel: number
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
   textbookRef?: TextbookRef | null | undefined
+  /** DM-54: a value sets the scheme rules, null clears them, undefined keeps what is stored. */
+  schemeRules?: QuestionSchemeRules | null | undefined
   stem: string
   /** English stem: text sets it, null clears it, undefined keeps what is stored. */
   stemEn?: string | null | undefined
@@ -286,8 +268,9 @@ export class QuestionsService {
   }
 
   /** The values of the Studio selects that come from data (REQ-C-019): the Negeri / exam board options of the source papers. */
-  async filterOptions(): Promise<{ negeri: string[] }> {
-    return { negeri: await this.repo.examBoards() }
+  async filterOptions(): Promise<{ negeri: string[]; tahun: number[] }> {
+    const [negeri, tahun] = await Promise.all([this.repo.examBoards(), this.repo.sourceYears()])
+    return { negeri, tahun }
   }
 
   async getAdmin(id: string): Promise<QuestionDetailView> {
@@ -295,6 +278,18 @@ export class QuestionsService {
     if (!record) throw questionNotFound()
     // R1-T45b (PIPE AC-04.4): Admin Pusat only; the Guru and structured reads share `detail` but never get the papers.
     return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
+  }
+
+  /**
+   * API-Q-30: validates a scheme v2 body against the stored leaf `partId` of the latest version. Read-only; an unknown question or part is 404.
+   * The question-level `scheme_rules` of the version are applied (part-scoped deductions).
+   */
+  async validateScheme(id: string, partId: string, body: unknown): Promise<QuestionSchemeValidateResult> {
+    const record = await this.repo.get(id, 'latest')
+    if (!record) throw questionNotFound()
+    const result = validateSchemeBody(record.version.parts, partId, body, record.version.schemeRules ?? null)
+    if (!result) throw questionNotFound()
+    return result
   }
 
   async create(raw: QuestionCreateInput & { curriculumTopicId?: string | null }, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
@@ -320,9 +315,10 @@ export class QuestionsService {
       {
         subjectId: input.subjectId,
         educationLevelId: input.educationLevelId,
-        tp: input.tag?.tp ?? input.difficultyLevel,
+        tp: input.tag?.tp ?? null,
         difficultyLevel: input.difficultyLevel,
         textbookRef: input.textbookRef,
+        schemeRules: input.schemeRules,
         stem: input.questionText,
         stemEn: enText(input.questionTextEn),
         parts,
@@ -732,6 +728,46 @@ export class QuestionsService {
     return this.detail(record)
   }
 
+  /** V2 Panel Subjektif Sunting: the scheme and rubric points of the latest version, one entry per leaf part. */
+  async getStructuredRubric(id: string): Promise<StructuredRubricView> {
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
+    if (!record || !RUBRIC_TYPES.has(record.version.type)) throw questionNotFound()
+    return this.rubricView(record)
+  }
+
+  /** V2 "Simpan Skema & Rubrik": rewrites the sent leaves through the normal version write (an approved question becomes the next draft). */
+  async saveStructuredRubric(id: string, subs: readonly RubricSubInput[], actor: QuestionActor): Promise<StructuredRubricView> {
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
+    if (!record || !RUBRIC_TYPES.has(record.version.type)) throw questionNotFound()
+    const v = record.version
+    const { parts, errors } = applyRubric(v.parts, subs)
+    if (Object.keys(errors).length > 0) throw fail(errors)
+    const input = {
+      subjectId: v.subjectId ?? '',
+      educationLevelId: v.educationLevelId ?? '',
+      difficultyLevel: v.difficultyLevel ?? 1,
+      questionText: v.stemMs ?? '',
+      parts,
+    } as unknown as QuestionUpdateInput
+    return this.rubricView(await this.applyUpdate(record, input, actor, { keepSubject: true }))
+  }
+
+  private async rubricView(record: QuestionRecord): Promise<StructuredRubricView> {
+    const view = await this.viewOf(record)
+    const v = record.version
+    return {
+      question: {
+        id: record.id,
+        stimulus: v.stemMs ?? '',
+        subject: view.subject?.name ?? null,
+        level: view.level?.name ?? null,
+        status: v.status,
+        totalMarks: rubricSubs(v.parts).reduce((n, s) => n + s.marks, 0),
+      },
+      subs: rubricSubs(v.parts),
+    }
+  }
+
   // --- structured (teacher mount, API-GUR-26) ----------------------------------------------------
 
   /**
@@ -850,7 +886,7 @@ export class QuestionsService {
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
     const record = await this.repo.get(id, 'live', BANK_ONLY)
     if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
-    return gradeQuestion(record.id, record.version.parts, answers)
+    return gradeQuestion(record.id, record.version.parts, answers, { schemeRules: record.version.schemeRules })
   }
 
   // --- stimuli and groups (tests and later cards; no HTTP route in this contract) ---------------
@@ -881,7 +917,7 @@ export class QuestionsService {
     if (!sized.success) return { success: false, error: { issues: sized.error.issues.map((x) => ({ path: x.path, message: x.message })) } }
     const data: QuestionPart[] = []
     for (const [i, p] of parts.entries()) {
-      const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)
+      const r = (unchanged(p, i) ? QuestionPartReadV3Schema : QuestionWritePartSchema).safeParse(p)
       if (!r.success) return { success: false, error: { issues: r.error.issues.map((x) => ({ ...x, path: [i, ...x.path] })) as never } }
       data.push(r.data as QuestionPart)
     }
@@ -889,7 +925,8 @@ export class QuestionsService {
   }
 
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
-  private checkedParts(parts: QuestionPart[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
+  private checkedParts(rawParts: readonly unknown[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
+    const parts = rawParts as QuestionPart[]
     // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
@@ -914,12 +951,12 @@ export class QuestionsService {
    * internal ids, so tokens are swapped here, before the tree is built; an unknown token stays as sent and fails the
    * image check with the same 422 as any other bad image.
    */
-  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: QuestionPart[] | undefined }>(input: T): Promise<T> {
+  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: readonly unknown[] | undefined }>(input: T): Promise<T> {
     const out: T = { ...input }
     if (typeof out.questionImageFileId === 'string') out.questionImageFileId = await this.files.internalIdOf(out.questionImageFileId)
     if (out.optionImageFileIds) out.optionImageFileIds = await Promise.all(out.optionImageFileIds.map((id) => (typeof id === 'string' ? this.files.internalIdOf(id) : id)))
     // Studio (T13): option pictures of a part tree are named by the same public token, in and out.
-    if (out.parts) out.parts = await mapOptionImageIds(out.parts, (id) => this.files.internalIdOf(id))
+    if (out.parts) out.parts = (await mapOptionImageIds(out.parts as QuestionPart[], (id) => this.files.internalIdOf(id))) as T['parts']
     return out
   }
 
@@ -990,10 +1027,21 @@ export class QuestionsService {
       // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.
       const subjectId = draft.subjectId === null ? null : idToString(draft.subjectId)
       const levelId = draft.educationLevelId === null ? null : idToString(draft.educationLevelId)
+      // Rows 25 and 26: the detector writes the stored flag only after the create, so decide it here on the draft (same pure detector).
+      const flagged = detectStimulusFlag({
+        stemMs: draft.stemMs,
+        stemEn: draft.stemEn,
+        hasGroup: n.stimulusGroupId !== null && n.stimulusGroupId !== undefined,
+        hasStemStimulus: draft.stimulusIds.length > 0 || newStemFileId !== null,
+        parts: flagPartsOf(n.parts),
+      })
       const data = gateDataOf(
         {
           id: '0',
           version: {
+            stimulusFlag: flagged?.flag ?? null,
+            stimulusFlagRef: flagged?.ref ?? null,
+            stemEn: draft.stemEn,
             stemMs: draft.stemMs,
             parts: n.parts,
             subjectId,
@@ -1068,7 +1116,7 @@ export class QuestionsService {
     if (!subject) fields.subjectId = QUESTION_MESSAGES.subject
     // Secondary-only (D72): a Darjah (primary-stage) level cannot be written; same refusal as an unknown level.
     if (!level || level.stage === 'primary') fields.educationLevelId = QUESTION_MESSAGES.level
-    if (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
+    if ((n.tp !== null && (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6)) || !Number.isInteger(n.difficultyLevel) || n.difficultyLevel < 1 || n.difficultyLevel > 5) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
 
     // Curriculum tag: unit (kind unit), 1 to 3 SP nodes (kind sp), all of this subject and level.
     let unitKey: bigint | null = null
@@ -1121,6 +1169,25 @@ export class QuestionsService {
       const topic = key === null ? null : await this.curriculum.topic(key)
       if (!topic || (chapterKey !== null && topic.chapterId !== chapterKey)) fields.curriculumTopicId = QUESTION_MESSAGES.guruTopic
       else topicKey = topic.id
+    }
+
+    // G-02: a Bab and a Tajuk DSKP that cannot belong together (Bab 7 with unit 2.0) are refused. Only where the link is known
+    // (`unitsOfChapter`), and only when the pair is new, so an old question with another pair can still be saved on other fields.
+    if (unitKey !== null && chapterKey !== null && fields['tag.unitId'] === undefined && subject !== null && level !== null) {
+      const unitId = idToString(unitKey)
+      const chapterId = idToString(chapterKey)
+      if (previous === null || previous.version.unitId !== unitId || previous.version.chapterId !== chapterId) {
+        const chapter = await this.curriculum.chapter(chapterKey)
+        const allowed =
+          chapter === null
+            ? null
+            : unitsOfChapter(
+                chapter,
+                await this.curriculum.chapters(subject.id, level.id, { active: true }),
+                (await this.curriculum.dskpNodes(level.id, subject.id)).filter((nd) => nd.kind === 'unit'),
+              )
+        if (allowed !== null && !allowed.some((u) => u.id === unitKey)) fields['tag.unitId'] = CHAPTER_UNIT_MISMATCH_MESSAGE
+      }
     }
 
     // Images are existing `question_image` files; stimuli and the group must exist.
@@ -1207,6 +1274,7 @@ export class QuestionsService {
       difficultyTp: n.tp,
       difficultyLevel: n.difficultyLevel,
       ...(n.textbookRef === undefined ? {} : { textbookRef: n.textbookRef }),
+      ...(n.schemeRules === undefined ? {} : { schemeRules: n.schemeRules }),
       sourcePage: v?.sourcePage ?? null,
       setLabel: v?.setLabel ?? null,
       spNodeIds: spKeys,
@@ -1290,8 +1358,6 @@ export class QuestionsService {
       parts = v.parts
     }
 
-    // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
-    const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
     // Known R1 limit: a Jawi or Arab question cannot be bilingual. Their stored script stays unless the body sends `scriptType` (the
     // Studio wizard, #428); asking them to become `ms+en` is a 422 on `language`. A bilingual (`ms_en`) row follows the language sent.
     if (bilingualScriptConflict(input.language, input.scriptType ?? v.language)) throw fail({ language: QUESTION_MESSAGES.language })
@@ -1306,9 +1372,11 @@ export class QuestionsService {
     const normalized: Normalized = {
       subjectId: opts.keepSubject ? (v.subjectId ?? input.subjectId) : input.subjectId,
       educationLevelId: opts.keepSubject ? (v.educationLevelId ?? input.educationLevelId) : input.educationLevelId,
-      tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : input.difficultyLevel),
+      // TP is separate from Kesukaran (#685; lead ruling on #783): a body without `tag.tp` keeps the stored TP.
+      tp: input.tag?.tp ?? v.difficultyTp,
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
+      schemeRules: input.schemeRules,
       stem: input.questionText,
       stemEn: enText(input.questionTextEn),
       parts,

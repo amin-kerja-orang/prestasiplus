@@ -9,11 +9,11 @@ defineProps<{ rows: readonly LedgerEntry[] }>()
 </script>
 
 <template>
-  <UCard class="min-w-0" data-testid="s11-recent">
+  <UCard class="min-w-0 lg:col-span-2" data-testid="s11-recent">
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between gap-3">
-        <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
-          <DsIconChip icon="i-ph-clock-counter-clockwise-duotone" size="sm" />Transaksi Terkini
+        <h2 class="flex min-w-0 items-center gap-2 font-display text-subheading font-bold text-highlighted">
+          <DsIconChip icon="i-ph-clock-counter-clockwise-duotone" size="sm" /><span>Transaksi Terkini</span>
         </h2>
         <UButton
           to="/gamification/history"
@@ -40,7 +40,7 @@ defineProps<{ rows: readonly LedgerEntry[] }>()
             >{{ gamLedgerIcon(r.type) }}</span
           >
           <div class="flex min-w-0 flex-1 flex-col">
-            <p class="truncate text-label text-highlighted">{{ r.description }}</p>
+            <p class="line-clamp-2 break-words text-label text-highlighted" :title="r.description">{{ r.description }}</p>
             <p class="text-caption text-muted">{{ gamRelativeTime(r.createdAt) }}</p>
           </div>
           <span

@@ -52,6 +52,8 @@ export interface ChapterOption {
   id: number
   name: string
   chapterNumber: number | null
+  /** Printed DSKP code of the chapter (G-02): links the Bab to its DSKP unit when set. */
+  dskpCode?: string | null
 }
 
 type Signal = { signal?: AbortSignal }
@@ -84,11 +86,11 @@ export async function fetchChapters(
   options: Signal = {},
 ): Promise<ChapterOption[]> {
   const tree = await api.get<{
-    chapters: { id: number; name: string | null; chapterNumber: number | null; isActive: boolean }[]
+    chapters: { id: number; name: string | null; chapterNumber: number | null; dskpCode?: string | null; isActive: boolean }[]
   }>('/api/admin/curriculum', { query: params, ...withSignal(options) })
   return tree.chapters
     .filter((c) => c.isActive && c.name !== null)
-    .map((c) => ({ id: c.id, name: c.name as string, chapterNumber: c.chapterNumber }))
+    .map((c) => ({ id: c.id, name: c.name as string, chapterNumber: c.chapterNumber, ...(c.dskpCode ? { dskpCode: c.dskpCode } : {}) }))
 }
 
 /** #28 `GET /api/guru/dskp/bidang?subjectId=&educationLevelId=` (a bare array). */
@@ -119,4 +121,14 @@ export function fetchDskpSp(skId: number, options: Signal = {}): Promise<SpOptio
     raw: true,
     ...withSignal(options),
   })
+}
+
+/** The data-driven values of the Studio selects: `GET /api/questions/filter-options` (Admin Pusat). `tahun` newest first. */
+export interface StudioFilterOptions {
+  negeri: string[]
+  tahun: number[]
+}
+
+export function fetchStudioFilterOptions(options: Signal = {}): Promise<StudioFilterOptions> {
+  return api.get<StudioFilterOptions>('/api/questions/filter-options', withSignal(options))
 }

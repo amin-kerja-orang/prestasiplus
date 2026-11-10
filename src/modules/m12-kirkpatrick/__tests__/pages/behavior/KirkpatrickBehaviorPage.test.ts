@@ -134,7 +134,7 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
   it('shows the six cards of the platform', async () => {
     const { wrapper: w } = await open()
     expect(tiles(w).map((x) => x.label)).toEqual([
-      'Pelajar T4/T5',
+      'Pelajar',
       'Pernah Aktif',
       'Jumlah Sesi',
       'Soalan Dijawab',

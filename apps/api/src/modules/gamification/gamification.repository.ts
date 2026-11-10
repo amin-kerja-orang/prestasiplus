@@ -160,6 +160,8 @@ export interface AdminStudentRow {
   tokenBalance: number
   totalSyilingEarned: number
   xp: number
+  /** The stored current streak (reads never decay it); 0 without a streak row. */
+  streak: number
 }
 
 export interface LockedWallet {
@@ -307,6 +309,7 @@ const VISIBLE_WALLETS = Prisma.sql`
            (w.total_syiling_earned - COALESCE(ts.t, 0))::bigint AS shown_total
       FROM wallets w LEFT JOIN tsum ts ON ts.user_id = w.user_id
      WHERE NOT (COALESCE(ts.t, 0) > 0 AND w.total_syiling_earned - COALESCE(ts.t, 0) <= 0)
+       AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = w.user_id AND ur.role = 'student')
   )`
 
 const escapeLike = (term: string): string => term.replace(/[\\%_]/g, (c) => `\\${c}`)
@@ -391,6 +394,18 @@ export class GamificationRepository {
     await db.challenge.update({ where: { id }, data: { isActive, updatedAt: at } })
   }
 
+  /**
+   * V2 "N sertai / N siap" per challenge, over real rows only (`is_test` excluded): `enrolled` = distinct pupils with at least one
+   * completion, `completed` = completions (one per pupil per Malaysia day). V3 stores no row for a pupil who started and did not
+   * finish, so "sertai" counts the pupils who finished at least once. A challenge with no completion is absent from the map.
+   */
+  async challengeStats(db: Db): Promise<Map<string, { enrolled: number; completed: number }>> {
+    const rows = await db.$queryRaw<{ challengeId: bigint; enrolled: bigint; completed: bigint }[]>`
+      SELECT challenge_id AS "challengeId", count(DISTINCT user_id)::bigint AS enrolled, count(*)::bigint AS completed
+        FROM challenge_completions WHERE NOT is_test GROUP BY challenge_id`
+    return new Map(rows.map((r) => [idToString(r.challengeId), { enrolled: num(r.enrolled), completed: num(r.completed) }]))
+  }
+
   /** Completions cascade with the challenge (foreign key `ON DELETE CASCADE`, migration 0019). */
   async deleteChallenge(db: Db, id: bigint): Promise<void> {
     await db.challenge.delete({ where: { id } })
@@ -437,32 +452,6 @@ export class GamificationRepository {
     return new Set(rows.map((r) => idToString(r.challengeId)))
   }
 
-  /** The claim of (user, challenge, Malaysia day), or null. */
-  async claimOf(db: Db, userId: string, challengeId: string, day: string): Promise<ClaimRecord | null> {
-    const r = await db.challengeClaim.findUnique({
-      where: { userId_challengeId_mytDate: { userId: idFromString(userId), challengeId: idFromString(challengeId), mytDate: dayDate(day) } },
-    })
-    return r ? { id: idToString(r.id), challengeId: idToString(r.challengeId), rewardSyiling: r.rewardSyiling, rewardXp: r.rewardXp, clientUuid: r.clientUuid } : null
-  }
-
-  /** Whether `clientUuid` already sits on a claim of this user (DM-79: unique per user). */
-  async claimUuidUsed(db: Db, userId: string, clientUuid: string): Promise<boolean> {
-    return (await db.challengeClaim.count({ where: { userId: idFromString(userId), clientUuid } })) > 0
-  }
-
-  /**
-   * Inserts the claim. `ON CONFLICT DO NOTHING` (no unique violation, so the transaction stays usable): a second press
-   * at the same time waits for the first to commit and then writes nothing. Returns true when THIS call wrote the row.
-   */
-  async insertClaim(db: Db, row: { userId: string; challengeId: string; day: string; rewardSyiling: number; rewardXp: number; clientUuid: string | null; at: Date }): Promise<boolean> {
-    const rows = await db.$queryRaw<{ id: bigint }[]>`
-      INSERT INTO challenge_claims (user_id, challenge_id, myt_date, reward_syiling, reward_xp, client_uuid, claimed_at)
-      VALUES (${idFromString(row.userId)}, ${idFromString(row.challengeId)}, ${row.day}::date, ${row.rewardSyiling}, ${row.rewardXp}, ${row.clientUuid}::uuid, ${row.at}::timestamptz)
-      ON CONFLICT DO NOTHING
-      RETURNING id`
-    return rows.length === 1
-  }
-
   // --- game reward events (DM-87) ------------------------------------------------------------------
 
   /** Serialises the reward events of one pupil until the transaction ends, so that parallel games cannot pass a daily cap together. */
@@ -493,23 +482,61 @@ export class GamificationRepository {
     return rows.length === 1
   }
 
-  async completionCount(db: Db, userId: string): Promise<number> {
-    return db.challengeCompletion.count({ where: { userId: idFromString(userId) } })
+  /** The claim of (user, challenge, Malaysia day), or null. */
+  async claimOf(db: Db, userId: string, challengeId: string, day: string): Promise<ClaimRecord | null> {
+    const r = await db.challengeClaim.findUnique({
+      where: { userId_challengeId_mytDate: { userId: idFromString(userId), challengeId: idFromString(challengeId), mytDate: dayDate(day) } },
+    })
+    return r ? { id: idToString(r.id), challengeId: idToString(r.challengeId), rewardSyiling: r.rewardSyiling, rewardXp: r.rewardXp, clientUuid: r.clientUuid } : null
   }
 
-  /** Challenge ids the user completed per Malaysia day, for the `days` days BEFORE `day` (BR-M14-16 perfect days). */
+  /** Whether `clientUuid` already sits on a claim of this user (DM-79: unique per user). */
+  async claimUuidUsed(db: Db, userId: string, clientUuid: string): Promise<boolean> {
+    return (await db.challengeClaim.count({ where: { userId: idFromString(userId), clientUuid } })) > 0
+  }
+
+  /**
+   * Inserts the claim. `ON CONFLICT DO NOTHING` (no unique violation, so the transaction stays usable): a second press
+   * at the same time waits for the first to commit and then writes nothing. Returns true when THIS call wrote the row.
+   */
+  async insertClaim(db: Db, row: { userId: string; challengeId: string; day: string; rewardSyiling: number; rewardXp: number; clientUuid: string | null; at: Date }): Promise<boolean> {
+    const rows = await db.$queryRaw<{ id: bigint }[]>`
+      INSERT INTO challenge_claims (user_id, challenge_id, myt_date, reward_syiling, reward_xp, client_uuid, claimed_at)
+      VALUES (${idFromString(row.userId)}, ${idFromString(row.challengeId)}, ${row.day}::date, ${row.rewardSyiling}, ${row.rewardXp}, ${row.clientUuid}::uuid, ${row.at}::timestamptz)
+      ON CONFLICT DO NOTHING
+      RETURNING id`
+    return rows.length === 1
+  }
+
+  /**
+   * Finished challenges for the badges (ruling 12 on #500): a claim counts, and so does a completion that came from the
+   * migration (`legacy_source` set; it was paid on completion before Tuntut). The same (challenge, day) in both counts once.
+   * A V3 completion nobody claimed does not count. The distinct pairs are the unit of both readers below.
+   */
+  async completionCount(db: Db, userId: string): Promise<number> {
+    const rows = await db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(*)::bigint AS n FROM (
+        SELECT challenge_id, myt_date AS d FROM challenge_claims WHERE user_id = ${idFromString(userId)}
+        UNION
+        SELECT challenge_id, completion_date AS d FROM challenge_completions WHERE user_id = ${idFromString(userId)} AND legacy_source IS NOT NULL
+      ) f`
+    return Number(rows[0]?.n ?? 0)
+  }
+
+  /** Challenge ids the user finished per Malaysia day (same rule as `completionCount`), for the `days` days BEFORE `day` (BR-M14-16 perfect days). */
   async completionsByDay(db: Db, userId: string, day: string, days: number): Promise<Map<string, Set<string>>> {
     const from = new Date(dayDate(day).getTime() - days * 86_400_000)
-    const rows = await db.challengeCompletion.findMany({
-      where: { userId: idFromString(userId), completionDate: { gte: from, lte: dayDate(day) } },
-      select: { challengeId: true, completionDate: true },
-    })
+    const rows = await db.$queryRaw<{ challenge_id: bigint; d: string }[]>`
+      SELECT challenge_id, to_char(d, 'YYYY-MM-DD') AS d FROM (
+        SELECT challenge_id, myt_date AS d FROM challenge_claims WHERE user_id = ${idFromString(userId)}
+        UNION
+        SELECT challenge_id, completion_date AS d FROM challenge_completions WHERE user_id = ${idFromString(userId)} AND legacy_source IS NOT NULL
+      ) f WHERE d >= ${dayOf(from)}::date AND d <= ${day}::date`
     const out = new Map<string, Set<string>>()
     for (const r of rows) {
-      const key = dayOf(r.completionDate)
-      const set = out.get(key) ?? new Set<string>()
-      set.add(idToString(r.challengeId))
-      out.set(key, set)
+      const set = out.get(r.d) ?? new Set<string>()
+      set.add(idToString(r.challenge_id))
+      out.set(r.d, set)
     }
     return out
   }
@@ -527,7 +554,8 @@ export class GamificationRepository {
   }
 
   async unlocksOf(db: Db, userId: string): Promise<Map<string, Date>> {
-    const rows = await db.userAchievement.findMany({ where: { userId: idFromString(userId) } })
+    // One rule for every reader of the badge count (Q4): an unlock written under Mod Pelajar (`is_test`) is not the pupil's.
+    const rows = await db.userAchievement.findMany({ where: { userId: idFromString(userId), isTest: false } })
     return new Map(rows.map((r) => [idToString(r.achievementId), r.unlockedAt]))
   }
 
@@ -535,8 +563,12 @@ export class GamificationRepository {
     const rows = await db.$queryRaw<{ id: bigint }[]>`
       INSERT INTO user_achievements (user_id, achievement_id, unlocked_at, is_test, created_at, updated_at)
       VALUES (${idFromString(row.userId)}, ${idFromString(row.achievementId)}, ${row.at}::timestamptz, ${row.isTest}, ${row.at}::timestamptz, ${row.at}::timestamptz)
-      ON CONFLICT (user_id, achievement_id) DO NOTHING
+      ON CONFLICT (user_id, achievement_id) DO UPDATE
+        SET is_test = false, unlocked_at = EXCLUDED.unlocked_at, updated_at = EXCLUDED.updated_at
+        WHERE user_achievements.is_test AND NOT EXCLUDED.is_test
       RETURNING id`
+    // A row comes back only when this call created the unlock, or upgraded a Mod Pelajar (`is_test`) one to a real unlock:
+    // the caller credits exactly then. A test call never touches an existing row; a real row is never changed.
     return rows.length === 1
   }
 
@@ -561,6 +593,21 @@ export class GamificationRepository {
     const referrerId = idFromString(userId)
     const [referrals, rewarded] = await Promise.all([db.referral.count({ where: { referrerId } }), db.referral.count({ where: { referrerId, rewarded: true } })])
     return { referrals, rewarded }
+  }
+
+  /**
+   * "Juara Battle" (battle_wins): finished battles the user won as a human against a real opponent. Counted: `status`
+   * 'finished' with `winner` = the user's side, `counts_for_ranking`, not a test battle, the user's own row real (not a bot,
+   * not `is_test`). A forfeit is stored as `status = 'forfeited'`, so a forfeit win is not counted (ruling Q2 on #500).
+   */
+  async wonRealBattles(db: Db, userId: string): Promise<number> {
+    const rows = await db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(*)::bigint AS n
+      FROM battles b
+      JOIN battle_participants p ON p.battle_id = b.id AND p.side = b.winner
+      WHERE p.user_id = ${idFromString(userId)} AND NOT p.is_bot AND NOT p.is_test
+        AND b.status = 'finished' AND b.counts_for_ranking AND NOT b.is_test`
+    return Number(rows[0]?.n ?? 0)
   }
 
   async rewardedReferralCount(db: Db, userId: string): Promise<number> {
@@ -648,6 +695,14 @@ export class GamificationRepository {
     }))
   }
 
+  /** The movement that already holds this `client_uuid` of the user (DM-79), if any. */
+  async ledgerByClientUuid(db: Db, userId: string, clientUuid: string): Promise<LedgerRecord | null> {
+    const r = await db.coinLedger.findFirst({ where: { userId: idFromString(userId), clientUuid } })
+    return r
+      ? { id: idToString(r.id), userId: idToString(r.userId), type: r.type, amount: r.amount, balanceAfter: r.balanceAfter, source: r.source, sourceId: r.sourceId, tokens: r.tokens, description: r.description, createdAt: r.createdAt }
+      : null
+  }
+
   async ledgerByKey(db: Db, userId: string, source: string, sourceId: string): Promise<LedgerRecord | null> {
     const r = await db.coinLedger.findFirst({ where: { userId: idFromString(userId), source, sourceId } })
     return r
@@ -717,7 +772,7 @@ export class GamificationRepository {
     const rows = await db.$queryRaw<{ name: string; type: string; amount: number; source: string; createdAt: Date }[]>`
       SELECT u.name, l.type, l.amount, l.source, l.created_at AS "createdAt"
         FROM coin_ledger l JOIN users u ON u.id = l.user_id
-       WHERE NOT l.is_test
+       WHERE NOT l.is_test AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = l.user_id AND ur.role = 'student')
        ORDER BY l.created_at DESC, l.id DESC LIMIT ${take}`
     return rows
   }
@@ -725,8 +780,10 @@ export class GamificationRepository {
   // --- admin lists (every wallet and every ledger row: the audit view) ------------------------------
 
   async adminStudents(db: Db, filter: { search: string; tier: string; sort: StudentSort; page: number; pageSize: number }): Promise<{ rows: AdminStudentRow[]; total: number }> {
-    const conds: Prisma.Sql[] = []
-    if (filter.tier) conds.push(Prisma.sql`t.tier_name = ${filter.tier}`)
+    // T-B5b: the admin Pelajar list is pupils only; V2 non-pupil wallets (teachers...) are kept but never listed here.
+    const conds: Prisma.Sql[] = [Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = w.user_id AND ur.role = 'student')`]
+    // The V2 filter posts the tier id; the key (tier_name) keeps working.
+    if (filter.tier) conds.push(Prisma.sql`(t.tier_name = ${filter.tier} OR t.id::text = ${filter.tier})`)
     const term = filter.search.trim()
     if (term !== '') {
       const like = `%${escapeLike(term)}%`
@@ -735,12 +792,13 @@ export class GamificationRepository {
     const where = conds.length > 0 ? Prisma.sql`WHERE ${Prisma.join(conds, ' AND ')}` : Prisma.empty
     const column = SORT_COLUMN[filter.sort]
     const second = filter.sort === 'total_syiling_earned' ? Prisma.empty : Prisma.sql`w.total_syiling_earned DESC,`
-    const from = Prisma.sql`FROM wallets w JOIN users u ON u.id = w.user_id LEFT JOIN tiers t ON t.id = w.tier_id ${where}`
+    const from = Prisma.sql`FROM wallets w JOIN users u ON u.id = w.user_id LEFT JOIN tiers t ON t.id = w.tier_id LEFT JOIN streaks st ON st.user_id = w.user_id ${where}`
     const totalRows = await db.$queryRaw<{ n: bigint }[]>`SELECT count(*)::bigint AS n ${from}`
     const rows = await db.$queryRaw<
-      { userId: bigint; name: string; email: string | null; tierKey: string | null; tierColor: string | null; level: number; currentSyiling: number; tokenBalance: number; totalSyilingEarned: number; xp: number }[]
+      { userId: bigint; name: string; email: string | null; tierKey: string | null; tierColor: string | null; level: number; currentSyiling: number; tokenBalance: number; totalSyilingEarned: number; xp: number; streak: number }[]
     >`SELECT w.user_id AS "userId", u.name, u.email, t.tier_name AS "tierKey", t.color AS "tierColor", w.level::int AS level,
-             w.current_syiling AS "currentSyiling", w.token_balance AS "tokenBalance", w.total_syiling_earned AS "totalSyilingEarned", w.xp
+             w.current_syiling AS "currentSyiling", w.token_balance AS "tokenBalance", w.total_syiling_earned AS "totalSyilingEarned", w.xp,
+             COALESCE(st.current, 0)::int AS streak
         ${from}
        ORDER BY ${Prisma.raw(column)} DESC, ${second} w.created_at ASC, w.id ASC
        LIMIT ${filter.pageSize} OFFSET ${(filter.page - 1) * filter.pageSize}`
@@ -757,6 +815,7 @@ export class GamificationRepository {
         tokenBalance: r.tokenBalance,
         totalSyilingEarned: r.totalSyilingEarned,
         xp: r.xp,
+        streak: r.streak,
       })),
     }
   }
@@ -848,18 +907,9 @@ export class GamificationRepository {
     return created
   }
 
-  /** Tickets of a draw as one entry per ticket row (ticket id, user), oldest first. */
-  async ticketsOf(db: Db, drawId: bigint): Promise<{ id: string; userId: string }[]> {
-    const rows = await db.drawTicket.findMany({ where: { drawId }, orderBy: { id: 'asc' }, select: { id: true, userId: true } })
-    return rows.map((r) => ({ id: idToString(r.id), userId: idToString(r.userId) }))
-  }
-
-  /** Closes a draw: only an `open` draw closes (zero rows = somebody else did). */
-  async closeDraw(db: Db, id: bigint, winnerUserId: string | null, at: Date): Promise<boolean> {
-    const r = await db.draw.updateMany({
-      where: { id, status: 'open' },
-      data: { status: 'closed', drawnAt: at, winnerUserId: winnerUserId === null ? null : idFromString(winnerUserId), updatedAt: at },
-    })
+  /** Moves a draw from `from` to `to` (`Buka`, `Tutup`): zero rows = somebody else moved it first. */
+  async setDrawStatus(db: Db, id: bigint, from: string, to: string, at: Date): Promise<boolean> {
+    const r = await db.draw.updateMany({ where: { id, status: from }, data: { status: to, updatedAt: at } })
     return r.count === 1
   }
 

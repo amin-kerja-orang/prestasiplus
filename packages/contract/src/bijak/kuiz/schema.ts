@@ -85,6 +85,7 @@ export const BijakKuizItemSchema = z
     prompt: z.string(),
     marks: z.number().int().min(0),
     markable: z.boolean(),
+    multiple: z.boolean().optional().meta({ description: 'true for an mcq_multi question: tick every correct option and send them together as `optionIds`.' }),
     subjectName: z.string().nullable(),
     stimuli: z.array(BijakKuizStimulusSchema),
     options: z.array(BijakKuizOptionSchema),
@@ -105,6 +106,12 @@ export const BijakKuizCheckRequestSchema = z
   .strictObject({
     itemId: z.string().min(1).max(80),
     optionId: z.string().regex(/^[A-H]$/, BIJAK_KUIZ_MESSAGES.invalidAnswer),
+    optionIds: z
+      .array(z.string().regex(/^[A-H]$/, BIJAK_KUIZ_MESSAGES.invalidAnswer))
+      .min(1, BIJAK_KUIZ_MESSAGES.invalidAnswer)
+      .max(8, BIJAK_KUIZ_MESSAGES.invalidAnswer)
+      .optional()
+      .meta({ description: 'mcq_multi (46:612): every ticked option id, sent together. `optionId` stays required (additive contract): for mcq_multi send one of the ticked ids there and ALL ticks in `optionIds`; the server marks `optionIds`.' }),
   })
   .meta({ id: 'BijakKuizCheckRequest' })
 export type BijakKuizCheckRequest = z.infer<typeof BijakKuizCheckRequestSchema>
@@ -112,7 +119,8 @@ export type BijakKuizCheckRequest = z.infer<typeof BijakKuizCheckRequestSchema>
 export const BijakKuizCheckResultSchema = z
   .strictObject({
     correct: z.boolean(),
-    correctOptionId: z.string().regex(/^[A-H]$/),
+    correctOptionId: z.string().regex(/^[A-H]$/).meta({ description: 'The correct option; for mcq_multi the first correct one (see `correctOptionIds`).' }),
+    correctOptionIds: z.array(z.string().regex(/^[A-H]$/)).optional().meta({ description: 'mcq_multi only: every correct option id.' }),
     explanation: z.string().nullable(),
   })
   .meta({ id: 'BijakKuizCheckResult' })

@@ -1,7 +1,8 @@
 import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { apply, APPLY_BATCH_SQL, BACKUP_TABLE, dryRun, findMatches, formatReport, parseArgs, restore } from '../../scripts/uat-ops/trim-duplicate-stem'
+import { apply, APPLY_BATCH_SQL, BACKUP_TABLE, dryRun, findMatches, formatReport, parseArgs, reportLines, restore } from '../../scripts/uat-ops/trim-duplicate-stem'
+import { exitCodeOf, UsageError } from '../../scripts/uat-ops/lib'
 import { toPracticeQuestion } from '../../src/modules/practice/question-bridge/be09-practice-mapping'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { flatFromVersion } from '../../src/modules/questions/projection'
@@ -222,6 +223,17 @@ describe('trim-duplicate-stem (S4-T04, U-OP-06)', () => {
     expect(() => parseArgs(['--dry-run', '--apply'])).toThrow(/exclude each other/)
     expect(() => parseArgs(['--batch-size=0'])).toThrow(/integer/)
     expect(() => parseArgs(['--yes'])).toThrow(/unknown/)
+    expect(() => parseArgs(['--yes'])).toThrow(UsageError)
+  })
+
+  it('the report file is INFO lines; a restore that skipped parts adds a FAIL (exit code 1 through lib.exitCodeOf)', () => {
+    const ok = reportLines({ mode: 'restore', restored: 2, skipped: 0, batches: 1 })
+    expect(ok.every((l) => l.status === 'INFO')).toBe(true)
+    expect(exitCodeOf(ok)).toBe(0)
+    const skipped = reportLines({ mode: 'restore', restored: 2, skipped: 1, batches: 1 })
+    expect(skipped.at(-1)?.status).toBe('FAIL')
+    expect(exitCodeOf(skipped)).toBe(1)
+    expect(exitCodeOf(reportLines({ mode: 'dry-run', scanned: 1, matched: 0, enMatched: 0, byStatus: {}, bySubjectLevel: [], sample: [], batches: 0, skipped: 0 }))).toBe(0)
   })
 
   it('restore without a backup table fails clearly', async () => {

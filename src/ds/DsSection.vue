@@ -50,7 +50,7 @@ const id = computed(() => props.headingId ?? `ds-section-${autoId}`)
           <DsText v-if="description" variant="caption">{{ description }}</DsText>
         </DsStack>
       </DsCluster>
-      <DsCluster v-if="$slots.actions" gap="sm">
+      <DsCluster v-if="$slots.actions" gap="sm" :wrap="false" class="shrink-0 whitespace-nowrap">
         <slot name="actions" />
       </DsCluster>
     </DsCluster>

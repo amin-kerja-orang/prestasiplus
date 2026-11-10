@@ -103,6 +103,14 @@ export class SchoolsAdminController {
     return this.schools.toggle(id, authOf(req), metaOf(req))
   }
 
+  /** V2 `POST /sekolah/{school}/join-code` (Admin Pusat only): the old code stops working. */
+  @Post('admin/schools/:id/join-code')
+  @HttpCode(200)
+  @RateLimit(LIMITS.adminWrite)
+  async rotateJoinCode(@Param('id') id: string, @Req() req: Req): Promise<{ data: { joinCode: string }; status: string }> {
+    return this.schools.rotateJoinCode(id, authOf(req), metaOf(req))
+  }
+
   /** XL-13 alias of `admin/schools/options`; `all=1` is required. */
   @Get('schools')
   @RateLimit(LIMITS.adminRead)

@@ -22,6 +22,8 @@ const text = (value: unknown): string => (typeof value === 'string' ? value.trim
 @Injectable()
 export class AiConfig {
   readonly provider: AiProviderId
+  /** `OCR_ENGINE=tesseract`: the pages hold real text, so the mock provider is replaced by the real-paper segmenter. */
+  readonly realOcr: boolean
   readonly model: string
   readonly baseUrl: string
   /** Lower-case host names (or `*.suffix` patterns) the openai-compatible base URL may use. */
@@ -45,6 +47,7 @@ export class AiConfig {
     // An unknown id is a start-up error, never a silent fallback (prototype registry.ts).
     if (!(AI_PROVIDER_IDS as readonly string[]).includes(provider)) throw new Error(aiUnknownProviderMessage(provider))
     this.provider = provider as AiProviderId
+    this.realOcr = text(config.get('OCR_ENGINE')).toLowerCase() === 'tesseract'
     this.model = text(config.get('AI_MODEL'))
     this.baseUrl = text(config.get('AI_BASE_URL'))
     this.baseUrlAllowlist = text(config.get('AI_BASE_URL_ALLOWLIST'))

@@ -1,0 +1,9 @@
+{"id":1,"exam_question_id":1,"paper_section_id":1,"sort_order":1,"number_label":"1","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":2,"exam_question_id":2,"paper_section_id":1,"sort_order":2,"number_label":"2","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":3,"exam_question_id":3,"paper_section_id":1,"sort_order":3,"number_label":"3","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":4,"exam_question_id":4,"paper_section_id":2,"sort_order":1,"number_label":"1","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":5,"exam_question_id":5,"paper_section_id":2,"sort_order":2,"number_label":"2","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":6,"exam_question_id":6,"paper_section_id":2,"sort_order":3,"number_label":"3","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":7,"exam_question_id":7,"paper_section_id":3,"sort_order":1,"number_label":"1","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":8,"exam_question_id":8,"paper_section_id":3,"sort_order":2,"number_label":"2","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":9,"exam_question_id":9,"paper_section_id":3,"sort_order":3,"number_label":"3","marks_override":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}

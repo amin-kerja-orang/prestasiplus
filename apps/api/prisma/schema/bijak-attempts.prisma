@@ -129,3 +129,34 @@ model AttemptCheck {
   @@unique([attemptId, questionId], map: "uq_attempt_checks_attempt_id_question_id")
   @@map("attempt_checks")
 }
+
+/// AI mark proposal for one essay answer, awaiting a person (Tanda Karangan, V2 `/spm/tanda-karangan`). Born in v2.
+/// `school_id` snapshots the pupil's school at proposal time (the school scope of the list). `essay_text` is child data:
+/// never logged. A pending row has no final_marks / confirmed_by / confirmed_at (check constraint). No back-relations.
+model EssayReviewProposal {
+  id            BigInt    @id @default(autoincrement())
+  schoolId      BigInt    @map("school_id")
+  studentId     BigInt    @map("student_id")
+  attemptId     String?   @map("attempt_id") @db.Uuid
+  partId        String?   @map("part_id")
+  questionLabel String?   @map("question_label")
+  stem          String    @default("")
+  /// string[]: the mark scheme points, plain text.
+  scheme        Json      @default("[]")
+  essayText     String    @map("essay_text")
+  maxMarks      Int       @map("max_marks") @db.SmallInt
+  proposedMarks Int?      @map("proposed_marks") @db.SmallInt
+  rationale     String    @default("")
+  /// [{ id?, covered?, awarded? }]: the AI's per-point breakdown.
+  points        Json      @default("[]")
+  /// pending, confirmed (check constraint).
+  status        String    @default("pending")
+  finalMarks    Int?      @map("final_marks") @db.SmallInt
+  confirmedBy   BigInt?   @map("confirmed_by")
+  confirmedAt   DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([schoolId, status, id(sort: Desc)], map: "ix_essay_review_proposals_school_id_status_id")
+  @@index([status, id(sort: Desc)], map: "ix_essay_review_proposals_status_id")
+  @@map("essay_review_proposals")
+}

@@ -5,6 +5,12 @@ import { join } from 'node:path'
 import { QuestionSchema, STIMULUS_MESSAGES, StimulusGroupDetailSchema, StimulusSchema, mutationEnvelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { prngStream } from '../../src/db/prng'
+import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
+import { QuestionsRepository } from '../../src/modules/questions'
+import { GROUP_SURFACES } from '../../src/modules/questions/serving'
+import type { UsersRepository } from '../../src/modules/users'
+import { filesOf } from '../support/files-stub'
 import { bootQuestionsApp, loginAs, type Client, type QuestionsTestApp } from './helpers'
 import { mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
 
@@ -502,6 +508,74 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
       const copyB = await copyOf(b.id)
       const res = await admin.post(`/api/stimulus-groups/${copyA.id}/members/${b.ids[0]}/move`, { toGroupId: copyB.id })
       expect(res.status, JSON.stringify(res.body)).toBe(404)
+    })
+  })
+
+  describe('close-out proofs (AC-ADM-QE1.2, AC-ADM-QE1.4 swap half, AC-ADM-Q05.1)', () => {
+    /** The stored version-1 read of a question without the two fields a swap legitimately changes (status, archive reason) or stamps. */
+    const v1Of = async (id: string): Promise<unknown> => {
+      const [rec] = await t.app.get(QuestionsRepository).getVersions([{ questionId: id, versionNo: 1 }])
+      const version = JSON.parse(JSON.stringify(rec!.version)) as Record<string, unknown>
+      for (const k of ['status', 'archiveReason', 'updatedAt']) delete version[k]
+      return version
+    }
+    const v1Stimuli = async (ids: string[]): Promise<string> => JSON.stringify([...(await t.app.get(QuestionsRepository).versionStimuli(ids.map((questionId) => ({ questionId, versionNo: 1 })))).entries()])
+    const stimulusRow = async (id: string): Promise<unknown> => (await q(`select to_jsonb(s) r from stimuli s where id = $1`, [id]))[0]!.r
+
+    it('AC-ADM-QE1.2 and AC-ADM-QE1.4 (swap half): after the swap every member names the NEW stimulus, the old stimulus row is unchanged, and a version-1 read is unchanged', async () => {
+      const s = await servedGroup(3)
+      const [a, b, c] = s.ids as [string, string, string]
+      const repo = t.app.get(QuestionsRepository)
+      const copy = await copyOf(s.id)
+      const [newStimulus] = await stimuliOf(copy.id)
+      expect((await admin.put(`/api/stimuli/${newStimulus}`, { label: 'Rajah baharu', caption: 'Kapsyen baharu' })).status).toBe(200)
+      await editedMember(a, 'Soalan a disunting untuk swap')
+      await stage(copy.id, [a, b, c])
+      const oldBefore = await stimulusRow(s.stimulusId)
+      const v1Before = await Promise.all(s.ids.map(v1Of))
+      const v1StimuliBefore = await v1Stimuli(s.ids)
+      for (const id of s.ids) expect((await repo.groupOf(id))?.stimuli.map((x) => x.id)).toEqual([s.stimulusId]) // the old figure before
+
+      const res = await publish(copy.id)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+
+      // every member's group is the same group id and names the new stimulus (label and caption of the edited copy), never the old one
+      for (const id of s.ids) {
+        const g = await repo.groupOf(id)
+        expect(g?.id, id).toBe(s.id)
+        expect(g?.stimuli.map((x) => x.id), id).toEqual([newStimulus])
+        expect(g?.stimuli[0], id).toMatchObject({ label: 'Rajah baharu', caption: 'Kapsyen baharu' })
+      }
+      // the old stimulus row still exists and reads unchanged (it is only unlinked)
+      expect(await stimulusRow(s.stimulusId)).toEqual(oldBefore)
+      expect(await q(`select 1 from stimulus_group_stimuli where stimulus_id = $1`, [s.stimulusId])).toHaveLength(0)
+      // version 1 of every member reads as before, and so do its own stimuli
+      expect(await Promise.all(s.ids.map(v1Of))).toEqual(v1Before)
+      expect(await v1Stimuli(s.ids)).toBe(v1StimuliBefore)
+      expect((await versions(a)).map((v) => v.status)).toEqual(['archived', 'approved'])
+    })
+
+    it('AC-ADM-Q05.1: a draft copy staged [c,b,a] is published, groupOf lists [c,b,a], and the practice read returns that order', async () => {
+      const s = await servedGroup(3)
+      const [a, b, c] = s.ids as [string, string, string]
+      const chapter = (await q(`select c.id::text id from chapters c where c.subject_id = $1 and c.education_level_id = $2 and c.is_active and c.in_tree order by c.id limit 1`, [refs.mathId, refs.t4Id]))[0]!.id as string
+      for (const id of s.ids) {
+        await q(`update question_versions set chapter_id = $2 where question_id = $1`, [id, chapter])
+        await q(`insert into question_tags (question_id, kind, code) values ($1, 'pool', 'past_year') on conflict do nothing`, [id])
+      }
+      const copy = await copyOf(s.id)
+      await stage(copy.id, [c, b, a])
+      const res = await publish(copy.id)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+
+      const repo = t.app.get(QuestionsRepository)
+      expect((await repo.groupOf(a))?.questionIds).toEqual([c, b, a])
+      expect(await members(s.id)).toEqual([c, b, a])
+      // the practice read (the drills draw a group whole, in group order); only this group's members are eligible
+      await q(`update questions set is_active = false where id <> all($1::bigint[])`, [s.ids])
+      const source = new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, [...GROUP_SURFACES, 'latih_tubi_spm', 'databank', 'bab'], filesOf(t.db) as never)
+      const drawn = await source.sample({ subjectId: refs.mathId, activity: 'latih_tubi_spm', spmPool: true }, 10, prngStream('group-swap:q05-1'))
+      expect(drawn).toEqual([c, b, a])
     })
   })
 })

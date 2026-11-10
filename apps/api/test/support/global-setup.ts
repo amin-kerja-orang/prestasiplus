@@ -47,15 +47,21 @@ export async function applyMigrations(url: string): Promise<void> {
  * `.migration-out/`: those created since this run started are removed too, older ones (a real run) never.
  */
 function removeMigrationTestOutputs(startedAtMs: number): void {
-  const root = fileURLToPath(new URL('../../../../.migration-out/', import.meta.url))
-  try {
-    for (const d of readdirSync(root)) {
-      const path = join(root, d)
-      if (d.startsWith('core-test-')) rmSync(path, { recursive: true, force: true })
-      else if (/^core-login-gaps-.+\.json$/.test(d) && statSync(path).mtimeMs >= startedAtMs) rmSync(path, { force: true })
+  // Both the repository root and apps/api (a spec resolves `.migration-out` from either, depending on how it is started). Only entries
+  // that a spec creates (known test prefixes) and files created since this run started are removed, never an older real run's output;
+  // then an EMPTY `.migration-out` folder is removed too (PO rule: a test run leaves no folder behind in the repository).
+  const TEST_DIR = /^(core-test-|be35-test-|q10-[a-z]+-|activity-test-|qload-test-)/
+  for (const root of [fileURLToPath(new URL('../../../../.migration-out/', import.meta.url)), fileURLToPath(new URL('../../.migration-out/', import.meta.url))]) {
+    try {
+      for (const d of readdirSync(root)) {
+        const path = join(root, d)
+        if (TEST_DIR.test(d)) rmSync(path, { recursive: true, force: true })
+        else if (/^core-login-gaps-.+\.json$/.test(d) && statSync(path).mtimeMs >= startedAtMs) rmSync(path, { force: true })
+      }
+      if (readdirSync(root).length === 0) rmSync(root, { recursive: true, force: true })
+    } catch {
+      // no such folder: nothing to remove
     }
-  } catch {
-    // no such folder: nothing to remove
   }
 }
 

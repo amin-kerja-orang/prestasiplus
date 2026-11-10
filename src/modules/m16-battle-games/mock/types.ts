@@ -4,6 +4,8 @@
  * 47 seeded results and the repository reads of §7.2 exist (the game handlers are M16-T2).
  */
 
+import type { GamesAdminGameKey, GamesAdminSettingKey } from '@pp/contract'
+
 export type BattleMode = 'quick_match' | 'school_battle' | 'challenge' | 'queue_join'
 export type QuestionType = 'biasa' | 'pksk' | 'spm'
 export type PkskLevel = 'T1' | 'T4'
@@ -39,6 +41,14 @@ export interface BattleRow {
   questionIds: number[]
   /** Seed rows (stored job figures DC-M16-03 already include them). */
   seeded: boolean
+  /** The battle's question count (5, 10, 15 or 20); absent on seed rows (10). */
+  questionCount?: number
+  /** The opponent is "Robot PrestasiPlus" (48 GAME-01). */
+  robot?: boolean
+  /** When the current round opened (epoch ms); the answering window runs from here. */
+  roundStartMs?: number
+  /** While set and in the future, the round just closed is on its 3 s reveal (epoch ms). */
+  revealUntilMs?: number | null
 }
 
 export type QueueStatus = 'waiting' | 'incoming_challenge' | 'matched' | 'expired' | 'abandoned'
@@ -52,6 +62,8 @@ export interface SimSpec {
   afterPolls?: number
   /** `error`: the HTTP status the polls answer. */
   status?: number
+  /** `match`: the opponent is the robot (the matched poll carries `robot: true`). */
+  robot?: boolean
 }
 
 export interface Challenger {
@@ -82,6 +94,7 @@ export interface BattleQueueRow {
   lastPolledAtMs: number
   createdAtMs: number
   sim: SimSpec
+  questionCount?: number
   /** A join request on this queue (`POST /api/battle/join-queue`), DV-M16-06. */
   joiner: { userId: number; outcome: JoinOutcome } | null
 }
@@ -99,6 +112,7 @@ export interface BattleInvitationRow {
   pkskTargetLevel: PkskLevel | null
   status: InvitationStatus
   createdAtMs: number
+  questionCount?: number
 }
 
 /** DATA-M16-04 BattleAnswer (arena, provisional). */
@@ -154,7 +168,7 @@ export interface TournamentRow {
   seq: number
 }
 
-export type LeagueStatus = 'upcoming' | 'ongoing' | 'ended'
+export type LeagueStatus = 'upcoming' | 'active' | 'ended'
 export type LeagueType = 'friendly' | 'tournament' | 'league'
 export type LeagueScope = 'school' | 'district' | 'state' | 'national'
 export type LeagueScoring = 'total_score' | 'avg_accuracy' | 'wins'
@@ -267,10 +281,14 @@ export interface RoomState {
   total: number
   /** The question pool drawn at start. */
   qIds: number[]
+  /** Papan Bijak: the room's seed, a part of the reshuffle stream names (ruling 56). */
+  seed?: string
   /** Next unused pool index. */
   cursor: number
   /** The viewer whose action is awaited (the host). */
   humanId: number
+  /** Humans seated at the start (standings are written only when 2 or more started, 48 GAME-R). */
+  startHumans?: number
   awaiting: 'roll' | 'answer' | null
   /** The pending question id. */
   pendingQ: number | null
@@ -290,6 +308,12 @@ export interface RoomState {
   teamScores: Record<string, number>
   winnerId: number | null
   mvpId: number | null
+  /** Papan Bijak: users who left the game in play and count for standings (jumlah + 1 at a settled finish, rulings 50.3/50.4). */
+  leavers?: number[]
+  /** Papan Bijak: per human seat, the last poll (ms) and the consecutive timeouts (ruling 49). */
+  presence?: Record<string, { polledMs: number | null; timeouts: number }>
+  /** Papan Bijak: the reward each staying human got at the finish, by user id (`result.reward` of the viewer). */
+  rewards?: Record<string, { xp: number; syiling: number; capped: boolean; reason: null }>
   /** Draw counter of the room's dice and bot streams. */
   draws: number
   /** When the current round began (ms; Perang Fakta round clock, BR-M16-20). Null before the start. */
@@ -391,4 +415,17 @@ export interface PbSearchRow {
 export interface GameSettingsRow {
   id: number
   boardgameQuizTiles: number
+  /** The other keys of 48 section 2 on Tetapan Permainan (the API keeps them in `gamification_settings`). */
+  values: Record<GamesAdminSettingKey, number>
+  /** `game_enabled_<game_key>` of Senarai Permainan. Nothing in the mock hub reads it yet (S7-T01). */
+  gamesActive: Record<GamesAdminGameKey, boolean>
+}
+
+/** DM-64 `spin_segments`; the row id is the position. */
+export interface SpinSegmentRow {
+  id: number
+  label: string
+  syiling: number
+  weight: number
+  active: boolean
 }

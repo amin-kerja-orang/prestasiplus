@@ -16,6 +16,7 @@ import {
   type BijakAttemptStimulus,
   type BijakBuilderQuestionStatus,
   type BijakBuilderReviewQuestion,
+  questionTypeFromDb,
 } from '@pp/contract'
 
 import { fileUrlOf } from '../../bijak/question-bridge/be09-mapping'
@@ -67,7 +68,9 @@ export const marksOfRows = (rows: readonly PartRow[]): number => rows.reduce((n,
 
 /** `kindOf`: objektif = one MCQ question; esei = a leaf with a rubric key; berstruktur otherwise. */
 export function kindOfRows(type: string, rows: readonly PartRow[]): 'objektif' | 'berstruktur' | 'esei' {
-  if (type === 'mcq') return 'objektif'
+  // mcq_multi and true_false are question types whose leaves use leaf mode `mcq` (40:757): objective too. fill_blank (short_text) is structured.
+  const code = questionTypeFromDb(type)
+  if (code === 'mcq' || code === 'mcq_multi' || code === 'true_false') return 'objektif'
   return rows.some((r) => r.key?.kind === 'rubric') ? 'esei' : 'berstruktur'
 }
 
@@ -181,8 +184,12 @@ const LEAF_KIND: Record<Leaf['mode'], BijakAttemptLeafKind> = {
 
 function describeKey(leaf: Leaf): SchemeLine[] {
   switch (leaf.mode) {
-    case 'mcq':
+    case 'mcq': {
+      // mcq_multi (S1-T09a): the key lists `correctOptionIds` (option labels) instead of one `correct`.
+      const ids = (leaf.key as { correctOptionIds?: readonly string[] }).correctOptionIds
+      if (ids) return leaf.options.flatMap((o, i) => (ids.includes(o.label) ? [{ text: SCHEME_LINES.correctOption(i) }] : []))
       return [{ text: SCHEME_LINES.correctOption(leaf.options.findIndex((o) => o.label === leaf.key.correct)) }]
+    }
     case 'pksk_choice':
       return []
     case 'short_text':

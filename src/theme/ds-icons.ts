@@ -11,6 +11,8 @@ export const dsIconBaseNames = [
   'arrow-right',
   // `key`: PkskAccessPage (icon: 'key') and SchoolUserEditForm (<Ds… icon="key">); its last literal went with the Kelas Saya join box (#676).
   'key',
+  // `toggle-left`: FeatureTogglesPage empty state (<DsEmptyState icon="toggle-left">), S0-T10.
+  'toggle-left',
   'book-open',
   'caret-down',
   'caret-up-down',

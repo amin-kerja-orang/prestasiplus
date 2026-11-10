@@ -182,13 +182,13 @@ export function generatedBattles(rng: { int(min: number, max: number): number; p
   return out
 }
 
-async function seedBattle(db: PrismaClient, b: SeedBattle, users: Map<string, bigint>, schools: Map<string, bigint>): Promise<void> {
+async function seedBattle(db: PrismaClient, date: (iso: string) => Date, b: SeedBattle, users: Map<string, bigint>, schools: Map<string, bigint>): Promise<void> {
   const id = seedUuid(b.n)
   if (await db.battle.findUnique({ where: { id }, select: { id: true } })) return
   const userA = users.get(b.emailA)
   const userB = users.get(b.emailB)
   if (userA === undefined || userB === undefined) return
-  const at = new Date(b.createdAt)
+  const at = date(b.createdAt)
   const school = (code: string | null): bigint | null => (code === null ? null : (schools.get(code) ?? null))
   await db.battle.create({
     data: {
@@ -228,6 +228,6 @@ export const battleSeed: SeedModule = {
     for (const s of await prisma.school.findMany({ where: { code: { in: Object.values(SCHOOL_CODE) } }, select: { id: true, code: true } })) {
       if (s.code) schools.set(s.code, s.id)
     }
-    for (const b of battles) await seedBattle(prisma, b, users, schools)
+    for (const b of battles) await seedBattle(prisma, ctx.date, b, users, schools)
   },
 }

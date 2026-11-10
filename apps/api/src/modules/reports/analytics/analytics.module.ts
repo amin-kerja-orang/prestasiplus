@@ -2,10 +2,14 @@ import { Module } from '@nestjs/common'
 
 import { ThrottleModule } from '../../../common/throttle'
 import { ClassesModule } from '../../classes'
+import { CurriculumModule } from '../../curriculum'
+import { GamesModule } from '../../games'
+import { QuestionsModule } from '../../questions'
+import { UsersModule } from '../../users'
 import { AnalyticsRepository } from './analytics.repository'
-import { MonitoringReportsController, TeacherReportsController } from './http/analytics.controllers'
+import { AdminCentralController, MonitoringReportsController, TeacherReportsController } from './http/analytics.controllers'
 import { ItemAnalysisService } from './services/item-analysis.service'
-import { MonitoringService } from './services/monitoring.service'
+import { AdminCentralService, MonitoringService } from './services/monitoring.service'
 import { ReportService } from './services/report.service'
 import { StudentDetailService } from './services/student-detail.service'
 
@@ -15,9 +19,9 @@ import { StudentDetailService } from './services/student-detail.service'
  * question bank. Not to be confused with BE-19's `PerformanceModule` (`/analytics/*`).
  */
 @Module({
-  imports: [ThrottleModule, ClassesModule],
-  controllers: [MonitoringReportsController, TeacherReportsController],
-  providers: [AnalyticsRepository, MonitoringService, StudentDetailService, ReportService, ItemAnalysisService],
+  imports: [ThrottleModule, ClassesModule, UsersModule, CurriculumModule, QuestionsModule, GamesModule],
+  controllers: [MonitoringReportsController, TeacherReportsController, AdminCentralController],
+  providers: [AnalyticsRepository, MonitoringService, AdminCentralService, StudentDetailService, ReportService, ItemAnalysisService],
   exports: [AnalyticsRepository],
 })
 export class AnalyticsReportsModule {}

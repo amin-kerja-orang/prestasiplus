@@ -7,7 +7,6 @@ import type { PrismaService } from '../../src/db/prisma.service'
 import { BattleModule } from '../../src/modules/battle'
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { BattleReadService } from '../../src/modules/battle/battle-read.service'
-import { GAME_RESULT_PORT, type GameResultPort } from '../../src/modules/battle/game-result.port'
 import { createTestApp } from '../support/app'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -95,11 +94,9 @@ describe('BattleModule wiring', () => {
     await db.drop()
   })
 
-  it('resolves the shared providers, the no-op M14 port, and exports the read service', async () => {
+  it('resolves the shared providers and exports the read service', async () => {
     expect(app.get(BattleDeps, { strict: false })).toBeInstanceOf(BattleDeps)
     expect(app.get(BattleReadService, { strict: false })).toBeInstanceOf(BattleReadService)
-    const port = app.get<GameResultPort>(GAME_RESULT_PORT, { strict: false })
-    await expect(port.onGameResult({ userId: '1', game: 'battle', event: 'win', coins: 0, xp: 0, correct: 1, total: 10, isTest: false })).resolves.toBeUndefined()
   })
 
   it('the skeleton adds no route: a battle path is still default-deny 401 or 404, never 500', async () => {
@@ -123,8 +120,7 @@ describe('BattleDeps reads (empty owner data)', () => {
   })
 
   it('answers empty/neutral values on an empty database', async () => {
-    expect(await deps.activeStudents()).toEqual([])
-    expect(await deps.searchStudents('ab', '1', 10)).toEqual([])
+    expect(await deps.searchStudents('ab', '1', 10, '1')).toEqual([])
     expect(await deps.student('999')).toBeNull()
     expect(await deps.student('x')).toBeNull()
     expect(await deps.subject('x')).toBeNull()
@@ -132,7 +128,6 @@ describe('BattleDeps reads (empty owner data)', () => {
     expect(await deps.school('999')).toBeNull()
     expect(await deps.arenaQuestion('999')).toBeNull()
     expect(await deps.gradeAnswer('999', 0)).toBeNull()
-    expect(await deps.platformAccuracy()).toBe(0)
     expect(await deps.drawQuestions({ questionType: 'pksk', subjectId: null, levelId: null }, 10, { next: () => 0, int: () => 0, pick: (a) => a[0]! })).toBeNull()
   })
 })

@@ -4,8 +4,8 @@
  * user guide. Five role tabs (initial role = the URL hash without "#", else `?peranan=`, else
  * `pelajar`; an unknown hash leaves no tab active and no panel, as live), the contact block fed by
  * `GET /api/config/support` (#43; hidden until the API answers with a non-empty value, each button
- * hidden when its own value is empty, nothing on a failed call) and, for a guest, the "Daftar
- * Percuma Sekarang" button.
+ * hidden when its own value is empty, the service hours line only when set, nothing on a failed
+ * call) and, for a guest, the "Daftar Percuma Sekarang" button.
  *
  * v2 restyle (B04): standalone page on the theme tokens (own top bar, no shell), role cards as
  * buttons, panels as `UCard`s.
@@ -15,7 +15,7 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useSession } from '@/composables/useSession'
-import { DsArt3D, DsCluster, DsIconChip, DsStack } from '@/ds'
+import { DsArt3D, DsCluster, DsIconChip, DsStack, tileLayout } from '@/ds'
 import { useThemeMode } from '@/theme/color-mode'
 
 import { fetchSupportConfig } from '../api/content'
@@ -23,6 +23,9 @@ import WhatsAppIcon from '../components/icons/WhatsAppIcon.vue'
 import PanduanRolePanel from '../components/panduan/PanduanRolePanel.vue'
 import PanduanTopBar from '../components/panduan/PanduanTopBar.vue'
 import { GUIDE_ROLES, resolveGuideRole, type RoleId } from '../lib/panduan-content'
+
+// One tile track for the role buttons: no orphan row at any width (design 13).
+const roleGrid = tileLayout(GUIDE_ROLES.length)
 
 const LOGO_URL = `${import.meta.env.BASE_URL}images/prestasiplus-logo.svg`
 
@@ -55,6 +58,7 @@ const support = useApi((signal) => fetchSupportConfig({ signal }))
 // No fallback: nothing is shown until the API answers, and nothing on an error.
 const email = computed(() => support.data.value?.email?.trim() ?? '')
 const whatsapp = computed(() => support.data.value?.whatsapp?.trim() ?? '')
+const hours = computed(() => support.data.value?.hours?.trim() ?? '')
 const hasContact = computed(() => email.value !== '' || whatsapp.value !== '')
 
 function setRole(id: string): void {
@@ -82,10 +86,11 @@ function setRole(id: string): void {
         </p>
       </header>
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5" data-testid="panduan-tabs">
+      <div class="grid gap-3" :class="roleGrid.grid" data-testid="panduan-tabs">
         <UButton
-          v-for="role in GUIDE_ROLES"
+          v-for="(role, i) in GUIDE_ROLES"
           :key="role.id"
+          :class="roleGrid.span[i]"
           :color="activeRole === role.id ? 'primary' : 'neutral'"
           :variant="activeRole === role.id ? 'solid' : 'soft'"
           block
@@ -109,6 +114,10 @@ function setRole(id: string): void {
             <h2 class="text-heading text-highlighted">Perlukan Bantuan Lanjut?</h2>
             <p class="text-label text-muted">
               Hubungi pasukan sokongan kami untuk sebarang pertanyaan.
+              <template v-if="hours !== ''">
+                <br />
+                <span data-testid="panduan-hours">Waktu perkhidmatan: {{ hours }}</span>
+              </template>
             </p>
             <DsCluster gap="sm" justify="center">
               <UButton

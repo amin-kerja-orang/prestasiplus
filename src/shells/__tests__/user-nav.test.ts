@@ -17,6 +17,7 @@ import {
   type BottomNavLink,
   type NavEntry,
   type NavItem,
+  ROLE_HIDDEN_IDS,
 } from '../nav/user-nav'
 import { OUT_OF_SCOPE_ROUTES, isOutOfScope } from '../nav/out-of-scope'
 import { SHELL_ICON_FALLBACKS, shellIcon } from '../shared/shell-icons'
@@ -78,11 +79,36 @@ const liveMenuLinks = inventory.elements
 /** Live links the rebuild deliberately changes (approved DVs). */
 const REPLACED_LIVE_HREFS: Record<string, string> = {
   '/settings': '/tetapan', // M01 DV-01 (drawer "Tetapan")
+  // team-dd ruling on #503 (S0-T07): the admin "Databank Soalan" opened the teacher-only
+  // /guru/databank; it opens the admin lane page instead (the teacher item keeps /guru/databank).
+  '/guru/databank': '/admin/spm/databank',
 }
-/** Rebuild hrefs that differ from live on purpose. */
-const CHANGED_HREFS = new Set([
-  '/admin/hadiah/tebusan', // M15 DV-M15-04 ("Admin Tebusan", live /admin/hadiah)
-  '/admin/monitoring', // S6-T08 (R1-ADM-M-03: the admin Monitoring item opens /admin/monitoring)
+/** Live links the rebuild removes from this menu: "Urus Tiket" (ruling on #508; Admin Pusat uses the Pentadbiran menu). */
+const REMOVED_LIVE_HREFS = new Set(['/admin/tiket'])
+/**
+ * Live links of the admin capture whose admin-only copies were retired from USER_NAV (D113, F-02,
+ * S0-T07): Admin Pusat is framed by the Pentadbiran menu, which lists these screens itself (or, for
+ * the gift links, will when the card that builds them lands).
+ */
+/** Live label -> the V2 label the nav now uses (V2 `guru/layout.blade.php`, `pelajar/layout.blade.php`). */
+const V2_LABEL_OF_LIVE: Record<string, string> = {
+  Laporan: 'Laporan Statistik',
+  Video: 'Video Pembelajaran',
+  Panduan: 'Panduan Pengguna',
+  PKSK: 'PKSK PRO',
+  'Rantaian Impak': 'Rantaian',
+}
+
+const RETIRED_LIVE_HREFS = new Set([
+  '/cikgu/kelulusan-hadiah',
+  // V2 pupil sidebar has one "Kedai Hadiah" (DIGITAL), at /gamification/rewards; the page stays reachable.
+  '/cikgu/hadiah',
+  '/admin/hadiah',
+  '/admin',
+  '/admin/billing',
+  '/admin/marketplace/products',
+  '/admin/marketplace/sellers',
+  '/guru/command-center',
 ])
 /** Student-only entries: seen in the murid screenshots, not in the admin-identity capture. */
 const STUDENT_ONLY_IDS = new Set(
@@ -126,11 +152,12 @@ describe('USER_NAV data', () => {
   it('every live sidebar/drawer link is in the menu (by href), except approved DV changes', () => {
     const menuHrefs = new Set(ALL_ITEMS.map((i) => i.to))
     const missing = liveMenuLinks
+      .filter((l) => !REMOVED_LIVE_HREFS.has(l.href))
       .map((l) => REPLACED_LIVE_HREFS[l.href] ?? l.href)
-      .filter((href) => !menuHrefs.has(href))
+      .filter((href) => !menuHrefs.has(href) && !RETIRED_LIVE_HREFS.has(href))
     // The capture has ~130 menu links (sidebar + drawer); guard against an empty read.
     expect(liveMenuLinks.length).toBeGreaterThan(100)
-    // `/admin/hadiah` stays in the menu as "Urus Hadiah"; only "Admin Tebusan" moved (DV-M15-04).
+    // The retired admin-only copies (F-02) are the only live links not in USER_NAV any more.
     expect([...new Set(missing)]).toEqual([])
   })
 
@@ -142,16 +169,20 @@ describe('USER_NAV data', () => {
       '/cikgu/rph': 'RPH',
       '/ppd/statistik-penggunaan': 'Statistik Penggunaan',
       '/jpn/ranking-kebangsaan': 'Ranking Kebangsaan',
-      '/admin/hadiah': 'Admin Tebusan',
     }
     const mismatched = liveMenuLinks.filter((l) => {
-      // User decision 2026-10-31 (DV-M12-39): "Tahap N" replaces the live "TN" level labels.
-      const liveText = l.text.replace(/^T([1-4]): /, 'Tahap $1: ')
+      if (REMOVED_LIVE_HREFS.has(l.href)) return false
+      // PO decision 2026-11-10: the learning-portal labels follow V2 (guru/pelajar layouts), so the
+      // live "Laporan", "Video", "Panduan" and "PKSK" read as the V2 label here.
+      const liveText = V2_LABEL_OF_LIVE[l.text] ?? l.text
       const href = REPLACED_LIVE_HREFS[l.href] ?? l.href
       const candidates = byHref.get(href) ?? []
       const ok = candidates.some((c) => liveText === c.label || liveText.startsWith(`${c.label} `))
       return (
-        !ok && DRAWER_LABELS[href] !== l.text && !(l.href === '/settings' && l.text === 'Tetapan')
+        !ok &&
+        !RETIRED_LIVE_HREFS.has(href) &&
+        DRAWER_LABELS[href] !== l.text &&
+        !(l.href === '/settings' && l.text === 'Tetapan')
       )
     })
     expect(mismatched).toEqual([])
@@ -161,10 +192,43 @@ describe('USER_NAV data', () => {
     const liveHrefs = new Set(liveMenuLinks.map((l) => REPLACED_LIVE_HREFS[l.href] ?? l.href))
     const notLive = items(navFor('admin', 'sidebar', USER_NAV, FULL))
       .concat(items(navFor('admin', 'drawer')))
-      .filter((i) => !liveHrefs.has(i.to) && !CHANGED_HREFS.has(i.to))
+      .filter((i) => !liveHrefs.has(i.to))
       .map((i) => i.to)
     expect(notLive).toEqual([])
     expect(STUDENT_ONLY_IDS.size).toBeGreaterThan(0)
+  })
+
+  it('admin "Databank Soalan" opens /admin/spm/databank, the teacher item keeps /guru/databank (S0-T07, #503)', () => {
+    const byId = new Map(ALL_ITEMS.map((i) => [i.id, i]))
+    expect(byId.get('databank-soalan')?.to).toBe('/admin/spm/databank')
+    expect(byId.get('databank-soalan')?.label).toBe('Databank Soalan')
+    expect(byId.get('databank-soalan')?.fa).toBe('fa-database')
+    expect(byId.get('t-databank')?.to).toBe('/guru/databank')
+    expect(items(navFor('admin', 'sidebar', USER_NAV, FULL)).filter((i) => i.to === '/guru/databank')).toEqual([])
+  })
+
+  it('the admin-only copies retired by F-02 are gone (guru-*, admin-soalan-by-chapter, admin-tebusan, urus-hadiah, kelulusan-hadiah, command-center-guru, ke-admin-panel, billing-dashboard, urus-produk, urus-penjual)', () => {
+    const all = [
+      ...USER_NAV.map((e) => e.id),
+      ...USER_NAV.flatMap((e) => (e.kind === 'group' ? e.children.map((c) => c.id) : [])),
+    ]
+    expect(
+      all.filter(
+        (id) =>
+          id.startsWith('guru-') ||
+          [
+            'admin-soalan-by-chapter',
+            'admin-tebusan',
+            'urus-hadiah',
+            'kelulusan-hadiah',
+            'command-center-guru',
+            'ke-admin-panel',
+            'billing-dashboard',
+            'urus-produk',
+            'urus-penjual',
+          ].includes(id),
+      ),
+    ).toEqual([])
   })
 
   it('bottom nav: Home, SPM, Game, Topik links, then Chat and Lagi buttons (live)', () => {
@@ -219,7 +283,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Amaran Awal',
       'Kelulusan Hadiah',
       'Pakej',
-      'Urus Tiket',
       'Gambar Rajah',
       'Kehadiran Digital',
       '🛡️ Kawalan Kualiti',
@@ -228,12 +291,12 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       expect(menu).not.toContain(hidden)
     }
     expect(menu).toContain('Heatmap Topik Lemah')
-    expect(menu).toContain('Kedai Hadiah 🎁')
+    expect(menu).toContain('Kedai Hadiah')
     expect(menu).toContain('Jemput Ibu Bapa')
     expect(menu.slice(-5)).toEqual([
       'Profil Saya',
       'Invois Saya',
-      'Panduan',
+      'Panduan Pengguna',
       'Bantuan',
       'Tiket Bantuan',
     ])
@@ -241,10 +304,14 @@ describe('navFor (role filter: hidden, not disabled)', () => {
 
   it('admin sees every captured entry, including the admin-only ones', () => {
     const menu = labels(navFor('admin', 'sidebar', USER_NAV, FULL))
-    for (const label of ['Ke Admin Panel', 'Portal Guru', 'Amaran Awal', 'Pakej', 'Urus Tiket']) {
+    for (const label of ['Portal Guru', 'Amaran Awal', 'Pakej']) {
       expect(menu).toContain(label)
     }
     expect(menu).not.toContain('Heatmap Topik Lemah')
+    // retired admin-only copies (F-02) are gone
+    for (const label of ['Ke Admin Panel', 'Billing Dashboard', 'Urus Produk', 'Urus Penjual']) {
+      expect(menu).not.toContain(label)
+    }
   })
 
   it('teacher: the full live guru sidebar, in order (roles-matrix/guru)', () => {
@@ -266,7 +333,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Kelas Live',
       'PENILAIAN',
       'Prestasi',
-      'Laporan',
+      'Laporan Statistik',
       'Amaran Awal',
       'ANALITIK',
       'Monitoring',
@@ -307,10 +374,10 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Syiling & Ganjaran',
       'LAIN-LAIN',
       'Perutusan',
-      'Video',
+      'Video Pembelajaran',
       'Sumbang Artikel',
       'Profil Saya',
-      'Panduan',
+      'Panduan Pengguna',
       'Analisis Item',
       'Bantuan',
       'Tiket Bantuan',
@@ -318,11 +385,11 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     const kirk = navFor('teacher', 'sidebar', USER_NAV, FULL).find((e) => e.id === 't-kirkpatrick')
     expect(kirk?.kind === 'group' && kirk.children.map((c) => c.label)).toEqual([
       'Ringkasan',
-      'Tahap 1: Reaksi',
-      'Tahap 2: Pembelajaran',
-      'Tahap 3: Tingkah Laku',
-      'Tahap 4: Hasil',
-      'Rantaian Impak',
+      'T1: Reaksi',
+      'T2: Pembelajaran',
+      'T3: Tingkah Laku',
+      'T4: Hasil',
+      'Rantaian',
       'Intervensi',
     ])
   })
@@ -389,6 +456,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'DSKP Heatmap',
       'Analisa Item',
       'Laporan Aktiviti',
+      'Tanda Karangan',
       'AKADEMIK',
       'Soalan Berstruktur',
       'Kombo Harian',
@@ -480,6 +548,32 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     ]) {
       expect(school, to).toContain(to)
     }
+  })
+
+  it('S6-T14: /guru/set-soalan is not out of scope, yet no menu shows a Set Soalan item', () => {
+    expect(isOutOfScope('/guru/set-soalan')).toBe(false)
+    expect(OUT_OF_SCOPE_ROUTES.some((r) => r.to === '/guru/set-soalan')).toBe(false)
+    const SET_SOALAN_IDS = ['t-set-soalan', 'guru-set-soalan']
+    expect(ROLE_HIDDEN_IDS.teacher).toContain('t-set-soalan')
+    expect(ROLE_HIDDEN_IDS.admin).toContain('guru-set-soalan')
+    // The entries stay as data (the route exists) but are hidden for every role, on every surface.
+    const dataIds = new Set(ALL_ITEMS.map((i) => i.id))
+    // `guru-set-soalan` (the admin drawer copy) was retired from USER_NAV with the other admin-only copies (S0-T07).
+    expect(dataIds.has('t-set-soalan')).toBe(true)
+    for (const role of ROLES.concat('admin')) {
+      for (const surface of ['sidebar', 'drawer'] as const) {
+        const rendered = items(navFor(role, surface)).map((i) => i.id)
+        for (const id of SET_SOALAN_IDS) expect(rendered, `${role} ${surface} ${id}`).not.toContain(id)
+        expect(
+          items(navFor(role, surface)).filter((i) => i.to === '/guru/set-soalan'),
+          `${role} ${surface}`,
+        ).toEqual([])
+      }
+    }
+    // The opt-out still lists the teacher entry.
+    expect(items(navFor('teacher', 'sidebar', USER_NAV, FULL)).map((i) => i.id)).toContain(
+      't-set-soalan',
+    )
   })
 
   it('shows nothing to a guest', () => {
@@ -575,7 +669,7 @@ describe('S0-T06 nav integrity (scope on)', () => {
       'tournament', 'topik', 'peta-belajar', 'kelas-saya', 'set-soalan-guru', 'audio-kbat',
       'syiling-token', 'tukar-token', 'cabaran-harian', 'kedai-hadiah', 'marketplace',
       'papan-pendahulu', 'pencapaian', 'kotak-misteri', 'rujuk-kawan', 'cikgu-alesa',
-      'kedai-hadiah-digital', 'timeline-saya', 'jemput-ibu-bapa', 'profil-saya',
+      'timeline-saya', 'jemput-ibu-bapa', 'profil-saya',
       'tetapan-peribadi', 'panduan', 'tiket-bantuan',
     ],
     teacher: [
@@ -583,7 +677,7 @@ describe('S0-T06 nav integrity (scope on)', () => {
       't-pelajar-saya', 't-prestasi', 't-laporan', 't-monitoring', 't-kirk-ringkasan',
       't-kirk-reaksi', 't-kirk-pembelajaran', 't-kirk-tingkah-laku', 't-kirk-hasil',
       't-kirk-rantaian', 't-kirk-intervensi', 't-analitik-adaptif', 't-analisa-item',
-      't-laporan-mingguan', 't-sumbang-soalan', 't-soalan-rujukan', 't-soalan-berstruktur', 't-perutusan', 't-video', 't-profil-saya',
+      't-laporan-mingguan', 't-sumbang-soalan', 't-soalan-rujukan', 't-soalan-berstruktur', 't-databank', 't-perutusan', 't-video', 't-profil-saya',
       'tetapan-peribadi',
       't-panduan', 't-analisis-item', 'tiket-bantuan',
     ],

@@ -73,7 +73,7 @@ describe('applySelfMarks (V2 recomputeScore with best-N)', () => {
     ['q1-a', { text: 'jawapan satu' }],
     ['q2-a', { text: 'jawapan dua' }],
   ])
-  const base = gradeAttempt(composition, bundles, answers)
+  const base = gradeAttempt(composition, bundles, answers, 1)
 
   it('the automatic grading leaves written parts waiting', () => {
     expect(base.provisional).toBe(true)
@@ -112,12 +112,12 @@ describe('applySelfMarks (V2 recomputeScore with best-N)', () => {
 
   it('a self-mark of 0 on a written answer is "salah", not pending; on a blank part it stays "kosong"', () => {
     expect(applySelfMarks(base, composition, { 'q1-a': { mark: 0 } }).questions[0]!.parts[0]!.status).toBe('salah')
-    const blankBase = gradeAttempt(composition, bundles, new Map())
+    const blankBase = gradeAttempt(composition, bundles, new Map(), 1)
     expect(applySelfMarks(blankBase, composition, { 'q1-a': { mark: 0 } }).questions[0]!.parts[0]!.status).toBe('kosong')
   })
 
   it('a self-mark makes its question "attempted" for best-N, like a V2 response row (ExamBestNScorer.php:75,114)', () => {
-    const onlyQ1 = gradeAttempt(composition, bundles, new Map([['q1-a', { text: 'jawapan satu' }]]))
+    const onlyQ1 = gradeAttempt(composition, bundles, new Map([['q1-a', { text: 'jawapan satu' }]]), 1)
     expect(onlyQ1.questions[1]!.attempted).toBe(false)
     const r = applySelfMarks(onlyQ1, composition, { 'q2-a': { mark: 6 } })
     expect(r.questions[1]!.attempted).toBe(true)
@@ -126,7 +126,7 @@ describe('applySelfMarks (V2 recomputeScore with best-N)', () => {
   })
 
   it('a self-mark above 0 on a BLANK answer is "betul"/"separa", never "kosong" (the score counts it)', () => {
-    const blankBase = gradeAttempt(composition, bundles, new Map())
+    const blankBase = gradeAttempt(composition, bundles, new Map(), 1)
     const full = applySelfMarks(blankBase, composition, { 'q1-a': { mark: 10 } })
     expect(full.questions[0]!.parts[0]).toMatchObject({ awarded: 10, status: 'betul', selfMarked: true })
     expect(full.score).toBe(10)
@@ -138,7 +138,7 @@ describe('applySelfMarks (V2 recomputeScore with best-N)', () => {
   })
 
   it('assembleResult of an unchanged result equals the first grading (refactor guard)', () => {
-    const again = assembleResult(composition, structuredClone(base.questions) as never)
+    const again = assembleResult(composition, structuredClone(base.questions) as never, 1)
     expect(again).toEqual(base)
   })
 })
@@ -148,7 +148,7 @@ describe('decorateResult', () => {
     const composition: SectionSnapshot[] = [{ id: 's1', label: 'B', rule: { type: 'all' }, questionIds: ['q1'] }]
     const bundles = new Map([['q1', bundle('q1', [{ id: 'q1-a', marks: 10 }])]])
     const answers = new Map([['q1-a', { text: 'perlembagaan menjadi asas undang-undang' }]])
-    const d = decorateResult(gradeAttempt(composition, bundles, answers), bundles, answers)
+    const d = decorateResult(gradeAttempt(composition, bundles, answers, 1), bundles, answers)
     expect(d.questions[0]!.parts[0]!.selfMarkable).toBe(true)
     expect(d.questions[0]!.parts[0]!.suggestion).toBeUndefined()
     expect(d.score).toBe(0)

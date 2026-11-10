@@ -13,8 +13,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'role',
       access: 'auth',
-      title: 'Tetapan Peribadi',
-      header: { title: 'Tetapan Peribadi' },
+      title: 'Tetapan Akaun',
+      header: { title: 'Tetapan Akaun', subtitle: 'Maklumat profil anda' },
       module: 'M01',
       v2: true,
     },

@@ -9,16 +9,17 @@ import { completionsStep, referralCodesStep, referralsStep, spmTargetsStep, unlo
 import { articlesStep, audioSetsStep, bannersStep, notesStep, videosStep } from './content-steps'
 import { feedbackStep, ticketsStep, timelineStep } from './ops-steps'
 import { questionSetsStep } from './question-set-steps'
+import { headcountsStep, rewardRedemptionsStep, rewardsStep } from './rewards-steps'
 
 export const catalogueGroup: ActivityGroup = {
   name: 'catalogue',
-  steps: (a) => [tiersStep(a), achievementsStep(a), challengesStep(a), settingsStep(a), rewardSettingsStep(a)],
+  steps: (a) => [tiersStep(a), achievementsStep(a), challengesStep(a), settingsStep(a), rewardSettingsStep(a), rewardsStep(a)],
   notMigrated: [],
 }
 
 export const activityGroupB: ActivityGroup = {
   name: 'activity',
-  steps: (a) => [completionsStep(a), unlocksStep(a), referralCodesStep(a), referralsStep(a), spmTargetsStep(a)],
+  steps: (a) => [completionsStep(a), unlocksStep(a), referralCodesStep(a), referralsStep(a), spmTargetsStep(a), rewardRedemptionsStep(a)],
   notMigrated: [],
 }
 
@@ -32,6 +33,6 @@ export const contentGroup: ActivityGroup = {
 
 export const opsGroup: ActivityGroup = {
   name: 'ops',
-  steps: (a) => [ticketsStep(a), timelineStep(a), feedbackStep(a)],
+  steps: (a) => [ticketsStep(a), timelineStep(a), feedbackStep(a), headcountsStep(a)],
   notMigrated: [],
 }

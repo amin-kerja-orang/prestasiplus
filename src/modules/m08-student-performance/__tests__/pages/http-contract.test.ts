@@ -10,8 +10,7 @@ import { useRouteOutcome } from '@/app/router'
 import { setRouteOutcome } from '@/app/router/outcome'
 
 import type { HeadcountDetail } from '../../api/headcount-types'
-import type { Leaderboard, PublicProfile, Ranking, TimelinePost } from '../../api/types'
-import { apiQuery } from '../../lib/ranking'
+import type { Leaderboard, PublicProfile, TimelinePost } from '../../api/types'
 import { routeId } from '../../lib/route-id'
 import { sortPosts } from '../../lib/timeline/posts'
 import HeadcountCreatePage from '../../pages/HeadcountCreatePage.vue'
@@ -92,13 +91,6 @@ describe('string ids (http mode only)', () => {
     expect(routeId('1042')).toBe('1042')
     vi.unstubAllEnvs()
     expect(routeId('1042')).toBe(1042)
-  })
-
-  it('the ranking subject filter is sent as the id string', () => {
-    const state = { scope: '', subjectId: '77', tingkatan: '', negeri: '' }
-    expect(apiQuery(state).subjectId).toBe('77')
-    vi.unstubAllEnvs()
-    expect(apiQuery(state).subjectId).toBe(77)
   })
 
   it('sortPosts breaks ties on string ids without NaN', () => {
@@ -284,26 +276,24 @@ describe('headcount: uniform 404 (privacy OQ-3)', () => {
 })
 
 describe('masked names: userId null', () => {
-  it('the ranking lists a null-userId row as plain text without a link', async () => {
-    const rows: Ranking['rows'] = [1, 2].map((rank) => ({
-      rank,
-      userId: null,
-      name: 'Aina K.',
-      schoolName: 'SMK Contoh',
-      tahap: 3,
-      correct: 10,
-      accuracy: 80,
-    }))
+  it('Kedudukan lists other pupils by name only: no link and no id', async () => {
     perf.fetchRankings.mockResolvedValue({
-      scope: 'nasional',
-      title: 'x',
-      showFooter: false,
-      states: [],
-      rows,
-      total: 2,
+      syiling: 10,
+      scopes: [
+        {
+          scope: 'sekolah',
+          rank: 2,
+          total: 3,
+          percentile: 67,
+          nearby: [
+            { rank: 1, name: 'Aina', syiling: 20, me: false },
+            { rank: 2, name: 'Murid Contoh', syiling: 10, me: true },
+          ],
+        },
+      ],
     })
     const w = await render(RankingPage, '/ranking')
-    expect(w.findAll('[data-testid=ranking-name]')).toHaveLength(2)
+    expect(w.findAll('[data-testid=ranking-nearby-row]')).toHaveLength(2)
     expect(w.html()).not.toContain('/pelajar/')
     expect(w.html()).not.toContain('/prestasi/')
   })

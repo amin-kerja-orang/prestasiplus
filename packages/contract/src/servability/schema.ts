@@ -10,8 +10,13 @@ import { IdSchema } from '../common/ids'
  * decision Q1 of the design keeps them open for sign-off.
  */
 
-/** The six activities the question-level rules cover (T29). Tracking A, Struktur and Permainan are R2 or other lanes. */
-export const SERVABILITY_ACTIVITIES = ['databank', 'latih_tubi_spm', 'bab', 'simulasi_paper', 'simulasi_kuiz', 'jana_kertas'] as const
+/**
+ * The activities of the enum of 60 API-Q-11 (F-19), in the PRD order. `jana_kertas` stays for admin use only (D112(6), FR-QA-45); `permainan` is
+ * R1 (FR-ADM-Q06.1). Tracking A and Struktur are other lanes.
+ */
+export const SERVABILITY_ACTIVITIES = ['databank', 'latih_tubi_spm', 'bab', 'simulasi_paper', 'simulasi_kuiz', 'jana_kertas', 'permainan'] as const
+/** The activities the pupil indicator counts: all but `jana_kertas` (FR-QA-45: "Dilihat murid di {n} daripada 6"). */
+export const SERVABILITY_COUNTED_ACTIVITIES = SERVABILITY_ACTIVITIES.filter((a) => a !== 'jana_kertas')
 export const ServabilityActivitySchema = z.enum(SERVABILITY_ACTIVITIES).meta({ id: 'ServabilityActivity' })
 export type ServabilityActivity = z.infer<typeof ServabilityActivitySchema>
 
@@ -23,6 +28,7 @@ export const SERVABILITY_ACTIVITY_LABELS: Readonly<Record<ServabilityActivity, s
   simulasi_paper: 'Simulasi (kertas)',
   simulasi_kuiz: 'Simulasi Kuiz',
   jana_kertas: 'Jana Kertas',
+  permainan: 'Permainan',
 }
 
 /**
@@ -189,7 +195,7 @@ export const ServabilityActivityResultSchema = z
 export type ServabilityActivityResult = z.infer<typeof ServabilityActivityResultSchema>
 
 /**
- * "Dilihat murid di {servedCount} daripada {total}". `total` is always the number of rows returned (`activities.length`, 6 in R1),
+ * "Dilihat murid di {servedCount} daripada {total}". `total` is always the number of rows returned (6 in R1: the rows of every activity but `jana_kertas`, which is listed for admin use and neither served nor counted, FR-QA-45),
  * never a literal: design section 9.1/9.2 says "7" because it also counts the Tracking A, Struktur/Subjektif, Permainan and PKSK
  * families, which R1 does not serve from the bank (D92). The sentence stays honest by counting rows (design 9.2 counting rule);
  * a client must print `total`, not a constant.

@@ -120,7 +120,7 @@ const CHALLENGE_FIELDS = {
   icon: { kind: 'text', max: 16 },
   challengeType: {
     kind: 'enum',
-    values: ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent'],
+    values: ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent', 'combo'],
   },
   targetValue: { kind: 'int', min: 1 },
   rewardSyiling: { kind: 'int', min: 0 },

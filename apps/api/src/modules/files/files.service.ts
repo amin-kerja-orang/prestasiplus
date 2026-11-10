@@ -48,6 +48,8 @@ export const UPLOAD_ROLES: Readonly<Record<FilePurpose, readonly RoleCode[] | 'a
   timeline_photo: [],
   // S7-T08: admin product images.
   marketplace_image: ['admin'],
+  // 0265: written only by the V2 migration (no role uploads it).
+  kertas_page: [],
 }
 
 export function isFilePurpose(value: unknown): value is FilePurpose {
@@ -121,6 +123,8 @@ interface ReadContext {
   servedWithPublishedQuestion(): Promise<boolean>
   /** REQ-B-008: the file is on a question (any version, a draft included) the reader authored. */
   authoredQuestionImage(): Promise<boolean>
+  /** 0265: the file is a page of a published Kertas Subjektif document. */
+  onPublishedDocument(): Promise<boolean>
 }
 
 type ReadRule = (c: ReadContext) => boolean | Promise<boolean>
@@ -161,6 +165,8 @@ const READ_RULES: Readonly<Record<string, ReadRule>> = {
   cms_image: () => true,
   // S7-T08: product images are shown to every signed-in pupil; an anonymous caller is refused before the rule runs (canRead).
   marketplace_image: () => true,
+  // 0265: page images of a Kertas Subjektif document: admin reads all; any other signed-in caller only while the document is published (V2 serving whitelist).
+  kertas_page: async (c) => (isRole(c, 'admin') ? true : c.auth !== null && (await c.onPublishedDocument())),
   // BE-24: section audio of Audio KBAT sets. Admin only, fail closed: students never read it through /files, they
   // reach it only through the stream route of an approved set (`FilesService.readManaged`, which does its own check).
   audio_kbat: (c) => isRole(c, 'admin'),
@@ -424,7 +430,14 @@ export class FilesService {
       }
       return (await this.prisma.client.$queryRaw<{ one: number }[]>(authorMayReadQuestionImageSql(row.id, userId))).length > 0
     }
-    return rule({ row, auth, owns, ownerSchool, servedWithPublishedQuestion, authoredQuestionImage })
+    const onPublishedDocument = async () => {
+      const hit = await this.prisma.client.paperDocumentPage.findFirst({
+        where: { fileId: row.id, document: { publishedAt: { not: null } } },
+        select: { id: true },
+      })
+      return hit !== null
+    }
+    return rule({ row, auth, owns, ownerSchool, servedWithPublishedQuestion, authoredQuestionImage, onPublishedDocument })
   }
 
   private summary(row: FileRow): StoredFile {

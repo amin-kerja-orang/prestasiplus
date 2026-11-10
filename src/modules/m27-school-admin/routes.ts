@@ -5,6 +5,7 @@ import amaran from './routes/amaran'
 import bulanan from './routes/bulanan'
 import dashboard from './routes/dashboard'
 import dskp from './routes/dskp'
+import karangan from './routes/karangan'
 import guru from './routes/guru'
 import kelas from './routes/kelas'
 import pelajar from './routes/pelajar'
@@ -18,6 +19,7 @@ const routes: RouteRecordRaw[] = [
   ...dashboard,
   ...statistik,
   ...dskp,
+  ...karangan,
   ...bulanan,
   ...kelas,
   ...pelajar,

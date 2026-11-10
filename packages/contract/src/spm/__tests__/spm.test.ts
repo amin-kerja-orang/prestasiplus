@@ -138,9 +138,9 @@ const subjectSets = {
   targetSize: 40,
   summary: { bersih: 1, bankBesar: 1, readyQuestions: 119, belumCukup: 1 },
   sets: [
-    { setNo: 1, status: 'bersih', readyCount: 40, bankSource: null, dskpTagged: 12, dskpTotal: 40 },
-    { setNo: 2, status: 'bank_besar', readyCount: 40, bankSource: 67, dskpTagged: 0, dskpTotal: 40 },
-    { setNo: 3, status: 'belum_cukup', readyCount: 12, bankSource: null, dskpTagged: 0, dskpTotal: 12 },
+    { year: 2026, setNo: 1, status: 'bersih', readyCount: 40, bankSource: null, dskpTagged: 12, dskpTotal: 40 },
+    { year: 2026, setNo: 2, status: 'bank_besar', readyCount: 40, bankSource: 67, dskpTagged: 0, dskpTotal: 40 },
+    { year: 2025, setNo: 3, status: 'belum_cukup', readyCount: 12, bankSource: null, dskpTagged: 0, dskpTotal: 12 },
   ],
 }
 
@@ -517,6 +517,7 @@ describe('API-BIJAK-13 Tracking A admin (S3-T05)', () => {
     attention: ['Hanya 8 daripada 40 soalan'],
     items: [{ kind: 'group', id: '5', position: 1, questions: 1, label: 'Rajah 3', members: [member] }],
     candidates: 12,
+    excludedBySibling: 3,
     candidateItems: [{ kind: 'question', id: '11', questions: 1, label: 'Soalan', members: [member] }],
   }
 

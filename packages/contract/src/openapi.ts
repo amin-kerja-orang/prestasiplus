@@ -15,6 +15,7 @@ import { envelopeOf, listEnvelopeOf, ListMetaSchema, PageQuerySchema } from './c
 import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } from './common/enums'
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
+import { FEATURE_FLAGS_COMPONENT_SCHEMAS, registerFeatureFlagsPaths } from './common/feature-flags'
 import { PRACTICE_COMPONENT_SCHEMAS, registerPracticePaths } from './practice/paths'
 import { PRACTICE_READS_COMPONENT_SCHEMAS, registerPracticeReadsPaths } from './practice/reads/paths'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
@@ -24,9 +25,11 @@ import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gam
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS, registerQuestionWorkflowPaths } from './question-workflow/paths'
 import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths'
 import { SCHOOL_ADMIN_COMPONENT_SCHEMAS, registerSchoolAdminPaths } from './school-admin/paths'
+import { ESSAY_REVIEW_COMPONENT_SCHEMAS, registerEssayReviewPaths } from './school-admin/essay-review'
 import { SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, registerSchoolAdminPendingTeacherPaths } from './school-admin/pending-teachers'
 import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
 import { QUESTION_GATE_COMPONENT_SCHEMAS, registerQuestionGatePaths } from './questions/gate'
+import { QUESTION_SCHEME_VALIDATE_COMPONENT_SCHEMAS, registerQuestionSchemeValidatePaths } from './questions/scheme-validate'
 import { STIMULI_COMPONENT_SCHEMAS, registerStimuliPaths } from './questions/stimuli'
 import { REGROUP_COMPONENT_SCHEMAS, registerRegroupPaths } from './questions/regroup'
 import { STUDIO_COMPONENT_SCHEMAS, registerStudioPaths } from './questions/studio'
@@ -58,6 +61,7 @@ import { GURU_WEEKLY_REPORT_COMPONENT_SCHEMAS, registerGuruWeeklyReportPaths } f
 import { KIRKPATRICK_COMPONENT_SCHEMAS, registerKirkpatrickPaths } from './reports/kirkpatrick/paths'
 import { BIJAK_BUILDER_COMPONENT_SCHEMAS, registerBijakBuilderPaths } from './bijak/builder/paths'
 import { BIJAK_STANDARDS_COMPONENT_SCHEMAS, registerBijakStandardsPaths } from './bijak/standards/paths'
+import { KERTAS_DOKUMEN_COMPONENT_SCHEMAS, registerKertasDokumenPaths } from './bijak/kertas/paths'
 import { PARENT_INVITE_COMPONENT_SCHEMAS, registerParentInvitePaths } from './schools/parents/paths'
 import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './schools/subscriptions/paths'
 import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
@@ -111,11 +115,13 @@ export const COMPONENT_SCHEMAS = {
   ...NOTIFICATIONS_COMPONENT_SCHEMAS, // BE-06 (M01 notifications)
   ...SCHOOL_ADMIN_COMPONENT_SCHEMAS, // BE-21 (M27 + M18 Amaran)
   ...SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, // BE-21 AC13 (pending teachers)
+  ...ESSAY_REVIEW_COMPONENT_SCHEMAS, // Tanda Karangan
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   ...STIMULI_COMPONENT_SCHEMAS, // R1-T32
   ...REGROUP_COMPONENT_SCHEMAS, // S1-T07
   ...STUDIO_COMPONENT_SCHEMAS, // R1-T13 (REQ-C-006)
   ...QUESTION_GATE_COMPONENT_SCHEMAS, // R1-B05
+  ...QUESTION_SCHEME_VALIDATE_COMPONENT_SCHEMAS, // S1-T09a
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
   ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
   ...TEACHER_TOOLS_COMPONENT_SCHEMAS, // S6-T16 (Soalan & Rujukan)
@@ -144,10 +150,12 @@ export const COMPONENT_SCHEMAS = {
   ...KIRKPATRICK_COMPONENT_SCHEMAS, // BE-20 (M12)
   ...BIJAK_BUILDER_COMPONENT_SCHEMAS, // BE-39
   ...BIJAK_STANDARDS_COMPONENT_SCHEMAS, // BJS-01
+  ...KERTAS_DOKUMEN_COMPONENT_SCHEMAS, // 0265 (Kertas Subjektif documents)
   ...INTAKE_COMPONENT_SCHEMAS, // BE-38
   ...INTAKE_FILES_COMPONENT_SCHEMAS, // BE-37
   ...INTAKE_DASHBOARD_COMPONENT_SCHEMAS, // BE-40
   ...SOURCE_PAPERS_COMPONENT_SCHEMAS, // S2-T09
+  ...FEATURE_FLAGS_COMPONENT_SCHEMAS, // S0-T10
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -186,11 +194,13 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerNotificationsPaths(registry) // BE-06 (M01 notifications)
   registerSchoolAdminPaths(registry) // BE-21 (M27 + M18 Amaran)
   registerSchoolAdminPendingTeacherPaths(registry) // BE-21 AC13 (pending teachers)
+  registerEssayReviewPaths(registry) // Tanda Karangan
   registerQuestionsPaths(registry) // BE-09
   registerStimuliPaths(registry) // R1-T32
   registerRegroupPaths(registry) // S1-T07
   registerStudioPaths(registry) // R1-T13 (REQ-C-006)
   registerQuestionGatePaths(registry) // R1-B05
+  registerQuestionSchemeValidatePaths(registry) // S1-T09a
   registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
   registerTeacherToolsPaths(registry) // S6-T16 (Soalan & Rujukan)
@@ -201,6 +211,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerKirkpatrickPaths(registry) // BE-20 (M12)
   registerBijakBuilderPaths(registry) // BE-39
   registerBijakStandardsPaths(registry) // BJS-01
+  registerKertasDokumenPaths(registry) // 0265 (Kertas Subjektif documents)
   registerParentInvitePaths(registry) // BE-25
   registerSubscriptionPaths(registry) // BE-25
   registerCikguPaths(registry) // BE-43 (M13)
@@ -210,6 +221,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerIntakeFilesPaths(registry) // BE-37
   registerIntakeDashboardPaths(registry) // BE-40
   registerSourcePapersPaths(registry) // S2-T09
+  registerFeatureFlagsPaths(registry) // S0-T10
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

@@ -10,6 +10,7 @@ import {
 } from '@pp/contract'
 import type { Request, Response } from 'express'
 
+import { FeatureFlagsService } from '../../common/feature-flags/feature-flags.service'
 import { Public } from '../../common/guards/decorators'
 import { ok } from '../../common/http/respond'
 import { requestIdOf } from '../../common/request/request-id'
@@ -94,6 +95,7 @@ export class SessionController extends SessionResponder {
     @Inject(PostgresSessionResolver) private readonly resolver: PostgresSessionResolver,
     @Inject(AuthConfig) config: AuthConfig,
     @Inject(CLOCK) clock: Clock,
+    @Inject(FeatureFlagsService) private readonly flags: FeatureFlagsService,
   ) {
     super(config, clock)
   }
@@ -103,7 +105,8 @@ export class SessionController extends SessionResponder {
   async current(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<{ data: Session }> {
     const state = await this.resolver.require(req)
     noStore(res)
-    return ok(state.session)
+    // S0-T10 (API-AUTH-03): the SPA reads the feature flags here.
+    return ok({ ...state.session, features: await this.flags.featureMap() })
   }
 
   @Post('role')

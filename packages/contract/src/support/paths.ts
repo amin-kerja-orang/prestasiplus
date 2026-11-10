@@ -68,7 +68,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     tags: ['support'],
     summary: 'Own support tickets',
     description:
-      'Any signed-in user. Only the caller tickets are returned (a userId query value is ignored), newest id first, not paginated. `meta.total` counts all of the caller tickets whatever the status filter.',
+      'Any signed-in user. Only the caller tickets are returned (a userId query value is ignored), newest id first, not paginated. `meta.total` and `meta.counts` count all of the caller tickets whatever the status filter.',
     request: { query: SupportTicketListQuerySchema },
     responses: { 200: json(SupportTicketListResponseSchema, 'Tickets with meta.total.'), 401: unauthorized },
   })
@@ -79,7 +79,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     tags: ['support'],
     summary: 'Create a support ticket',
     description:
-      'Any signed-in user; the owner is the session user. The ticket starts `dibuka` with adminReply null. Every active admin is notified (type new_ticket, title "Tiket baru", body "Tiket sokongan baharu telah diterima.") through NotificationsService; a notification failure never undoes the ticket. The page flash "Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin." is client-side text.',
+      'Any signed-in user; the owner is the session user. The ticket starts `dibuka` with adminReply null. The page flash "Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin." is client-side text.',
     request: {
       headers: [csrf],
       body: { required: true, content: { 'application/json': { schema: SupportTicketCreateRequestSchema } } },
@@ -128,13 +128,13 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     path: '/admin/settings/support',
     tags: ['support'],
     summary: 'Save the support contact (API-ADM-10)',
-    description: 'Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` and `hours` are refused until they have a store.',
+    description: 'Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` is refused: the phone is `whatsapp`.',
     request: { headers: [csrf], body: { required: true, content: { 'application/json': { schema: SupportSettingsUpdateRequestSchema } } } },
     responses: {
       200: json(envelopeOf(SupportSettingsSchema), 'The saved contact.'),
       401: unauthorized,
       403: adminWrite,
-      422: err(`VALIDATION_ERROR with fields: email "${SUPPORT_SETTINGS_MESSAGES.emailInvalid}"; whatsapp "${SUPPORT_SETTINGS_MESSAGES.phoneInvalid}".`),
+      422: err(`VALIDATION_ERROR with fields: email "${SUPPORT_SETTINGS_MESSAGES.emailInvalid}"; whatsapp "${SUPPORT_SETTINGS_MESSAGES.phoneInvalid}"; hours "${SUPPORT_SETTINGS_MESSAGES.hoursTooLong}".`),
     },
   })
 

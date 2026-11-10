@@ -70,7 +70,7 @@ const glyph = computed(
         <ULink v-if="to" :to="to">{{ title }}</ULink>
         <template v-else>{{ title }}</template>
       </h3>
-      <p v-if="meta" class="truncate text-caption text-muted">{{ meta }}</p>
+      <p v-if="meta" class="line-clamp-2 text-caption break-words text-muted" :title="meta">{{ meta }}</p>
       <UProgress v-if="progress !== undefined" :model-value="progress" size="sm" :aria-label="progressLabel" />
     </div>
   </UCard>

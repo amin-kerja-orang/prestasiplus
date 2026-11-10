@@ -27,6 +27,7 @@ import {
 } from '../tables/tables'
 import {
   challengeProgress,
+  GAME_SESSION_MODES,
   dayMetrics,
   settleSession,
   type DaySession,
@@ -95,11 +96,33 @@ function dayFacts(
       timeSpent: s.timeSpent,
     }))
   if (current) sessions.push(current)
-  const chapterIds = reads
+  // Game and Battle answers count toward no challenge (FR-GM-19.4), in-progress game sessions included: the mode is
+  // read per session through the public M05 `practice.session`, because the answer row carries no mode of its own.
+  const modeOf = new Map<string, string | null>()
+  const isGame = (sessionId: string | null | undefined): boolean => {
+    if (!sessionId || !reads.sessionMode) return false
+    if (!modeOf.has(sessionId)) modeOf.set(sessionId, reads.sessionMode(sessionId))
+    return GAME_SESSION_MODES.includes(modeOf.get(sessionId) ?? '')
+  }
+  // Answer order: answeredAt, then id (a stable sort keeps the M05 order for equal times).
+  const answers = reads
     .answersOn(userId, date)
-    .map((a) => a.chapterId)
-    .filter((c): c is number => c !== null)
-  return { sessions, chapterIds }
+    .filter((a) => !isGame(a.sessionId))
+    .map((a, i) => ({ a, i }))
+    .sort((x, y) => Date.parse(x.a.answeredAt) - Date.parse(y.a.answeredAt) || (x.a.id ?? 0) - (y.a.id ?? 0) || x.i - y.i)
+    .map((x) => x.a)
+  const chapterIds = answers.map((a) => a.chapterId).filter((c): c is number => c !== null)
+  // best_combo (R 4): the longest run of correct answers inside ONE session among today's answers (MYT day, so a
+  // session crossing midnight is split); answers without a session are ignored.
+  const runs = new Map<string, number>()
+  let bestCombo = 0
+  for (const a of answers) {
+    if (!a.sessionId) continue
+    const run = a.isCorrect ? (runs.get(a.sessionId) ?? 0) + 1 : 0
+    runs.set(a.sessionId, run)
+    if (run > bestCombo) bestCombo = run
+  }
+  return { sessions, chapterIds, bestCombo }
 }
 
 /** Consecutive days before `date` whose completions covered every active challenge. */
@@ -468,7 +491,7 @@ export const streakRepo = defineRepository({
 // --- challenges -------------------------------------------------------------------------------
 
 export const challengeQueries = defineNamedQueries(challengesTable, {
-  'Q-CHALLENGES-ACTIVE': { where: { isActive: true }, expected: 10, source: 'M14 §6.10' },
+  'Q-CHALLENGES-ACTIVE': { where: { isActive: true }, expected: 15, source: 'M14 §6.10' },
 })
 
 export interface ChallengeInput {

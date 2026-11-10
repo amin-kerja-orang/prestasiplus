@@ -46,6 +46,7 @@ import {
 import { intOf, bodyOf } from './input'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const CLIENT_UUID = UUID_PATTERN
 const LEDGER_TYPES: readonly string[] = ['earn', 'spend', 'convert', 'bonus', 'refund']
 
 /** The student-facing ledger row (`LedgerRow` of §7 #4). */
@@ -175,11 +176,18 @@ export const studentRoutes: RouteDef[] = [
 
   // #6 (S12): BR-M14-10/11, one atomic step.
   route('POST', '/api/gamification/convert', [anySession], (req) => {
-    const amount = intOf(bodyOf(req).syilingAmount)
+    const body = bodyOf(req)
+    const amount = intOf(body.syilingAmount)
     if (amount === undefined) {
       return validationError({ syilingAmount: MSG.amountInvalid }, MSG.amountInvalid)
     }
-    return ok(guarded(() => walletRepo.convert(viewerId(req), amount), 'syilingAmount'))
+    const clientUuid = body.clientUuid ?? null
+    if (clientUuid !== null && (typeof clientUuid !== 'string' || !CLIENT_UUID.test(clientUuid))) {
+      return validationError({ clientUuid: MSG.invalid })
+    }
+    return ok(
+      guarded(() => walletRepo.convert(viewerId(req), amount, clientUuid), 'syilingAmount'),
+    )
   }),
 
   // #7 (S13)

@@ -9,9 +9,11 @@ import {
   QuestionCurriculumTagSchema,
   QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
-  QuestionPartSchema,
+  QuestionPartReadV3Schema,
+  QuestionPartWireSchema,
   QuestionWritePartSchema,
   QuestionPublicPartSchema,
+  QuestionSchemeRulesSchema,
   QuestionStatusSchema,
   QuestionStimulusGroupSchema,
 } from './parts'
@@ -162,6 +164,8 @@ export const QuestionRowSchema = z
     essayTopics: z.array(QuestionEssayTopicSchema).optional(),
     /** S1-T07 (API-Q-12, DM-05): the open stimulus flags; empty or absent = none. */
     flags: z.array(StimulusFlagSchema).optional(),
+    /** AC-ADM-QE1.1: the stimulus group the question belongs to (the badge of the group); null or absent = ungrouped. */
+    stimulusGroupId: IdSchema.nullable().optional(),
   })
   .meta({ id: 'QuestionRow' })
 
@@ -232,7 +236,7 @@ export const questionFilterShape = {
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
 
 /** REQ-C-019: the values of the Studio selects that come from data. `negeri` = the distinct `exam_board` of the source papers, sorted. */
-export const QuestionFilterOptionsSchema = z.object({ negeri: z.array(z.string()) }).meta({ id: 'QuestionFilterOptions' })
+export const QuestionFilterOptionsSchema = z.object({ negeri: z.array(z.string()), tahun: z.array(z.number().int()).meta({ description: 'Distinct source paper years, newest first (V2 Tahun select).' }) }).meta({ id: 'QuestionFilterOptions' })
 
 export const QuestionSummarySchema = z
   .object({
@@ -327,7 +331,7 @@ export const QuestionSchema = z
     updatedAt: TimestampSchema,
     usage: z.object({ attempts: z.number().int().min(0), correct: z.number().int().min(0) }),
     /** v2 additions (BE-09 AC 1 to 3, 12): absent on rows that only have the flat shape. */
-    parts: z.array(QuestionPartSchema).min(1).max(20).optional(),
+    parts: z.array(QuestionPartWireSchema).min(1).max(20).optional(),
     tag: QuestionCurriculumTagSchema.optional(),
     /** BJS-06: question-level KBAT (null = Bukan KBAT), "Perlu semakan tag" flag and the catalogue the tag was made against. */
     kbat: QuestionKbatLevelSchema.nullable().optional(),
@@ -341,6 +345,8 @@ export const QuestionSchema = z
     textbookRef: QuestionTextbookRefSchema.nullable().optional(),
     /** DM-58: why an admin sent the question back from Semakan to Draf; with the status `draft` it is the chip "Ditolak". Null otherwise. */
     rejectionReason: z.string().nullable().optional(),
+    /** DM-54: question-level scheme rules (deductions, zeroIf); null = none. */
+    schemeRules: QuestionSchemeRulesSchema.nullable().optional(),
   })
   .meta({ id: 'Question' })
 
@@ -475,6 +481,8 @@ const baseInput = z.object({
   stimulusGroupId: IdSchema.nullable().optional(),
   /** DM-56 Rujukan buku teks; null clears it, omitted keeps it. */
   textbookRef: QuestionTextbookRefSchema.nullable().optional(),
+  /** DM-54 scheme v2 question-level rules; null clears it, omitted keeps it. */
+  schemeRules: QuestionSchemeRulesSchema.nullable().optional(),
 })
 
 /**
@@ -499,7 +507,8 @@ export const QuestionCreateRequestSchema = baseInput
 export const QuestionUpdateRequestSchema = baseInput
   // `parts` parse leniently here: the service holds new and changed parts to the strict write rules and lets a part echoed
   // unchanged from the stored version keep the read rules (#692), which a strict DTO would make unreachable over HTTP.
-  .extend({ parts: z.array(QuestionPartSchema).min(1).optional() })
+  // Typed as the write tree the service takes; the runtime schema is the lenient V3 reader (v1 and v2 stored content).
+  .extend({ parts: z.array(QuestionPartReadV3Schema as unknown as typeof QuestionWritePartSchema).min(1).optional() })
   .meta({ id: 'QuestionUpdateRequest' })
 
 /** D54a: an action is the target lifecycle code, or `delete`. The mock verbs approve/reject/pending_review are gone. */
@@ -698,6 +707,75 @@ export const QuestionStructuredDetailSchema = z
     updatedAt: TimestampSchema,
   })
   .meta({ id: 'QuestionStructuredDetail' })
+
+/* ------------------------------------------------------------------ structured (admin rubric editor) */
+
+/** V2 `StructuredRubricEditor` limits, with the point text held to the V3 key (`label` at most 200). */
+export const STRUCTURED_RUBRIC_MESSAGES = {
+  scheme: 'Skema tidak boleh melebihi 4000 aksara.',
+  text: 'Isi poin tidak boleh melebihi 200 aksara.',
+  marks: 'Markah poin mesti antara 1 dan 20.',
+  noPoints: 'Sekurang-kurangnya satu poin rubrik diperlukan.',
+  saved: 'Skema dan rubrik disimpan.',
+} as const
+
+export const StructuredRubricPointSchema = z
+  .object({ id: z.string(), code: z.string(), text: z.string(), marks: z.number().int() })
+  .meta({ id: 'StructuredRubricPoint' })
+
+/** One leaf part (V2 sub-question). `id` is the label path (`(a).(ii)`); only a leaf with a `points` key is `editable`. */
+export const StructuredRubricSubSchema = z
+  .object({
+    id: z.string(),
+    number: z.string(),
+    body: z.string(),
+    marks: z.number().int(),
+    editable: z.boolean(),
+    scheme: z.string().nullable(),
+    points: z.array(StructuredRubricPointSchema),
+  })
+  .meta({ id: 'StructuredRubricSub' })
+
+export const StructuredRubricSchema = z
+  .object({
+    question: z.object({
+      id: IdSchema,
+      stimulus: z.string(),
+      subject: z.string().nullable(),
+      level: z.string().nullable(),
+      status: QuestionStatusSchema,
+      totalMarks: z.number().int(),
+    }),
+    subs: z.array(StructuredRubricSubSchema),
+  })
+  .meta({ id: 'StructuredRubric' })
+
+export const StructuredRubricUpdateRequestSchema = z
+  .object({
+    subs: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          scheme: z.string().max(4000, STRUCTURED_RUBRIC_MESSAGES.scheme).nullable().optional(),
+          points: z
+            .array(
+              z.object({
+                text: z.string().max(200, STRUCTURED_RUBRIC_MESSAGES.text).nullable().optional(),
+                marks: z.coerce
+                  .number({ error: STRUCTURED_RUBRIC_MESSAGES.marks })
+                  .int(STRUCTURED_RUBRIC_MESSAGES.marks)
+                  .min(1, STRUCTURED_RUBRIC_MESSAGES.marks)
+                  .max(20, STRUCTURED_RUBRIC_MESSAGES.marks),
+              }),
+            )
+            .max(50)
+            .optional(),
+        }),
+      )
+      .min(1)
+      .max(200),
+  })
+  .meta({ id: 'StructuredRubricUpdateRequest' })
 
 /* ------------------------------------------------------------------ structured (teacher mount, API-GUR-26) */
 
@@ -1103,3 +1181,5 @@ export const QUESTION_TYPE_LEAF_MODES: Record<QuestionTypeCode, readonly string[
   drawing: ['drawing'],
   table_fill: ['table_fill'],
 }
+
+export type QuestionSchemeRules = z.infer<typeof QuestionSchemeRulesSchema>

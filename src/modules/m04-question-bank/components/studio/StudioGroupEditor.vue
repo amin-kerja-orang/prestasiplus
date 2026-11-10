@@ -49,6 +49,7 @@ import {
   blankStimulus,
   stimulusFormOf,
   stimulusIssue,
+  stimulusTouched,
   toCreateBody,
   toUpdateBody,
   type PendingGroup,
@@ -173,15 +174,25 @@ async function load(id: string | null): Promise<void> {
   }
 }
 watch(groupId, (id) => void load(id), { immediate: true })
+/**
+ * G-01: a stimulus typed (or a question picked to share it) but never confirmed with "Sediakan/Cipta rangsangan kongsi" is still
+ * the author's input. It goes to the page as pending, so "Simpan draf" either saves it with the question or names what is missing;
+ * it is never dropped silently.
+ */
+const touched = computed(() => stimulusTouched(fresh.value) || picks.value.length > 0)
 watch(
   [fresh, picks, deferred],
   () => {
-    pending.value = deferred.value ? { form: fresh.value, memberIds: picks.value.map((p) => p.id) } : null
+    pending.value = deferred.value || touched.value ? { form: fresh.value, memberIds: picks.value.map((p) => p.id) } : null
   },
   { deep: true },
 )
 watch(groupId, (id) => {
-  if (id !== null) deferred.value = false
+  if (id === null) return
+  deferred.value = false
+  // The stimulus (if any) now belongs to a group: the typed form must not be saved a second time.
+  fresh.value = blankStimulus()
+  picks.value = []
 })
 
 /** Runs one step; shows the server text on success and its problems on failure. */

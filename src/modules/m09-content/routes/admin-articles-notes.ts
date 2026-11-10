@@ -24,9 +24,9 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/articles',
     name: ARTICLE_ROUTES.list,
     component: () => import('../pages/AdminArticleListPage.vue'),
-    meta: meta('Pengurusan Artikel - Admin PRESTASIPLUS', {
-      title: 'Pengurusan Artikel',
-      subtitle: 'Urus artikel dan konten pendidikan',
+    meta: meta('Artikel', {
+      title: 'Artikel',
+      subtitle: 'Pengurusan artikel',
     }),
   },
   {
@@ -63,9 +63,9 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/notes',
     name: NOTE_ROUTES.list,
     component: () => import('../pages/AdminNoteListPage.vue'),
-    meta: meta('Pengurusan Nota - Admin PRESTASIPLUS', {
-      title: 'Pengurusan Nota',
-      subtitle: 'Urus nota pembelajaran dan sumber belajar',
+    meta: meta('Nota', {
+      title: 'Nota',
+      subtitle: 'Pengurusan nota pembelajaran',
     }),
   },
   {

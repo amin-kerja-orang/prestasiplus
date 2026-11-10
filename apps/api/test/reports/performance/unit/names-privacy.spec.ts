@@ -7,7 +7,7 @@ import { ctxOf } from '../fakes/fixtures'
 import { addPupil, socialWorld, type SocialWorld } from '../fakes/social-world'
 
 /**
- * One naming rule for /rankings and /leaderboard (children's privacy, security M1+M2). Pupils: 1 (school s1,
+ * The naming rule of /leaderboard (Kedudukan shows a first name only, see ranking.spec.ts) (children's privacy, security M1+M2). Pupils: 1 (school s1,
  * class c1 of teacher t1), 2 (s1, no class), 3 to 6 (s2). Viewers are placed in s1 unless stated.
  */
 let w: SocialWorld
@@ -30,10 +30,6 @@ beforeEach(() => {
 
 type Row = { userId: string | null; name: string }
 const routes: Record<string, (viewer: ReturnType<typeof ctxOf>) => Promise<Map<string, Row>>> = {
-  rankings: async (v) => {
-    const r = await w.ranking.rankings(v, {})
-    return new Map(r.rows.map((x, i) => [String(i + 1), x] as const))
-  },
   leaderboard: async (v) => {
     const r = await w.board.leaderboard(v, 'all')
     return new Map(r.rows.map((x, i) => [String(i + 1), x] as const))
@@ -67,15 +63,6 @@ describe.each(Object.keys(routes))('%s naming', (route) => {
       if (full.includes(id)) expect(r).toEqual(expect.objectContaining({ userId: id, name: FULL(id) }))
       else expect(r).toEqual(expect.objectContaining({ userId: null, name: SHORT(id) }))
     }
-  })
-})
-
-describe('national scope: staff of another school see short names', () => {
-  it('a school_admin looking at the nasional ranking sees other schools short, a teacher without classes only the own row', async () => {
-    const sa = await w.ranking.rankings(ctxOf('school_admin', 'sa1'), { scope: 'nasional' })
-    expect(sa.rows.filter((r) => r.userId !== null).map((r) => r.userId)).toEqual(['1', '2'])
-    const t = await w.ranking.rankings(ctxOf('teacher', 't9'), { scope: 'nasional' })
-    expect(t.rows.every((r) => r.userId === null)).toBe(true)
   })
 })
 

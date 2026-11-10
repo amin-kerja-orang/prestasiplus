@@ -75,9 +75,9 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   test('E2E-M02-01: header, 7 cards (order, hrefs, labels), filters, action links', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title').first()).toHaveText('Pengurusan Pengguna')
+    await expect(byId(page, 'shell-admin-title').first()).toHaveText('Senarai Pengguna')
     await expect(byId(page, 'shell-admin-subtitle').first()).toHaveText(
-      'Urus akaun pengguna PRESTASIPLUS',
+      'Pengurusan pengguna',
     )
     const cards = byId(page, 'users-stats').locator('a')
     await expect(cards).toHaveCount(7)

@@ -38,7 +38,7 @@ describe('stimulusGroupId on the question write path', () => {
   const groupOf = async (ref: string) => (await q('select group_id::text g from questions where id = $1', [await questionIdOf(t.db, ref)]))[0]?.g as string
 
   async function groupWith(a: string, b: string): Promise<string> {
-    const s = await admin.post('/api/stimuli', { kind: 'passage', body: { ms: 'Petikan percubaan.' } })
+    const s = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan', body: { ms: 'Petikan percubaan.' } })
     expect(s.status, JSON.stringify(s.body)).toBe(201)
     const g = await admin.post('/api/stimulus-groups', { stimulusIds: [s.body.data.id], questionIds: [a, b] })
     expect(g.status, JSON.stringify(g.body)).toBe(201)

@@ -180,7 +180,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
           <SubjectIconTile :icon="row.original.icon" :color="row.original.color" />
         </template>
         <template #name-cell="{ row }">
-          <div class="max-w-36 min-w-32 whitespace-normal" data-testid="subject-name-cell">
+          <div class="max-w-80 min-w-32 whitespace-normal" data-testid="subject-name-cell">
             <div class="text-label text-highlighted">{{ row.original.name }}</div>
             <div
               v-if="row.original.levels.length > 0"

@@ -60,6 +60,7 @@ describe('admin guards (FR-M02-99)', () => {
     ['POST', '/api/admin/schools'],
     ['PUT', '/api/admin/schools/8078'],
     ['POST', '/api/admin/schools/8078/toggle'],
+    ['POST', '/api/admin/schools/8078/join-code'],
     ['GET', '/api/admin/schools/options'],
     ['GET', '/api/schools?all=1'],
   ]
@@ -440,6 +441,31 @@ describe('#28 POST /api/admin/schools/:id/toggle', () => {
 
   it('404 for an unknown school', async () => {
     expect((await call('POST', '/api/admin/schools/99999/toggle', ADMIN)).status).toBe(404)
+  })
+})
+
+describe('POST /api/admin/schools/:id/join-code (Tukar kod pendaftaran)', () => {
+  it('the list shows a join code per row; a rotation gives a new unique one and the V2 flash text', async () => {
+    const before = (await list('?search=ZZZ')).body.data
+    expect(before.every((s) => /^[A-HJKMNP-Z2-9]{8}$/.test(s.joinCode ?? ''))).toBe(true)
+    const row = (await list()).body.data[0] as AdminSchool
+    const res = await call<{ data: { joinCode: string }; status: string }>(
+      'POST',
+      `/api/admin/schools/${String(row.id)}/join-code`,
+      ADMIN,
+    )
+    expect(res.status).toBe(200)
+    expect(res.body.data.joinCode).toMatch(/^[A-HJKMNP-Z2-9]{8}$/)
+    expect(res.body.data.joinCode).not.toBe(row.joinCode)
+    expect(res.body.status).toBe(
+      `Kod pendaftaran "${row.name}" ditukar kepada ${res.body.data.joinCode}. Kod lama tidak lagi sah.`,
+    )
+    const after = (await call<{ data: AdminSchool }>('GET', `/api/admin/schools/${String(row.id)}`, ADMIN)).body.data
+    expect(after.joinCode).toBe(res.body.data.joinCode)
+  })
+
+  it('404 for an unknown school', async () => {
+    expect((await call('POST', '/api/admin/schools/99999/join-code', ADMIN)).status).toBe(404)
   })
 })
 

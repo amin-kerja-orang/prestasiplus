@@ -9,6 +9,7 @@
 import type { BijakKuizItem } from '@pp/contract'
 import type { QuestionPart } from '@pp/contract'
 
+import { gradeMcqMulti } from '../../questions/grading'
 import { stimulusTableParts } from '../../questions/stimulus-table'
 import type { OutsideStimulus } from '../question-bridge/be09-mapping'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
@@ -58,10 +59,30 @@ export function leafOf(record: QuestionRecord, itemId: string): LeafRef | null {
   return leavesOf(record.id, record.version.parts).find((l) => l.id === itemId) ?? null
 }
 
+/** The `correctOptionIds` of an `mcq_multi` leaf (S1-T09a, M-MULTI), or null for a single-choice leaf. */
+export function multiKeyOf(leaf: McqLeaf): readonly string[] | null {
+  const ids = (leaf.key as { correctOptionIds?: readonly string[] }).correctOptionIds
+  return ids ?? null
+}
+
+/**
+ * The verdict of a pupil's selection on a markable leaf. A single-choice leaf compares one id with `key.correct`; an `mcq_multi` leaf is
+ * marked by the S1 grader `gradeMcqMulti` (the one grader, no copy here): `correct` only when every correct option and no wrong one is ticked.
+ */
+export function selectionVerdict(leaf: McqLeaf, selected: readonly string[]): { correct: boolean; correctOptionId: string; correctOptionIds?: string[] } {
+  const ids = multiKeyOf(leaf)
+  if (!ids) return { correct: selected.length === 1 && selected[0] === leaf.key.correct, correctOptionId: leaf.key.correct }
+  const ordered = leaf.options.map((o) => o.label).filter((l) => ids.includes(l))
+  const graded = gradeMcqMulti({ correctOptionIds: ids }, leaf.options.map((o) => o.label), selected, leaf.marks)
+  return { correct: graded.kind === 'graded' && graded.correct, correctOptionId: ordered[0] as string, correctOptionIds: ordered }
+}
+
 /** An objective leaf the quiz can mark: an MCQ whose key names one of its options. */
 export function markableLeaf(l: LeafRef): McqLeaf | null {
   const leaf = l.leaf
   if (leaf.mode !== 'mcq') return null
+  const multi = multiKeyOf(leaf)
+  if (multi) return multi.length > 0 && multi.every((id) => leaf.options.some((o) => o.label === id)) ? leaf : null
   return leaf.options.some((o) => o.label === leaf.key.correct) ? leaf : null
 }
 
@@ -120,6 +141,7 @@ export function toItem(record: QuestionRecord, ref: LeafRef, ctx: ItemContext): 
     prompt: leaf.prompt.ms,
     marks: leaf.marks,
     markable: mcq !== null,
+    ...(mcq !== null && multiKeyOf(mcq) ? { multiple: true } : {}),
     subjectName: ctx.subjectName,
     stimuli: ctx.stimuli,
     options,

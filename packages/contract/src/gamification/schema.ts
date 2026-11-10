@@ -25,6 +25,7 @@ export const GAMIFICATION_MESSAGES = {
   rewardNotFound: 'Hadiah tidak dijumpai.',
   prizePoolInvalid: 'Format JSON kolam hadiah tidak sah.',
   closeDateInvalid: 'Tarikh tutup tidak sah.',
+  boxOddsTotal: 'Jumlah peluang mesti 100%.',
   required: 'Medan ini diperlukan.',
   invalid: 'Medan ini tidak sah.',
   summary: 'Sila lengkapkan semua medan wajib.',
@@ -56,6 +57,8 @@ export const GAMIFICATION_CHALLENGE_TYPES = [
   'topic_variety',
   'streak',
   'time_spent',
+  // S7-T04 part 14: evaluator `best_combo` (longest correct run inside one session of the day).
+  'combo',
 ] as const
 export const GamificationChallengeTypeSchema = z
   .enum(GAMIFICATION_CHALLENGE_TYPES)
@@ -286,7 +289,7 @@ export const GamificationChallengeClaimResultSchema = z
     notices: z
       .array(z.string())
       .optional()
-      .meta({ description: 'Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example "Tahniah! Anda naik ke tier {label}." Absent when there is nothing to tell, and always absent on a replay.' }),
+      .meta({ description: 'Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example "Tahniah! Anda naik ke tier {label}." or "Lencana baru: {name}!" (one per badge the claim unlocked). Absent when there is nothing to tell, and always absent on a replay.' }),
   })
   .meta({ id: 'GamificationChallengeClaimResult' })
 export type GamificationChallengeClaimResult = z.infer<typeof GamificationChallengeClaimResultSchema>

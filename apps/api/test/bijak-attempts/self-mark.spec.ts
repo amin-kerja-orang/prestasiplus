@@ -76,6 +76,38 @@ const sejarah = () =>
     change(SEJ_ESSAY_2, { text: 'Kerjasama antara kaum membina perpaduan.' }),
   ])
 
+describe('a self-mark shows the scheme, so it closes the late sync (AC-05.4)', () => {
+  it('on an auto_submitted attempt: an old savedAt after a self-mark is refused and the score stays', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
+    const first = await me.put(`/api/bijak/attempts/${id}/answers`, { changes: [change(SEL_B, { text: 'bahan terlarut dalam sel itu' }, 1)] })
+    expect(first.status).toBe(200)
+    const view = (await me.get(`/api/bijak/attempts/${id}`)).body.data as { attempt: { deadline: string } }
+    const deadline = new Date(view.attempt.deadline).getTime()
+    t.clock.set(new Date(deadline + 10 * MIN).toISOString())
+
+    const marked = await selfMark(me, id, { partId: SEL_B, mark: 1 })
+    expect(marked.status, JSON.stringify(marked.body)).toBe(200)
+    expect((await t.db.query<{ viewed: boolean }>(`select result_viewed_at is not null as viewed from exam_attempts where id = $1`, [id]))[0]?.viewed).toBe(true)
+    const score = (await t.db.query<{ score: number }>(`select score from attempt_results where attempt_id = $1`, [id]))[0]?.score
+
+    const late = await me.put(`/api/bijak/attempts/${id}/answers`, { changes: [change(SEL_B, { text: 'jawapan disalin daripada skema' }, 9, new Date(deadline - 5000).toISOString())] })
+    expect(late.status, JSON.stringify(late.body)).toBe(200)
+    expect(late.body.data).toMatchObject({ closed: true })
+    expect(late.body.data.regraded).toBeUndefined()
+    expect((await t.db.query<{ score: number }>(`select score from attempt_results where attempt_id = $1`, [id]))[0]?.score).toBe(score)
+    const stored = (await t.db.query<{ answer: { text: string } }>(`select answer from attempt_answers where attempt_id = $1 and part_id = $2`, [id, SEL_B]))[0]?.answer
+    expect(stored?.text).toBe('bahan terlarut dalam sel itu')
+  })
+
+  it('a refused self-mark shows nothing, so the late sync stays open', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
+    const view = (await me.get(`/api/bijak/attempts/${id}`)).body.data as { attempt: { deadline: string } }
+    t.clock.set(new Date(new Date(view.attempt.deadline).getTime() + 10 * MIN).toISOString())
+    expect((await selfMark(me, id, { partId: MCQ_PART, mark: 1 })).status).toBe(422)
+    expect((await t.db.query<{ viewed: boolean }>(`select result_viewed_at is not null as viewed from exam_attempts where id = $1`, [id]))[0]?.viewed).toBe(false)
+  })
+})
+
 describe('D94 choose-N self-mark reward inputs (best-N, attempt level)', () => {
   const OSMOSIS = 'sn2-osmosis-a' // Sains K2 Bahagian B "Pilih 1 daripada 2": 4 marks each
   const FOTOSINTESIS = 'sn2-fotosintesis-a'
@@ -179,10 +211,10 @@ describe('R1-B12 self-mark', () => {
     // reward figures are the credited ones from submit (score 1 then), not recomputed from the self-marked score
     expect(again.coins).toBe(before.coins)
     expect(again.points).toBe(before.points)
-    expect(again.coins).toBe(2)
-    expect(out.result.coins).toBe(2)
+    expect(again.coins).toBe(1)
+    expect(out.result.coins).toBe(1)
     const row = (await t.db.query<{ coins: number; points: number }>(`select coins, points from attempt_results where attempt_id = $1`, [id]))[0]!
-    expect(row).toMatchObject({ coins: 2, points: 10 })
+    expect(row).toMatchObject({ coins: 1, points: 10 })
     // a blank answer self-marked above 0 is a marked part (separa/betul), not "kosong"
     const blank = await sit(me, PAPER.sainsK2, [])
     const b = BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, blank, { partId: SEL_B, mark: 2 })).body.data)
@@ -190,6 +222,19 @@ describe('R1-B12 self-mark', () => {
     // the Bahagian total moved too
     const sec = again.sections.find((s) => s.counted.includes('sn2-sel-q2'))!
     expect(sec.awarded).toBe(2)
+  })
+
+  it('S3-T04: the self-mark updates the answer row of the part (null while waiting, then the pupil mark), through the port', async () => {
+    const id = await sains()
+    const rowsOf = () => t.answerLog.entries.filter((e) => e.attemptId === id && e.partRef === SEL_B)
+    expect(rowsOf()).toHaveLength(1)
+    expect(rowsOf()[0]).toMatchObject({ mode: 'simulasi', marksAwarded: null, isCorrect: false, marksMax: 2 })
+    expect(BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, id, { partId: SEL_B, mark: 2 })).body.data).awarded).toBe(2)
+    expect(rowsOf()).toHaveLength(2) // the same key again: the port updates the row
+    expect(rowsOf()[1]).toMatchObject({ mode: 'simulasi', marksAwarded: 2, isCorrect: true, marksMax: 2 })
+    // a repeat with the same mark changes nothing and writes nothing
+    await selfMark(me, id, { partId: SEL_B, mark: 2 })
+    expect(rowsOf()).toHaveLength(2)
   })
 
   it('clamps to 0..part marks instead of refusing', async () => {
@@ -236,7 +281,7 @@ describe('R1-B12 self-mark', () => {
     expect(t.reward.calls).toHaveLength(rewards) // the submit reward is not repeated
     // D94: the gain goes to the self-mark reward port at attempt level: base 1 (the keyword suggestion paid at submit) -> best-N score 2
     const max = (await result(me, id)).result.max
-    expect(t.reward.selfMarkCalls).toEqual([{ attemptId: id, userId: me.userId, isTest: false, base: 1, score: 2, max, description: BIJAK_REWARD_DESCRIPTION }])
+    expect(t.reward.selfMarkCalls).toEqual([{ attemptId: id, userId: me.userId, isTest: false, base: 1, score: 2, max, coinRate: 1, description: BIJAK_REWARD_DESCRIPTION }])
     const row = (await t.db.query<{ score: string; pending_review: number }>(`select score::text, pending_review from attempt_results where attempt_id = $1`, [id]))[0]!
     expect(Number(row.score)).toBe(2)
     const hist = await me.get('/api/bijak/history')

@@ -7,85 +7,75 @@
 
 import { weekRange, monthRange } from '@/lib/time'
 import { users } from '@/modules/m01-authentication/mock'
-import { schools } from '@/modules/m02-users-schools/mock'
 import { practice } from '@/modules/m05-practice/mock'
+import { wallet } from '@/modules/m14-gamification/mock'
 
-import type { Leaderboard, LeaderboardPeriod, Ranking, RankingScope } from '../../api/types'
+import type { Leaderboard, LeaderboardPeriod, Ranking } from '../../api/types'
 import { capPercent, round } from './rules'
-import { rankingsRepo, standingsRepo } from './stores'
+import { standingsRepo } from './stores'
 
 /** The users whose standings are computed from the log: pelajar, pelajarmaju and the M08 pupils (BR-M08-28). */
 export const DESIGNED_LEARNERS: readonly number[] = [
   2, 4, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008,
 ]
 
-const SCOPES: readonly RankingScope[] = ['nasional', 'negeri', 'daerah', 'sekolah']
-const isScope = (v: string | undefined): v is RankingScope =>
-  v !== undefined && (SCOPES as readonly string[]).includes(v)
+const FIRST_NAME = (name: string): string => name.trim().split(/s+/)[0] ?? ''
 
-const SCOPE_LABEL: Readonly<Record<RankingScope, string>> = {
-  nasional: 'Nasional',
-  negeri: 'Negeri',
-  daerah: 'Daerah',
-  sekolah: 'Sekolah',
-}
+/** "Sekitar anda": up to this many pupils on each side. */
+const NEARBY = 2
 
-const TINGKATAN_LEVEL: Readonly<Record<string, number>> = { T4: 10, T5: 11 }
-
-export interface RankingQuery {
-  scope?: string
-  subjectId?: number
-  tingkatan?: string
-  negeri?: string
-}
-
-/** BR-M08-27: rows are ordered by Betul ascending (observed, DV-26), ties by accuracy descending. */
-export function rankingOf(query: RankingQuery, viewerSchoolId: number | null): Ranking {
-  const scope = isScope(query.scope) ? query.scope : query.scope === undefined ? 'nasional' : null
-  const viewerSchool = viewerSchoolId === null ? undefined : schools.get(viewerSchoolId)
-  const figureKey = query.subjectId === undefined ? 'all' : String(query.subjectId)
-
-  let entries = rankingsRepo.all()
-  if (scope === 'negeri') {
-    entries = query.negeri ? entries.filter((e) => e.state === query.negeri) : []
-  } else if (scope === 'daerah') {
-    entries = viewerSchool ? entries.filter((e) => e.district === viewerSchool.district) : []
-  } else if (scope === 'sekolah') {
-    entries = viewerSchool ? entries.filter((e) => e.schoolName === viewerSchool.name) : []
+/**
+ * S19 Kedudukan (R1-MUR-18): the rank of a pupil among the designed learners and the pupil, by the current wallet
+ * syiling (then the id, so positions are distinct). Mock scopes: sekolah (same school) and kebangsaan; negeri has no
+ * state data in the mock, so it is "Belum tersedia". Other roles have no standing.
+ */
+export function kedudukanOf(viewer: {
+  id: number
+  role: string
+  schoolId: number | null
+  name: string
+}): Ranking {
+  if (viewer.role !== 'student') return { syiling: 0, scopes: [] }
+  const pupils = [...new Set([...DESIGNED_LEARNERS, viewer.id])].flatMap((id) => {
+    const user = users.get(id)
+    if (!user) return []
+    return [
+      {
+        id,
+        schoolId: user.schoolId,
+        name: id === viewer.id ? viewer.name : user.name,
+        syiling: wallet.summary(id).currentSyiling,
+      },
+    ]
+  })
+  const own = pupils.find((p) => p.id === viewer.id)
+  if (!own) return { syiling: 0, scopes: [] }
+  const standing = (scope: 'sekolah' | 'kebangsaan') => {
+    const pool = (scope === 'sekolah' ? pupils.filter((p) => p.schoolId === own.schoolId) : pupils).sort(
+      (a, b) => b.syiling - a.syiling || a.id - b.id,
+    )
+    const at = pool.findIndex((p) => p.id === viewer.id)
+    const from = Math.max(0, at - NEARBY)
+    const total = pool.length
+    const rank = at + 1
+    return {
+      scope,
+      rank,
+      total,
+      percentile: Math.max(1, Math.floor((200 * rank + total) / (2 * total))),
+      nearby: pool.slice(from, at + NEARBY + 1).map((p, i) => ({
+        rank: from + i + 1,
+        name: p.id === viewer.id ? p.name : FIRST_NAME(p.name),
+        syiling: p.syiling,
+        me: p.id === viewer.id,
+      })),
+    }
   }
-  const level = query.tingkatan ? TINGKATAN_LEVEL[query.tingkatan] : undefined
-  if (level !== undefined) entries = entries.filter((e) => e.levelId === level)
-
-  const rows = entries
-    .flatMap((e) => {
-      const f = e.figures[figureKey]
-      return f ? [{ e, f }] : []
-    })
-    .sort((a, b) => a.f.correct - b.f.correct || b.f.accuracy - a.f.accuracy || a.e.id - b.e.id)
-    .map(({ e, f }, i) => ({
-      rank: i + 1,
-      userId: e.userId,
-      name: e.name,
-      schoolName: e.schoolName,
-      tahap: f.tahap,
-      correct: f.correct,
-      accuracy: round(capPercent(f.accuracy), 2),
-    }))
-
-  const label =
-    scope === 'negeri' && query.negeri
-      ? query.negeri
-      : scope === null
-        ? 'Nasional'
-        : SCOPE_LABEL[scope]
-  return {
-    scope,
-    title: `Kedudukan ${label}`,
-    showFooter: scope === 'nasional',
-    states: [...new Set(rankingsRepo.all().map((e) => e.state))].sort(),
-    rows,
-    total: rows.length,
-  }
+  const scopes: Ranking['scopes'] = []
+  if (own.schoolId !== null) scopes.push(standing('sekolah'))
+  scopes.push({ scope: 'negeri', rank: null, total: null, percentile: null, nearby: [] })
+  scopes.push(standing('kebangsaan'))
+  return { syiling: own.syiling, scopes }
 }
 
 // ---------------------------------------------------------------------------------------------

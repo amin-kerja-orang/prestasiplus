@@ -125,16 +125,16 @@ describe('buildActivitySteps', () => {
 describe('not migrated list', () => {
   const tables = NOT_MIGRATED_ACTIVITY.map((n) => n.table).join(' | ')
   it('names the skipped, sensitive and unmerged tables with a reason each', () => {
-    for (const t of ['gifts', 'gift_redemptions', 'lucky_draws', 'interventions', 'structured_attempts', 'mood_checkins', 'wellbeing_alerts',
-      'psychometric_results', 'aspirations', 'foster_', 'pksk_', 'battles', 'game_', 'ai_usage_logs', 'notifications', 'headcounts', 'chatbot_',
+    for (const t of ['lucky_draws', 'interventions', 'structured_attempts', 'mood_checkins', 'wellbeing_alerts',
+      'psychometric_results', 'aspirations', 'foster_', 'pksk_', 'battles', 'game_', 'ai_usage_logs', 'notifications', 'chatbot_',
       'teacher', 'review_schedules']) {
       expect(tables, t).toContain(t)
     }
     for (const n of NOT_MIGRATED_ACTIVITY) expect(n.reason.length, n.table).toBeGreaterThan(10)
   })
   it('merges the groups lists without repeating a table', () => {
-    const merged = notMigratedOf([group('ops', [], [{ table: 'extra_table', reason: 'because' }, { table: 'gifts', reason: 'dup' }])])
-    expect(merged.filter((n) => n.table === 'gifts')).toHaveLength(1)
+    const merged = notMigratedOf([group('ops', [], [{ table: 'extra_table', reason: 'because' }, { table: 'lucky_draws', reason: 'dup' }])])
+    expect(merged.filter((n) => n.table === 'lucky_draws')).toHaveLength(1)
     expect(merged.at(-1)).toEqual({ table: 'extra_table', reason: 'because' })
   })
 })

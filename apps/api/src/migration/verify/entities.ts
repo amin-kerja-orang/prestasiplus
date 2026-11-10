@@ -79,6 +79,7 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   e('challenges', 'challenges', 'challenges', 'platform challenges only; teacher challenges are excluded'),
   e('gamification_settings', 'reward_settings', 'gamification_settings', 'pivot: the key/value row of reward_budget_sen_month'),
   e('reward_settings', 'reward_settings', 'reward_settings', 'pivot: the DM-48 values of the source row fill the singleton (DM-38)', 'idmap'),
+  e('rewards', 'gifts', 'rewards', 'T-B8: the V2 gift catalogue with its own token price (KP-6)'),
   // ---- BE-29 wallet
   e('wallets', 'student_wallets', 'wallets'),
   e('coin_ledger', 'coin_transactions', 'coin_ledger'),
@@ -93,6 +94,7 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   e('referral_codes', 'users', 'referral_codes', 'from users.referral_code'),
   e('referrals', 'users', 'referrals', 'from users.referred_by'),
   e('spm_targets', 'users', 'spm_targets', 'from users.spm_targets, one row per subject'),
+  e('reward_redemptions', 'gift_redemptions', 'reward_redemptions', 'T-B8: the V2 token redemptions (pending ones wait for the admin)'),
   // ---- BE-29 content
   e('articles', 'articles', 'articles'),
   e('banners', 'banners', 'banners'),
@@ -104,6 +106,7 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   e('support_tickets', 'support_tickets', 'support_tickets'),
   e('timeline_posts', 'timeline_entries', 'timeline_posts'),
   e('feedback', 'feedback', 'feedback'),
+  e('headcount_configs', 'headcounts', 'headcount_configs', 'T-B7: class-subject-year TOV and RS; the V2 values are kept as legacy and as the class defaults'),
   // ---- QLOAD: standalone `migrate:questions`, run AFTER `migrate:all`. Not required (migrate:all --apply verifies before it
   // exists, so a missing run must not fail the gate); once it has a succeeded apply run it is verified like any other row.
   {

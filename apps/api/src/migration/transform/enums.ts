@@ -21,6 +21,10 @@ export const ROLE_MAP: Readonly<Record<string, string>> = {
   pegawai_ppd: 'ppd_officer',
   jpn_officer: 'ppd_officer',
   admin: 'admin',
+  // T-B5 (PO: everything that is not deleted comes over): v3 has no `agent` role (the seven codes are fixed in the contract and in
+  // ck_user_roles_role) and the v2 database holds no agent feature (no table, no referral, no login on any of the 7 accounts), so an
+  // agent account is carried as an INACTIVE `student` (least privilege: it cannot sign in until an admin decides what it is).
+  agent: 'student',
 }
 export const ROLE_SOURCE_CODES: readonly string[] = Object.keys(ROLE_MAP)
 
@@ -32,7 +36,10 @@ export const STATE_SCOPE_SOURCE_ROLES: readonly string[] = ['jpn_officer']
  * (`users.role_rejected.<role>` in the report notes), the same way the deferred practice modes are. Their dependent rows
  * (sessions, wallet, ...) then fall out as ORPHAN_PARENT.
  */
-export const ROLES_NOT_MIGRATED: readonly string[] = ['agent']
+export const ROLES_NOT_MIGRATED: readonly string[] = []
+
+/** Source roles that are migrated as an inactive account (T-B5): see `ROLE_MAP.agent`. */
+export const ROLES_LOADED_INACTIVE: readonly string[] = ['agent']
 
 /** .cloud `schools.type` -> v2 `SCHOOL_TYPES`. */
 export const SCHOOL_TYPE_MAP: Readonly<Record<string, string>> = {

@@ -37,7 +37,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
   })
 
   describe('guards: anonymous 401, student and teacher 403, a write without CSRF 403 CSRF_INVALID', () => {
-    const READS = ['/admin/gamification/overview', '/admin/gamification/tiers', '/admin/gamification/challenges', '/admin/gamification/students', '/admin/gamification/transactions', '/admin/gamification/settings', '/admin/reward-control']
+    const READS = ['/admin/gamification/overview', '/admin/gamification/tiers', '/admin/gamification/challenges', '/admin/gamification/students', '/admin/gamification/transactions', '/admin/gamification/settings', '/admin/reward-control', '/admin/reward-control/draws']
     const WRITES: [string, string][] = [
       ['post', '/admin/gamification/award'],
       ['post', '/admin/gamification/challenges'],
@@ -51,6 +51,8 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       ['put', '/admin/reward-control/settings'],
       ['put', '/admin/reward-control/rewards/1/cost'],
       ['post', '/admin/reward-control/draws'],
+      ['post', '/admin/reward-control/draws/1/open'],
+      ['post', '/admin/reward-control/draws/1/close'],
     ]
 
     it('anonymous is 401 on every route', async () => {
@@ -88,13 +90,25 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       const d = GamificationAdminOverviewSchema.parse(dataOf(await admin.get('/admin/gamification/overview')))
       const wallets = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets`))[0]!.n)
       const sum = Number((await t.db.query<{ n: string }>(`select sum(total_syiling_earned)::text n from wallets`))[0]!.n)
-      expect(d.cards).toMatchObject({ activeStudents: wallets, syilingGenerated: sum, tokensConverted: 0, conversions: 0, activeChallenges: 10, completedToday: 0 })
+      expect(d.cards).toMatchObject({ activeStudents: wallets, syilingGenerated: sum, tokensConverted: 0, conversions: 0, activeChallenges: 15, completedToday: 0 })
       expect(d.tierDistribution.map((x) => x.key)).toEqual(['bronze', 'gold', 'platinum', 'silver'])
       expect(d.tierDistribution.reduce((a, x) => a + x.count, 0)).toBe(wallets)
       expect(d.top10.map((x) => x.rank)).toEqual(d.top10.map((_, i) => i + 1))
       const totals = d.top10.map((x) => x.totalSyilingEarned)
       expect(totals).toEqual([...totals].sort((a, b) => b - a))
       expect(d.recent.length).toBe(10)
+    })
+
+    it('T-C12: every tier row carries its id, label, icon and colour, and the top 10 names the tier (the screen maps the colour to a design-system tone)', async () => {
+      const d = GamificationAdminOverviewSchema.parse(dataOf(await admin.get('/admin/gamification/overview')))
+      const bronze = d.tierDistribution.find((x) => x.key === 'bronze')!
+      expect(bronze).toMatchObject({ id: await tierId('bronze'), labelMs: expect.any(String), icon: expect.any(String), color: '#cd7f32' })
+      expect(d.tierDistribution.every((x) => x.id !== undefined && x.labelMs !== '' && /^#[0-9a-f]{6}$/i.test(x.color))).toBe(true)
+      expect(d.top10.length).toBeGreaterThan(0)
+      for (const row of d.top10) {
+        const tier = (await t.db.query<{ label_ms: string; icon: string; color: string }>(`select label_ms, icon, color from tiers where tier_name = $1`, [row.tierKey]))[0]!
+        expect(row).toMatchObject({ tierLabel: tier.label_ms, tierIcon: tier.icon, tierColor: tier.color })
+      }
     })
 
     it('conversions and completions are counted; test rows and test-only wallets are left out', async () => {
@@ -198,10 +212,32 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
   describe('challenges (S3)', () => {
     it('GET lists every challenge (active or not) by (sortOrder, id) without the internal metric', async () => {
       const list = dataOf<Record<string, unknown>[]>(await admin.get('/admin/gamification/challenges'))
-      expect(list).toHaveLength(10)
+      expect(list).toHaveLength(15)
+      expect(list.filter((c) => c.challengeType === 'combo').map((c) => c.title)).toEqual(['Kombo 10'])
       list.forEach((c) => GamificationAdminChallengeSchema.parse(c))
       expect(list.every((c) => !('metric' in c))).toBe(true)
       expect(list.slice(0, 4).map((c) => c.title)).toEqual(['Rajin Berlatih', 'Si Tepat', 'Penjelajah Topik', 'Kilat Matematik'])
+    })
+
+    it('T-C12: enrolled (distinct pupils) and completed (completions) per challenge count real rows only; 0 / 0 for an untouched challenge; create answers 0 / 0 and update the live counts', async () => {
+      const created = GamificationAdminChallengeSchema.parse(dataOf(await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, title: 'Cabaran Kiraan' })))
+      expect(created).toMatchObject({ enrolled: 0, completed: 0 })
+      const [a, b, c] = [await bareUser(t, 'Kiraan Satu'), await bareUser(t, 'Kiraan Dua'), await bareUser(t, 'Kiraan Ujian')]
+      await t.gamification.completeChallenge(a, created.id, { isTest: false })
+      await t.gamification.completeChallenge(b, created.id, { isTest: false })
+      await t.gamification.completeChallenge(c, created.id, { isTest: true }) // a Mod Pelajar completion is not counted
+      // the same pupil on an earlier Malaysia day: one more completion, still one pupil
+      await t.db.query(`insert into challenge_completions (user_id, challenge_id, completion_date) values ($1, $2, '2020-01-01')`, [a, created.id])
+      const list = dataOf<ReturnType<typeof GamificationAdminChallengeSchema.parse>[]>(await admin.get('/admin/gamification/challenges'))
+      const row = list.find((x) => x.id === created.id)!
+      expect(row).toMatchObject({ enrolled: 2, completed: 3 })
+      const other = GamificationAdminChallengeSchema.parse(dataOf(await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, title: 'Cabaran Tanpa Penyelesaian' })))
+      const again = dataOf<ReturnType<typeof GamificationAdminChallengeSchema.parse>[]>(await admin.get('/admin/gamification/challenges'))
+      expect(again.find((x) => x.id === other.id)).toMatchObject({ enrolled: 0, completed: 0 })
+      await admin.del(`/admin/gamification/challenges/${other.id}`)
+      const updated = GamificationAdminChallengeSchema.parse(dataOf(await admin.put(`/admin/gamification/challenges/${created.id}`, { ...CHALLENGE_BODY, title: 'Cabaran Kiraan', targetValue: 3 })))
+      expect(updated).toMatchObject({ enrolled: 2, completed: 3, targetValue: 3 })
+      await admin.del(`/admin/gamification/challenges/${created.id}`)
     })
 
     it('POST creates (201, active, default metric of the type), PUT replaces (metric kept for the same type, reset for another), toggle, DELETE answers 200 { deleted: 1 }', async () => {
@@ -225,6 +261,23 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       fail(await admin.put(`/admin/gamification/challenges/${c.id}`, CHALLENGE_BODY), 404, 'NOT_FOUND', 'Cabaran tidak dijumpai.')
       expect(await auditCount('gamification.challenge.created')).toBeGreaterThanOrEqual(1)
       expect(await auditCount('gamification.challenge.deleted')).toBeGreaterThanOrEqual(1)
+    })
+
+    it('combo is a selectable type (S7-T04 part 14): create sets metric best_combo, update to it resets the metric; kombo stays unknown', async () => {
+      const created = await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, title: 'Kombo Uji', challengeType: 'combo', targetValue: 10 })
+      expect(created.status).toBe(201)
+      const c = GamificationAdminChallengeSchema.parse(dataOf(created))
+      expect(c.challengeType).toBe('combo')
+      const metric = async () => (await t.db.query<{ metric: string }>(`select metric from challenges where id = $1`, [c.id]))[0]!.metric
+      expect(await metric()).toBe('best_combo')
+      await admin.put(`/admin/gamification/challenges/${c.id}`, { ...CHALLENGE_BODY, title: 'Kombo Uji', challengeType: 'quiz_count' })
+      expect(await metric()).toBe('sessions')
+      const back = await admin.put(`/admin/gamification/challenges/${c.id}`, { ...CHALLENGE_BODY, title: 'Kombo Uji', challengeType: 'combo', targetValue: 12 })
+      expect(back.status).toBe(200)
+      expect(await metric()).toBe('best_combo')
+      const bad = fail(await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, challengeType: 'kombo' }), 422, 'VALIDATION_ERROR', 'Sila lengkapkan semua medan wajib.')
+      expect(bad.fields).toEqual({ challengeType: 'Medan ini tidak sah.' })
+      await admin.del(`/admin/gamification/challenges/${c.id}`)
     })
 
     it('every field is required; an unknown type or difficulty and a zero target are 422 with the mock copy', async () => {
@@ -254,6 +307,24 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       const totals = body.data.map((r) => r.totalSyilingEarned)
       expect(totals).toEqual([...totals].sort((a, b) => b - a))
       expect(body.data.find((r) => r.email === 'pelajar@demo.test')).toMatchObject({ currentSyiling: expect.any(Number), tierKey: 'bronze', tierColor: '#cd7f32', xp: expect.any(Number) })
+    })
+
+    it('T-C12: every row carries the stored streak (0 without a streak row), and the tier filter takes the tier id as well as its key', async () => {
+      const get = async (q: string) => GamificationAdminStudentsResponseSchema.parse((await admin.get(`/admin/gamification/students${q}`)).body)
+      const demoId = await userIdOf(t.db, STUDENT)
+      await t.db.query(`insert into streaks (user_id, current, best, total_days) values ($1, 6, 9, 20) on conflict (user_id) do update set current = 6, best = 9`, [demoId])
+      const rows = (await get('?search=pelajar@demo.test')).data
+      expect(rows.find((r) => r.userId === demoId)).toMatchObject({ streak: 6 })
+      const none = await bareUser(t, 'Tanpa Streak')
+      await t.wallet.credit({ userId: none, amount: 5, source: 'quiz_practice', sourceId: 'tc12-streak', description: 'Latih Tubi: 5 betul', isTest: false })
+      expect((await get('?search=Tanpa%20Streak')).data).toEqual([expect.objectContaining({ userId: none, streak: 0 })])
+      const bronzeId = await tierId('bronze')
+      const byId = await get(`?tier=${bronzeId}`)
+      const byKey = await get('?tier=bronze')
+      expect(byId.meta.totalItems).toBe(byKey.meta.totalItems)
+      expect(byId.meta.totalItems).toBeGreaterThan(0)
+      expect(byId.data.every((r) => r.tierKey === 'bronze')).toBe(true)
+      expect((await get('?tier=999999')).data).toEqual([])
     })
 
     it('GET: tier filter, name or e-mail search (a % is literal), the four sorts, an invalid page reads as 1 and an out-of-range page is empty', async () => {

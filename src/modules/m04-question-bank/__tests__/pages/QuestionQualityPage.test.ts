@@ -134,8 +134,7 @@ describe('QuestionQualityPage (M04 S6)', () => {
     await router.push('/admin/questions/quality')
     wrapper = mount(QuestionQualityPage, { global: { plugins: [router] }, attachTo: document.body })
     await flushPromises()
-    expect(t(wrapper, 'question-area-tab-kualiti').attributes('data-active')).toBe('true')
-    expect(t(wrapper, 'question-area-tab-senarai').attributes('href')).toBe('/admin/questions')
+    expect(wrapper.find('[data-testid=question-area-tabs]').exists()).toBe(false)
   })
 
   it('shows "Tiada data kualiti." for an empty bank, with the audit button kept', async () => {

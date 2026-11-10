@@ -105,7 +105,7 @@ async function join(code: string): Promise<void> {
           <div class="mt-4" data-testid="pb-how-to">
             <h2 class="text-label text-highlighted">Cara Bermain:</h2>
             <ul class="mt-2 flex flex-col gap-2 text-caption text-success">
-              <li v-for="line in PB_HOW_TO" :key="line">{{ line }}</li>
+              <li>{{ PB_HOW_TO }}</li>
             </ul>
           </div>
         </JoinCodeForm>

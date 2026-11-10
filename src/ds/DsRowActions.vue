@@ -40,8 +40,10 @@ const props = withDefaults(
     /** Accessible name of the menu trigger. */
     label?: string
     testid?: string
+    /** `start` keeps each action in the same slot when rows have different action counts. */
+    align?: 'start' | 'end'
   }>(),
-  { inline: 0, label: dsCopy.rowActions, testid: 'row-menu' },
+  { inline: 0, label: dsCopy.rowActions, testid: 'row-menu', align: 'end' },
 )
 
 const confirm = useConfirm()
@@ -86,14 +88,17 @@ const items = computed<DropdownMenuItem[][]>(() => {
 </script>
 
 <template>
-  <div class="flex items-center justify-end gap-1" data-ds="row-actions">
+  <div
+    :class="['flex items-center gap-1', align === 'start' ? 'justify-start' : 'justify-end']"
+    data-ds="row-actions"
+  >
     <UButton
       v-for="a in inlineActions"
       :key="a.label"
       type="button"
         color="neutral"
         variant="ghost"
-        :class="a.icon ? 'min-h-9 min-w-9 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11' : 'min-h-9 pointer-coarse:min-h-11'"
+        :class="a.icon ? undefined : 'min-h-9 pointer-coarse:min-h-11'"
         :icon="a.icon ? iconClass(a.icon) : undefined"
         :label="a.icon ? undefined : a.label"
       :aria-label="a.icon ? a.label : undefined"
@@ -112,7 +117,6 @@ const items = computed<DropdownMenuItem[][]>(() => {
         icon="i-ph-dots-three"
         :aria-label="label"
         :title="label"
-        class="min-h-9 min-w-9 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11"
         :data-testid="testid"
       />
     </UDropdownMenu>

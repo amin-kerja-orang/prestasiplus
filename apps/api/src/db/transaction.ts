@@ -31,3 +31,12 @@ export async function withTransaction<T>(
   if (outer) return fn(outer)
   return prisma.$transaction((tx) => storage.run(tx, () => fn(tx)), options)
 }
+
+/**
+ * Runs `fn` with `tx` as the current transaction (so `PrismaService.client` returns it), for a caller that was handed an open client
+ * instead of opening one (S1-T10 builder import). Inside a transaction already (same client or not) `fn` simply runs in it.
+ */
+export function runInClient<T>(tx: TxClient, fn: () => Promise<T>): Promise<T> {
+  if (storage.getStore()) return fn()
+  return storage.run(tx, fn)
+}

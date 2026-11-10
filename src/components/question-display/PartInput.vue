@@ -12,18 +12,29 @@
  */
 import { computed, ref } from 'vue'
 
-import { overLabel, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
+import {
+  capLabel,
+  maxWordsLabel,
+  overLabel,
+  shortLabel,
+  wordCountLabel,
+  wordTargetLabel,
+} from './copy'
+import DrawingPad from './DrawingPad.vue'
 import EssayAnswer from './EssayAnswer.vue'
-import { DsStack, DsText } from '@/ds'
+import { DsStack, DsSurface, DsText } from '@/ds'
 
 import { isReadableNumber, latexToPlain } from '@pp/exam-core/math-expr'
 import type { Leaf } from '@pp/exam-core/paper-model'
 import type { McqOption, PartAnswer } from '@/modules/m28-bijak-spm/domain/types'
+import { useHardLimit } from './lib/hard-limit'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from './lib/photo-store'
 import MathField from './MathField.vue'
+import type { LeafModeExtras } from './types'
+import { countWords } from './words'
 
 const props = defineProps<{
-  leaf: Leaf
+  leaf: Leaf & LeafModeExtras
   modelValue: PartAnswer | undefined
   attemptId: string
   disabled?: boolean
@@ -34,9 +45,19 @@ const emit = defineEmits<{ 'update:modelValue': [PartAnswer] }>()
 
 const answer = computed<PartAnswer>(() => props.modelValue ?? {})
 const steps = computed(() => (answer.value.steps?.length ? answer.value.steps : ['']))
-const words = computed(() =>
-  (answer.value.text ?? '').trim() ? (answer.value.text ?? '').trim().split(/\s+/).length : 0,
+const words = computed(() => countWords(answer.value.text ?? ''))
+/** Essay with `hardLimit` and a maximum: typing and pasting stop at that many words (FR-PA-35). */
+const hardMax = computed(() =>
+  props.leaf.kind === 'essay' && props.leaf.hardLimit ? props.leaf.wordRange?.max : undefined,
 )
+const atCap = computed(() => hardMax.value !== undefined && words.value >= hardMax.value)
+const textBox = ref<HTMLElement | null>(null)
+const limit = useHardLimit({
+  max: () => hardMax.value,
+  prev: () => answer.value.text ?? '',
+  root: textBox,
+  commit: (text) => update({ text }),
+})
 /** Numeric leaf: the final answer must be something the marker can read (FB-050). */
 // The hint shows once the field was left, or at once for a stored answer that cannot be read.
 const finalTouched = ref(!isReadableNumber(props.modelValue?.final ?? ''))
@@ -77,9 +98,53 @@ function removeStep(i: number): void {
 
 async function onFiles(ev: Event): Promise<void> {
   const input = ev.target as HTMLInputElement
+  await addPhotos(Array.from(input.files ?? []))
+  input.value = ''
+}
+const PAD_PHOTO = 'lukisan.png'
+let padQueue: Promise<void> = Promise.resolve()
+/** Latest pad state: a save still exporting when the pupil pressed Kosongkan is dropped, not stored again. */
+let padEmpty = false
+/**
+ * The Papan Lukisan PNG takes the photo path (FR-PA-08), but REPLACES the previous pad drawing:
+ * at most one `lukisan.png` per leaf; camera/file photos stay and count toward the cap with it.
+ */
+function onDrawingSave(file: File): Promise<void> {
+  padQueue = padQueue.then(async () => {
+    if (padEmpty) return
+    photoError.value = ''
+    const all = answer.value.photos ?? []
+    const others = all.filter((p) => p.name !== PAD_PHOTO)
+    const ok = checkPhoto(file, others.length)
+    if (!ok.ok) {
+      photoError.value = ok.message
+      return
+    }
+    await Promise.all(all.filter((p) => p.name === PAD_PHOTO).map((p) => removePhoto(p.key)))
+    const meta = await putPhoto(props.attemptId, props.leaf.id, file, others.length)
+    const u = await photoUrl(meta.key)
+    if (u) urls.value = { ...urls.value, [meta.key]: u }
+    update({ photos: [...others, meta] })
+  })
+  return padQueue
+}
+/** An emptied pad removes its photo, so an empty pad and no other photo stays `kosong`. */
+function onDrawingChange(ev: { empty: boolean }): Promise<void> {
+  padEmpty = ev.empty
+  if (!ev.empty) return Promise.resolve()
+  padQueue = padQueue.then(async () => {
+    const all = answer.value.photos ?? []
+    const pad = all.filter((p) => p.name === PAD_PHOTO)
+    if (!pad.length) return
+    await Promise.all(pad.map((p) => removePhoto(p.key)))
+    update({ photos: all.filter((p) => p.name !== PAD_PHOTO) })
+  })
+  return padQueue
+}
+async function addPhotos(files: File[]): Promise<void> {
   photoError.value = ''
   let photos = [...(answer.value.photos ?? [])]
-  for (const file of Array.from(input.files ?? [])) {
+  for (const file of files) {
     const ok = checkPhoto(file, photos.length)
     if (!ok.ok) {
       photoError.value = ok.message
@@ -90,7 +155,6 @@ async function onFiles(ev: Event): Promise<void> {
     const u = await photoUrl(meta.key)
     if (u) urls.value = { ...urls.value, [meta.key]: u }
   }
-  input.value = ''
   update({ photos })
 }
 async function dropPhoto(key: string): Promise<void> {
@@ -100,8 +164,18 @@ async function dropPhoto(key: string): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4" :data-testid="`part-input-${leaf.id}`">
+  <div ref="textBox" class="flex flex-col gap-4" :data-testid="`part-input-${leaf.id}`">
     <template v-if="leaf.kind === 'short_text' || leaf.kind === 'essay'">
+      <DsSurface
+        v-if="leaf.preFill"
+        level="soft"
+        padding="sm"
+        role="note"
+        aria-label="Templat jawapan"
+        class="whitespace-pre-line"
+        data-testid="answer-prefill"
+        ><DsText variant="body" tone="toned">{{ leaf.preFill }}</DsText></DsSurface
+      >
       <UFormField :label="`Jawapan ${leaf.label}`.trim()" class="w-full">
         <UTextarea
           :model-value="answer.text ?? ''"
@@ -111,7 +185,10 @@ async function dropPhoto(key: string): Promise<void> {
           :placeholder="leaf.kind === 'essay' ? 'Tulis jawapan anda di sini…' : 'Tulis jawapan…'"
           class="w-full"
           data-testid="short-text-input"
-          @update:model-value="update({ text: String($event ?? '') })"
+          @update:model-value="limit.onText(String($event ?? ''))"
+          @paste="limit.onPaste"
+          @compositionstart="limit.onCompositionStart"
+          @compositionend="limit.onCompositionEnd"
         />
       </UFormField>
       <p
@@ -127,7 +204,25 @@ async function dropPhoto(key: string): Promise<void> {
         }}
       </p>
       <DsText
-        v-if="leaf.kind === 'essay' && leaf.wordRange && words > leaf.wordRange.max"
+        v-if="leaf.kind === 'short_text' && leaf.maxWords && words > leaf.maxWords"
+        variant="caption"
+        tone="error"
+        role="status"
+        data-testid="word-hint"
+      >
+        {{ maxWordsLabel(leaf.maxWords) }}
+      </DsText>
+      <DsText
+        v-else-if="atCap"
+        variant="caption"
+        tone="error"
+        role="status"
+        data-testid="word-cap-hint"
+      >
+        {{ capLabel(hardMax as number) }}
+      </DsText>
+      <DsText
+        v-else-if="leaf.kind === 'essay' && leaf.wordRange && words > leaf.wordRange.max"
         variant="caption"
         tone="error"
         role="status"
@@ -170,6 +265,13 @@ async function dropPhoto(key: string): Promise<void> {
     </template>
 
     <template v-else-if="leaf.kind === 'drawing'">
+      <DrawingPad
+        :template="leaf.answerTemplate"
+        :disabled="disabled"
+        :on-flush="onDrawingSave"
+        @save="onDrawingSave"
+        @change="onDrawingChange"
+      />
       <p class="text-body text-toned">
         Lukis jawapan anda pada kertas, kemudian ambil gambarnya. Guru menyemak senarai semak (garis
         lurus, titik betul, bentuk lengkung).
@@ -182,6 +284,7 @@ async function dropPhoto(key: string): Promise<void> {
         :choice="{ topic: answer.choice, text: answer.text ?? '' }"
         :topics="leaf.topics ?? []"
         :range="leaf.wordRange"
+        :hard-limit="leaf.hardLimit"
         :disabled="disabled"
         :name="`topic-${leaf.id}`"
         @update:choice="update({ choice: $event.topic, text: $event.text })"

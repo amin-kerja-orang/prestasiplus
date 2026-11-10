@@ -57,6 +57,9 @@ describe('M12 levels S1 to S6 and filter options (AC 1 to 3)', () => {
     t = await bootKirkpatrickApp()
     await treatDemoAsSecondary(t.db, false)
     w = await buildWorld(t)
+    // XS-1 (T-C5): Monitoring and Kirkpatrick count the same pupils as every screen, so a suspended account is NOT one of them. This fixture keeps its four
+    // named pupils (the figures below are written for four), so the seeded suspended pupil is a normal one here; the exclusion itself is pinned in admin-central.spec.ts.
+    await t.db.query(`update users set is_suspended = false where email = 'digantung@demo.test'`)
     admin = await client(t, ADMIN)
     teacherA = await client(t, TEACHER_A)
     teacherB = await client(t, TEACHER_B)

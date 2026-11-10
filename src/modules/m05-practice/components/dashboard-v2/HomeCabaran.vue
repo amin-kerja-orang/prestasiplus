@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsBadge, DsCharacterCard, DsCluster, DsLink, DsProgress, DsStack, DsSurface, DsText } from '@/ds'
+import { DsBadge, DsCharacterCard, DsLink, DsProgress, DsText } from '@/ds'
 
 import { fetchChallengesToday } from '../../api/practice'
 import { QUEST_DIFFICULTY, questPct } from '../dashboard/dashboard-lib'
@@ -25,31 +25,28 @@ const BADGE_TONE = { easy: 'success', medium: 'warning', hard: 'error' } as cons
     title="⚡ Cabaran Kilat"
     data-testid="dash-cabaran"
   >
-    <DsStack as="ul" gap="sm" data-testid="dash-cabaran-list">
+    <ul class="flex flex-col gap-4" data-testid="dash-cabaran-list">
       <li v-for="c in rows" :key="c.id" data-testid="dash-cabaran-row">
-        <DsSurface padding="sm">
-          <DsCluster gap="sm" :wrap="false">
-            <DsText variant="heading" as="span" aria-hidden="true">{{ c.icon }}</DsText>
-            <DsStack gap="xs" class="grow">
-              <DsCluster gap="sm">
-                <DsText variant="label" tone="highlighted" as="span" data-testid="dash-cabaran-title">{{
-                  c.title
-                }}</DsText>
-                <DsBadge
-                  :tone="BADGE_TONE[c.difficulty]"
-                  :label="QUEST_DIFFICULTY[c.difficulty].label"
-                  size="sm"
-                  data-testid="dash-cabaran-chip"
-                />
-              </DsCluster>
-              <DsCluster gap="sm" :wrap="false">
-                <DsProgress
-                  class="grow"
-                  :value="questPct(c.progress, c.target)"
-                  :show-value="false"
-                  size="sm"
-                  :aria-label="`Progres ${c.title}`"
-                />
+        <div class="flex items-center gap-3">
+          <DsText variant="heading" as="span" aria-hidden="true">{{ c.icon }}</DsText>
+          <div class="flex min-w-0 flex-1 flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <DsText
+                variant="label"
+                tone="highlighted"
+                as="span"
+                class="min-w-0"
+                data-testid="dash-cabaran-title"
+                >{{ c.title }}</DsText
+              >
+              <DsBadge
+                :tone="BADGE_TONE[c.difficulty]"
+                :label="QUEST_DIFFICULTY[c.difficulty].label"
+                size="sm"
+                class="shrink-0"
+                data-testid="dash-cabaran-chip"
+              />
+              <span class="ml-auto flex shrink-0 items-center gap-2">
                 <DsText
                   variant="caption"
                   tone="muted"
@@ -58,23 +55,29 @@ const BADGE_TONE = { easy: 'success', medium: 'warning', hard: 'error' } as cons
                   data-testid="dash-cabaran-progress"
                   >{{ c.progress }}/{{ c.target }}</DsText
                 >
-              </DsCluster>
-            </DsStack>
-            <DsStack gap="none" align="center" class="shrink-0">
-              <span aria-hidden="true">🪙</span>
-              <DsText
-                variant="caption"
-                tone="highlighted"
-                as="span"
-                tabular
-                data-testid="dash-cabaran-reward"
-                >+{{ c.rewardSyiling }}</DsText
-              >
-            </DsStack>
-          </DsCluster>
-        </DsSurface>
+                <span class="flex items-center gap-1">
+                  <span aria-hidden="true">🪙</span>
+                  <DsText
+                    variant="caption"
+                    tone="highlighted"
+                    as="span"
+                    tabular
+                    data-testid="dash-cabaran-reward"
+                    >+{{ c.rewardSyiling }}</DsText
+                  >
+                </span>
+              </span>
+            </div>
+            <DsProgress
+              :value="questPct(c.progress, c.target)"
+              :show-value="false"
+              size="sm"
+              :aria-label="`Progres ${c.title}`"
+            />
+          </div>
+        </div>
       </li>
-    </DsStack>
+    </ul>
     <DsLink to="/gamification/challenges" data-testid="dash-cabaran-link">Lihat Semua →</DsLink>
   </DsCharacterCard>
 </template>

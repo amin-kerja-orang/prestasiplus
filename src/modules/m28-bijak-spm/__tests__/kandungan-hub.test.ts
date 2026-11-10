@@ -75,7 +75,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-/** The lanes with a screen in this card; Tracking A and Kertas Subjektif arrive with S3-T05 and S3-T06. */
+/** The lanes with a screen; Kertas Subjektif arrives with S3-T06. */
 async function mountAt(component: object, path: string, extraRoutes: RouteRecordRaw[] = []): Promise<void> {
   const stub = { template: '<i/>' }
   const router = createRouter({
@@ -86,6 +86,7 @@ async function mountAt(component: object, path: string, extraRoutes: RouteRecord
       { path: '/admin/spm/simulasi', name: KANDUNGAN_ROUTES.simulasi, component },
       { path: '/admin/spm/subjektif', name: KANDUNGAN_ROUTES.subjektif, component },
       { path: '/admin/spm/latih-tubi', name: KANDUNGAN_ROUTES.latihTubi, component },
+      { path: '/admin/spm/tracking-a', name: KANDUNGAN_ROUTES.trackingA, component },
       { path: '/spm/tahun-lepas', name: 'm06.spm.databank', component: stub },
       { path: '/spm/bijak', name: 'm28.bijak', component: stub },
       { path: '/admin/set-builder/:id', component: stub },
@@ -104,10 +105,10 @@ const cardNames = (): (string | null)[] => [...document.body.querySelectorAll('[
 describe('hub SPM (R1-ADM-Q-01)', () => {
   it('hides a card whose screen is not registered, in the PRD order (FR-ADM-Q01.4)', async () => {
     await mountAt(KandunganHubPage, '/admin/spm')
-    expect(cardNames()).toEqual(['Databank Soalan', 'Subjektif', 'Bijak SPM', 'Latih Tubi'])
+    expect(cardNames()).toEqual(['Databank Soalan', 'Tracking A', 'Subjektif', 'Bijak SPM', 'Latih Tubi'])
     expect(text('[data-testid=kandungan-card-databank]')).toContain('Bank soalan objektif SPM mengikut subjek.')
     expect(text('[data-testid=kandungan-card-simulasi]')).toContain('Kertas SPM penuh dalam format sebenar.')
-    for (const k of ['tracking-a', 'kertas-subjektif']) expect(q(`[data-testid=kandungan-card-${k}]`), k).toBeNull()
+    expect(q('[data-testid=kandungan-card-kertas-subjektif]')).toBeNull()
     expect(text('[data-testid=kandungan-intro]')).toBe(
       'Setiap kad di bawah ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
     )
@@ -116,10 +117,16 @@ describe('hub SPM (R1-ADM-Q-01)', () => {
   it('shows all six cards in the PRD order once every screen exists (AC-ADM-Q01.1)', async () => {
     const stub = { template: '<i/>' }
     await mountAt(KandunganHubPage, '/admin/spm', [
-      { path: '/admin/spm/tracking-a', name: KANDUNGAN_ROUTES.trackingA, component: stub },
       { path: '/admin/spm/kertas-subjektif', name: KANDUNGAN_ROUTES.kertasSubjektif, component: stub },
     ])
     expect(cardNames()).toEqual(['Databank Soalan', 'Tracking A', 'Subjektif', 'Bijak SPM', 'Kertas Subjektif', 'Latih Tubi'])
+  })
+
+  it('shows the V2 "Flag OFF" badge only on a card whose Kawalan Ciri key is off', async () => {
+    server.overview.mockResolvedValue({ ...OVERVIEW, cards: OVERVIEW.cards.map((c) => (c.lane === 'latih-tubi' ? { ...c, flagOff: true } : c)) })
+    await mountAt(KandunganHubPage, '/admin/spm')
+    expect(text('[data-testid=kandungan-flag-off-latih-tubi]')).toBe('Flag OFF')
+    expect(q('[data-testid=kandungan-flag-off-databank]')).toBeNull()
   })
 
   it('shows the item count as a big number and every attention line', async () => {
@@ -267,24 +274,30 @@ describe('lane Databank Soalan (R1-ADM-Q-02)', () => {
   it('has the V2 filters, buttons and columns, and lists the reasons in Perhatian', async () => {
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
     const body = document.body.textContent ?? ''
-    // "Set Semula" appears once a filter is active (DsFilterBar showReset auto); it is asserted in the apply test below.
+    // "Set Semula" shows even with no filter active, as on V2 (asserted in its own test below).
     for (const s of ['Semua Subjek', 'Semua Status', 'Tapis', 'Senarai', 'Tajuk', 'Perhatian', 'Tindakan']) expect(body, s).toContain(s)
     expect(q('[data-testid=lane-search]')).not.toBeNull()
     expect(text('[data-testid=lane-databank]')).toContain('Belum diluluskan — tekan Terbitkan untuk memaparkannya.')
     expect(q('[data-testid=lane-edit-2]')).not.toBeNull()
   })
 
-  it('offers Pratonton beside Sunting, through the V2 preview path (S2-T03)', async () => {
+  it('shows Set Semula with no filter active, as V2 does', async () => {
+    await mountAt(LaneDatabankPage, '/admin/spm/databank')
+    const reset = [...document.body.querySelectorAll('button')].filter((b) => b.textContent?.trim() === 'Set Semula')
+    expect(reset.length).toBeGreaterThan(0)
+  })
+
+  it('offers Pratonton beside Sunting, through the V2 read-only preview page (S2-T03)', async () => {
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
     const preview = q('[data-testid=lane-preview-2]')
     expect(preview?.textContent?.trim()).toBe('Pratonton')
-    expect(preview?.getAttribute('href')).toBe('/admin/studio/questions/2/preview')
+    expect(preview?.getAttribute('href')).toBe('/admin/spm/soalan/2/pratonton')
   })
 
   it('offers Pratonton on the phone cards too (S2-T03)', async () => {
     media(false)
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
-    expect(q('[data-testid=lane-preview-2]')?.getAttribute('href')).toBe('/admin/studio/questions/2/preview')
+    expect(q('[data-testid=lane-preview-2]')?.getAttribute('href')).toBe('/admin/spm/soalan/2/pratonton')
   })
 
   it('applies Subjek, Status and Cari with Tapis and clears them with Set Semula', async () => {
@@ -324,7 +337,7 @@ describe('lane Subjektif (FR-ADM-Q23.3)', () => {
     })
   })
 
-  it('lists the reasons, "—" when none, and opens the Studio for Sunting', async () => {
+  it('lists the reasons, "—" when none, and opens the rubric editor for Sunting', async () => {
     await mountAt(LaneSubjektifPage, '/admin/spm/subjektif')
     expect(text('[data-testid=lane-count]')).toBe('2 item ·')
     const reasons = text('[data-testid=attention-41]')
@@ -332,8 +345,9 @@ describe('lane Subjektif (FR-ADM-Q23.3)', () => {
     expect(reasons).toContain('Tiada kunci jawapan.')
     expect(q('[data-testid=attention-42]')).toBeNull()
     expect(document.body.textContent).toContain('—')
-    expect(document.body.textContent).toContain('#41 · Sejarah · Tingkatan 5 · Diluluskan')
-    expect(q('[data-testid=lane-edit-41]')?.getAttribute('href')).toBe('/admin/studio/questions/41/sunting')
+    expect(document.body.textContent).toContain('#41 · Sejarah · Tingkatan 5')
+    expect(text('[data-testid=status-41]')).toBe('Diluluskan')
+    expect(q('[data-testid=lane-edit-41]')?.getAttribute('href')).toBe('/admin/spm/subjektif/41/sunting')
     expect(q('[data-testid=lane-preview-41]')).toBeNull()
   })
 })

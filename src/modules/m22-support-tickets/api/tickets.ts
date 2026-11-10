@@ -2,7 +2,15 @@
 
 import { api } from '@/api'
 
-import type { QueueList, SupportSettings, Ticket, TicketDetail, TicketList, TicketStatus } from './types'
+import type {
+  QueueList,
+  SupportContact,
+  SupportSettings,
+  Ticket,
+  TicketDetail,
+  TicketList,
+  TicketStatus,
+} from './types'
 
 /** #1 `GET /api/tiket`. */
 export const fetchTickets = (o: { status?: TicketStatus | null; signal?: AbortSignal } = {}) =>
@@ -15,6 +23,10 @@ export const fetchTickets = (o: { status?: TicketStatus | null; signal?: AbortSi
 /** #2 `POST /api/tiket`. */
 export const createTicket = (input: { subject: string; body: string }) =>
   api.post<Ticket>('/api/tiket', { body: input })
+
+/** API-SUP-04 `GET /api/config/support`: the contact block of Guru and Admin Sekolah (FR-GUR-A4-3, FR-AS-A4-2). */
+export const fetchSupportContact = (o: { signal?: AbortSignal } = {}) =>
+  api.get<SupportContact>('/api/config/support', o.signal ? { signal: o.signal } : {})
 
 /** #3 `GET /api/admin/tiket`. */
 export const fetchQueue = (
@@ -35,7 +47,7 @@ export const fetchSupportSettings = (o: { signal?: AbortSignal } = {}) =>
   api.get<SupportSettings>('/api/admin/settings/support', o.signal ? { signal: o.signal } : {})
 
 /** API-ADM-10 `PUT /api/admin/settings/support`. */
-export const saveSupportSettings = (input: { email: string; whatsapp: string }) =>
+export const saveSupportSettings = (input: { email: string; whatsapp: string; hours: string }) =>
   api.put<SupportSettings>('/api/admin/settings/support', { body: input })
 
 /** API-SUP-05 `GET /api/admin/tiket/:id`. */

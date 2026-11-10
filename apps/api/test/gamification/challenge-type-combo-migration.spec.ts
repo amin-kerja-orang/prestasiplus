@@ -59,7 +59,8 @@ describe('migration 0232 challenge type combo', () => {
     expect(await rejects(() => challenge('kombo', null))).toMatch(/ck_challenges_challenge_type/)
   })
 
-  it('selects nothing yet: admin writes read this map, so combo stays closed until its evaluator (DM-81)', () => {
-    expect(Object.keys(DEFAULT_METRIC_BY_TYPE)).toEqual(OLD_TYPES)
+  it('combo is selectable now that its evaluator exists (S7-T04 part 14): admin writes read this map, metric best_combo', () => {
+    expect(Object.keys(DEFAULT_METRIC_BY_TYPE)).toEqual([...OLD_TYPES, 'combo'])
+    expect(DEFAULT_METRIC_BY_TYPE.combo).toBe('best_combo')
   })
 })

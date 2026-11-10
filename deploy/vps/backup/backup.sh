@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Nightly / pre-deploy backup of the production stack (AZ-09). Runbook: docs/ops/production-vps.md (section 9)
 #
-#   deploy/vps/backup/backup.sh [--tag daily|pre-deploy|drill] [--no-offsite] [--no-files]
+#   deploy/vps/backup/backup.sh [--tag daily|pre-deploy|pre-rebuild|drill] [--no-offsite] [--no-files]
 #
 # 1. pg_dump -Fc of the database, run INSIDE the db container with the container's own POSTGRES_* variables
 #    (the same command as scripts/db-backup.mjs; the file names are compatible, so scripts/db-restore-check.mjs
 #    reads these files). Streamed to a .partial file, header-checked, renamed, sha256 sidecar written.
 # 2. pg_restore --list of the finished file (the table of contents must be readable).
 # 3. The uploads volume (apifiles) as pp-files-<ts>.tar.gz + sha256 (PP_BACKUP_FILES: true = every run, weekly = only
-#    on PP_BACKUP_WEEKLY_DAY (default), false = never; pre-deploy and drill runs never archive uploads).
-# 4. Retention: daily dumps keep the newest PP_BACKUP_KEEP_DAILY, pre-deploy and drill dumps the newest
+#    on PP_BACKUP_WEEKLY_DAY (default), false = never; pre-deploy, pre-rebuild and drill runs never archive uploads).
+# 4. Retention: daily dumps keep the newest PP_BACKUP_KEEP_DAILY, pre-deploy, pre-rebuild and drill dumps the newest
 #    PP_BACKUP_KEEP_AUX, uploads archives the newest PP_BACKUP_KEEP_FILES; the dump of the weekday
 #    PP_BACKUP_WEEKLY_DAY is also copied to weekly/ and the newest PP_BACKUP_KEEP_WEEKLY are kept there.
 # 5. Off-site copy (offsite.sh) unless --no-offsite.
@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
     *) pp_die "unknown argument: $1" 2 ;;
   esac
 done
-case "$tag" in daily|pre-deploy|drill) ;; *) pp_die "--tag must be daily, pre-deploy or drill" 2 ;; esac
+case "$tag" in daily|pre-deploy|pre-rebuild|drill) ;; *) pp_die "--tag must be daily, pre-deploy, pre-rebuild or drill" 2 ;; esac
 
 dir="$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)"
 keep_daily="$(pp_cfg PP_BACKUP_KEEP_DAILY 7)"

@@ -35,7 +35,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       ...base,
       title: 'Bijak SPM - PRESTASIPLUS',
-      header: { title: 'Bijak SPM', subtitle: 'Kertas SPM penuh, bermasa, dengan skema' },
+      header: { title: 'Simulasi Peperiksaan', subtitle: 'Duduki kertas SPM dalam format kertas sebenar — jawab, tanda automatik setiap halaman' },
     },
   },
   {
@@ -106,6 +106,13 @@ const routes: RouteRecordRaw[] = [
       title: 'Kertas Subjektif - PRESTASIPLUS',
       header: { title: 'Kertas Subjektif' },
     },
+  },
+  // The V2 page-image documents of the same Kertas Subjektif list (migration 0265): the viewer.
+  {
+    path: '/kertas-subjektif/dokumen/:id',
+    name: 'm28.kertas-subjektif.dokumen',
+    component: () => import('./pages/SubjektifDokumenPage.vue'),
+    meta: { ...base, title: 'Kertas Subjektif - PRESTASIPLUS', header: { title: 'Kertas Subjektif' } },
   },
   {
     path: '/kertas-subjektif/:paperId',

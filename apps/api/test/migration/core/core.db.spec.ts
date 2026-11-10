@@ -96,7 +96,7 @@ describe('apply', () => {
     applyRunId = report.runId
     const by = Object.fromEntries(report.recon.map((r) => [r.entity, r]))
     for (const r of report.recon) expect(r.eligibleCount - r.loaded - r.rejected, r.entity).toBe(0)
-    expect(by.users).toMatchObject({ sourceCount: 15, loaded: 12, rejected: 3 }) // 13 and 15 (agent, not migrated) and 4 (orphan school)
+    expect(by.users).toMatchObject({ sourceCount: 15, loaded: 13, rejected: 2 }) // 13 (unknown role) and 4 (orphan school); 15 is an agent, loaded inactive (T-B5)
     expect(by.schools).toMatchObject({ sourceCount: 3, loaded: 3, rejected: 0 })
     expect(by.chapters).toMatchObject({ sourceCount: 4, loaded: 3, rejected: 1 })
     expect(by.topics).toMatchObject({ sourceCount: 5, loaded: 4, rejected: 1 })
@@ -117,13 +117,15 @@ describe('apply', () => {
     expect(rejects).toEqual([
       { legacy_id: '4', reason: 'ORPHAN_PARENT', column_name: 'school_id', offending: null },
       { legacy_id: '13', reason: 'UNKNOWN_ENUM', column_name: 'role', offending: 'super_guru' },
-      { legacy_id: '15', reason: 'UNKNOWN_ENUM', column_name: 'role', offending: 'agent' }, // not migrated, counted by name
     ].map((r) => expect.objectContaining(r)))
-    expect(await count('users', `legacy_source = 'cloud' and legacy_id in ('4', '13', '15')`)).toBe(0)
+    expect(await count('users', `legacy_source = 'cloud' and legacy_id in ('4', '13')`)).toBe(0)
+    // T-B5: the agent is carried as an inactive student, not rejected.
+    expect(await q(`select u.is_active, r.role from users u join user_roles r on r.user_id = u.id where u.legacy_source = 'cloud' and u.legacy_id = '15'`)).toEqual([{ is_active: false, role: 'student' }])
     const roles = await q<{ legacy_id: string; role: string }>(`select legacy_id, role from user_roles where legacy_source = 'cloud'`)
     const byId = Object.fromEntries(roles.map((r) => [r.legacy_id, r.role]))
     expect(byId).toMatchObject({ 1: 'student', 7: 'teacher', 9: 'parent', 10: 'school_admin', 11: 'ppd_officer', 12: 'admin', 14: 'ppd_officer' }) // 14 = jpn_officer
-    expect(roles).toHaveLength(12)
+    expect(byId[15]).toBe('student') // the agent (T-B5)
+    expect(roles).toHaveLength(13)
   })
 
   it('adopts the seeded level of the same code and keeps one row per code (AC8)', async () => {
@@ -139,7 +141,7 @@ describe('apply', () => {
     expect(await u('8')).toMatchObject({ must_reset_password: true }) // argon2
     expect(await u('9')).toEqual({ password_hash: null, must_reset_password: true }) // plaintext-like value
     expect(await u('10')).toEqual({ password_hash: null, must_reset_password: true }) // empty
-    expect((await u('3'))?.must_reset_password).toBe(true) // roster account: username, no e-mail
+    expect((await u('3'))?.must_reset_password).toBe(true) // roster account whose duplicate username was dropped: no login left, stays flagged (KP-7)
   })
 
   it('hashes and masks the IC, and no clear IC, token or password text reaches any table (AC3)', async () => {

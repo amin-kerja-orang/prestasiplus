@@ -262,7 +262,7 @@ if login student "$STUDENT_ID" STUDENT_PASSWORD; then
   check gamification GET /api/gamification/convert 200 '.data.rate != null'
   check shop GET '/api/hadiah-digital/items?cat=all' 200 '(.data | type) == "array"'
   check shop GET /api/hadiah-digital/redemptions 200
-  check shop GET /api/gamification/mystery-boxes 200 '(.data.boxes | length) > 0'
+  check shop GET /api/gamification/mystery-boxes 200 '(.data.box.prizes | length) > 0'
   check shop GET /api/cabutan 200
   # Games hub / Papan Bijak (BE-45) and battle (BE-44)
   check games GET /api/games/hub 200 '.data.chips != null'

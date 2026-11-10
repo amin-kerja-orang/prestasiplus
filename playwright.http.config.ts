@@ -35,6 +35,7 @@ export default defineConfig({
     '**/r1/**/*.http.spec.ts',
     '**/m04-question-bank/responsive-s2.spec.ts',
     '**/m04-question-bank/studio-group-http.spec.ts',
+    '**/m04-question-bank/quick-edit-http.spec.ts',
     '**/m04-question-bank/question-tabs-http.spec.ts',
     '**/m04-question-bank/t7-submissions.spec.ts',
   ],

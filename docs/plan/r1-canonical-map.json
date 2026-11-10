@@ -110,17 +110,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/admin|",
-      "path": "/admin",
-      "name": null,
-      "status": "canonical",
-      "sector": "S0",
-      "component": null,
-      "file": "src/app/router/core-routes.ts",
-      "redirects_to": "(dynamic)",
-      "approved_by_card": null
-    },
-    {
       "key": "/__ds|dev.ds-gallery",
       "path": "/__ds",
       "name": "dev.ds-gallery",
@@ -390,6 +379,16 @@
       "status": "canonical",
       "sector": "S6",
       "component": "src/modules/m02-users-schools/pages/SchoolListPage.vue",
+      "file": "src/modules/m02-users-schools/routes/schools.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/classes|",
+      "path": "/admin/classes",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m02-users-schools/pages/KelasSekolahPage.vue",
       "file": "src/modules/m02-users-schools/routes/schools.ts",
       "approved_by_card": null
     },
@@ -702,6 +701,7 @@
       "sector": "S2",
       "component": null,
       "file": "src/modules/m04-question-bank/routes/questions-form.ts",
+      "redirects_to": "(dynamic)",
       "note": "V3 duplicates register M-06 (D113): old flat form redirects to Studio after the field comparison",
       "approved_by_card": null
     },
@@ -722,8 +722,9 @@
       "name": null,
       "status": "canonical",
       "sector": "S2",
-      "component": "src/modules/m04-question-bank/pages/QuestionListPage.vue",
+      "component": null,
       "file": "src/modules/m04-question-bank/routes/questions-list.ts",
+      "redirects_to": "(dynamic)",
       "approved_by_card": null
     },
     {
@@ -732,7 +733,18 @@
       "name": null,
       "status": "canonical",
       "sector": "S2",
-      "component": "src/modules/m04-question-bank/pages/QuestionDetailPage.vue",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/questions-list.ts",
+      "redirects_to": "(dynamic)",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/questions/regroup|m04.questions.regroup",
+      "path": "/admin/questions/regroup",
+      "name": "m04.questions.regroup",
+      "status": "canonical",
+      "sector": "S2",
+      "component": "src/modules/m04-question-bank/pages/RegroupPage.vue",
       "file": "src/modules/m04-question-bank/routes/questions-list.ts",
       "approved_by_card": null
     },
@@ -763,8 +775,9 @@
       "name": null,
       "status": "canonical",
       "sector": "S2",
-      "component": "src/modules/m04-question-bank/pages/StructuredListPage.vue",
+      "component": null,
       "file": "src/modules/m04-question-bank/routes/structured.ts",
+      "redirects_to": "(dynamic)",
       "note": "read view of the SAME questions store, not a second table (register section 6); sub-item of Bank Lama",
       "approved_by_card": null
     },
@@ -774,7 +787,28 @@
       "name": null,
       "status": "canonical",
       "sector": "S2",
-      "component": "src/modules/m04-question-bank/pages/StructuredDetailPage.vue",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/structured.ts",
+      "redirects_to": "(dynamic)",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/subjektif/:id(\\d+)/sunting|m04.structured.rubric",
+      "path": "/admin/spm/subjektif/:id(\\d+)/sunting",
+      "name": "m04.structured.rubric",
+      "status": "canonical",
+      "sector": "S2",
+      "component": "src/modules/m04-question-bank/pages/StructuredRubricPage.vue",
+      "file": "src/modules/m04-question-bank/routes/structured.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/soalan/:id(\\d+)/pratonton|m04.question.preview",
+      "path": "/admin/spm/soalan/:id(\\d+)/pratonton",
+      "name": "m04.question.preview",
+      "status": "canonical",
+      "sector": "S2",
+      "component": "src/modules/m04-question-bank/pages/QuestionPreviewPage.vue",
       "file": "src/modules/m04-question-bank/routes/structured.ts",
       "approved_by_card": null
     },
@@ -809,18 +843,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/admin/studio/questions/:id(\\d+)/edit|",
-      "path": "/admin/studio/questions/:id(\\d+)/edit",
-      "name": null,
-      "status": "redirect-to:/admin/studio/questions/:id/sunting",
-      "sector": "S2",
-      "component": null,
-      "file": "src/modules/m04-question-bank/routes/studio.ts",
-      "redirects_to": "/admin/studio/questions/:id/sunting",
-      "note": "V2 path alias of the Studio wizard; FR-ADM-Q04.7",
-      "approved_by_card": "S2-T01"
-    },
-    {
       "key": "/admin/studio/questions/:id(\\d+)/preview|",
       "path": "/admin/studio/questions/:id(\\d+)/preview",
       "name": null,
@@ -830,6 +852,18 @@
       "file": "src/modules/m04-question-bank/routes/studio.ts",
       "redirects_to": "(dynamic)",
       "approved_by_card": "S2-T03"
+    },
+    {
+      "key": "/admin/studio/questions/:id(\\d+)/edit|",
+      "path": "/admin/studio/questions/:id(\\d+)/edit",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting",
+      "sector": "S2",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/studio.ts",
+      "redirects_to": "(dynamic)",
+      "note": "V2 path alias of the Studio wizard; FR-ADM-Q04.7",
+      "approved_by_card": "S2-T01"
     },
     {
       "key": "/admin/studio/groups/:id(\\d+)|m04.studio.group",
@@ -1969,6 +2003,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/kelas/:id/edit|guru-kelas-edit",
+      "path": "/guru/kelas/:id/edit",
+      "name": "guru-kelas-edit",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/KelasCreatePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/kelas.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
       "key": "/guru/pelajar|guru-pelajar",
       "path": "/guru/pelajar",
       "name": "guru-pelajar",
@@ -2118,6 +2162,16 @@
       "component": "src/modules/m10-teacher-class/pages/SoalanBerstrukturEditPage.vue",
       "file": "src/modules/m10-teacher-class/routes/soalan.ts",
       "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/databank|",
+      "path": "/guru/databank",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/DatabankGuruPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": null
     },
     {
       "key": "/guru/profil/edit|guru-profil-edit",
@@ -2404,6 +2458,66 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/gamification|m14.admin-overview",
+      "path": "/admin/gamification",
+      "name": "m14.admin-overview",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminOverviewPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/gamification/tiers|m14.admin-tiers",
+      "path": "/admin/gamification/tiers",
+      "name": "m14.admin-tiers",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminTiersPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/gamification/challenges|m14.admin-challenges",
+      "path": "/admin/gamification/challenges",
+      "name": "m14.admin-challenges",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminChallengesPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/gamification/students|m14.admin-students",
+      "path": "/admin/gamification/students",
+      "name": "m14.admin-students",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminStudentsPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/gamification/transactions|m14.admin-transactions",
+      "path": "/admin/gamification/transactions",
+      "name": "m14.admin-transactions",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminTransactionsPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/reward-control|m14.admin-reward-control",
+      "path": "/admin/reward-control",
+      "name": "m14.admin-reward-control",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m14-gamification/pages/admin/AdminRewardControlPage.vue",
+      "file": "src/modules/m14-gamification/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/gamification|gamification-dashboard",
       "path": "/gamification",
       "name": "gamification-dashboard",
@@ -2485,6 +2599,46 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/hadiah|m15.admin-hadiah",
+      "path": "/admin/hadiah",
+      "name": "m15.admin-hadiah",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/hadiah/baharu|m15.admin-hadiah-new",
+      "path": "/admin/hadiah/baharu",
+      "name": "m15.admin-hadiah-new",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/hadiah/tebusan|m15.admin-redemptions",
+      "path": "/admin/hadiah/tebusan",
+      "name": "m15.admin-redemptions",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/RedemptionsAdminPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/hadiah/:id(\\d+)/edit|m15.admin-hadiah-edit",
+      "path": "/admin/hadiah/:id(\\d+)/edit",
+      "name": "m15.admin-hadiah-edit",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/cikgu/hadiah|m15.digital-shop",
       "path": "/cikgu/hadiah",
       "name": "m15.digital-shop",
@@ -2534,6 +2688,16 @@
       "component": "src/modules/m15-rewards-shop/pages/CabutanPage.vue",
       "file": "src/modules/m15-rewards-shop/routes/student.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/permainan|m16.admin-settings",
+      "path": "/admin/permainan",
+      "name": "m16.admin-settings",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m16-battle-games/pages/TetapanPermainanPage.vue",
+      "file": "src/modules/m16-battle-games/routes/admin.ts",
+      "approved_by_card": "S7-T03"
     },
     {
       "key": "/permainan|m16.permainan",
@@ -2688,6 +2852,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/analytics|m17.admin-analytics",
+      "path": "/admin/analytics",
+      "name": "m17.admin-analytics",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminAnalitikPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/analytics.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "${prefix}/school/:schoolId(\\\\d+)|",
       "path": "${prefix}/school/:schoolId(\\\\d+)",
       "name": null,
@@ -2751,6 +2925,36 @@
       "component": "src/modules/m17-admin-dashboard/pages/CommandCenterDailyPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/command-center.ts",
       "template": true,
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin|m17.admin-dashboard",
+      "path": "/admin",
+      "name": "m17.admin-dashboard",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminDashboardPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/dashboard.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/feature-toggles|m17.feature-toggles",
+      "path": "/admin/feature-toggles",
+      "name": "m17.feature-toggles",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/FeatureTogglesPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/feature-toggles.ts",
+      "approved_by_card": "S0-T10"
+    },
+    {
+      "key": "/admin/laporan|m17.admin-laporan",
+      "path": "/admin/laporan",
+      "name": "m17.admin-laporan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminLaporanPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },
     {
@@ -3075,6 +3279,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin-sekolah/tanda-karangan|m27.tanda-karangan",
+      "path": "/admin-sekolah/tanda-karangan",
+      "name": "m27.tanda-karangan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m27-school-admin/pages/TandaKaranganPage.vue",
+      "file": "src/modules/m27-school-admin/routes/karangan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/tanda-karangan|m27.tanda-karangan.pusat",
+      "path": "/admin/spm/tanda-karangan",
+      "name": "m27.tanda-karangan.pusat",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m27-school-admin/pages/TandaKaranganPage.vue",
+      "file": "src/modules/m27-school-admin/routes/karangan.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin-sekolah/kelas|m27.kelas-sekolah",
       "path": "/admin-sekolah/kelas",
       "name": "m27.kelas-sekolah",
@@ -3101,6 +3325,16 @@
       "status": "canonical",
       "sector": "S6",
       "component": "src/modules/m27-school-admin/pages/TambahPelajarPage.vue",
+      "file": "src/modules/m27-school-admin/routes/pelajar.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin-sekolah/pelajar/import|m27.pelajar.import",
+      "path": "/admin-sekolah/pelajar/import",
+      "name": "m27.pelajar.import",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m27-school-admin/pages/ImportPelajarPage.vue",
       "file": "src/modules/m27-school-admin/routes/pelajar.ts",
       "approved_by_card": null
     },
@@ -3247,6 +3481,26 @@
       "approved_by_card": "S3-T03"
     },
     {
+      "key": "/admin/spm/tracking-a|",
+      "path": "/admin/spm/tracking-a",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingAListPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "/admin/spm/tracking-a/:set/sunting|",
+      "path": "/admin/spm/tracking-a/:set/sunting",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingASetEditorPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
       "key": "/admin/spm/kertas-subjektif|",
       "path": "/admin/spm/kertas-subjektif",
       "name": null,
@@ -3336,10 +3590,23 @@
       "name": null,
       "status": "redirect-to:/admin/spm/databank",
       "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/papers/BankPage.vue",
+      "component": null,
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "(dynamic)",
       "note": "KS-02 list; docs/prd/r1/30-admin-pusat.md 3.3 (the list redirects; /admin/spm/soalan/:qid/sunting stays as Quick Edit). Register M-01.",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/soalan/:qid/pratonton|",
+      "path": "/admin/spm/soalan/:qid/pratonton",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting?pratonton=1",
+      "sector": "S3",
+      "component": null,
+      "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "(dynamic)",
+      "note": "PRD30 Q-24 Pratonton; ruling on #432",
+      "approved_by_card": "S2-T05"
     },
     {
       "key": "/admin/spm/soalan/:qid/sunting|",
@@ -3388,1296 +3655,6 @@
     }
   ],
   "menus": [
-    {
-      "key": "admin-nav|command-center",
-      "source": "admin-nav",
-      "id": "command-center",
-      "label": "Command Center",
-      "route": "/admin/command-center",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|aktiviti-harian",
-      "source": "admin-nav",
-      "id": "aktiviti-harian",
-      "label": "Aktiviti Harian",
-      "route": "/admin/command-center/daily-activity",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|audio-kbat",
-      "source": "admin-nav",
-      "id": "audio-kbat",
-      "label": "Audio KBAT",
-      "route": "/admin/audio-kbat",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|dashboard",
-      "source": "admin-nav",
-      "id": "dashboard",
-      "label": "Dashboard",
-      "route": "/admin",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|analitik",
-      "source": "admin-nav",
-      "id": "analitik",
-      "label": "Analitik",
-      "route": "/admin/analytics",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|monitoring",
-      "source": "admin-nav",
-      "id": "monitoring",
-      "label": "Monitoring",
-      "route": "/admin/monitoring",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|laporan",
-      "source": "admin-nav",
-      "id": "laporan",
-      "label": "Laporan",
-      "route": "/admin/laporan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kurikulum",
-      "source": "admin-nav",
-      "id": "kurikulum",
-      "label": "Kurikulum",
-      "route": "/admin/curriculum",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S4",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|subjek",
-      "source": "admin-nav",
-      "id": "subjek",
-      "label": "Subjek",
-      "route": "/admin/subjects",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S4",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|tahap-pendidikan",
-      "source": "admin-nav",
-      "id": "tahap-pendidikan",
-      "label": "Tahap Pendidikan",
-      "route": "/admin/education-levels",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S4",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|senarai-soalan",
-      "source": "admin-nav",
-      "id": "senarai-soalan",
-      "label": "Senarai Soalan",
-      "route": "/admin/questions",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S2",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|import-csv",
-      "source": "admin-nav",
-      "id": "import-csv",
-      "label": "Import CSV",
-      "route": "/admin/questions/import",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S2",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kualiti-soalan",
-      "source": "admin-nav",
-      "id": "kualiti-soalan",
-      "label": "Kualiti Soalan",
-      "route": "/admin/questions/quality",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S2",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|laporan-soalan",
-      "source": "admin-nav",
-      "id": "laporan-soalan",
-      "label": "Laporan Soalan",
-      "route": "/admin/question-reports",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S2",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|soalan-berstruktur",
-      "source": "admin-nav",
-      "id": "soalan-berstruktur",
-      "label": "Soalan Berstruktur",
-      "route": "/admin/structured-questions",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S2",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kertas-soalan-guru",
-      "source": "admin-nav",
-      "id": "kertas-soalan-guru",
-      "label": "Kertas Soalan Guru",
-      "route": "/admin/question-submissions",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S2",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|senarai-pengguna",
-      "source": "admin-nav",
-      "id": "senarai-pengguna",
-      "label": "Senarai Pengguna",
-      "route": "/admin/users",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|sekolah",
-      "source": "admin-nav",
-      "id": "sekolah",
-      "label": "Sekolah",
-      "route": "/admin/schools",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|langganan-sekolah",
-      "source": "admin-nav",
-      "id": "langganan-sekolah",
-      "label": "Langganan Sekolah",
-      "route": "/admin/school-subscriptions",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|import-pelajar",
-      "source": "admin-nav",
-      "id": "import-pelajar",
-      "label": "Import Pelajar",
-      "route": "/admin/import-students",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|pelajar-komplimen",
-      "source": "admin-nav",
-      "id": "pelajar-komplimen",
-      "label": "Pelajar Komplimen",
-      "route": "/admin/comp-students",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|import-pengguna",
-      "source": "admin-nav",
-      "id": "import-pengguna",
-      "label": "Import Pengguna",
-      "route": "/admin/users/bulk-import",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|penajaan",
-      "source": "admin-nav",
-      "id": "penajaan",
-      "label": "Penajaan",
-      "route": "/admin/sponsors",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|anak-angkat",
-      "source": "admin-nav",
-      "id": "anak-angkat",
-      "label": "Anak Angkat",
-      "route": "/admin/anak-angkat",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|permohonan",
-      "source": "admin-nav",
-      "id": "permohonan",
-      "label": "Permohonan",
-      "route": "/admin/anak-angkat/permohonan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|spm-databank",
-      "source": "admin-nav",
-      "id": "spm-databank",
-      "label": "Databank Soalan",
-      "route": "/spm/tahun-lepas",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|spm-latih-tubi",
-      "source": "admin-nav",
-      "id": "spm-latih-tubi",
-      "label": "Latih Tubi",
-      "route": "/spm/latih-tubi",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|spm-tracking",
-      "source": "admin-nav",
-      "id": "spm-tracking",
-      "label": "Tracking A",
-      "route": "/spm/ramalan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|spm-subjektif",
-      "source": "admin-nav",
-      "id": "spm-subjektif",
-      "label": "Subjektif",
-      "route": "/spm/subjektif",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|pksk-soalan",
-      "source": "admin-nav",
-      "id": "pksk-soalan",
-      "label": "PKSK Soalan",
-      "route": "/admin/pksk/questions",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|pksk-akses",
-      "source": "admin-nav",
-      "id": "pksk-akses",
-      "label": "PKSK Akses",
-      "route": "/admin/pksk/access",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|gami-overview",
-      "source": "admin-nav",
-      "id": "gami-overview",
-      "label": "Overview",
-      "route": "/admin/gamification",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|gami-tiers",
-      "source": "admin-nav",
-      "id": "gami-tiers",
-      "label": "Tier Config",
-      "route": "/admin/gamification/tiers",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|gami-challenges",
-      "source": "admin-nav",
-      "id": "gami-challenges",
-      "label": "Cabaran",
-      "route": "/admin/gamification/challenges",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|gami-students",
-      "source": "admin-nav",
-      "id": "gami-students",
-      "label": "Pelajar",
-      "route": "/admin/gamification/students",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|gami-transactions",
-      "source": "admin-nav",
-      "id": "gami-transactions",
-      "label": "Transaksi",
-      "route": "/admin/gamification/transactions",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kedai-hadiah",
-      "source": "admin-nav",
-      "id": "kedai-hadiah",
-      "label": "Kedai Hadiah",
-      "route": "/admin/hadiah",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|gamifikasi-guru",
-      "source": "admin-nav",
-      "id": "gamifikasi-guru",
-      "label": "Gamifikasi Guru",
-      "route": "/admin/gamifikasi/guru",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kawalan-reward",
-      "source": "admin-nav",
-      "id": "kawalan-reward",
-      "label": "Kawalan Reward",
-      "route": "/admin/reward-control",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|battle-live",
-      "source": "admin-nav",
-      "id": "battle-live",
-      "label": "Battle Live",
-      "route": "/battle",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|battle-ranking",
-      "source": "admin-nav",
-      "id": "battle-ranking",
-      "label": "Ranking Sekolah",
-      "route": "/battle/ranking-sekolah",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|battle-leaderboard",
-      "source": "admin-nav",
-      "id": "battle-leaderboard",
-      "label": "Leaderboard",
-      "route": "/battle/leaderboard",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|tetapan-permainan",
-      "source": "admin-nav",
-      "id": "tetapan-permainan",
-      "label": "Tetapan Permainan",
-      "route": "/admin/permainan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|mp-produk",
-      "source": "admin-nav",
-      "id": "mp-produk",
-      "label": "Produk",
-      "route": "/admin/marketplace/products",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S7",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|mp-penjual",
-      "source": "admin-nav",
-      "id": "mp-penjual",
-      "label": "Penjual",
-      "route": "/admin/marketplace/sellers",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S7",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|banner",
-      "source": "admin-nav",
-      "id": "banner",
-      "label": "Banner",
-      "route": "/admin/banners",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|artikel",
-      "source": "admin-nav",
-      "id": "artikel",
-      "label": "Artikel",
-      "route": "/admin/articles",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|nota",
-      "source": "admin-nav",
-      "id": "nota",
-      "label": "Nota",
-      "route": "/admin/notes",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|push-notifikasi",
-      "source": "admin-nav",
-      "id": "push-notifikasi",
-      "label": "Push Notifikasi",
-      "route": "/admin/notifications",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|upload-screenshot",
-      "source": "admin-nav",
-      "id": "upload-screenshot",
-      "label": "Upload Screenshot",
-      "route": "/admin/tools/screenshots",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|pembayaran",
-      "source": "admin-nav",
-      "id": "pembayaran",
-      "label": "Pembayaran",
-      "route": "/admin/payments",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|billing",
-      "source": "admin-nav",
-      "id": "billing",
-      "label": "Billing Dashboard",
-      "route": "/admin/billing",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|dunning",
-      "source": "admin-nav",
-      "id": "dunning",
-      "label": "Dunning Log",
-      "route": "/admin/dunning",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|performance",
-      "source": "admin-nav",
-      "id": "performance",
-      "label": "Performance",
-      "route": "/admin/performance",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|tetapan",
-      "source": "admin-nav",
-      "id": "tetapan",
-      "label": "Tetapan",
-      "route": "/admin/settings",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S7",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|log-audit",
-      "source": "admin-nav",
-      "id": "log-audit",
-      "label": "Log Audit",
-      "route": "/admin/audit-logs",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|chatbot",
-      "source": "admin-nav",
-      "id": "chatbot",
-      "label": "Chatbot",
-      "route": "/admin/chatbot",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|bilik-duta",
-      "source": "admin-nav",
-      "id": "bilik-duta",
-      "label": "Bilik Duta",
-      "route": "/bilik-duta",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|akademi-duta",
-      "source": "admin-nav",
-      "id": "akademi-duta",
-      "label": "Akademi Duta",
-      "route": "/akademi-duta",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|permohonan-duta",
-      "source": "admin-nav",
-      "id": "permohonan-duta",
-      "label": "Permohonan Duta",
-      "route": "/admin/duta-applications",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|duta-dashboard",
-      "source": "admin-nav",
-      "id": "duta-dashboard",
-      "label": "Duta Dashboard",
-      "route": "/duta-dashboard",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|jemput-duta",
-      "source": "admin-nav",
-      "id": "jemput-duta",
-      "label": "Jemput Duta",
-      "route": "/jemput-duta",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kem-bootcamp",
-      "source": "admin-nav",
-      "id": "kem-bootcamp",
-      "label": "Kem & Bootcamp",
-      "route": "/bilik-duta/kem",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kamus-ai",
-      "source": "admin-nav",
-      "id": "kamus-ai",
-      "label": "Kamus AI",
-      "route": "/pusat-ai/kamus",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|aktiviti-advisor",
-      "source": "admin-nav",
-      "id": "aktiviti-advisor",
-      "label": "Aktiviti Advisor",
-      "route": "/pusat-ai/aktiviti",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|pendamping-motivasi",
-      "source": "admin-nav",
-      "id": "pendamping-motivasi",
-      "label": "Pendamping Motivasi",
-      "route": "/pusat-ai/pendamping",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|spm-walkthrough",
-      "source": "admin-nav",
-      "id": "spm-walkthrough",
-      "label": "SPM Walkthrough",
-      "route": "/pusat-ai/spm",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|whiteboard-quiz",
-      "source": "admin-nav",
-      "id": "whiteboard-quiz",
-      "label": "Whiteboard → Quiz",
-      "route": "/pusat-ai/whiteboard",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|parent-whisperer",
-      "source": "admin-nav",
-      "id": "parent-whisperer",
-      "label": "Parent Whisperer",
-      "route": "/pusat-ai/parent-whisperer",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|doa-motivasi",
-      "source": "admin-nav",
-      "id": "doa-motivasi",
-      "label": "Doa & Motivasi",
-      "route": "/pusat-ai/doa",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|profil-cerah",
-      "source": "admin-nav",
-      "id": "profil-cerah",
-      "label": "Profil Cerah",
-      "route": "/profil-cerah",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|sekolah-bersaing",
-      "source": "admin-nav",
-      "id": "sekolah-bersaing",
-      "label": "Sekolah Bersaing",
-      "route": "/sekolah-bersaing",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S7",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|cita-cita",
-      "source": "admin-nav",
-      "id": "cita-cita",
-      "label": "Cita-Cita Hijrah",
-      "route": "/cita-cita",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kombo",
-      "source": "admin-nav",
-      "id": "kombo",
-      "label": "Streak / Kombo",
-      "route": "/kombo",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|cikgu-suara",
-      "source": "admin-nav",
-      "id": "cikgu-suara",
-      "label": "Cikgu Suara",
-      "route": "/cikgu-suara",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|spm-mock",
-      "source": "admin-nav",
-      "id": "spm-mock",
-      "label": "SPM Mock Exam",
-      "route": "/spm-mock",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|wellbeing-alerts",
-      "source": "admin-nav",
-      "id": "wellbeing-alerts",
-      "label": "Wellbeing Alerts",
-      "route": "/wellbeing/alerts",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kirk-overview",
-      "source": "admin-nav",
-      "id": "kirk-overview",
-      "label": "Overview",
-      "route": "/admin/kirkpatrick",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kirk-reaction",
-      "source": "admin-nav",
-      "id": "kirk-reaction",
-      "label": "Tahap 1: Reaksi",
-      "route": "/admin/kirkpatrick/reaction",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kirk-learning",
-      "source": "admin-nav",
-      "id": "kirk-learning",
-      "label": "Tahap 2: Pembelajaran",
-      "route": "/admin/kirkpatrick/learning",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kirk-behavior",
-      "source": "admin-nav",
-      "id": "kirk-behavior",
-      "label": "Tahap 3: Tingkah Laku",
-      "route": "/admin/kirkpatrick/behavior",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kirk-results",
-      "source": "admin-nav",
-      "id": "kirk-results",
-      "label": "Tahap 4: Hasil",
-      "route": "/admin/kirkpatrick/results",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kirk-chain",
-      "source": "admin-nav",
-      "id": "kirk-chain",
-      "label": "Rantaian Impak",
-      "route": "/admin/kirkpatrick/chain",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-nav|kirk-interventions",
-      "source": "admin-nav",
-      "id": "kirk-interventions",
-      "label": "Intervensi",
-      "route": "/admin/kirkpatrick/interventions",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-footer|tetapan-peribadi",
-      "source": "admin-footer",
-      "id": "tetapan-peribadi",
-      "label": "Tetapan Peribadi",
-      "route": "/tetapan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "admin-footer|ke-dashboard",
-      "source": "admin-footer",
-      "id": "ke-dashboard",
-      "label": "Ke Dashboard",
-      "route": "/dashboard",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/admin-nav.ts",
-      "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
     {
       "key": "user-nav|dashboard",
       "source": "user-nav",
@@ -5104,7 +4081,7 @@
       "key": "user-nav|t-laporan",
       "source": "user-nav",
       "id": "t-laporan",
-      "label": "Laporan",
+      "label": "Laporan Statistik",
       "route": "/guru/laporan",
       "roles": [
         "teacher"
@@ -5160,7 +4137,7 @@
       "key": "user-nav|t-kirk-reaksi",
       "source": "user-nav",
       "id": "t-kirk-reaksi",
-      "label": "Tahap 1: Reaksi",
+      "label": "T1: Reaksi",
       "route": "/guru/kirkpatrick/reaction",
       "roles": [
         "teacher"
@@ -5174,7 +4151,7 @@
       "key": "user-nav|t-kirk-pembelajaran",
       "source": "user-nav",
       "id": "t-kirk-pembelajaran",
-      "label": "Tahap 2: Pembelajaran",
+      "label": "T2: Pembelajaran",
       "route": "/guru/kirkpatrick/learning",
       "roles": [
         "teacher"
@@ -5188,7 +4165,7 @@
       "key": "user-nav|t-kirk-tingkah-laku",
       "source": "user-nav",
       "id": "t-kirk-tingkah-laku",
-      "label": "Tahap 3: Tingkah Laku",
+      "label": "T3: Tingkah Laku",
       "route": "/guru/kirkpatrick/behavior",
       "roles": [
         "teacher"
@@ -5202,7 +4179,7 @@
       "key": "user-nav|t-kirk-hasil",
       "source": "user-nav",
       "id": "t-kirk-hasil",
-      "label": "Tahap 4: Hasil",
+      "label": "T4: Hasil",
       "route": "/guru/kirkpatrick/results",
       "roles": [
         "teacher"
@@ -5216,7 +4193,7 @@
       "key": "user-nav|t-kirk-rantaian",
       "source": "user-nav",
       "id": "t-kirk-rantaian",
-      "label": "Rantaian Impak",
+      "label": "Rantaian",
       "route": "/guru/kirkpatrick/chain",
       "roles": [
         "teacher"
@@ -5801,7 +4778,7 @@
         "teacher"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/user-nav.ts",
       "approved_by_card": null
     },
@@ -5935,7 +4912,7 @@
       "key": "user-nav|t-video",
       "source": "user-nav",
       "id": "t-video",
-      "label": "Video",
+      "label": "Video Pembelajaran",
       "route": "/video",
       "roles": [
         "teacher"
@@ -5977,7 +4954,7 @@
       "key": "user-nav|t-panduan",
       "source": "user-nav",
       "id": "t-panduan",
-      "label": "Panduan",
+      "label": "Panduan Pengguna",
       "route": "/panduan",
       "roles": [
         "teacher"
@@ -6273,6 +5250,20 @@
       "id": "sa-laporan-aktiviti",
       "label": "Laporan Aktiviti",
       "route": "/admin-sekolah/laporan-aktiviti",
+      "roles": [
+        "school_admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/nav/user-nav.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "user-nav|sa-tanda-karangan",
+      "source": "user-nav",
+      "id": "sa-tanda-karangan",
+      "label": "Tanda Karangan",
+      "route": "/admin-sekolah/tanda-karangan",
       "roles": [
         "school_admin"
       ],
@@ -6681,7 +5672,7 @@
       "key": "user-nav|pksk",
       "source": "user-nav",
       "id": "pksk",
-      "label": "PKSK",
+      "label": "PKSK PRO",
       "route": "/pksk",
       "roles": [
         "student",
@@ -6903,21 +5894,6 @@
       "approved_by_card": null
     },
     {
-      "key": "user-nav|kelulusan-hadiah",
-      "source": "user-nav",
-      "id": "kelulusan-hadiah",
-      "label": "Kelulusan Hadiah",
-      "route": "/cikgu/kelulusan-hadiah",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
       "key": "user-nav|marketplace",
       "source": "user-nav",
       "id": "marketplace",
@@ -7009,20 +5985,6 @@
       "approved_by_card": null
     },
     {
-      "key": "user-nav|kedai-hadiah-digital",
-      "source": "user-nav",
-      "id": "kedai-hadiah-digital",
-      "label": "Kedai Hadiah 🎁",
-      "route": "/cikgu/hadiah",
-      "roles": [
-        "student"
-      ],
-      "status": "canonical",
-      "sector": "S7",
-      "file": "src/shells/nav/user-nav.ts",
-      "approved_by_card": null
-    },
-    {
       "key": "user-nav|rph-rancangan-harian",
       "source": "user-nav",
       "id": "rph-rancangan-harian",
@@ -7058,21 +6020,6 @@
       "id": "mark-karangan",
       "label": "Mark Karangan",
       "route": "/cikgu/essay",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|admin-tebusan",
-      "source": "user-nav",
-      "id": "admin-tebusan",
-      "label": "Admin Tebusan",
-      "route": "/admin/hadiah/tebusan",
       "roles": [
         "admin"
       ],
@@ -7161,537 +6108,12 @@
       "source": "user-nav",
       "id": "databank-soalan",
       "label": "Databank Soalan",
-      "route": "/guru/databank",
+      "route": "/admin/spm/databank",
       "roles": [
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|command-center-guru",
-      "source": "user-nav",
-      "id": "command-center-guru",
-      "label": "Command Center",
-      "route": "/guru/command-center",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-dashboard",
-      "source": "user-nav",
-      "id": "guru-dashboard",
-      "label": "Dashboard Guru",
-      "route": "/guru",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-misi-harian",
-      "source": "user-nav",
-      "id": "guru-misi-harian",
-      "label": "Misi Harian",
-      "route": "/guru/misi-harian",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-soalan-by-chapter",
-      "source": "user-nav",
-      "id": "guru-soalan-by-chapter",
-      "label": "Soalan by Chapter",
-      "route": "/practice/chapter",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-kelas-saya",
-      "source": "user-nav",
-      "id": "guru-kelas-saya",
-      "label": "Kelas Saya",
-      "route": "/guru/kelas",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-pelajar-saya",
-      "source": "user-nav",
-      "id": "guru-pelajar-saya",
-      "label": "Pelajar Saya",
-      "route": "/guru/pelajar",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-kehadiran-digital",
-      "source": "user-nav",
-      "id": "guru-kehadiran-digital",
-      "label": "Kehadiran Digital",
-      "route": "/guru/kehadiran-digital",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-jadual-belajar",
-      "source": "user-nav",
-      "id": "guru-jadual-belajar",
-      "label": "Jadual Belajar",
-      "route": "/guru/jadual-belajar",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-broadcast",
-      "source": "user-nav",
-      "id": "guru-broadcast",
-      "label": "Broadcast",
-      "route": "/guru/broadcast",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-kelas-live",
-      "source": "user-nav",
-      "id": "guru-kelas-live",
-      "label": "Kelas Live",
-      "route": "/guru/live-kelas",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-headcount",
-      "source": "user-nav",
-      "id": "guru-headcount",
-      "label": "Headcount",
-      "route": "/headcount",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S10",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-prestasi",
-      "source": "user-nav",
-      "id": "guru-prestasi",
-      "label": "Prestasi",
-      "route": "/prestasi/kelas",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S10",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-laporan",
-      "source": "user-nav",
-      "id": "guru-laporan",
-      "label": "Laporan",
-      "route": "/guru/laporan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-amaran-awal",
-      "source": "user-nav",
-      "id": "guru-amaran-awal",
-      "label": "Amaran Awal",
-      "route": "/amaran",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-monitoring",
-      "source": "user-nav",
-      "id": "guru-monitoring",
-      "label": "Monitoring",
-      "route": "/admin/monitoring",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|kirk-ringkasan",
-      "source": "user-nav",
-      "id": "kirk-ringkasan",
-      "label": "Ringkasan",
-      "route": "/guru/kirkpatrick",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|kirk-reaksi",
-      "source": "user-nav",
-      "id": "kirk-reaksi",
-      "label": "Tahap 1: Reaksi",
-      "route": "/guru/kirkpatrick/reaction",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|kirk-pembelajaran",
-      "source": "user-nav",
-      "id": "kirk-pembelajaran",
-      "label": "Tahap 2: Pembelajaran",
-      "route": "/guru/kirkpatrick/learning",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|kirk-tingkah-laku",
-      "source": "user-nav",
-      "id": "kirk-tingkah-laku",
-      "label": "Tahap 3: Tingkah Laku",
-      "route": "/guru/kirkpatrick/behavior",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|kirk-hasil",
-      "source": "user-nav",
-      "id": "kirk-hasil",
-      "label": "Tahap 4: Hasil",
-      "route": "/guru/kirkpatrick/results",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|kirk-rantaian",
-      "source": "user-nav",
-      "id": "kirk-rantaian",
-      "label": "Rantaian Impak",
-      "route": "/guru/kirkpatrick/chain",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|kirk-intervensi",
-      "source": "user-nav",
-      "id": "kirk-intervensi",
-      "label": "Intervensi",
-      "route": "/guru/kirkpatrick/interventions",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-analisis-item",
-      "source": "user-nav",
-      "id": "guru-analisis-item",
-      "label": "Analisis Item",
-      "route": "/guru/analisis-item",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-perbandingan-kelas",
-      "source": "user-nav",
-      "id": "guru-perbandingan-kelas",
-      "label": "Perbandingan Kelas",
-      "route": "/guru/perbandingan-kelas",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-laporan-mingguan",
-      "source": "user-nav",
-      "id": "guru-laporan-mingguan",
-      "label": "Laporan Mingguan",
-      "route": "/laporan-mingguan",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/guru/laporan-mingguan-kelas",
-      "sector": "S10",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register R-03: re-point (S0-T06, S6-T01)",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-sumbang-soalan",
-      "source": "user-nav",
-      "id": "guru-sumbang-soalan",
-      "label": "Sumbang Soalan",
-      "route": "/guru/soalan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-soalan-rujukan",
-      "source": "user-nav",
-      "id": "guru-soalan-rujukan",
-      "label": "Soalan & Rujukan",
-      "route": "/guru/soalan-guru",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-soalan-berstruktur",
-      "source": "user-nav",
-      "id": "guru-soalan-berstruktur",
-      "label": "Soalan Berstruktur",
-      "route": "/guru/soalan-berstruktur",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-databank",
-      "source": "user-nav",
-      "id": "guru-databank",
-      "label": "Databank Soalan",
-      "route": "/guru/databank",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-set-soalan",
-      "source": "user-nav",
-      "id": "guru-set-soalan",
-      "label": "Set Soalan",
-      "route": "/guru/set-soalan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-gamifikasi",
-      "source": "user-nav",
-      "id": "guru-gamifikasi",
-      "label": "Syiling & Ganjaran",
-      "route": "/guru/gamifikasi",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-artikel",
-      "source": "user-nav",
-      "id": "guru-artikel",
-      "label": "Sumbang Artikel",
-      "route": "/guru/artikel",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-video",
-      "source": "user-nav",
-      "id": "guru-video",
-      "label": "Video",
-      "route": "/video",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-kelas-saya-baru",
-      "source": "user-nav",
-      "id": "guru-kelas-saya-baru",
-      "label": "Kelas Saya",
-      "route": "/kelas-saya",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|guru-set-soalan-guru",
-      "source": "user-nav",
-      "id": "guru-set-soalan-guru",
-      "label": "Set Soalan Guru",
-      "route": "/set-soalan-saya",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
+      "sector": "S3",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -7862,96 +6284,6 @@
       "approved_by_card": null
     },
     {
-      "key": "user-nav|ke-admin-panel",
-      "source": "user-nav",
-      "id": "ke-admin-panel",
-      "label": "Ke Admin Panel",
-      "route": "/admin",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|admin-soalan-by-chapter",
-      "source": "user-nav",
-      "id": "admin-soalan-by-chapter",
-      "label": "Soalan by Chapter",
-      "route": "/practice/chapter",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S5",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|billing-dashboard",
-      "source": "user-nav",
-      "id": "billing-dashboard",
-      "label": "Billing Dashboard",
-      "route": "/admin/billing",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|urus-produk",
-      "source": "user-nav",
-      "id": "urus-produk",
-      "label": "Urus Produk",
-      "route": "/admin/marketplace/products",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S7",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|urus-penjual",
-      "source": "user-nav",
-      "id": "urus-penjual",
-      "label": "Urus Penjual",
-      "route": "/admin/marketplace/sellers",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S7",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|urus-hadiah",
-      "source": "user-nav",
-      "id": "urus-hadiah",
-      "label": "Urus Hadiah",
-      "route": "/admin/hadiah",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
       "key": "user-nav|gamifikasi-guru",
       "source": "user-nav",
       "id": "gamifikasi-guru",
@@ -8034,7 +6366,7 @@
       "key": "user-nav|panduan",
       "source": "user-nav",
       "id": "panduan",
-      "label": "Panduan",
+      "label": "Panduan Pengguna",
       "route": "/panduan",
       "roles": [
         "student",
@@ -8075,21 +6407,6 @@
       "status": "canonical",
       "sector": "S2",
       "file": "src/shells/nav/user-nav.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|urus-tiket",
-      "source": "user-nav",
-      "id": "urus-tiket",
-      "label": "Urus Tiket",
-      "route": "/admin/tiket",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S7",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
     },
     {
@@ -8149,50 +6466,18 @@
       "approved_by_card": null
     },
     {
-      "key": "pentadbiran|PP-01",
-      "source": "pentadbiran",
-      "id": "PP-01",
-      "label": "Dashboard",
-      "route": "/admin/p/pp-01",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "papan-pemuka",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PP-02",
-      "source": "pentadbiran",
-      "id": "PP-02",
-      "label": "Laporan Eksekutif",
-      "route": "/admin/p/pp-02",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "papan-pemuka",
-      "approved_by_card": null
-    },
-    {
       "key": "pentadbiran|PM-01",
       "source": "pentadbiran",
       "id": "PM-01",
-      "label": "Langsung",
+      "label": "Command Center",
       "route": "/admin/command-center",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "pintasan",
       "note": "moves to the top shortcuts, label \"Command Center\" + LIVE (30 §3.4; conflict D77/D107, OQ-L1)",
       "approved_by_card": null,
       "target_label": "Command Center"
@@ -8208,8 +6493,24 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "pintasan",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PP-02",
+      "source": "pentadbiran",
+      "id": "PP-02",
+      "label": "Laporan Eksekutif",
+      "route": "/admin/p/pp-02",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "harian",
       "approved_by_card": null
     },
     {
@@ -8223,101 +6524,85 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "analitik",
       "note": "route must become /admin/monitoring (30 §3.4; register M-09: admin sees a teacher route today)",
       "approved_by_card": null,
       "target_label": "Monitoring"
     },
     {
-      "key": "pentadbiran|PM-04",
-      "source": "pentadbiran",
-      "id": "PM-04",
-      "label": "Analitik",
-      "route": "/admin/p/pm-04",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
       "key": "pentadbiran|PM-05",
       "source": "pentadbiran",
       "id": "PM-05",
-      "label": "Ringkasan",
+      "label": "Overview",
       "route": "/admin/kirkpatrick",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "analitik",
       "approved_by_card": null
     },
     {
       "key": "pentadbiran|PM-06",
       "source": "pentadbiran",
       "id": "PM-06",
-      "label": "Tahap 1: Reaksi",
+      "label": "T1: Reaksi",
       "route": "/admin/kirkpatrick/reaction",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "analitik",
       "approved_by_card": null
     },
     {
       "key": "pentadbiran|PM-07",
       "source": "pentadbiran",
       "id": "PM-07",
-      "label": "Tahap 2: Pembelajaran",
+      "label": "T2: Pembelajaran",
       "route": "/admin/kirkpatrick/learning",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "analitik",
       "approved_by_card": null
     },
     {
       "key": "pentadbiran|PM-08",
       "source": "pentadbiran",
       "id": "PM-08",
-      "label": "Tahap 3: Tingkah Laku",
+      "label": "T3: Tingkah Laku",
       "route": "/admin/kirkpatrick/behavior",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "analitik",
       "approved_by_card": null
     },
     {
       "key": "pentadbiran|PM-09",
       "source": "pentadbiran",
       "id": "PM-09",
-      "label": "Tahap 4: Hasil",
+      "label": "T4: Hasil",
       "route": "/admin/kirkpatrick/results",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "analitik",
       "approved_by_card": null
     },
     {
@@ -8331,8 +6616,8 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "analitik",
       "approved_by_card": null
     },
     {
@@ -8346,313 +6631,8 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-12",
-      "source": "pentadbiran",
-      "id": "PM-12",
-      "label": "Laporan Aktiviti",
-      "route": "/admin/p/pm-12",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-13",
-      "source": "pentadbiran",
-      "id": "PM-13",
-      "label": "Amaran Wellbeing",
-      "route": "/admin/p/pm-13",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-14",
-      "source": "pentadbiran",
-      "id": "PM-14",
-      "label": "Papan Pemuka Wilayah",
-      "route": "/admin/p/pm-14",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-15",
-      "source": "pentadbiran",
-      "id": "PM-15",
-      "label": "Statistik Penggunaan",
-      "route": "/admin/p/pm-15",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-16",
-      "source": "pentadbiran",
-      "id": "PM-16",
-      "label": "Ranking Kebangsaan",
-      "route": "/admin/p/pm-16",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-17",
-      "source": "pentadbiran",
-      "id": "PM-17",
-      "label": "Benchmark Sekolah",
-      "route": "/admin/p/pm-17",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-18",
-      "source": "pentadbiran",
-      "id": "PM-18",
-      "label": "Leaderboard Sekolah",
-      "route": "/admin/p/pm-18",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-19",
-      "source": "pentadbiran",
-      "id": "PM-19",
-      "label": "Peta Haba",
-      "route": "/admin/p/pm-19",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-20",
-      "source": "pentadbiran",
-      "id": "PM-20",
-      "label": "Export Laporan",
-      "route": "/admin/p/pm-20",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-21",
-      "source": "pentadbiran",
-      "id": "PM-21",
-      "label": "DSKP Heatmap",
-      "route": "/admin/p/pm-21",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-22",
-      "source": "pentadbiran",
-      "id": "PM-22",
-      "label": "Amaran Awal",
-      "route": "/admin/p/pm-22",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-23",
-      "source": "pentadbiran",
-      "id": "PM-23",
-      "label": "Laporan Bulanan",
-      "route": "/admin/p/pm-23",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-24",
-      "source": "pentadbiran",
-      "id": "PM-24",
-      "label": "Headcount",
-      "route": "/admin/p/pm-24",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-25",
-      "source": "pentadbiran",
-      "id": "PM-25",
-      "label": "Prestasi",
-      "route": "/admin/p/pm-25",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-26",
-      "source": "pentadbiran",
-      "id": "PM-26",
-      "label": "Analitik Adaptif",
-      "route": "/admin/p/pm-26",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-27",
-      "source": "pentadbiran",
-      "id": "PM-27",
-      "label": "Analisa Item",
-      "route": "/admin/p/pm-27",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PM-28",
-      "source": "pentadbiran",
-      "id": "PM-28",
-      "label": "Sekolah Bersaing",
-      "route": "/admin/p/pm-28",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pemantauan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|BS-01",
-      "source": "pentadbiran",
-      "id": "BS-01",
-      "label": "Bank Soalan",
-      "route": "/admin/questions",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S2",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "bank-soalan",
-      "note": "MERGE (rename) into Bank Lama; removes the duplicate \"Bank Soalan\" (30 §3.3; register M-01)",
-      "approved_by_card": null,
-      "target_label": "Senarai Soalan"
-    },
-    {
-      "key": "pentadbiran|BS-02",
-      "source": "pentadbiran",
-      "id": "BS-02",
-      "label": "Import & Semakan",
-      "route": "/admin/spm/soalan/ekstrak",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "bank-soalan",
-      "note": "KEEP (retab): tabs Kelompok Item, Kertas Diimport, Kiriman Guru (30 §3.3; register M-02)",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "analitik",
       "approved_by_card": null
     },
     {
@@ -8666,10 +6646,769 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "bank-soalan",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "soalan",
       "note": "KEEP (build P2) as Sumber Kertas (30 §3.3)",
       "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-01",
+      "source": "pentadbiran",
+      "id": "PG-01",
+      "label": "Overview",
+      "route": "/admin/gamification",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "gamifikasi",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-02",
+      "source": "pentadbiran",
+      "id": "PG-02",
+      "label": "Tier Config",
+      "route": "/admin/gamification/tiers",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "gamifikasi",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-03",
+      "source": "pentadbiran",
+      "id": "PG-03",
+      "label": "Cabaran",
+      "route": "/admin/gamification/challenges",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "gamifikasi",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-04",
+      "source": "pentadbiran",
+      "id": "PG-04",
+      "label": "Pelajar",
+      "route": "/admin/gamification/students",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "gamifikasi",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-05",
+      "source": "pentadbiran",
+      "id": "PG-05",
+      "label": "Transaksi",
+      "route": "/admin/gamification/transactions",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "gamifikasi",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-06",
+      "source": "pentadbiran",
+      "id": "PG-06",
+      "label": "Kedai Hadiah",
+      "route": "/admin/hadiah",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "gamifikasi",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-10",
+      "source": "pentadbiran",
+      "id": "PG-10",
+      "label": "Kawalan Reward",
+      "route": "/admin/reward-control",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "gamifikasi",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-12",
+      "source": "pentadbiran",
+      "id": "PG-12",
+      "label": "Ranking Sekolah",
+      "route": "/admin/p/pg-12",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "battle-permainan",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-13",
+      "source": "pentadbiran",
+      "id": "PG-13",
+      "label": "Leaderboard",
+      "route": "/admin/p/pg-13",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "battle-permainan",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-11",
+      "source": "pentadbiran",
+      "id": "PG-11",
+      "label": "Tetapan Permainan",
+      "route": "/admin/permainan",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "battle-permainan",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-23",
+      "source": "pentadbiran",
+      "id": "PG-23",
+      "label": "Tournament",
+      "route": "/admin/p/pg-23",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "battle-permainan",
+      "approved_by_card": "S0-T07"
+    },
+    {
+      "key": "pentadbiran|PM-12",
+      "source": "pentadbiran",
+      "id": "PM-12",
+      "label": "Laporan Aktiviti",
+      "route": "/admin/p/pm-12",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-13",
+      "source": "pentadbiran",
+      "id": "PM-13",
+      "label": "Amaran Wellbeing",
+      "route": "/admin/p/pm-13",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-14",
+      "source": "pentadbiran",
+      "id": "PM-14",
+      "label": "Papan Pemuka Wilayah",
+      "route": "/admin/p/pm-14",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-15",
+      "source": "pentadbiran",
+      "id": "PM-15",
+      "label": "Statistik Penggunaan",
+      "route": "/admin/p/pm-15",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-16",
+      "source": "pentadbiran",
+      "id": "PM-16",
+      "label": "Ranking Kebangsaan",
+      "route": "/admin/p/pm-16",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-17",
+      "source": "pentadbiran",
+      "id": "PM-17",
+      "label": "Benchmark Sekolah",
+      "route": "/admin/p/pm-17",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-18",
+      "source": "pentadbiran",
+      "id": "PM-18",
+      "label": "Leaderboard Sekolah",
+      "route": "/admin/p/pm-18",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-19",
+      "source": "pentadbiran",
+      "id": "PM-19",
+      "label": "Peta Haba",
+      "route": "/admin/p/pm-19",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-20",
+      "source": "pentadbiran",
+      "id": "PM-20",
+      "label": "Export Laporan",
+      "route": "/admin/p/pm-20",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-21",
+      "source": "pentadbiran",
+      "id": "PM-21",
+      "label": "DSKP Heatmap",
+      "route": "/admin/p/pm-21",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-22",
+      "source": "pentadbiran",
+      "id": "PM-22",
+      "label": "Amaran Awal",
+      "route": "/admin/p/pm-22",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-23",
+      "source": "pentadbiran",
+      "id": "PM-23",
+      "label": "Laporan Bulanan",
+      "route": "/admin/p/pm-23",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-24",
+      "source": "pentadbiran",
+      "id": "PM-24",
+      "label": "Headcount",
+      "route": "/admin/p/pm-24",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-25",
+      "source": "pentadbiran",
+      "id": "PM-25",
+      "label": "Prestasi",
+      "route": "/admin/p/pm-25",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-26",
+      "source": "pentadbiran",
+      "id": "PM-26",
+      "label": "Analitik Adaptif",
+      "route": "/admin/p/pm-26",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-27",
+      "source": "pentadbiran",
+      "id": "PM-27",
+      "label": "Analisa Item",
+      "route": "/admin/p/pm-27",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-28",
+      "source": "pentadbiran",
+      "id": "PM-28",
+      "label": "Sekolah Bersaing",
+      "route": "/admin/p/pm-28",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KK-09",
+      "source": "pentadbiran",
+      "id": "KK-09",
+      "label": "Laluan Kerjaya",
+      "route": "/admin/p/kk-09",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KK-10",
+      "source": "pentadbiran",
+      "id": "KK-10",
+      "label": "Universiti",
+      "route": "/admin/p/kk-10",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KK-11",
+      "source": "pentadbiran",
+      "id": "KK-11",
+      "label": "Biasiswa",
+      "route": "/admin/p/kk-11",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KK-12",
+      "source": "pentadbiran",
+      "id": "KK-12",
+      "label": "Video Sekolah",
+      "route": "/admin/p/kk-12",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-07",
+      "source": "pentadbiran",
+      "id": "PG-07",
+      "label": "Gamifikasi Guru",
+      "route": "/admin/p/pg-07",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-08",
+      "source": "pentadbiran",
+      "id": "PG-08",
+      "label": "Lencana Guru",
+      "route": "/admin/p/pg-08",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-16",
+      "source": "pentadbiran",
+      "id": "PG-16",
+      "label": "Penajaan",
+      "route": "/admin/p/pg-16",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-17",
+      "source": "pentadbiran",
+      "id": "PG-17",
+      "label": "Anak Angkat",
+      "route": "/admin/p/pg-17",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-18",
+      "source": "pentadbiran",
+      "id": "PG-18",
+      "label": "Permohonan Anak Angkat",
+      "route": "/admin/p/pg-18",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-19",
+      "source": "pentadbiran",
+      "id": "PG-19",
+      "label": "Permohonan Duta",
+      "route": "/admin/p/pg-19",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-20",
+      "source": "pentadbiran",
+      "id": "PG-20",
+      "label": "Push Notifikasi",
+      "route": "/admin/p/pg-20",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-21",
+      "source": "pentadbiran",
+      "id": "PG-21",
+      "label": "Chatbot",
+      "route": "/admin/p/pg-21",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KW-01",
+      "source": "pentadbiran",
+      "id": "KW-01",
+      "label": "Pembayaran",
+      "route": "/admin/p/kw-01",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KW-02",
+      "source": "pentadbiran",
+      "id": "KW-02",
+      "label": "Billing Dashboard",
+      "route": "/admin/p/kw-02",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KW-03",
+      "source": "pentadbiran",
+      "id": "KW-03",
+      "label": "Invois",
+      "route": "/admin/p/kw-03",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KW-04",
+      "source": "pentadbiran",
+      "id": "KW-04",
+      "label": "Dunning Log",
+      "route": "/admin/p/kw-04",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|SY-03",
+      "source": "pentadbiran",
+      "id": "SY-03",
+      "label": "Prestasi Sistem",
+      "route": "/admin/p/sy-03",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|SY-04",
+      "source": "pentadbiran",
+      "id": "SY-04",
+      "label": "Log Audit",
+      "route": "/admin/p/sy-04",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "built": false,
+      "group": "ditangguh",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|BS-08",
+      "source": "pentadbiran",
+      "id": "BS-08",
+      "label": "Bank Soalan (Studio)",
+      "route": "/admin/studio",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S2",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
+      "group": "soalan",
+      "note": "KEEP: canonical question bank (30 §3.3)",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|BS-09",
+      "source": "pentadbiran",
+      "id": "BS-09",
+      "label": "Audit Rajah",
+      "route": "/admin/soalan-gambar",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S2",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
+      "group": "soalan",
+      "approved_by_card": "S0-T07"
     },
     {
       "key": "pentadbiran|BS-04",
@@ -8682,8 +7421,8 @@
       ],
       "status": "redirect-to:/admin/questions",
       "sector": "S2",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "bank-soalan",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
+      "group": "soalan",
       "note": "MERGE: tab \"Kualiti\" of Senarai Soalan, route /admin/questions/quality stays (30 §3.3; register M-07)",
       "approved_by_card": null
     },
@@ -8698,58 +7437,24 @@
       ],
       "status": "redirect-to:/admin/questions",
       "sector": "S2",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "bank-soalan",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
+      "group": "soalan",
       "note": "MERGE: tab \"Laporan\" of Senarai Soalan, route /admin/question-reports stays (30 §3.3; register M-07)",
       "approved_by_card": null
     },
     {
-      "key": "pentadbiran|BS-06",
+      "key": "pentadbiran|BS-11",
       "source": "pentadbiran",
-      "id": "BS-06",
-      "label": "Soalan PKSK",
-      "route": "/admin/pksk/questions",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "bank-soalan",
-      "note": "KEEP (move) to group Premium (30 §3.3)",
-      "approved_by_card": null,
-      "target_label": "PKSK Soalan"
-    },
-    {
-      "key": "pentadbiran|BS-07",
-      "source": "pentadbiran",
-      "id": "BS-07",
-      "label": "Audio KBAT",
-      "route": "/admin/audio-kbat",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "bank-soalan",
-      "note": "KEEP (move) to the top shortcuts (30 §3.3)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|BS-08",
-      "source": "pentadbiran",
-      "id": "BS-08",
-      "label": "Bank Soalan (Studio)",
-      "route": "/admin/studio",
+      "id": "BS-11",
+      "label": "Perlu Dikumpulkan Semula",
+      "route": "/admin/questions/regroup",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S2",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "bank-soalan",
-      "note": "KEEP: canonical question bank (30 §3.3)",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
+      "group": "soalan",
       "approved_by_card": null
     },
     {
@@ -8763,205 +7468,25 @@
       ],
       "status": "canonical",
       "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
+      "group": "soalan",
       "note": "KEEP: SPM hub (30 §3.3)",
       "approved_by_card": null
     },
     {
-      "key": "pentadbiran|KS-13",
+      "key": "pentadbiran|BS-02",
       "source": "pentadbiran",
-      "id": "KS-13",
-      "label": "Muat Naik Kertas",
-      "route": "/admin/spm/soalan/muat-naik",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
-      "note": "HIDE: becomes the button \"Muat Naik Kertas\" (30 §3.3; register M-03: button first, then remove the entry)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-16",
-      "source": "pentadbiran",
-      "id": "KS-16",
-      "label": "Tulis Soalan Manual",
-      "route": "/admin/spm/soalan/manual",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
-      "note": "HIDE: becomes a button in Import & Semakan; Studio \"Cipta baharu\" is the V2 path (30 §3.3; register M-03)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-14",
-      "source": "pentadbiran",
-      "id": "KS-14",
-      "label": "Senarai Ekstrak",
+      "id": "BS-02",
+      "label": "Import & Semakan",
       "route": "/admin/spm/soalan/ekstrak",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/spm/soalan/ekstrak",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
-      "note": "MERGE: tab \"Kelompok Item\" of Import & Semakan; same screen as BS-02 (30 §3.3; register M-02)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-15",
-      "source": "pentadbiran",
-      "id": "KS-15",
-      "label": "Baris Gilir Semakan",
-      "route": "/admin/spm/semakan",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/studio?status=review",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
-      "note": "MERGE: two review queues disagree (30 §3.3; register M-04 corrects reviewed -> review)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-02",
-      "source": "pentadbiran",
-      "id": "KS-02",
-      "label": "Bank Soalan SPM",
-      "route": "/admin/spm/soalan",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
-      "note": "HIDE: third \"Bank Soalan\"; list redirects to /admin/spm/databank (30 §3.3; register M-01: KPI strip and preview dialog need a new home first, U4)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-03",
-      "source": "pentadbiran",
-      "id": "KS-03",
-      "label": "Latih Tubi",
-      "route": "/admin/p/ks-03",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/spm/latih-tubi",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kertas-spm",
-      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-04",
-      "source": "pentadbiran",
-      "id": "KS-04",
-      "label": "Tracking A",
-      "route": "/admin/p/ks-04",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/spm/tracking-a",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kertas-spm",
-      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-05",
-      "source": "pentadbiran",
-      "id": "KS-05",
-      "label": "Subjektif",
-      "route": "/admin/p/ks-05",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/spm/subjektif",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kertas-spm",
-      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-06",
-      "source": "pentadbiran",
-      "id": "KS-06",
-      "label": "Bijak SPM (Simulasi)",
-      "route": "/admin/p/ks-06",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/spm/simulasi",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kertas-spm",
-      "note": "MERGE: hub lane card (30 §3.3; register M-08)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-07",
-      "source": "pentadbiran",
-      "id": "KS-07",
-      "label": "Kertas Subjektif",
-      "route": "/admin/kertas-subjektif",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
-      "note": "KEEP (build) as Kertas Subjektif (30 §3.3)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-08",
-      "source": "pentadbiran",
-      "id": "KS-08",
-      "label": "Kontrak Simulasi",
-      "route": "/admin/spm/kontrak",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
-      "note": "HIDE: opened from Set Builder and Semak Kertas; direct URL works (30 §3.3, D107; register M-03)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-09",
-      "source": "pentadbiran",
-      "id": "KS-09",
-      "label": "Pembina Kertas",
-      "route": "/admin/spm/kertas",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/studio/sets",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
-      "note": "MERGE into Set Builder: same paper list twice (30 §3.3; register M-05)",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
+      "group": "soalan",
+      "note": "KEEP (retab): tabs Kelompok Item, Kertas Diimport, Kiriman Guru (30 §3.3; register M-02)",
       "approved_by_card": null
     },
     {
@@ -8975,60 +7500,25 @@
       ],
       "status": "canonical",
       "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kertas-spm",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
+      "group": "soalan",
       "note": "KEEP: Set Builder (30 §3.3)",
       "approved_by_card": null
     },
     {
-      "key": "pentadbiran|KS-10",
+      "key": "pentadbiran|KS-07",
       "source": "pentadbiran",
-      "id": "KS-10",
-      "label": "Tanda Karangan",
-      "route": "/admin/p/ks-10",
+      "id": "KS-07",
+      "label": "Kertas Subjektif",
+      "route": "/admin/kertas-subjektif",
       "roles": [
         "admin"
       ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kertas-spm",
-      "note": "REMOVE: AI, D73 (30 §3.3)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-11",
-      "source": "pentadbiran",
-      "id": "KS-11",
-      "label": "Ramalan SPM",
-      "route": "/admin/p/ks-11",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kertas-spm",
-      "note": "REMOVE: merged into Tracking A (30 §3.3)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-12",
-      "source": "pentadbiran",
-      "id": "KS-12",
-      "label": "Set Soalan",
-      "route": "/admin/p/ks-12",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kertas-spm",
-      "note": "REMOVE: merged into Tracking A (30 §3.3)",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
+      "group": "soalan",
+      "note": "KEEP (build) as Kertas Subjektif (30 §3.3)",
       "approved_by_card": null
     },
     {
@@ -9042,8 +7532,8 @@
       ],
       "status": "canonical",
       "sector": "S4",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kurikulum-kandungan",
+      "file": "src/shells/pentadbiran/menu/fragments/s4.ts",
+      "group": "kurikulum",
       "approved_by_card": null
     },
     {
@@ -9057,25 +7547,8 @@
       ],
       "status": "canonical",
       "sector": "S4",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kurikulum-kandungan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KK-03",
-      "source": "pentadbiran",
-      "id": "KK-03",
-      "label": "Bab",
-      "route": "/admin/p/kk-03",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kurikulum-kandungan",
-      "note": "removed placeholder: screens inside Kurikulum (30 §3.4)",
+      "file": "src/shells/pentadbiran/menu/fragments/s4.ts",
+      "group": "kurikulum",
       "approved_by_card": null
     },
     {
@@ -9089,23 +7562,56 @@
       ],
       "status": "canonical",
       "sector": "S4",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kurikulum-kandungan",
+      "file": "src/shells/pentadbiran/menu/fragments/s4.ts",
+      "group": "kurikulum",
       "approved_by_card": null
     },
     {
-      "key": "pentadbiran|KK-05",
+      "key": "pentadbiran|BS-07",
       "source": "pentadbiran",
-      "id": "KK-05",
-      "label": "Banner",
-      "route": "/admin/banners",
+      "id": "BS-07",
+      "label": "Audio KBAT",
+      "route": "/admin/audio-kbat",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kurikulum-kandungan",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
+      "group": "pintasan",
+      "note": "KEEP (move) to the top shortcuts (30 §3.3)",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|BS-06",
+      "source": "pentadbiran",
+      "id": "BS-06",
+      "label": "PKSK Soalan",
+      "route": "/admin/pksk/questions",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S5",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
+      "group": "premium",
+      "note": "KEEP (move) to group Premium (30 §3.3)",
+      "approved_by_card": null,
+      "target_label": "PKSK Soalan"
+    },
+    {
+      "key": "pentadbiran|KW-06",
+      "source": "pentadbiran",
+      "id": "KW-06",
+      "label": "PKSK Akses",
+      "route": "/admin/pksk/access",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S5",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
+      "group": "premium",
       "approved_by_card": null
     },
     {
@@ -9119,8 +7625,23 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kurikulum-kandungan",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
+      "group": "kandungan",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KK-05",
+      "source": "pentadbiran",
+      "id": "KK-05",
+      "label": "Banner",
+      "route": "/admin/banners",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S5",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
+      "group": "kandungan",
       "approved_by_card": null
     },
     {
@@ -9134,8 +7655,23 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kurikulum-kandungan",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
+      "group": "kandungan",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|SY-05",
+      "source": "pentadbiran",
+      "id": "SY-05",
+      "label": "Upload Screenshot",
+      "route": "/admin/tools/screenshots",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S5",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
+      "group": "kandungan",
       "approved_by_card": null
     },
     {
@@ -9149,87 +7685,23 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kurikulum-kandungan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KK-09",
-      "source": "pentadbiran",
-      "id": "KK-09",
-      "label": "Laluan Kerjaya",
-      "route": "/admin/p/kk-09",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kurikulum-kandungan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KK-10",
-      "source": "pentadbiran",
-      "id": "KK-10",
-      "label": "Universiti",
-      "route": "/admin/p/kk-10",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kurikulum-kandungan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KK-11",
-      "source": "pentadbiran",
-      "id": "KK-11",
-      "label": "Biasiswa",
-      "route": "/admin/p/kk-11",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kurikulum-kandungan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KK-12",
-      "source": "pentadbiran",
-      "id": "KK-12",
-      "label": "Video Sekolah",
-      "route": "/admin/p/kk-12",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kurikulum-kandungan",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
+      "group": "kandungan",
       "approved_by_card": null
     },
     {
       "key": "pentadbiran|PS-01",
       "source": "pentadbiran",
       "id": "PS-01",
-      "label": "Pengguna",
+      "label": "Senarai Pengguna",
       "route": "/admin/users",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pengguna-sekolah",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "pengguna",
       "note": "V2 label (30 §3.4)",
       "approved_by_card": null,
       "target_label": "Senarai Pengguna"
@@ -9245,483 +7717,8 @@
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pengguna-sekolah",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PS-03",
-      "source": "pentadbiran",
-      "id": "PS-03",
-      "label": "Kelas Sekolah",
-      "route": "/admin/p/ps-03",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pengguna-sekolah",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PS-04",
-      "source": "pentadbiran",
-      "id": "PS-04",
-      "label": "Import Pelajar",
-      "route": "/admin/import-students",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pengguna-sekolah",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PS-05",
-      "source": "pentadbiran",
-      "id": "PS-05",
-      "label": "Import Pengguna",
-      "route": "/admin/p/ps-05",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "pengguna-sekolah",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PS-06",
-      "source": "pentadbiran",
-      "id": "PS-06",
-      "label": "Pelajar Komplimen",
-      "route": "/admin/comp-students",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "pengguna-sekolah",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-01",
-      "source": "pentadbiran",
-      "id": "PG-01",
-      "label": "Overview",
-      "route": "/admin/p/pg-01",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-02",
-      "source": "pentadbiran",
-      "id": "PG-02",
-      "label": "Tier Config (Kadar Tukaran Syiling)",
-      "route": "/admin/p/pg-02",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-03",
-      "source": "pentadbiran",
-      "id": "PG-03",
-      "label": "Cabaran",
-      "route": "/admin/p/pg-03",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-04",
-      "source": "pentadbiran",
-      "id": "PG-04",
-      "label": "Pelajar",
-      "route": "/admin/p/pg-04",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-05",
-      "source": "pentadbiran",
-      "id": "PG-05",
-      "label": "Transaksi",
-      "route": "/admin/p/pg-05",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-06",
-      "source": "pentadbiran",
-      "id": "PG-06",
-      "label": "Kedai Hadiah",
-      "route": "/admin/p/pg-06",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-07",
-      "source": "pentadbiran",
-      "id": "PG-07",
-      "label": "Gamifikasi Guru",
-      "route": "/admin/p/pg-07",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-08",
-      "source": "pentadbiran",
-      "id": "PG-08",
-      "label": "Lencana Guru",
-      "route": "/admin/p/pg-08",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-09",
-      "source": "pentadbiran",
-      "id": "PG-09",
-      "label": "Cabutan",
-      "route": "/admin/p/pg-09",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-10",
-      "source": "pentadbiran",
-      "id": "PG-10",
-      "label": "Kawalan Reward",
-      "route": "/admin/p/pg-10",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-11",
-      "source": "pentadbiran",
-      "id": "PG-11",
-      "label": "Tetapan Permainan",
-      "route": "/admin/p/pg-11",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-12",
-      "source": "pentadbiran",
-      "id": "PG-12",
-      "label": "Ranking Sekolah (Battle)",
-      "route": "/admin/p/pg-12",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-13",
-      "source": "pentadbiran",
-      "id": "PG-13",
-      "label": "Leaderboard (Battle)",
-      "route": "/admin/p/pg-13",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-14",
-      "source": "pentadbiran",
-      "id": "PG-14",
-      "label": "Produk",
-      "route": "/admin/marketplace/products",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S7",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-15",
-      "source": "pentadbiran",
-      "id": "PG-15",
-      "label": "Penjual",
-      "route": "/admin/marketplace/sellers",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S7",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-16",
-      "source": "pentadbiran",
-      "id": "PG-16",
-      "label": "Penajaan",
-      "route": "/admin/p/pg-16",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-17",
-      "source": "pentadbiran",
-      "id": "PG-17",
-      "label": "Anak Angkat",
-      "route": "/admin/p/pg-17",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-18",
-      "source": "pentadbiran",
-      "id": "PG-18",
-      "label": "Permohonan Anak Angkat",
-      "route": "/admin/p/pg-18",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-19",
-      "source": "pentadbiran",
-      "id": "PG-19",
-      "label": "Permohonan Duta",
-      "route": "/admin/p/pg-19",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-20",
-      "source": "pentadbiran",
-      "id": "PG-20",
-      "label": "Push Notifikasi",
-      "route": "/admin/p/pg-20",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-21",
-      "source": "pentadbiran",
-      "id": "PG-21",
-      "label": "Chatbot",
-      "route": "/admin/p/pg-21",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|PG-22",
-      "source": "pentadbiran",
-      "id": "PG-22",
-      "label": "Tiket Bantuan",
-      "route": "/admin/tiket",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S7",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "penglibatan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KW-01",
-      "source": "pentadbiran",
-      "id": "KW-01",
-      "label": "Pembayaran",
-      "route": "/admin/p/kw-01",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kewangan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KW-02",
-      "source": "pentadbiran",
-      "id": "KW-02",
-      "label": "Billing Dashboard",
-      "route": "/admin/p/kw-02",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kewangan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KW-03",
-      "source": "pentadbiran",
-      "id": "KW-03",
-      "label": "Invois",
-      "route": "/admin/p/kw-03",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kewangan",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KW-04",
-      "source": "pentadbiran",
-      "id": "KW-04",
-      "label": "Dunning Log",
-      "route": "/admin/p/kw-04",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "kewangan",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "pengguna",
       "approved_by_card": null
     },
     {
@@ -9735,23 +7732,173 @@
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kewangan",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "pengguna",
       "approved_by_card": null
     },
     {
-      "key": "pentadbiran|KW-06",
+      "key": "pentadbiran|PS-04",
       "source": "pentadbiran",
-      "id": "KW-06",
-      "label": "Akses PKSK",
-      "route": "/admin/pksk/access",
+      "id": "PS-04",
+      "label": "Import Pelajar",
+      "route": "/admin/import-students",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "kewangan",
+      "sector": "S6",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "pengguna",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PS-06",
+      "source": "pentadbiran",
+      "id": "PS-06",
+      "label": "Pelajar Komplimen",
+      "route": "/admin/comp-students",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "pengguna",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PS-05",
+      "source": "pentadbiran",
+      "id": "PS-05",
+      "label": "Import Pengguna",
+      "route": "/admin/users/bulk-import",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "pengguna",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|SY-02",
+      "source": "pentadbiran",
+      "id": "SY-02",
+      "label": "Kawalan Ciri",
+      "route": "/admin/feature-toggles",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "kawalan-ciri",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PP-01",
+      "source": "pentadbiran",
+      "id": "PP-01",
+      "label": "Dashboard",
+      "route": "/admin",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S0",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "harian",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-04",
+      "source": "pentadbiran",
+      "id": "PM-04",
+      "label": "Analitik",
+      "route": "/admin/analytics",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "analitik",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-29",
+      "source": "pentadbiran",
+      "id": "PM-29",
+      "label": "Laporan",
+      "route": "/admin/laporan",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "analitik",
+      "approved_by_card": "S6-T11"
+    },
+    {
+      "key": "pentadbiran|PS-03",
+      "source": "pentadbiran",
+      "id": "PS-03",
+      "label": "Kelas Sekolah",
+      "route": "/admin/classes",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
+      "group": "pengguna",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-22",
+      "source": "pentadbiran",
+      "id": "PG-22",
+      "label": "Tiket Bantuan",
+      "route": "/admin/tiket",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s7.ts",
+      "group": "sistem",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-14",
+      "source": "pentadbiran",
+      "id": "PG-14",
+      "label": "Produk",
+      "route": "/admin/marketplace/products",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s7.ts",
+      "group": "marketplace",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PG-15",
+      "source": "pentadbiran",
+      "id": "PG-15",
+      "label": "Penjual",
+      "route": "/admin/marketplace/sellers",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S7",
+      "file": "src/shells/pentadbiran/menu/fragments/s7.ts",
+      "group": "marketplace",
       "approved_by_card": null
     },
     {
@@ -9765,70 +7912,7 @@
       ],
       "status": "canonical",
       "sector": "S7",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "group": "sistem",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|SY-02",
-      "source": "pentadbiran",
-      "id": "SY-02",
-      "label": "Kawalan Ciri",
-      "route": "/admin/p/sy-02",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "sistem",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|SY-03",
-      "source": "pentadbiran",
-      "id": "SY-03",
-      "label": "Prestasi Sistem",
-      "route": "/admin/p/sy-03",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "sistem",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|SY-04",
-      "source": "pentadbiran",
-      "id": "SY-04",
-      "label": "Log Audit",
-      "route": "/admin/p/sy-04",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
-      "group": "sistem",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|SY-05",
-      "source": "pentadbiran",
-      "id": "SY-05",
-      "label": "Upload Screenshot",
-      "route": "/admin/tools/screenshots",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s7.ts",
       "group": "sistem",
       "approved_by_card": null
     }
@@ -9925,6 +8009,30 @@
       "approved_by_card": null
     },
     {
+      "name": "TournamentRound",
+      "table": "tournament_rounds",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/battle.prisma",
+      "approved_by_card": "S7-T06"
+    },
+    {
+      "name": "TournamentEntry",
+      "table": "tournament_entries",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/battle.prisma",
+      "approved_by_card": "S7-T06"
+    },
+    {
+      "name": "TournamentRoundScore",
+      "table": "tournament_round_scores",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/battle.prisma",
+      "approved_by_card": "S7-T06"
+    },
+    {
       "name": "ExamAttempt",
       "table": "exam_attempts",
       "status": "canonical",
@@ -9961,6 +8069,14 @@
     {
       "name": "AttemptCheck",
       "table": "attempt_checks",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/prisma/schema/bijak-attempts.prisma",
+      "approved_by_card": null
+    },
+    {
+      "name": "EssayReviewProposal",
+      "table": "essay_review_proposals",
       "status": "canonical",
       "sector": "S3",
       "file": "apps/api/prisma/schema/bijak-attempts.prisma",
@@ -10045,6 +8161,14 @@
       "sector": "S6",
       "file": "apps/api/prisma/schema/classes.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "MissionReward",
+      "table": "mission_rewards",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/prisma/schema/classes.prisma",
+      "approved_by_card": "S6-T07"
     },
     {
       "name": "RemedialTest",
@@ -10439,6 +8563,15 @@
       "approved_by_card": null
     },
     {
+      "name": "FeatureFlag",
+      "table": "feature_flags",
+      "status": "canonical",
+      "sector": "S0",
+      "file": "apps/api/prisma/schema/feature-flags.prisma",
+      "approved_by_card": "S0-T10",
+      "dm": "DM-34"
+    },
+    {
       "name": "File",
       "table": "files",
       "status": "canonical",
@@ -10579,6 +8712,14 @@
       "approved_by_card": null
     },
     {
+      "name": "LeagueContribution",
+      "table": "league_contributions",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/games.prisma",
+      "approved_by_card": "S7-T06"
+    },
+    {
       "name": "SekolahBersaingWeek",
       "table": "sekolah_bersaing_weeks",
       "status": "canonical",
@@ -10684,6 +8825,16 @@
       "approved_by_card": null
     },
     {
+      "name": "DrawWinner",
+      "table": "draw_winners",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "note": "One winner per prize slot of a drawn Cabutan Bertuah draw (48 GAME-22): ticket, slot, drawn by, delivered.",
+      "approved_by_card": "S7-T07",
+      "dm": "DM-36"
+    },
+    {
       "name": "SyilingReward",
       "table": "syiling_rewards",
       "status": "legacy-retire",
@@ -10728,6 +8879,22 @@
       "approved_by_card": null
     },
     {
+      "name": "MysteryBox",
+      "table": "mystery_boxes",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": null
+    },
+    {
+      "name": "MysteryBoxPrize",
+      "table": "mystery_box_prizes",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": null
+    },
+    {
       "name": "GamificationSetting",
       "table": "gamification_settings",
       "status": "canonical",
@@ -10751,9 +8918,7 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
-      "note": "One reward event per game session and pupil (PO decision 2026-11-05, item 20): the one source of the daily game caps and the replay check; written only by GamificationService.onGameResult.",
-      "approved_by_card": "S7-T01",
-      "dm": "DM-87"
+      "approved_by_card": null
     },
     {
       "name": "User",
@@ -11516,6 +9681,26 @@
     }
   ],
   "apis": [
+    {
+      "key": "GET /api/admin/feature-toggles",
+      "method": "GET",
+      "path": "/api/admin/feature-toggles",
+      "api_id": "API-ADM-09",
+      "status": "canonical",
+      "sector": "S0",
+      "file": "apps/api/src/common/feature-flags/feature-flags.controller.ts",
+      "approved_by_card": "S0-T10"
+    },
+    {
+      "key": "PUT /api/admin/feature-toggles/:p",
+      "method": "PUT",
+      "path": "/api/admin/feature-toggles/:key",
+      "api_id": "API-ADM-09",
+      "status": "canonical",
+      "sector": "S0",
+      "file": "apps/api/src/common/feature-flags/feature-flags.controller.ts",
+      "approved_by_card": "S0-T10"
+    },
     {
       "key": "GET /api/health",
       "method": "GET",
@@ -12665,6 +10850,26 @@
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
       "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "GET /api/guru/databank/overview",
+      "method": "GET",
+      "path": "/api/guru/databank/overview",
+      "api_id": "API-GUR-27",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/databank.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/databank/questions",
+      "method": "GET",
+      "path": "/api/guru/databank/questions",
+      "api_id": "API-GUR-27",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/databank.controller.ts",
+      "approved_by_card": null
     },
     {
       "key": "GET /api/guru/personal-questions",
@@ -14247,6 +12452,26 @@
       "approved_by_card": "S7-T06"
     },
     {
+      "key": "GET /api/leagues/:p/standings",
+      "method": "GET",
+      "path": "/api/leagues/:id/standings",
+      "api_id": "API-GAME-13",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/leagues/leagues.controller.ts",
+      "approved_by_card": "S7-T06"
+    },
+    {
+      "key": "GET /api/leagues/:p/me",
+      "method": "GET",
+      "path": "/api/leagues/:id/me",
+      "api_id": "API-GAME-13",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/leagues/leagues.controller.ts",
+      "approved_by_card": "S7-T06"
+    },
+    {
       "key": "GET /api/leagues/:p",
       "method": "GET",
       "path": "/api/leagues/:id",
@@ -14285,6 +12510,36 @@
       "sector": "S7",
       "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/admin/games/:p/active",
+      "method": "PUT",
+      "path": "/api/admin/games/:gameKey/active",
+      "api_id": "API-ADM-08",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
+      "key": "GET /api/admin/games/spin-segments",
+      "method": "GET",
+      "path": "/api/admin/games/spin-segments",
+      "api_id": "API-ADM-23",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
+      "key": "PUT /api/admin/games/spin-segments",
+      "method": "PUT",
+      "path": "/api/admin/games/spin-segments",
+      "api_id": "API-ADM-23",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
     },
     {
       "key": "POST /api/papan-bijak/quick-match",
@@ -14667,10 +12922,80 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/reward-control/draws",
+      "method": "GET",
+      "path": "/api/admin/reward-control/draws",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
       "key": "POST /api/admin/reward-control/draws",
       "method": "POST",
       "path": "/api/admin/reward-control/draws",
       "api_id": "API-ADM-16",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/open",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/open",
+      "api_id": "API-ADM-24",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/close",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/close",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/winners",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/winners",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/winners/:p/deliver",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/winners/:winnerId/deliver",
+      "api_id": "API-ADM-24",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "GET /api/admin/reward-control/mystery-boxes",
+      "method": "GET",
+      "path": "/api/admin/reward-control/mystery-boxes",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/admin/reward-control/mystery-boxes/:p",
+      "method": "PUT",
+      "path": "/api/admin/reward-control/mystery-boxes/:id",
+      "api_id": "API-GAME-09",
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/gamification/admin.controller.ts",
@@ -15898,6 +14223,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/questions/:p/parts/:p/scheme/validate",
+      "method": "POST",
+      "path": "/api/questions/:id/parts/:partId/scheme/validate",
+      "api_id": "API-Q-30",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/questions",
       "method": "POST",
       "path": "/api/questions",
@@ -16398,6 +14733,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/structured-questions/:p/rubric",
+      "method": "GET",
+      "path": "/api/structured-questions/:id/rubric",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/structured.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/structured-questions/:p/rubric",
+      "method": "PUT",
+      "path": "/api/structured-questions/:id/rubric",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/structured.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/structured-questions/:p",
       "method": "GET",
       "path": "/api/structured-questions/:id",
@@ -16713,6 +15068,36 @@
       "method": "GET",
       "path": "/api/teacher/item-analysis",
       "api_id": "API-RPT-07",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/dashboard",
+      "method": "GET",
+      "path": "/api/admin/dashboard",
+      "api_id": "API-ADM-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/analytics",
+      "method": "GET",
+      "path": "/api/admin/analytics",
+      "api_id": "API-ADM-12",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/reports/laporan",
+      "method": "GET",
+      "path": "/api/admin/reports/laporan",
+      "api_id": "API-ADM-13",
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
@@ -17311,6 +15696,46 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin-sekolah/tanda-karangan",
+      "method": "GET",
+      "path": "/api/admin-sekolah/tanda-karangan",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/essay-review/essay-review.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin-sekolah/tanda-karangan/:p/sahkan",
+      "method": "POST",
+      "path": "/api/admin-sekolah/tanda-karangan/:id/sahkan",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/essay-review/essay-review.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/spm/tanda-karangan",
+      "method": "GET",
+      "path": "/api/admin/spm/tanda-karangan",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/essay-review/essay-review.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/spm/tanda-karangan/:p/sahkan",
+      "method": "POST",
+      "path": "/api/admin/spm/tanda-karangan/:id/sahkan",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/essay-review/essay-review.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/admin-sekolah/pelajar",
       "method": "GET",
       "path": "/api/admin-sekolah/pelajar",
@@ -17335,6 +15760,16 @@
       "method": "GET",
       "path": "/api/admin-sekolah/pelajar/export.csv",
       "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/people/pupils.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin-sekolah/pelajar/import",
+      "method": "POST",
+      "path": "/api/admin-sekolah/pelajar/import",
+      "api_id": "API-AS-06",
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/school-admin/people/pupils.controller.ts",
@@ -17501,6 +15936,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/classes",
+      "method": "GET",
+      "path": "/api/admin/classes",
+      "api_id": "API-ADM-05",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/reports/school-reports.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/admin-sekolah/dashboard",
       "method": "GET",
       "path": "/api/admin-sekolah/dashboard",
@@ -17585,6 +16030,16 @@
       "method": "POST",
       "path": "/api/admin/schools/:id/toggle",
       "api_id": "API-ADM-03",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/schools/schools.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/schools/:p/join-code",
+      "method": "POST",
+      "path": "/api/admin/schools/:id/join-code",
+      "api_id": null,
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/schools/schools.controller.ts",
@@ -17926,6 +16381,36 @@
       "sector": "S3",
       "file": "apps/api/src/modules/spm/spm.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/spm/tracking-a",
+      "method": "POST",
+      "path": "/api/admin/spm/tracking-a",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "GET /api/admin/spm/tracking-a/:p",
+      "method": "GET",
+      "path": "/api/admin/spm/tracking-a/:id",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "PUT /api/admin/spm/tracking-a/:p",
+      "method": "PUT",
+      "path": "/api/admin/spm/tracking-a/:id",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
     },
     {
       "key": "POST /api/spm-walkthrough/solve",

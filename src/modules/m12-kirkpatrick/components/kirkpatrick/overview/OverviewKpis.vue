@@ -18,7 +18,7 @@ const items = computed<StatItem[]>(() => {
   return [
     {
       key: 'registered',
-      label: 'Pelajar Berdaftar (T4/T5)',
+      label: 'Pelajar Berdaftar',
       value: count(props.kpi.t4t5),
       icon: 'i-ph-graduation-cap',
       accent: 'friend',

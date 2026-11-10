@@ -269,3 +269,60 @@ model PaperPlacement {
   @@index([questionId], map: "ix_paper_placements_question_id")
   @@map("paper_placements")
 }
+
+/// V2 parity (0265): a subjective past paper (Kertas 2/3/4) served as page images plus a revealable marking scheme. The V2 Kertas Subjektif
+/// feature; V3's question-based Kertas Subjektif papers are `Paper` rows with `surface = 'subjektif'` and sit beside these in one list.
+model PaperDocument {
+  id              BigInt    @id @default(autoincrement())
+  /// FK -> subjects.id, set null when the subject goes (as V2).
+  subjectId       BigInt?   @map("subject_id")
+  /// 2, 3 or 4 (check).
+  kertas          Int       @db.SmallInt
+  title           String
+  /// Negeri or board label as V2 printed it (free text, e.g. "Kuala Lumpur").
+  negeri          String?
+  year            Int?      @db.SmallInt
+  /// Provenance of the V2 import (zip member path); never shown.
+  sourceFile      String?   @map("source_file")
+  durationMinutes Int?      @map("duration_minutes") @db.SmallInt
+  marksTotal      Int?      @map("marks_total") @db.SmallInt
+  pageCount       Int       @default(0) @map("page_count") @db.SmallInt
+  schemePageCount Int       @default(0) @map("scheme_page_count") @db.SmallInt
+  /// NULL = Draf. Nothing auto-publishes; publishing needs at least one paper page.
+  publishedAt     DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource    String?   @map("legacy_source")
+  legacyId        String?   @map("legacy_id")
+
+  pages PaperDocumentPage[]
+
+  @@unique([legacySource, legacyId], map: "uq_paper_documents_legacy")
+  @@index([subjectId, kertas], map: "ix_paper_documents_subject_kertas")
+  @@index([publishedAt], map: "ix_paper_documents_published_at")
+  @@map("paper_documents")
+}
+
+/// One page image of a `PaperDocument`: `kind` paper (the question paper) or scheme (the marking scheme, revealed on demand). The bytes are a
+/// `files` row with purpose `kertas_page`.
+model PaperDocumentPage {
+  id              BigInt   @id @default(autoincrement())
+  paperDocumentId BigInt   @map("paper_document_id")
+  /// paper, scheme (check).
+  kind            String
+  position        Int      @db.SmallInt
+  fileId          BigInt   @map("file_id")
+  width           Int?     @db.SmallInt
+  height          Int?     @db.SmallInt
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource    String?  @map("legacy_source")
+  legacyId        String?  @map("legacy_id")
+
+  document PaperDocument @relation(fields: [paperDocumentId], references: [id], onDelete: Cascade, map: "fk_paper_document_pages_document_id")
+  file     File          @relation("PaperDocumentPageFile", fields: [fileId], references: [id], onDelete: Restrict, map: "fk_paper_document_pages_file_id")
+
+  @@unique([paperDocumentId, kind, position], map: "uq_paper_document_pages_slot")
+  @@unique([legacySource, legacyId], map: "uq_paper_document_pages_legacy")
+  @@index([fileId], map: "ix_paper_document_pages_file_id")
+  @@map("paper_document_pages")
+}

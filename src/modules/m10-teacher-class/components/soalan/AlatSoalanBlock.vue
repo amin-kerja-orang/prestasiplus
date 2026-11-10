@@ -35,7 +35,7 @@ const tiles = computed(() =>
     accent="action"
     data-testid="alat-soalan"
   >
-    <DsGrid as="ul" :cols="{ base: 1, sm: 2, xl: 3 }" gap="sm">
+    <DsGrid as="ul" :balanced="3" gap="sm">
       <DsListRow
         v-for="t in tiles"
         :key="t.to"

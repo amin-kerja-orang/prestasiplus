@@ -1,6 +1,6 @@
-import { randomInt } from 'node:crypto'
+import { createHash, randomInt } from 'node:crypto'
 
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
   normaliseKuizCount,
   BijakKuizCheckResultSchema,
@@ -16,14 +16,17 @@ import {
   type BijakKuizStartRequest,
 } from '@pp/contract'
 
+import { ApiError } from '../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { mulberry32 } from '../../../db/prng'
 import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import { FilesService } from '../../files'
-import { PracticePorts, practiceRewardSource } from '../../practice/ports'
-import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck } from '../../practice/practice.repository'
+import { AnswerLogPort } from '../../practice/answer-log.port'
+import { KUIZ_ORIGIN, selectedLabelOf } from '../../practice'
+import { PracticePorts, type PracticeRewardResult, practiceRewardSource } from '../../practice/ports'
+import { type CompletedSession, type GradedAnswer, PracticeRepository, type ServedRef, type SessionRecord, type StoredCheck } from '../../practice/practice.repository'
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
 import { type DrawCandidate, drawUnits } from '../../questions/serving'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
@@ -44,6 +47,8 @@ import {
   leafOf,
   leavesOf,
   markableLeaf,
+  multiKeyOf,
+  selectionVerdict,
   optionImageIds,
   questionIdOfItem,
   resolveStimuli,
@@ -51,6 +56,18 @@ import {
   toItem,
 } from './kuiz.mapper'
 import { ownStimuliOf } from './own-stimuli'
+/** Internal: rolls back a `closeIdle` transaction whose session turned out not to be idle any more. */
+class StillActive extends Error {}
+
+/** [PROPOSED] The attempt id of a pupil's per-paper kuiz rows: a name-based uuid (v5 layout) of the pupil and the paper. */
+export function paperKuizAttemptId(userId: string, paperId: string): string {
+  const h = createHash('sha1').update(`bijak-kuiz-paper:${userId}:${paperId}`).digest()
+  h[6] = (h[6]! & 0x0f) | 0x50
+  h[8] = (h[8]! & 0x3f) | 0x80
+  const x = h.subarray(0, 16).toString('hex')
+  return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20, 32)}`
+}
+
 export interface KuizCaller {
   userId: string
   /** True under Mod Pelajar: every row written is stamped `is_test`. */
@@ -59,8 +76,12 @@ export interface KuizCaller {
 
 /** Stored mode of a random quiz: decision U8 "disimpan sebagai sesi latih tubi". */
 const KUIZ_MODE = 'latih_tubi' as const
-/** Written to `practice_sessions.legacy_paper`: only a session started here is a kuiz session (a Latih Tubi session shares the mode). */
-const KUIZ_ORIGIN = 'bijak_kuiz'
+/** S3-T04 (R2): a kuiz session with no check and no start for this long is closed as `abandoned` (API-BIJAK-06). */
+export const KUIZ_IDLE_MS = 2 * 60 * 60 * 1000
+/** Sessions looked at per pass of the sweep. */
+export const KUIZ_SWEEP_BATCH = 200
+/** The most batches read in one pass of the sweep. */
+const KUIZ_SWEEP_ROUNDS = 20
 
 /**
  * Simulasi Kuiz (R1-B16). The random quiz is a practice session written through `PracticeRepository` (U8), so Soalan Aku
@@ -72,6 +93,8 @@ const KUIZ_ORIGIN = 'bijak_kuiz'
  */
 @Injectable()
 export class KuizService {
+  private readonly logger = new Logger(KuizService.name)
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -81,6 +104,7 @@ export class KuizService {
     @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(PracticePorts) private readonly ports: PracticePorts,
     @Inject(PapersRepository) private readonly papers: PapersRepository,
+    @Inject(AnswerLogPort) private readonly answerLog: AnswerLogPort,
   ) {}
 
   // --- random quiz -------------------------------------------------------------------------------
@@ -97,7 +121,7 @@ export class KuizService {
     // Published + active + learner-visible (secondary, not PKSK) are forced by the bank's `sample`; the shape is one objective leaf.
     // S1-T06 (FR-MUR-QP-6, D90): `wholeGroups` keeps a member only of a complete group; the draw below then takes whole units.
     const ids = await this.questions.sample(
-      { type: 'mcq', singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
+      { servesMcqMulti: true, singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
       count * KUIZ_OVER_FETCH,
       mulberry32(randomInt(0, 0x1_0000_0000)),
     )
@@ -145,6 +169,16 @@ export class KuizService {
     return BijakKuizSessionSchema.parse({ sessionId: session.id, count: items.length, items })
   }
 
+  /** The ticked option ids of a check request. Every id must belong to the leaf; a single-choice leaf takes exactly one (`optionId`), an `mcq_multi` leaf `optionIds`. */
+  private selectionOf(req: BijakKuizCheckRequest, leaf: Parameters<typeof multiKeyOf>[0]): string[] {
+    const multi = multiKeyOf(leaf) !== null
+    const given = multi ? req.optionIds : [req.optionId]
+    if (given === undefined) throw invalidAnswer('optionId')
+    const unique = [...new Set(given)]
+    if (!unique.every((id) => leaf.options.some((o) => o.label === id))) throw invalidAnswer('optionId')
+    return unique.sort()
+  }
+
   async check(caller: KuizCaller, sessionId: string, req: BijakKuizCheckRequest): Promise<BijakKuizCheckResult> {
     const now = this.clock.now()
     return this.prisma.transaction(async () => {
@@ -160,28 +194,37 @@ export class KuizService {
       const ref = record ? leafOf(record, req.itemId) : null
       const leaf = ref ? markableLeaf(ref) : null
       if (!record || !leaf) throw invalidAnswer('itemId')
-      if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
+      const selected = this.selectionOf(req, leaf)
+      const marked = selectionVerdict(leaf, selected)
 
       const verdict = (correct: boolean): BijakKuizCheckResult =>
-        BijakKuizCheckResultSchema.parse({ correct, correctOptionId: leaf.key.correct, explanation: record.version.explanationMs })
-
+        BijakKuizCheckResultSchema.parse({
+          correct,
+          correctOptionId: marked.correctOptionId,
+          ...(marked.correctOptionIds ? { correctOptionIds: marked.correctOptionIds } : {}),
+          explanation: record.version.explanationMs,
+        })
       // One check per question: a repeat returns the stored verdict and counts nothing.
       const stored = await this.practice.check(session.id, questionId)
-      if (stored) return verdict(stored.selectedLabel === leaf.key.correct)
-      const correct = req.optionId === leaf.key.correct
+      // A multi check keeps its verdict in `is_correct` (the stored label is the comma-joined ticks, not one letter to compare).
+      const storedVerdict = (c: StoredCheck): boolean => (multiKeyOf(leaf) !== null ? c.isCorrect : c.selectedLabel === marked.correctOptionId)
+      if (stored) return verdict(storedVerdict(stored))
+      const label = selectedLabelOf(selected)
+      if (label === null) throw invalidAnswer('optionId')
+      const correct = marked.correct
       const inserted = await this.practice.insertCheck({
         sessionId: session.id,
         userId: caller.userId,
         questionId,
         questionVersionNo: served.versionNo,
-        selectedLabel: req.optionId,
+        selectedLabel: label,
         isCorrect: correct,
         checkedAt: now,
         isTest: caller.isTest || session.isTest,
       })
       if (!inserted) {
         const winner = await this.practice.check(session.id, questionId)
-        return verdict((winner?.selectedLabel ?? req.optionId) === leaf.key.correct)
+        return verdict(winner ? storedVerdict(winner) : correct)
       }
       return verdict(correct)
     })
@@ -189,33 +232,42 @@ export class KuizService {
 
   async finish(caller: KuizCaller, sessionId: string, timeSpent: number | undefined): Promise<BijakKuizResult> {
     const now = this.clock.now()
-    const { done, result } = await this.practice.completeSession(
-      { sessionId, userId: caller.userId, now, timeSpent: timeSpent ?? 0, isTest: caller.isTest },
-      {
-        guard: (session) => {
-          if (session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
-          return Promise.resolve()
+    let finished: { done: CompletedSession; result: PracticeRewardResult }
+    try {
+      finished = await this.practice.completeSession(
+        { sessionId, userId: caller.userId, now, timeSpent: timeSpent ?? 0, isTest: caller.isTest, answerMode: 'kuiz' },
+        {
+          guard: (session) => {
+            if (session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
+            return Promise.resolve()
+          },
+          regrade: (_session, served, checks) => this.regrade(served, checks),
+          completed: (completed, tx) => {
+            return this.ports.reward.onSessionCompleted(
+              {
+                userId: completed.session.userId,
+                sessionId: completed.session.id,
+                mode: completed.session.mode,
+                source: practiceRewardSource(completed.session.mode),
+                correct: completed.correct,
+                total: completed.total,
+                timeSpent: completed.timeSpentSec,
+                completedAt: completed.completedAt,
+                pointsEarned: completed.pointsEarned,
+                sessionCoins: completed.coinsEarned,
+                isTest: caller.isTest || completed.session.isTest,
+              },
+              tx,
+            )
+          },
         },
-        regrade: (_session, served, checks) => this.regrade(served, checks),
-        completed: (completed, tx) =>
-          this.ports.reward.onSessionCompleted(
-            {
-              userId: completed.session.userId,
-              sessionId: completed.session.id,
-              mode: completed.session.mode,
-              source: practiceRewardSource(completed.session.mode),
-              correct: completed.correct,
-              total: completed.total,
-              timeSpent: completed.timeSpentSec,
-              completedAt: completed.completedAt,
-              pointsEarned: completed.pointsEarned,
-              sessionCoins: completed.coinsEarned,
-              isTest: caller.isTest || completed.session.isTest,
-            },
-            tx,
-          ),
-      },
-    )
+      )
+    } catch (err) {
+      // A second finish, or a finish after the idle sweep: 200 with the stored result, nothing is paid (API-BIJAK-06).
+      if (err instanceof ApiError && err.code === 'ALREADY_SUBMITTED') return this.storedResult(caller, sessionId)
+      throw err
+    }
+    const { done, result } = finished
     return BijakKuizResultSchema.parse({
       score: done.correct,
       total: done.total,
@@ -226,6 +278,105 @@ export class KuizService {
         pointsEarned: done.pointsEarned,
         totalBalance: result.totalBalance,
       },
+    })
+  }
+
+  /** The result of a kuiz session that is already completed or abandoned. No reward is called: coins and points are the stored figures (0 when abandoned). */
+  private async storedResult(caller: KuizCaller, sessionId: string): Promise<BijakKuizResult> {
+    const session = await this.practice.session(sessionId, caller.userId)
+    if (!session || session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
+    const rows = await this.practice.answers(caller.userId, { sessionId: session.id, includeTest: true })
+    let correct = rows.filter((r) => r.isCorrect).length
+    let answered = rows.length
+    if (answered === 0 && session.status === 'abandoned') {
+      // Abandoned by the practice sweeper before this change (it now skips kuiz sessions), so no rows were written: the kept checks are the answers.
+      const checks = await this.practice.checks(session.id)
+      answered = checks.length
+      correct = checks.filter((c) => c.isCorrect).length
+    }
+    const paid = session.status === 'completed'
+    return BijakKuizResultSchema.parse({
+      score: paid ? session.correctCount : correct,
+      total: session.questionCount,
+      answered,
+      gamification: {
+        coinsEarned: paid ? session.coinsEarned : 0,
+        streakCount: 0,
+        pointsEarned: paid ? session.pointsEarned : 0,
+        totalBalance: 0,
+      },
+    })
+  }
+
+  /** One `kuiz` answer row per graded check, through the port, in the caller's transaction (idempotent per session and question). */
+  private async writeRows(session: SessionRecord, graded: readonly GradedAnswer[], isTest: boolean): Promise<void> {
+    for (const g of graded) {
+      await this.answerLog.record({
+        userId: session.userId,
+        attemptId: session.id,
+        questionId: g.check.questionId,
+        partRef: null,
+        mode: 'kuiz',
+        isCorrect: g.isCorrect,
+        marksAwarded: g.isCorrect ? 1 : 0,
+        marksMax: 1,
+        answeredAt: g.check.checkedAt,
+        isTest,
+        selectedLabel: g.check.selectedLabel,
+        questionVersionNo: g.check.questionVersionNo,
+      })
+    }
+  }
+
+  // --- idle sweep (S3-T04 R2) ----------------------------------------------------------------------
+
+  /**
+   * The scheduled sweep for kuiz sessions: closes every one idle for 2 h. A session that fails (logged with its id) or is not closed
+   * is skipped for the rest of the run and the next batch is read past it, so one permanently failing session never starves the others.
+   * Returns how many were closed.
+   */
+  async sweepIdle(now: Date = this.clock.now()): Promise<number> {
+    const cutoff = new Date(now.getTime() - KUIZ_IDLE_MS)
+    const skipped = new Set<string>()
+    let closed = 0
+    for (let round = 0; round < KUIZ_SWEEP_ROUNDS; round++) {
+      const batch = (await this.practice.idleKuizSessions(cutoff, KUIZ_SWEEP_BATCH + skipped.size)).filter((s) => !skipped.has(s.id)).slice(0, KUIZ_SWEEP_BATCH)
+      if (batch.length === 0) break
+      for (const s of batch) {
+        skipped.add(s.id)
+        try {
+          if (await this.closeIdle(s.id, s.userId, now)) closed += 1
+        } catch (err) {
+          this.logger.warn(`Could not close idle kuiz session ${s.id}: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
+    }
+    return closed
+  }
+
+  /**
+   * Closes ONE idle kuiz session: its checked questions become `kuiz` answer rows (the checks are kept), the session becomes
+   * `abandoned` ("ditinggalkan") and NOTHING is paid (no reward call, no coins or points, no revision queue or mastery change).
+   * Safe from several instances: the session row is locked and re-checked. Returns true when this call closed it.
+   */
+  async closeIdle(sessionId: string, userId: string, now: Date = this.clock.now()): Promise<boolean> {
+    const cutoff = new Date(now.getTime() - KUIZ_IDLE_MS)
+    return this.prisma.transaction(async () => {
+      const session = await this.practice.lockSession(sessionId, userId, 'update')
+      if (!session || session.legacyPaper !== KUIZ_ORIGIN || session.mode !== KUIZ_MODE || session.status !== 'in_progress') return false
+      const checks = await this.practice.checks(session.id)
+      const last = checks.reduce((m, c) => (c.checkedAt > m ? c.checkedAt : m), session.startedAt)
+      if (last >= cutoff) return false
+      if (checks.length > 0) {
+        const graded = await this.regrade(await this.practice.sessionQuestions(session.id), checks)
+        await this.writeRows(session, graded, session.isTest)
+      }
+      // Re-checks the same cutoff in its UPDATE; false means the session is no longer idle, so undo the rows written above.
+      if (!(await this.practice.abandonSession(session.id, cutoff, now))) throw new StillActive()
+      return true
+    }).catch((err: unknown) => {
+      if (err instanceof StillActive) return false
+      throw err
     })
   }
 
@@ -240,15 +391,19 @@ export class KuizService {
       const record = byKey.get(`${ref.questionId}@${String(ref.versionNo)}`)
       const leaf = record ? leavesOf(record.id, record.version.parts).map(markableLeaf).find((l) => l !== null) : undefined
       const v = record?.version
+      // A multi row stores the comma-joined ticks ("A,C"): split back and graded by the one S1 grader (`selectionVerdict`).
+      const multi = leaf !== undefined && leaf !== null && multiKeyOf(leaf) !== null
+      const isCorrect = !leaf ? check.isCorrect : multi ? selectionVerdict(leaf, check.selectedLabel.split(',')).correct : leaf.key.correct === check.selectedLabel
+      // The answer row keeps the comma-joined ticks too (`practice_answers.selected_label`, S5 migration 0262; 46:270).
       return {
         check,
-        isCorrect: leaf ? leaf.key.correct === check.selectedLabel : check.isCorrect,
+        isCorrect,
         subjectId: v?.subjectId ?? null,
         educationLevelId: v?.educationLevelId ?? null,
         chapterId: v?.chapterId ?? null,
         topicId: v?.topicId ?? null,
         difficulty: v?.difficultyTp == null ? null : Math.min(5, Math.max(1, v.difficultyTp)),
-        questionType: 'mcq',
+        questionType: multi ? 'mcq_multi' : 'mcq',
       }
     })
   }
@@ -351,10 +506,31 @@ export class KuizService {
     // A question the page skips (its stimulus cannot be shown) is not marked either.
     if (!(await this.prepare([record]))[0]?.complete) throw invalidAnswer('itemId')
     // V2: the option must belong to the part it claims.
-    if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
+    const selected = this.selectionOf(req, leaf)
+    const marked = selectionVerdict(leaf, selected)
+    const label = selectedLabelOf(selected)
+    if (label === null) throw invalidAnswer('optionId')
+    // One-writer rule: a failed row write fails this request (no swallowing).
+    // [PROPOSED] (S3-T04 R4): a paper kuiz has no session, so its rows hang on a deterministic attempt uuid of (pupil, paper):
+    // one `kuiz` row per question, a re-check updates it (DM-44 key). No new table, no S5 file.
+    await this.answerLog.record({
+      userId: caller.userId,
+      attemptId: paperKuizAttemptId(caller.userId, paperId),
+      questionId,
+      partRef: req.itemId === questionId ? null : req.itemId,
+      mode: 'kuiz',
+      isCorrect: marked.correct,
+      marksAwarded: marked.correct ? 1 : 0,
+      marksMax: 1,
+      answeredAt: this.clock.now(),
+      isTest: caller.isTest,
+      selectedLabel: label,
+      questionVersionNo: placement.pinnedVersionNo,
+    })
     return BijakKuizCheckResultSchema.parse({
-      correct: req.optionId === leaf.key.correct,
-      correctOptionId: leaf.key.correct,
+      correct: marked.correct,
+      correctOptionId: marked.correctOptionId,
+      ...(marked.correctOptionIds ? { correctOptionIds: marked.correctOptionIds } : {}),
       explanation: record.version.explanationMs,
     })
   }

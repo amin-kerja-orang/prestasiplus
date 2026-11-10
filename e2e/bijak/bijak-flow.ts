@@ -94,9 +94,22 @@ export async function pressedOptions(page: Page): Promise<string[]> {
     .evaluateAll((els) => els.map((e) => e.getAttribute('aria-pressed') ?? ''))
 }
 
+/**
+ * Taps "Seterusnya". Below lg a stimulus group opens its bottom sheet the first time it appears
+ * (46 section 2.4); the sheet is modal, so the pupil dismisses it first, as here.
+ */
+export async function clickNext(page: Page): Promise<void> {
+  const sheet = page.getByTestId('group-stimuli')
+  if (await sheet.isVisible()) {
+    await page.keyboard.press('Escape')
+    await expect(sheet).toBeHidden()
+  }
+  await page.getByTestId('next').click()
+}
+
 /** Walks to the last question, taps Hantar and confirms. Resolves on the win screen. */
 export async function submitAttempt(page: Page): Promise<void> {
-  while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
+  while (await page.getByTestId('next').isVisible()) await clickNext(page)
   await page.getByTestId('submit').click()
   await expect(page.getByTestId('submit-summary')).toBeVisible()
   await page.getByTestId('confirm-submit').click()

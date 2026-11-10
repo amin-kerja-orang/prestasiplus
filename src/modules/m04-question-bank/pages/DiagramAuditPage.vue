@@ -201,7 +201,7 @@ const filterCount = computed(
       @apply="submitFilter"
       @reset="resetFilter"
     >
-      <div class="w-full min-w-0 sm:w-64">
+      <div class="w-full min-w-0">
         <DsFormField v-slot="{ id }" native for="diagrams-subject" label="Mata Pelajaran">
           <DsNativeSelect
             :id="id"
@@ -216,7 +216,7 @@ const filterCount = computed(
           </DsNativeSelect>
         </DsFormField>
       </div>
-      <div v-if="isAdmin" class="w-full min-w-0 sm:w-64">
+      <div v-if="isAdmin" class="w-full min-w-0">
         <DsFormField v-slot="{ id }" native for="diagrams-school" label="Sekolah">
           <DsNativeSelect
             :id="id"

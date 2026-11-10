@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type {
   GamificationAchievements,
@@ -38,6 +38,7 @@ import {
   RARITY_LABELS,
   DAILY_LOGIN_DESCRIPTION,
   DAILY_LOGIN_REWARD,
+  GAME_SESSION_MODES,
 } from './gamification.constants'
 import { GamificationRepository, type AchievementRecord, type ChallengeRecord, type Db, type GameRewardEventRecord } from './gamification.repository'
 import { RANKING_REDACTED_ID, canSeeRankedName, shortName, type NameScope, type RankingViewer } from './name-privacy'
@@ -52,6 +53,14 @@ export interface Viewer {
 }
 
 /** Options of the entry points other modules call inside their own transaction. */
+/** What one pass of `evaluateAchievements` unlocked. `code` is the achievement id (decimal string; the table has no other code). */
+export interface AchievementEvaluation {
+  unlockedIds: string[]
+  unlocked: { code: string; name: string }[]
+  syiling: number
+  xp: number
+}
+
 export interface EntryOptions {
   /** The caller's transaction; omitted = the ambient one, else a new one. */
   tx?: TxClient
@@ -59,6 +68,8 @@ export interface EntryOptions {
   isTest: boolean
   /** The event time (default the clock); decides the Malaysia day of a completion. */
   at?: Date
+  /** `evaluateAchievements` only: evaluate just the achievements of these criterion kinds (default: all). The daily login passes `['streak']`. */
+  kinds?: readonly string[]
 }
 
 export interface GameResultInput {
@@ -114,25 +125,32 @@ function gameRow(game: string, event: string, p: { correct?: number; detail?: Re
 }
 
 /** BR-M14-12 metric values for one Malaysia day. */
-export function dayMetrics(day: { sessions: readonly { correct: number; total: number; timeSpent: number }[]; chapterIds: readonly string[] }, streakCurrent: number): Record<string, number> {
+export function dayMetrics(
+  day: { sessions: readonly { mode: string; correct: number; total: number; timeSpent: number }[]; chapterIds: readonly string[] },
+  streakCurrent: number,
+  bestCombo = 0,
+): Record<string, number> {
   let correct = 0
   let bestAccuracy = 0
   let bestCorrect = 0
   let seconds = 0
-  for (const s of day.sessions) {
+  // FR-GM-19.4: game sessions never count.
+  const sessions = day.sessions.filter((s) => !GAME_SESSION_MODES.includes(s.mode))
+  for (const s of sessions) {
     correct += s.correct
     seconds += s.timeSpent
     bestCorrect = Math.max(bestCorrect, s.correct)
     if (s.total > 0) bestAccuracy = Math.max(bestAccuracy, Math.floor((s.correct / s.total) * 100))
   }
   return {
-    sessions: day.sessions.length,
+    sessions: sessions.length,
     correct,
     best_accuracy: bestAccuracy,
     best_correct_in_session: bestCorrect,
     chapters: new Set(day.chapterIds).size,
     minutes: Math.floor(seconds / 60),
     streak: streakCurrent,
+    best_combo: bestCombo,
   }
 }
 
@@ -153,6 +171,8 @@ const progressOf = (c: ChallengeRecord, metrics: Record<string, number>): number
  */
 @Injectable()
 export class GamificationService {
+  private readonly logger = new Logger(GamificationService.name)
+
   constructor(
     private readonly repo: GamificationRepository,
     @Inject(WalletService) private readonly wallet: WalletService,
@@ -238,7 +258,7 @@ export class GamificationService {
       this.repo.streakOf(db, userId),
       this.ports.practiceFacts.dayFacts(userId, day),
     ])
-    const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0)
+    const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0, await this.comboOf(userId, day, active))
     const data = active.map((c): GamificationChallengeProgress => {
       const completed = done.has(c.id)
       const progress = completed ? c.targetValue : progressOf(c, metrics)
@@ -258,6 +278,11 @@ export class GamificationService {
       }
     })
     return { data, meta: { completed: data.filter((i) => i.completed).length, active: active.length, claimed: data.filter((i) => i.claimed).length } }
+  }
+
+  /** `best_combo` of the day, read only when an active challenge measures it (R 4; one extra query otherwise avoided). */
+  private async comboOf(userId: string, day: string, active: readonly ChallengeRecord[]): Promise<number> {
+    return active.some((c) => c.metric === 'best_combo') ? this.ports.practiceFacts.bestCombo(userId, day) : 0
   }
 
   /**
@@ -444,40 +469,52 @@ export class GamificationService {
   // --- convert -------------------------------------------------------------------------------------
 
   /**
-   * `POST /gamification/convert` (S12, BR-M14-10/11): tokens = floor(syiling / rate), the rate read from the
-   * caller's tier in the database; the amount must be an integer, at least the rate and at most the balance
-   * (else 422 `fields.syilingAmount`). One transaction: the wallet row is locked, the amount is checked against
-   * the locked balance, then `WalletService.debit` (type `convert`) writes the ledger row and pays the tokens.
-   * Parallel conversions of one wallet therefore queue on the lock and can never drive the balance below zero.
+   * `POST /gamification/convert` (S12, GAME-18): tokens = floor(syilingAmount / rate), the rate read from the
+   * caller's tier in the database at this request (AC-GM-18.4), and the debit is tokens x rate, so the remainder is
+   * never taken (FR-GM-18.1, FR-MUR-29-2). The amount must be an integer, at least the rate and at most the balance
+   * (else 422 `fields.syilingAmount`). One transaction: the wallet row is locked, the amount is checked against the
+   * locked balance, then `WalletService.debit` (type `convert`) writes the ledger row and pays the tokens. Parallel
+   * conversions of one wallet therefore queue on the lock and can never drive the balance below zero.
    *
-   * IDEMPOTENCY. The mock has no key and there is no daily cap, so two legitimate conversions in a row must both
-   * run. A client MAY send `Idempotency-Key`: the ledger key is then `(token_conversion, convert:<key>)` and a
-   * repeat with the same key and amount returns the first result without a second debit (a different amount
-   * under the same key is a 409). Without the header the debit has no key (`noKeyReason`).
+   * IDEMPOTENCY (FR-GM-17.3, FR-ERR-9, DM-79). The key is the optional body `clientUuid`, per user. A repeat answers
+   * the first conversion before any check, moves nothing and carries the current balances (the balance may no longer
+   * cover the amount, and the amount of a repeat is not compared). The wallet lock above makes the read safe against a
+   * double press, and the partial unique index stands behind it. A key already held by another kind of movement cannot
+   * give a first result, so it is a 422 on `clientUuid`. Without a key, two conversions in a row both run.
    */
-  async convert(viewer: Viewer, syilingAmount: number, idempotencyKey: string | null): Promise<GamificationConvertResult> {
+  async convert(viewer: Viewer, syilingAmount: number, clientUuid: string | null): Promise<GamificationConvertResult> {
     const invalid = () => validationFailure({ syilingAmount: MSG.amountInvalid }, MSG.amountInvalid)
     if (!Number.isSafeInteger(syilingAmount) || syilingAmount < 1 || syilingAmount > MAX_AMOUNT_PER_CALL) throw invalid()
-    const sourceId = idempotencyKey === null ? null : `convert:${idempotencyKey}`
     return this.prisma.transaction(async (tx) => {
       const locked = await this.repo.lockWallet(tx, viewer.userId)
+      const first = clientUuid === null || locked === null ? null : await this.repo.ledgerByClientUuid(tx, viewer.userId, clientUuid)
+      if (first && locked) {
+        if (first.type !== 'convert' || first.tokens === null) throw validationFailure({ clientUuid: MSG.invalid })
+        return { syilingDebited: -first.amount, tokensCredited: first.tokens, currentSyiling: locked.currentSyiling, tokenBalance: locked.tokenBalance, transactionId: first.id }
+      }
       const tiers = await this.repo.tiers(tx)
       const tier = lifetimeTierOf(tiers, locked) // FR-MUR-29-5: the rate shown by `convertView`, never the lagging stored tier
       if (!tier) throw new Error('M14: no tier is defined')
       const rate = tier.conversionRate
-
-      // A repeat of a keyed conversion is answered from the first row (the balance may have changed since).
-      const prior = sourceId === null ? null : await this.repo.ledgerByKey(tx, viewer.userId, 'token_conversion', sourceId)
-      if (prior === null && (syilingAmount < rate || syilingAmount > (locked?.currentSyiling ?? 0))) throw invalid()
-      const tokens = prior?.tokens ?? Math.floor(syilingAmount / rate)
-
-      const description = `Tukar ${String(syilingAmount)} syiling → ${String(tokens)} token`
-      const key = sourceId === null ? { sourceId: null, noKeyReason: 'a conversion has no natural key: the client repeats legitimately' } : { sourceId }
+      if (syilingAmount < rate || syilingAmount > (locked?.currentSyiling ?? 0)) throw invalid()
+      const tokens = Math.floor(syilingAmount / rate)
+      const debit = tokens * rate
       const out = await this.wallet.debit(
-        { userId: viewer.userId, amount: syilingAmount, source: 'token_conversion', description, type: 'convert', tokens, isTest: viewer.isTest, ...key },
+        {
+          userId: viewer.userId,
+          amount: debit,
+          source: 'token_conversion',
+          description: `Tukar ${String(debit)} syiling → ${String(tokens)} token`,
+          type: 'convert',
+          tokens,
+          isTest: viewer.isTest,
+          sourceId: null,
+          noKeyReason: 'a conversion has no natural key: the client repeats legitimately, and clientUuid is the replay key',
+          ...(clientUuid === null ? {} : { clientUuid }),
+        },
         { tx },
       )
-      return { syilingDebited: syilingAmount, tokensCredited: tokens, currentSyiling: out.currentSyiling, tokenBalance: out.tokenBalance, transactionId: out.entryId }
+      return { syilingDebited: debit, tokensCredited: tokens, currentSyiling: out.currentSyiling, tokenBalance: out.tokenBalance, transactionId: out.entryId }
     })
   }
 
@@ -518,7 +555,7 @@ export class GamificationService {
   /** The progress (0..target) of `c` on the Malaysia day `day`, from the same facts as `challengesToday` (BR-M14-12). */
   async challengeProgressOn(db: Db, userId: string, day: string, c: ChallengeRecord): Promise<number> {
     const [streak, facts] = await Promise.all([this.repo.streakOf(db, userId), this.ports.practiceFacts.dayFacts(userId, day)])
-    return progressOf(c, dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0))
+    return progressOf(c, dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0, await this.comboOf(userId, day, [c])))
   }
 
   /**
@@ -537,7 +574,7 @@ export class GamificationService {
         this.repo.streakOf(db, userId),
         this.ports.practiceFacts.dayFacts(userId, day),
       ])
-      const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0)
+      const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0, await this.comboOf(userId, day, active))
       const out = { completedIds: [] as string[] }
       for (const c of active) {
         if (done.has(c.id) || progressOf(c, metrics) < c.targetValue) continue
@@ -552,10 +589,11 @@ export class GamificationService {
    * XR-M14-02(a) / BR-M14-14 / FR-M14-64 (called by the login hook after a STUDENT's successful password login; the
    * caller filters the role, so an admin or teacher login never reaches it): moves the streak (a qualifying event;
    * the same Malaysia day changes nothing) and, on the FIRST login of the Malaysia day, credits +2 syiling
-   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`). Idempotent: the day mark
+   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`), then evaluates the streak badges once (savepoint, never
+   * fails the login). Idempotent: the day mark
    * is unique per (user, day), so a second login the same day writes nothing, and the ledger key stops a replay.
    * A complimentary student (`coinsEnabled` false) gets the streak but no row. The streak is locked before the wallet
-   * (BE-11 lock order). Never `is_test`: a login is not Mod Pelajar.
+   * (BE-11 lock order).
    */
   async onLogin(userId: string, opts: { tx?: TxClient } = {}): Promise<{ firstToday: boolean; credited: number; streak: number }> {
     return this.run(opts.tx, async (db) => {
@@ -564,12 +602,21 @@ export class GamificationService {
       // day), so the streak day and the daily mark day always agree, also when the call straddles midnight.
       const streak = await this.streaks.touch(userId, { tx })
       const mark = await this.streaks.markDailyLogin(userId, { tx })
-      if (!mark.firstToday || !(await this.coinsEnabled(userId, { tx }))) return { firstToday: mark.firstToday, credited: 0, streak: streak.current }
-      await this.wallet.credit(
-        { userId, amount: DAILY_LOGIN_REWARD, source: 'daily_login', sourceId: `daily_login:${mark.day}`, description: DAILY_LOGIN_DESCRIPTION, isTest: false },
-        { tx },
-      )
-      return { firstToday: true, credited: DAILY_LOGIN_REWARD, streak: streak.current }
+      // Only the FIRST login of the Malaysia day can have moved the streak or the lifetime total (FR-GM-25.2, "daily login"): a second
+      // login the same day evaluates nothing. A bonus, so it runs in a savepoint and never fails the login.
+      if (!mark.firstToday) return { firstToday: false, credited: 0, streak: streak.current }
+      let credited = 0
+      if (await this.coinsEnabled(userId, { tx })) {
+        await this.wallet.credit(
+          { userId, amount: DAILY_LOGIN_REWARD, source: 'daily_login', sourceId: `daily_login:${mark.day}`, description: DAILY_LOGIN_DESCRIPTION, isTest: false },
+          { tx },
+        )
+        credited = DAILY_LOGIN_REWARD
+      }
+      // `isTest: false` always: a login is never Mod Pelajar (the hook fires on password logins only), so no test unlock is written here.
+      // Only the streak badges: the login moved the streak and nothing else, and a full pass would pay the syiling-total badge the seeded pupil already qualifies for (XL3-30: a form login reads 372).
+      await this.evaluateAchievementsSafely(userId, { tx, isTest: false, kinds: ['streak'] })
+      return { firstToday: true, credited, streak: streak.current }
     })
   }
 
@@ -606,9 +653,9 @@ export class GamificationService {
    * for the achievements after it in the same pass (the mock engine's live counters). Only a `student` account is evaluated.
    * Returns the ids unlocked by THIS call.
    */
-  async evaluateAchievements(userId: string, opts: EntryOptions): Promise<{ unlockedIds: string[]; syiling: number; xp: number }> {
+  async evaluateAchievements(userId: string, opts: EntryOptions): Promise<AchievementEvaluation> {
     return this.run(opts.tx, async (db) => {
-      const out = { unlockedIds: [] as string[], syiling: 0, xp: 0 }
+      const out: AchievementEvaluation = { unlockedIds: [], unlocked: [], syiling: 0, xp: 0 }
       // BR-M14-16 is the pupil's: a teacher or an admin (also in Mod Pelajar, where the ACTOR keeps their own role) unlocks and earns nothing.
       if (!(await this.repo.isStudent(db, userId))) return out
       const [catalogue, unlocks] = await Promise.all([this.repo.achievements(db), this.repo.unlocksOf(db, userId)])
@@ -649,6 +696,9 @@ export class GamificationService {
           // BR-M14-16 "when recorded": the practice submit does not store per-answer times yet, so this stays 0 (as the mock engine).
           case 'fast_answers':
             return 0
+          // FR-GM-25.4: won real Battles only (no robot, no test, no forfeit win).
+          case 'battle_wins':
+            return count('battle_wins', () => this.repo.wonRealBattles(db, userId))
           case 'referrals':
             return count('referrals', () => this.repo.rewardedReferralCount(db, userId))
           case 'unlocked':
@@ -668,17 +718,49 @@ export class GamificationService {
       }
       for (const a of catalogue) {
         if (unlocks.has(a.id) || a.criterionKind === null || a.criterionMin === null) continue
+        if (opts.kinds && !opts.kinds.includes(a.criterionKind)) continue
         if ((await metric(a)) < a.criterionMin) continue
         const r = await this.unlockRecord(db, userId, a, { ...opts, tx: db as TxClient, at })
         if (!r.unlocked) continue
         unlocks.set(a.id, at)
         memo.delete('lifetime_syiling')
         out.unlockedIds.push(a.id)
+        out.unlocked.push({ code: a.id, name: a.name })
         out.syiling += r.syiling
         out.xp += r.xp
       }
       return out
     })
+  }
+
+  /**
+   * `evaluateAchievements` for a trigger that must never fail its caller (box opening, challenge claim, referral): the
+   * evaluation runs in a SAVEPOINT when the caller's transaction is given (rolled back to it on an error, the error NAME
+   * logged, no user data), or in its own transaction otherwise (a failure rolls that one back). On any error the answer is
+   * "nothing unlocked".
+   */
+  async evaluateAchievementsSafely(userId: string, opts: EntryOptions): Promise<AchievementEvaluation> {
+    const none: AchievementEvaluation = { unlockedIds: [], unlocked: [], syiling: 0, xp: 0 }
+    const { tx } = opts
+    if (!tx) {
+      try {
+        return await this.evaluateAchievements(userId, opts)
+      } catch (err) {
+        this.logger.warn(`achievement evaluation skipped: ${err instanceof Error ? err.name : 'unknown error'}`)
+        return none
+      }
+    }
+    await tx.$executeRaw`SAVEPOINT achievements_safe`
+    try {
+      const out = await this.evaluateAchievements(userId, opts)
+      await tx.$executeRaw`RELEASE SAVEPOINT achievements_safe`
+      return out
+    } catch (err) {
+      this.logger.warn(`achievement evaluation skipped: ${err instanceof Error ? err.name : 'unknown error'}`)
+      await tx.$executeRaw`ROLLBACK TO SAVEPOINT achievements_safe`
+      await tx.$executeRaw`RELEASE SAVEPOINT achievements_safe`
+      return none
+    }
   }
 
   /**
@@ -780,6 +862,12 @@ export class GamificationService {
     return firstResult(event)
   }
 
+  /** The reward event of a session and pupil as `recordGameReward` returned it (DM-87); null when none exists. */
+  async firstGameResult(sessionId: string, userId: string): Promise<GameResultOutcome | null> {
+    const e = await this.repo.gameRewardEvent(this.repo.handle(), sessionId, userId)
+    return e ? { coinsCredited: e.syiling, xpAdded: e.xp, cappedReason: e.cappedReason } : null
+  }
+
   /**
    * XR-M14-02 / GAME-24 (called by registration): a known code of ANOTHER existing pupil, given to a NEW pupil not
    * referred before, stores a referral. The amounts are the settings `referral_referrer_syiling` and
@@ -820,6 +908,8 @@ export class GamificationService {
           { tx },
         )
       }
+      // FR-GM-25.2 "Sahabat Belajar": the referrer's count just changed. A bonus, so it never fails the sign-up (savepoint).
+      await this.evaluateAchievementsSafely(referrerId, { tx, isTest: opts.isTest, at })
       return { applied: true }
     })
   }

@@ -43,6 +43,8 @@ services:
     environment:
       # Demo accounts with a published password: dev and e2e only. The production base job never sets this.
       ALLOW_DEMO_SEED: 'true'
+      # E2E/CI stack: the demo seed keeps the fixed SEED_NOW calendar (ADR-0006 amendment 3), so e2e data never moves.
+      SEED_CLOCK: 'fixed'
 
   db:
     # E2E/CI only: the trial-exhausted spec resets a pupil with psql from the runner (E2E_DATABASE_URL), loopback only.

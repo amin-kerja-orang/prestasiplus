@@ -1,0 +1,874 @@
+{
+  "subject": "Sains Komputer",
+  "subjectCode": null,
+  "levels": [
+    "T1",
+    "T2",
+    "T3"
+  ],
+  "language": "ms",
+  "source": "V3 chapter data (apps/api/prisma/seed/curriculum-data/chapters.json)",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)"
+  },
+  "structureNote": "T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
+  "manualCorrections": [],
+  "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "KONSEP ASAS PEMIKIRAN KOMPUTASIONAL",
+      "titlePrinted": "KONSEP ASAS PEMIKIRAN KOMPUTASIONAL",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "PERWAKILAN DATA",
+      "titlePrinted": "PERWAKILAN DATA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "ALGORITMA",
+      "titlePrinted": "ALGORITMA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "KOD ARAHAN",
+      "titlePrinted": "KOD ARAHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Perwakilan Data",
+      "titlePrinted": "PERWAKILAN DATA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Algoritma",
+      "titlePrinted": "ALGORITMA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Kod Arahan",
+      "titlePrinted": "KOD ARAHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "1.1 Sistem Nombor Perlapanan",
+      "titlePrinted": "1.1 SISTEM NOMBOR PERLAPANAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "1.1.1 Perbezaan antara nombor perlapanan dan nombor perpuluhan",
+      "titlePrinted": "1.1.1 PERBEZAAN ANTARA NOMBOR PERLAPANAN DAN NOMBOR PERPULUHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "6.0",
+      "title": "1.1.2 (i) Penukaran nombor perpuluhan kepada nombor perlapanan",
+      "titlePrinted": "1.1.2 (I) PENUKARAN NOMBOR PERPULUHAN KEPADA NOMBOR PERLAPANAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "7.0",
+      "title": "1.1.2 (ii) Penukaran nombor perlapanan kepada nombor perpuluhan",
+      "titlePrinted": "1.1.2 (II) PENUKARAN NOMBOR PERLAPANAN KEPADA NOMBOR PERPULUHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "8.0",
+      "title": "1.1.2 (iii) Penukaran nombor perlapanan kepada nombor perduaan",
+      "titlePrinted": "1.1.2 (III) PENUKARAN NOMBOR PERLAPANAN KEPADA NOMBOR PERDUAAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "9.0",
+      "title": "1.1.2 (iv) Penukaran nombor perduaan kepada nombor perlapanan",
+      "titlePrinted": "1.1.2 (IV) PENUKARAN NOMBOR PERDUAAN KEPADA NOMBOR PERLAPANAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "10.0",
+      "title": "1.1.3 Penukaran pengekodan ASCII kepada nombor perlapanan",
+      "titlePrinted": "1.1.3 PENUKARAN PENGEKODAN ASCII KEPADA NOMBOR PERLAPANAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "11.0",
+      "title": "1.1.4 Hubung kait antara nombor perlapanan dengan kod ASCII dalam",
+      "titlePrinted": "1.1.4 HUBUNG KAIT ANTARA NOMBOR PERLAPANAN DENGAN KOD ASCII DALAM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "12.0",
+      "title": "Praktis 1.1",
+      "titlePrinted": "PRAKTIS 1.1",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "13.0",
+      "title": "1.2 Sistem Nombor Perenambelasan",
+      "titlePrinted": "1.2 SISTEM NOMBOR PERENAMBELASAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "14.0",
+      "title": "1.2.1 Perbezaan antara nombor perenambelasan dan nombor perpuluhan",
+      "titlePrinted": "1.2.1 PERBEZAAN ANTARA NOMBOR PERENAMBELASAN DAN NOMBOR PERPULUHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "15.0",
+      "title": "1.2.2 (i) Penukaran nombor perpuluhan kepada nombor perenambelasan",
+      "titlePrinted": "1.2.2 (I) PENUKARAN NOMBOR PERPULUHAN KEPADA NOMBOR PERENAMBELASAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "16.0",
+      "title": "1.2.2 (ii) Penukaran nombor perenambelasan kepada nombor perpuluhan",
+      "titlePrinted": "1.2.2 (II) PENUKARAN NOMBOR PERENAMBELASAN KEPADA NOMBOR PERPULUHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "17.0",
+      "title": "1.2.2 (iii) Penukaran nombor perenambelasan kepada nombor perduaan",
+      "titlePrinted": "1.2.2 (III) PENUKARAN NOMBOR PERENAMBELASAN KEPADA NOMBOR PERDUAAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "18.0",
+      "title": "1.2.2 (iv) Penukaran nombor perduaan kepada nombor perenambelasan",
+      "titlePrinted": "1.2.2 (IV) PENUKARAN NOMBOR PERDUAAN KEPADA NOMBOR PERENAMBELASAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "19.0",
+      "title": "1.2.3 Penukaran pengekodan ASCII kepada nombor perenambelasan",
+      "titlePrinted": "1.2.3 PENUKARAN PENGEKODAN ASCII KEPADA NOMBOR PERENAMBELASAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "20.0",
+      "title": "1.2.4 Hubung kait nombor perenambelasan dengan kod ASCII dalam",
+      "titlePrinted": "1.2.4 HUBUNG KAIT NOMBOR PERENAMBELASAN DENGAN KOD ASCII DALAM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "21.0",
+      "title": "Praktis 1.2",
+      "titlePrinted": "PRAKTIS 1.2",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "22.0",
+      "title": "Peta Konsep Bab 1",
+      "titlePrinted": "PETA KONSEP BAB 1",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "23.0",
+      "title": "Senarai Semak Bab 1",
+      "titlePrinted": "SENARAI SEMAK BAB 1",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "24.0",
+      "title": "Pentaksiran Bab 1",
+      "titlePrinted": "PENTAKSIRAN BAB 1",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "25.0",
+      "title": "2.1 Pembangunan Algoritma",
+      "titlePrinted": "2.1 PEMBANGUNAN ALGORITMA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "26.0",
+      "title": "2.1.1 (i) Struktur kawalan pilihan bersarang",
+      "titlePrinted": "2.1.1 (I) STRUKTUR KAWALAN PILIHAN BERSARANG",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "27.0",
+      "title": "2.1.1 (ii) Struktur kawalan ulangan",
+      "titlePrinted": "2.1.1 (II) STRUKTUR KAWALAN ULANGAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "28.0",
+      "title": "2.1.2 Mengesan dan membaiki ralat yang terdapat dalam pseudokod dan",
+      "titlePrinted": "2.1.2 MENGESAN DAN MEMBAIKI RALAT YANG TERDAPAT DALAM PSEUDOKOD DAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "29.0",
+      "title": "2.1.3 Menggunakan pseudokod dan carta alir dengan menggabungkan",
+      "titlePrinted": "2.1.3 MENGGUNAKAN PSEUDOKOD DAN CARTA ALIR DENGAN MENGGABUNGKAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "30.0",
+      "title": "Praktis 2.1",
+      "titlePrinted": "PRAKTIS 2.1",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "31.0",
+      "title": "Peta Konsep Bab 2",
+      "titlePrinted": "PETA KONSEP BAB 2",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "32.0",
+      "title": "Senarai Semak Bab 2",
+      "titlePrinted": "SENARAI SEMAK BAB 2",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "33.0",
+      "title": "Pentaksiran Bab 2",
+      "titlePrinted": "PENTAKSIRAN BAB 2",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "34.0",
+      "title": "3.1 Persekitaran Kod Arahan",
+      "titlePrinted": "3.1 PERSEKITARAN KOD ARAHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "35.0",
+      "title": "3.1.1 Jenis data dalam segmen kod",
+      "titlePrinted": "3.1.1 JENIS DATA DALAM SEGMEN KOD",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "36.0",
+      "title": "3.1.2 Perbezaan antara pemboleh ubah dan pemalar dalam segmen kod",
+      "titlePrinted": "3.1.2 PERBEZAAN ANTARA PEMBOLEH UBAH DAN PEMALAR DALAM SEGMEN KOD",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "37.0",
+      "title": "3.1.3 (i) Menghasilkan segmen kod menggunakan fungsi input dan fungsi output",
+      "titlePrinted": "3.1.3 (I) MENGHASILKAN SEGMEN KOD MENGGUNAKAN FUNGSI INPUT DAN FUNGSI OUTPUT",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "38.0",
+      "title": "3.1.3 (ii) Operator perbandingan",
+      "titlePrinted": "3.1.3 (II) OPERATOR PERBANDINGAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "39.0",
+      "title": "3.1.3 (iii) Operator logik",
+      "titlePrinted": "3.1.3 (III) OPERATOR LOGIK",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "40.0",
+      "title": "3.1.4 Mengesan dan membaiki ralat pada segmen kod dalam",
+      "titlePrinted": "3.1.4 MENGESAN DAN MEMBAIKI RALAT PADA SEGMEN KOD DALAM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "41.0",
+      "title": "3.1.5 Menggunakan gabungan jenis data, pemboleh ubah, pemalar, dan",
+      "titlePrinted": "3.1.5 MENGGUNAKAN GABUNGAN JENIS DATA, PEMBOLEH UBAH, PEMALAR, DAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "42.0",
+      "title": "Praktis 3.1",
+      "titlePrinted": "PRAKTIS 3.1",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "43.0",
+      "title": "3.2 Struktur Kod Arahan",
+      "titlePrinted": "3.2 STRUKTUR KOD ARAHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "44.0",
+      "title": "3.2.1 (i) Struktur kawalan jujukan dalam penyelesaian masalah",
+      "titlePrinted": "3.2.1 (I) STRUKTUR KAWALAN JUJUKAN DALAM PENYELESAIAN MASALAH",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "45.0",
+      "title": "3.2.1 (ii) Struktur kawalan pilihan dalam penyelesaian masalah",
+      "titlePrinted": "3.2.1 (II) STRUKTUR KAWALAN PILIHAN DALAM PENYELESAIAN MASALAH",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "46.0",
+      "title": "3.2.1 (iii) Struktur kawalan pilihan bersarang dalam penyelesaian masalah",
+      "titlePrinted": "3.2.1 (III) STRUKTUR KAWALAN PILIHAN BERSARANG DALAM PENYELESAIAN MASALAH",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "47.0",
+      "title": "3.2.1 (iv) Struktur kawalan ulangan dalam penyelesaian masalah",
+      "titlePrinted": "3.2.1 (IV) STRUKTUR KAWALAN ULANGAN DALAM PENYELESAIAN MASALAH",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "48.0",
+      "title": "3.2.2 Menguji atur cara dan membaiki ralat pada kod arahan yang dihasilkan",
+      "titlePrinted": "3.2.2 MENGUJI ATUR CARA DAN MEMBAIKI RALAT PADA KOD ARAHAN YANG DIHASILKAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "49.0",
+      "title": "3.2.3 Atur cara yang melibatkan gabungan pelbagai struktur kawalan",
+      "titlePrinted": "3.2.3 ATUR CARA YANG MELIBATKAN GABUNGAN PELBAGAI STRUKTUR KAWALAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "50.0",
+      "title": "Praktis 3.2",
+      "titlePrinted": "PRAKTIS 3.2",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "51.0",
+      "title": "Peta Konsep Bab 3",
+      "titlePrinted": "PETA KONSEP BAB 3",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "52.0",
+      "title": "Senarai Semak Bab 3",
+      "titlePrinted": "SENARAI SEMAK BAB 3",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "53.0",
+      "title": "Pentaksiran Bab 3",
+      "titlePrinted": "PENTAKSIRAN BAB 3",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "54.0",
+      "title": "LAMPIRAN",
+      "titlePrinted": "LAMPIRAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "55.0",
+      "title": "INDEKS",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "56.0",
+      "title": "lapan pilihan digit, iaitu 0, 1, 2, 3, 4, 5, 6 dan",
+      "titlePrinted": "LAPAN PILIHAN DIGIT, IAITU 0, 1, 2, 3, 4, 5, 6 DAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "57.0",
+      "title": "BAB",
+      "titlePrinted": "BAB",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "Konsep Asas Pemikiran Komputasional",
+      "titlePrinted": "KONSEP ASAS PEMIKIRAN KOMPUTASIONAL",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "Perwakilan Data",
+      "titlePrinted": "PERWAKILAN DATA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "1.1 Pembangunan Atur Cara",
+      "titlePrinted": "1.1 PEMBANGUNAN ATUR CARA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "Algoritma",
+      "titlePrinted": "ALGORITMA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "6.0",
+      "title": "1.1.1 Menggunakan Konsep Pemikiran Komputasional dalam Pembangunan Atur Cara",
+      "titlePrinted": "1.1.1 MENGGUNAKAN KONSEP PEMIKIRAN KOMPUTASIONAL DALAM PEMBANGUNAN ATUR CARA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "Kod Arahan",
+      "titlePrinted": "KOD ARAHAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "7.0",
+      "title": "Pembangunan Atur Cara",
+      "titlePrinted": "PEMBANGUNAN ATUR CARA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "8.0",
+      "title": "Merujuk Fasa Pembangunan Atur Cara",
+      "titlePrinted": "MERUJUK FASA PEMBANGUNAN ATUR CARA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "9.0",
+      "title": "Uji Kendiri 1.1",
+      "titlePrinted": "UJI KENDIRI 1.1",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "10.0",
+      "title": "Rumusan Grafik 1",
+      "titlePrinted": "RUMUSAN GRAFIK 1",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "11.0",
+      "title": "Semak Semula 1",
+      "titlePrinted": "SEMAK SEMULA 1",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "12.0",
+      "title": "Pentaksiran 1",
+      "titlePrinted": "PENTAKSIRAN 1",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "13.0",
+      "title": "2.1 Kriptografi dalam Keselamatan Data",
+      "titlePrinted": "2.1 KRIPTOGRAFI DALAM KESELAMATAN DATA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "14.0",
+      "title": "2.1.1 Kriptografi dalam Pengkomputeran",
+      "titlePrinted": "2.1.1 KRIPTOGRAFI DALAM PENGKOMPUTERAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "15.0",
+      "title": "2.1.2 Proses Sifer (Cipher)",
+      "titlePrinted": "2.1.2 PROSES SIFER (CIPHER)",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "16.0",
+      "title": "2.1.3 Menghasil dan Menterjemah Mesej Menggunakan Kaedah Sifer",
+      "titlePrinted": "2.1.3 MENGHASIL DAN MENTERJEMAH MESEJ MENGGUNAKAN KAEDAH SIFER",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "17.0",
+      "title": "2.1.4 Membanding Kaedah Sifer",
+      "titlePrinted": "2.1.4 MEMBANDING KAEDAH SIFER",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "18.0",
+      "title": "2.1.5 Pemilihan Kaedah Sifer Terbaik",
+      "titlePrinted": "2.1.5 PEMILIHAN KAEDAH SIFER TERBAIK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "19.0",
+      "title": "2.1.6 Kaedah Sifer dalam Penyelesaian Masalah",
+      "titlePrinted": "2.1.6 KAEDAH SIFER DALAM PENYELESAIAN MASALAH",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "20.0",
+      "title": "Uji Kendiri 2.1",
+      "titlePrinted": "UJI KENDIRI 2.1",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "21.0",
+      "title": "Rumusan Grafik 2",
+      "titlePrinted": "RUMUSAN GRAFIK 2",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "22.0",
+      "title": "Semak Semula 2",
+      "titlePrinted": "SEMAK SEMULA 2",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "23.0",
+      "title": "Pentaksiran 2",
+      "titlePrinted": "PENTAKSIRAN 2",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "24.0",
+      "title": "3.1 Pembangunan Algoritma",
+      "titlePrinted": "3.1 PEMBANGUNAN ALGORITMA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "25.0",
+      "title": "3.1.1 Ciri-ciri Search dan Sort",
+      "titlePrinted": "3.1.1 CIRI-CIRI SEARCH DAN SORT",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "26.0",
+      "title": "3.1.2 (i) Menulis Pseudokod dan Melukis Carta Alir bagi Linear Search",
+      "titlePrinted": "3.1.2 (I) MENULIS PSEUDOKOD DAN MELUKIS CARTA ALIR BAGI LINEAR SEARCH",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "27.0",
+      "title": "3.1.2 (ii) Menulis Pseudokod dan Melukis Carta Alir bagi Binary Search",
+      "titlePrinted": "3.1.2 (II) MENULIS PSEUDOKOD DAN MELUKIS CARTA ALIR BAGI BINARY SEARCH",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "28.0",
+      "title": "3.1.3 (i) Menulis Pseudokod dan Melukis Carta Alir bagi Bubble Sort",
+      "titlePrinted": "3.1.3 (I) MENULIS PSEUDOKOD DAN MELUKIS CARTA ALIR BAGI BUBBLE SORT",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "29.0",
+      "title": "3.1.3 (ii) Menulis Pseudokod dan Melukis Carta Alir bagi Bucket Sort",
+      "titlePrinted": "3.1.3 (II) MENULIS PSEUDOKOD DAN MELUKIS CARTA ALIR BAGI BUCKET SORT",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "30.0",
+      "title": "3.1.4 Mengesan dan Membaiki Ralat dalam Pseudokod dan Carta Alir",
+      "titlePrinted": "3.1.4 MENGESAN DAN MEMBAIKI RALAT DALAM PSEUDOKOD DAN CARTA ALIR",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "31.0",
+      "title": "3.1.5 Pengecaman Corak dalam Algoritma Search dan Sort",
+      "titlePrinted": "3.1.5 PENGECAMAN CORAK DALAM ALGORITMA SEARCH DAN SORT",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "32.0",
+      "title": "3.1.6 Algoritma bagi Gabungan Search dan Sort",
+      "titlePrinted": "3.1.6 ALGORITMA BAGI GABUNGAN SEARCH DAN SORT",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "33.0",
+      "title": "3.1.7 Algoritma bagi Gabungan Search atau Sort",
+      "titlePrinted": "3.1.7 ALGORITMA BAGI GABUNGAN SEARCH ATAU SORT",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "34.0",
+      "title": "Uji Kendiri 3.1",
+      "titlePrinted": "UJI KENDIRI 3.1",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "35.0",
+      "title": "Rumusan Grafik 3",
+      "titlePrinted": "RUMUSAN GRAFIK 3",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "36.0",
+      "title": "Semak Semula 3",
+      "titlePrinted": "SEMAK SEMULA 3",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "37.0",
+      "title": "Pentaksiran 3",
+      "titlePrinted": "PENTAKSIRAN 3",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "38.0",
+      "title": "4.1 Pangkalan Data dan SQL",
+      "titlePrinted": "4.1 PANGKALAN DATA DAN SQL",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "39.0",
+      "title": "4.1.1 Maksud dan Penggunaan Pangkalan Data dan Structured Query Language (SQL)",
+      "titlePrinted": "4.1.1 MAKSUD DAN PENGGUNAAN PANGKALAN DATA DAN STRUCTURED QUERY LANGUAGE (SQL)",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "40.0",
+      "title": "4.1.2 Entiti dan Atribut",
+      "titlePrinted": "4.1.2 ENTITI DAN ATRIBUT",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "41.0",
+      "title": "4.1.3 Kekunci Primer dan Kekunci Asing",
+      "titlePrinted": "4.1.3 KEKUNCI PRIMER DAN KEKUNCI ASING",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "42.0",
+      "title": "4.1.4 Kekardinalan (Cardinality) antara Entiti dalam Hubungan",
+      "titlePrinted": "4.1.4 KEKARDINALAN (CARDINALITY) ANTARA ENTITI DALAM HUBUNGAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "43.0",
+      "title": "4.1.5 Membina Pangkalan Data",
+      "titlePrinted": "4.1.5 MEMBINA PANGKALAN DATA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "44.0",
+      "title": "4.1.6 Menghasilkan Borang dan Memasukkan Data Melalui Borang",
+      "titlePrinted": "4.1.6 MENGHASILKAN BORANG DAN MEMASUKKAN DATA MELALUI BORANG",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "45.0",
+      "title": "4.1.7 Penggunaan Pernyataan-pernyataan SQL",
+      "titlePrinted": "4.1.7 PENGGUNAAN PERNYATAAN-PERNYATAAN SQL",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "46.0",
+      "title": "4.1.8 Penggunaan Pernyataan-pernyataan SQL yang Melibatkan Ungkapan Boolean",
+      "titlePrinted": "4.1.8 PENGGUNAAN PERNYATAAN-PERNYATAAN SQL YANG MELIBATKAN UNGKAPAN BOOLEAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "47.0",
+      "title": "4.1.9 Menjana Laporan Berdasarkan Hasil Pertanyaan (Query)",
+      "titlePrinted": "4.1.9 MENJANA LAPORAN BERDASARKAN HASIL PERTANYAAN (QUERY)",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "48.0",
+      "title": "Uji Kendiri 4.1",
+      "titlePrinted": "UJI KENDIRI 4.1",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "49.0",
+      "title": "4.2 Struktur Kod Arahan",
+      "titlePrinted": "4.2 STRUKTUR KOD ARAHAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "50.0",
+      "title": "4.2.1 Fungsi Function dan Procedure dalam Atur Cara",
+      "titlePrinted": "4.2.1 FUNGSI FUNCTION DAN PROCEDURE DALAM ATUR CARA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "51.0",
+      "title": "4.2.2 Penggunaan Pernyataan Function",
+      "titlePrinted": "4.2.2 PENGGUNAAN PERNYATAAN FUNCTION",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "52.0",
+      "title": "4.2.3 Menulis Pernyataan Function dan Procedure",
+      "titlePrinted": "4.2.3 MENULIS PERNYATAAN FUNCTION DAN PROCEDURE",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "53.0",
+      "title": "4.2.4 Menulis Atur Cara yang Melibatkan Function dan Procedure",
+      "titlePrinted": "4.2.4 MENULIS ATUR CARA YANG MELIBATKAN FUNCTION DAN PROCEDURE",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "54.0",
+      "title": "4.2.5 Menguji Atur Cara dan Membaiki Ralat",
+      "titlePrinted": "4.2.5 MENGUJI ATUR CARA DAN MEMBAIKI RALAT",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "55.0",
+      "title": "Menyelesaikan Masalah",
+      "titlePrinted": "MENYELESAIKAN MASALAH",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "56.0",
+      "title": "Uji Kendiri 4.2",
+      "titlePrinted": "UJI KENDIRI 4.2",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "57.0",
+      "title": "Rumusan Grafik 4",
+      "titlePrinted": "RUMUSAN GRAFIK 4",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "58.0",
+      "title": "Semak Semula 4",
+      "titlePrinted": "SEMAK SEMULA 4",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "59.0",
+      "title": "Pentaksiran 4",
+      "titlePrinted": "PENTAKSIRAN 4",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "60.0",
+      "title": "INDEKS",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "61.0",
+      "title": "Bab",
+      "titlePrinted": "BAB",
+      "standards": []
+    }
+  ]
+}

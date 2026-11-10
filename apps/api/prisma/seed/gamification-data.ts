@@ -11,12 +11,18 @@ export const CHALLENGE_ROWS = [
   { title: 'Si Tepat', description: 'Dapat 80% ketepatan dalam mana-mana kuiz', icon: '🎯', challengeType: 'accuracy', metric: 'best_accuracy', targetValue: 80, rewardSyiling: 20, rewardXp: 15, difficulty: 'medium', sortOrder: 0, isActive: true },
   { title: 'Penjelajah Topik', description: 'Latih 3 topik berbeza hari ini', icon: '🗺️', challengeType: 'topic_variety', metric: 'chapters', targetValue: 3, rewardSyiling: 25, rewardXp: 20, difficulty: 'medium', sortOrder: 0, isActive: true },
   { title: 'Kilat Matematik', description: 'Jawab 10 soalan dengan betul', icon: '⚡', challengeType: 'quiz_count', metric: 'correct', targetValue: 10, rewardSyiling: 30, rewardXp: 25, difficulty: 'hard', sortOrder: 0, isActive: true },
-  { title: 'Mula Hari Ini', description: 'Selesaikan 1 sesi latihan hari ini', icon: '🌟', challengeType: 'quiz_count', metric: 'sessions', targetValue: 1, rewardSyiling: 10, rewardXp: 5, difficulty: 'easy', sortOrder: 5, isActive: true },
-  { title: 'Jawab 5 Betul', description: 'Jawab 5 soalan dengan betul', icon: '✅', challengeType: 'quiz_count', metric: 'correct', targetValue: 5, rewardSyiling: 12, rewardXp: 8, difficulty: 'easy', sortOrder: 6, isActive: true },
-  { title: 'Latihan 10 Minit', description: 'Berlatih sekurang-kurangnya 10 minit hari ini', icon: '⏱️', challengeType: 'time_spent', metric: 'minutes', targetValue: 10, rewardSyiling: 20, rewardXp: 15, difficulty: 'medium', sortOrder: 7, isActive: true },
-  { title: 'Kombo 2 Hari', description: 'Kekalkan kombo latihan selama 2 hari berturut-turut', icon: '🔥', challengeType: 'streak', metric: 'streak', targetValue: 2, rewardSyiling: 25, rewardXp: 20, difficulty: 'medium', sortOrder: 8, isActive: true },
-  { title: 'Ketepatan 90%', description: 'Capai ketepatan 90% dalam sesi latihan', icon: '🎯', challengeType: 'accuracy', metric: 'best_accuracy', targetValue: 90, rewardSyiling: 35, rewardXp: 30, difficulty: 'hard', sortOrder: 9, isActive: true },
-  { title: 'Cabaran Kilat', description: 'Jawab 20 soalan betul dalam satu sesi', icon: '⚡', challengeType: 'quiz_count', metric: 'best_correct_in_session', targetValue: 20, rewardSyiling: 40, rewardXp: 35, difficulty: 'hard', sortOrder: 10, isActive: true },
+  { title: 'Mula Hari Ini', description: 'Selesaikan 1 sesi latihan hari ini', icon: '🌟', challengeType: 'quiz_count', metric: 'sessions', targetValue: 1, rewardSyiling: 10, rewardXp: 5, difficulty: 'easy', sortOrder: 10, isActive: true },
+  { title: 'Jawab 5 Betul', description: 'Jawab 5 soalan dengan betul', icon: '✅', challengeType: 'quiz_count', metric: 'correct', targetValue: 5, rewardSyiling: 12, rewardXp: 8, difficulty: 'easy', sortOrder: 11, isActive: true },
+  { title: 'Latihan 10 Minit', description: 'Berlatih sekurang-kurangnya 10 minit hari ini', icon: '⏱️', challengeType: 'time_spent', metric: 'minutes', targetValue: 10, rewardSyiling: 20, rewardXp: 15, difficulty: 'medium', sortOrder: 12, isActive: true },
+  { title: 'Kombo 2 Hari', description: 'Kekalkan kombo latihan selama 2 hari berturut-turut', icon: '🔥', challengeType: 'streak', metric: 'streak', targetValue: 2, rewardSyiling: 25, rewardXp: 20, difficulty: 'medium', sortOrder: 13, isActive: true },
+  { title: 'Ketepatan 90%', description: 'Capai ketepatan 90% dalam sesi latihan', icon: '🎯', challengeType: 'accuracy', metric: 'best_accuracy', targetValue: 90, rewardSyiling: 35, rewardXp: 30, difficulty: 'hard', sortOrder: 14, isActive: true },
+  { title: 'Cabaran Kilat', description: 'Jawab 20 soalan betul dalam satu sesi', icon: '⚡', challengeType: 'quiz_count', metric: 'best_correct_in_session', targetValue: 20, rewardSyiling: 40, rewardXp: 35, difficulty: 'hard', sortOrder: 15, isActive: true },
+  { title: 'Selesai 5 Kuiz', description: 'Lengkapkan 5 kuiz hari ini', icon: '📝', challengeType: 'quiz_count', metric: 'sessions', targetValue: 5, rewardSyiling: 50, rewardXp: 100, difficulty: 'medium', sortOrder: 5, isActive: true },
+  { title: 'Ketepatan 80%', description: 'Capai ketepatan 80% dalam latihan', icon: '🎯', challengeType: 'accuracy', metric: 'best_accuracy', targetValue: 80, rewardSyiling: 80, rewardXp: 150, difficulty: 'medium', sortOrder: 6, isActive: true },
+  { title: '3 Topik Berbeza', description: 'Cuba 3 topik berlainan', icon: '🗺️', challengeType: 'topic_variety', metric: 'chapters', targetValue: 3, rewardSyiling: 60, rewardXp: 120, difficulty: 'medium', sortOrder: 7, isActive: true },
+  { title: 'Belajar 15 Minit', description: 'Habiskan 15 minit latihan', icon: '⏱️', challengeType: 'time_spent', metric: 'minutes', targetValue: 15, rewardSyiling: 40, rewardXp: 80, difficulty: 'medium', sortOrder: 9, isActive: true },
+  // S7-T04 part 14: V2 position 8. Difficulty `medium` follows ruling 19 and Part 6; only the icon is unobserved (D9-style deviation, DOC DEFECT 19).
+  { title: 'Kombo 10', description: 'Capai kombo 10 jawapan betul', icon: '🔥', challengeType: 'combo', metric: 'best_combo', targetValue: 10, rewardSyiling: 120, rewardXp: 200, difficulty: 'medium', sortOrder: 8, isActive: true },
 ] as const
 
 export const ACHIEVEMENT_ROWS = [
@@ -45,6 +51,7 @@ export const ACHIEVEMENT_ROWS = [
   { name: 'Raja Syiling', description: 'Kumpul 5,000 syiling sepanjang masa', icon: '👑', rarity: 'legendary', rewardSyiling: 500, rewardXp: 250, criterionKind: 'lifetime_syiling', criterionMin: 5000, criterionAccuracy: null, progressTarget: null },
   { name: 'Ilmuwan Sejati', description: 'Jawab 1,000 soalan dengan ketepatan 85%+', icon: '🧠', rarity: 'legendary', rewardSyiling: 300, rewardXp: 200, criterionKind: 'answers_accuracy', criterionMin: 1000, criterionAccuracy: 85, progressTarget: null },
   { name: 'Wira JomBelajar', description: 'Lengkapkan semua cabaran dalam 30 hari berturut', icon: '🦸', rarity: 'legendary', rewardSyiling: 400, rewardXp: 300, criterionKind: 'perfect_days', criterionMin: 30, criterionAccuracy: null, progressTarget: null },
+  { name: 'Juara Battle', description: 'Menang 10 battle', icon: '⚔️', rarity: 'rare', rewardSyiling: 30, rewardXp: 20, criterionKind: 'battle_wins', criterionMin: 10, criterionAccuracy: null, progressTarget: null },
 ] as const
 
 export const SETTING_ROWS = [

@@ -23,9 +23,9 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/marketplace/products',
     name: ADMIN_ROUTES.products,
     component: () => import('../pages/AdminProdukPage.vue'),
-    meta: meta('Marketplace — Produk - PRESTASIPLUS', {
+    meta: meta('Marketplace — Produk', {
       title: 'Marketplace — Produk',
-      subtitle: 'Urus produk Marketplace',
+      subtitle: 'Pengurusan produk pasaran',
     }),
   },
   {
@@ -52,9 +52,9 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/marketplace/sellers',
     name: ADMIN_ROUTES.sellers,
     component: () => import('../pages/AdminPenjualPage.vue'),
-    meta: meta('Marketplace — Penjual - PRESTASIPLUS', {
+    meta: meta('Marketplace — Penjual', {
       title: 'Marketplace — Penjual',
-      subtitle: 'Urus penjual Marketplace',
+      subtitle: 'Pengurusan penjual pasaran',
     }),
   },
   {

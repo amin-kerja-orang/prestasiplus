@@ -61,17 +61,6 @@ export const SUPPORT_ROLE_LABELS: Readonly<Record<string, string>> = {
 /** Page flash after a create (FR-M22-06). Client-side text: the create response carries no `status` key. */
 export const SUPPORT_TICKET_CREATED_FLASH = 'Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.'
 
-/**
- * Notification every active admin receives when a ticket is created (BR-M22-12), sent through
- * `NotificationsService` (BE-06) with the push flag set. A notification failure never undoes the ticket.
- */
-export const SUPPORT_NEW_TICKET_NOTIFICATION = {
-  type: 'new_ticket',
-  category: null,
-  title: 'Tiket baru',
-  body: 'Tiket sokongan baharu telah diterima.',
-} as const
-
 /** A ticket as its owner sees it (`GET /tiket` rows and the `data` of the create). */
 export const SupportTicketSchema = z
   .strictObject({
@@ -92,9 +81,12 @@ export const SupportTicketListQuerySchema = z
   })
   .meta({ id: 'SupportTicketListQuery' })
 
-/** `meta` of `GET /tiket`: NOT the standard ListMeta; `total` counts all of the caller's tickets, whatever the filter. */
+/** `meta` of `GET /tiket`: NOT the standard ListMeta; `total` and `counts` (all five statuses) cover all of the caller's tickets, whatever the filter. */
 export const SupportTicketListMetaSchema = z
-  .strictObject({ total: z.number().int().min(0) })
+  .strictObject({
+    total: z.number().int().min(0),
+    counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(0) })),
+  })
   .meta({ id: 'SupportTicketListMeta' })
 
 export const SupportTicketListResponseSchema = z
@@ -204,11 +196,12 @@ const SUPPORT_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const SUPPORT_SETTINGS_MESSAGES = {
   emailInvalid: 'E-mel tidak sah.',
   phoneInvalid: 'No. telefon tidak sah.',
+  hoursTooLong: 'Waktu perkhidmatan tidak boleh melebihi 120 aksara.',
 } as const
 /** Flash after a save (N07-04). */
 export const SUPPORT_SETTINGS_SAVED_FLASH = 'Tetapan disimpan.'
 
-/** `data` of `GET` and `PUT /admin/settings/support` (API-ADM-10); '' = not set. `phone` and `hours` stay '' until they have a store (open on #458, #507). */
+/** `data` of `GET` and `PUT /admin/settings/support` (API-ADM-10); '' = not set. `phone` stays '': the phone is `whatsapp` (PO decision 18). */
 export const SupportSettingsSchema = z
   .strictObject({ email: z.string(), phone: z.string(), whatsapp: z.string(), hours: z.string() })
   .meta({ id: 'SupportSettings' })
@@ -227,6 +220,7 @@ export const SupportSettingsUpdateRequestSchema = z
   .object({
     email: contactField(SUPPORT_EMAIL_PATTERN, SUPPORT_SETTINGS_MESSAGES.emailInvalid),
     whatsapp: contactField(SUPPORT_PHONE_PATTERN, SUPPORT_SETTINGS_MESSAGES.phoneInvalid),
+    hours: contactField(/./, SUPPORT_SETTINGS_MESSAGES.hoursTooLong),
   })
   .meta({ id: 'SupportSettingsUpdateRequest' })
 export type SupportSettingsUpdateRequest = z.infer<typeof SupportSettingsUpdateRequestSchema>

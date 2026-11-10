@@ -1,121 +1,94 @@
-# Deploy R1 ke UAT sahaja (Q36)
+# R1 UAT cutover runsheet: rebuild the UAT database from empty, filled from the V2 dump
 
-Operator manusia, di `uat.prestasiplus.cloud` (187.52.120.11), sebagai `ppdeploy`. AI tidak menjalankan arahan ini.
+Replaces the earlier "deploy 0092 on top of the existing data" sheet. Decision KP-2 (PO): the UAT database is rebuilt from empty and filled from a fresh V2 (.cloud) dump, full replace. Operator: a human, on `uat.prestasiplus.cloud` as `ppdeploy`. AI agents do not run these commands. Not touched: prestasiplus.cloud, DNS, the V2 server. No secret is written here: values come from the PO and the platform secret store.
 
-**Tidak disentuh:** `prestasiplus.cloud`, DNS, server `.cloud` lama, ETL, `PP_DOMAIN`. Data UAT sedia ada kekal dan menerima migrasi 0092 ke atas. Pengguna prestasiplus.cloud tidak terjejas.
+Rehearsal evidence: T-A4, 10 Nov 2026, local UAT-like stack (own compose project, CA-signed edge certificate, a Linux ops container running the real scripts, real V2 data of 10 Nov: the full small tables plus a 3,000-question sample, and earlier one FULL load up to the ETL pass 1). Windows Docker Desktop VM, 7.7 GB RAM shared with other jobs. Section 7 has the timings and what is proven.
 
-**SHA:** tip `feature/v3-bijak-r1` pada baris "CI hijau" di papan (`docs/team/MERGE-LOG.md`, cawangan `team/r1-board`). Jangan deploy tanpa baris itu. Tag dikira daripada `HEAD`.
+## 0. Decisions
 
-**Baca helaian ini hanya dari `origin/feature/v3-bijak-r1`.** Deploy SHA pada baris CI hijau.
+Fixed: KP-2 rebuild from empty; `OCR_ENGINE=tesseract` (`OCR_LANG_DIR=/opt/tessdata`); upload limits 32 / 336 MB; roster passwords are NOT forced to reset (KP-7: leave `PP_MIGRATE_ROSTER_FORCE_RESET` unset and remove or empty `PP_MIGRATE_ROSTER_DEFAULT_HASHES` in `etl.env`; the ETL then prints the warning "PP_MIGRATE_ROSTER_DEFAULT_HASHES is unset or empty", expected).
 
-**Status:** urutan ini dilatih pada VM Linux dengan data sintetik (2-3 Nov). Belum pernah dijalankan pada server ini, jadi masa sebenar belum diukur. Rancang 60 minit; UAT turun semasa langkah U7. Output tidak seperti tertulis = HENTI dan laporkan.
+PO decisions needed at release time (nothing is done about them by the script):
+1. `PUPIL_DEFAULT_PASSWORD` (api.env, SECRET): required. Without it teacher "Cipta Pelajar" (`POST /api/guru/students`) answers 500. The PO supplies the value (8+ characters, long, random) at release; secret store only.
+2. A manual restore drill right before the rebuild (PO approval at release; stops the api 1 to 3 minutes). The last drill (2 Nov) is older than the current schema and had no named operator.
+3. An off-host copy of the final pre-rebuild backup (`PP_OFFSITE_KIND=none` today).
+4. UAT raw `.cloud` retention is overdue (`PP_RAW_PURGE_BY=2026-11-06`: PITR base `20261027T064728Z`, its WAL, 3 raw copies, restore points `pre_etl` / `pre_delta`). Purge or move the date: PO decision. Not done by this sheet.
+5. Repairs that write after a PO-approved dry-run report: `flag-stimulus`, `trim-duplicate-stem` (script option `--approve`).
+6. Accept the loader results listed in section 7 (rejects, held questions) as the starting data.
 
-**Titik tiada kembali:** U7 (migrasi `0100` tidak boleh diundur di tempat). Selepas itu, jalan balik hanya dump `D`.
+## 1. Before the window
 
-## U1. Checkout, DAHULU
-`git -C /opt/pretasiplus fetch origin && git -C /opt/pretasiplus checkout --detach <SHA>`, kemudian `git merge-base --is-ancestor 2fabf472 HEAD && echo has-BASE-213` dan `git status --porcelain --untracked-files=no`.
-Jangkaan: `has-BASE-213`; status kosong. Tulis tag lama: `cat /var/lib/pretasiplus-deploy/current.tag` (dibaca 3 Nov: `6d81162c87f0`).
+1. Checkout: `git -C /opt/pretasiplus fetch origin && git -C /opt/pretasiplus checkout --detach <SHA>`; `git status --porcelain --untracked-files=no` empty. Note the running tag: `cat /var/lib/pretasiplus-deploy/current.tag`.
+2. Shell: `cd /opt/pretasiplus; export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); PC="docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env"`.
+3. Env (names; details `r1-uat-env-changes.md`; back up the files first). `prod.env`: `PP_UPLOAD_FILES_MB=32`, `PP_UPLOAD_BIG_MB=336`, `PP_RELEASE_SHA=<40 hex>`, `VITE_PROTOTYPE_SCOPE=on`, and `PP_ALLOW_DB_REBUILD=yes` (TEMPORARY: remove it when the rebuild is accepted; production must never carry it). `PP_STAGE_EXPECT` stays unset (the script derives the expected table counts from the release DDL: archive_cloud 45, staging_cloud 89). `api.env`: `OCR_ENGINE=tesseract`, `OCR_LANG_DIR=/opt/tessdata`, `PUPIL_DEFAULT_PASSWORD`. `etl.env`: KP-7 above.
+4. Inputs, outside the repo, mode 700, readable by uid 1000 for the files (`setfacl -R -m u:1000:rX`): `DUMP` = the raw `pp-staging-dump/1` directory (`dump:cloud --raw`, procedure `cloud-dump-procedure.md` section 12; manifest `"raw": true`, no `.partial`; 10 Nov dump 756 MB, 98 files); `FILES` = V2 storage export with `SHA256SUMS` (paths relative, no leading `./`; 10,316 files, 2.4 GB). Check free space: backup volume at least 5 GB and the stage dir at least 5 x the dump size. `PP_MIGRATION_OUT` exists, owner uid 1000, mode 700 (`slot.sh gonogo` prints it).
+5. Build before the downtime (UAT stays up): `$PC config --images | grep pretasiplus-api:` must NOT show the running tag (building would overwrite the rollback image); then `$PC build api migrate frontend`.
+6. Dry run: `deploy/vps/rebuild-db.sh --rebuild-db --dump-dir "$DUMP" --files-dir "$FILES" --dry-run`. Expect `G5 deploy preflight passed` and `DRY-RUN: all checks passed`. It changes nothing.
+7. PO items 2 and 3 of section 0, if approved.
 
-## U2. Shell, HANYA selepas U1 (dan setiap shell baharu)
+## 2. Cutover (one command)
+
 ```
 cd /opt/pretasiplus
-export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD)
-export PP_BACKUP_KEEP_AUX=20
-PC="docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env"
-PSQL_RO='PGPASSWORD="$POSTGRES_PASSWORD" PGOPTIONS="-c default_transaction_read_only=on" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$@"'
-psql_ro() { $PC exec -T db sh -c "$PSQL_RO" sh "$@"; }
-PSQL=psql_ro
+deploy/vps/rebuild-db.sh --rebuild-db --dump-dir "$DUMP" --files-dir "$FILES" --verify-soft [--pause-after-plan]
 ```
+It asks you to type the database name, then the domain, in a terminal. `--verify-soft` is needed today (section 7: the full `migrate:verify` has no expectations for the new loaders yet). `--pause-after-plan` stops after the rajah plan so the PO can read it (the plan file is in `PP_MIGRATION_OUT`). Do not run anything else against the stack while it runs: one lock is held.
 
-## U3. Skop ON, sebelum bina (REQ-B-117)
-`sudoedit /etc/pretasiplus/prod.env`: `VITE_PROTOTYPE_SCOPE=off` jadi `on`. Semak: `grep -c '^VITE_PROTOTYPE_SCOPE=on$' /etc/pretasiplus/prod.env` memberi `1`. Ia dibakar ke dalam bundle semasa bina, jadi menukarnya selepas bina tiada kesan. **Kesan: ibu bapa, penaja dan PPD ditolak semasa log masuk.** `PP_DOMAIN` kekal `uat.prestasiplus.cloud`.
+What it does, in order (each step is logged with `STEP-TIME`, the first failure stops it and prints the rollback command): 1 images present for the tag; 2 fresh pre-rebuild backup, sha256 and `pg_restore --list` checked (refuses otherwise; the api is still up); 3 stop api (and its jobs worker); 4 archive and empty the old files volume; 5 drop and create the database; 6 `db-roles.sh apply`; 7 `prisma migrate deploy` 0001 to HEAD (112 migrations; the count is compared with the release folders); 8 roles apply and check; 9 reference seed (curriculum included, production mode); 10 stage the dump (throwaway cluster, copy into `staging_cloud` / `archive_cloud`); 11 ETL pass 1: `migrate:all --apply` (with `--files-dir`), `migrate:questions` plan, dry-run, apply, `migrate:structured`, `migrate:papers`, `migrate:link-questions`; 12 `migrate:verify`; 13 ETL pass 2, which must insert and update 0 rows; 14 repairs and checks; 15 drop `staging_cloud`; 16 start api, frontend, edge and run the health checks; 17 record the release (`current.tag`, `previous.tag`, `history.log`).
 
-## U4. Bina imej (UAT masih hidup)
-Semak dahulu: `$PC config --images | grep pretasiplus-api:` mesti menunjukkan 12 aksara pertama `<SHA>`, bukan `6d81162c87f0`. Jika ia menunjukkan `6d81162c87f0`: **HENTI**, membina akan menimpa imej rollback. Kemudian `$PC build api migrate frontend`. Henti jika gagal bukan kerana rangkaian.
+Exit 0 = clean. Exit 4 = finished, the stack is up, but some checks or repairs reported FAIL: the list is printed; the PO decides go or no-go (section 3). Any other exit = stopped; read the printed state (database untouched, or dropped and partly rebuilt with the api stopped).
 
-## U5. Semakan awal
-`sudo grep -c '^THROTTLE_GLOBAL_PER_MINUTE=3000' /etc/pretasiplus/api.env` memberi `1`.
-`$PSQL -c "SELECT pid, usename, state, left(query, 80) FROM pg_stat_activity WHERE state <> 'idle' AND pid <> pg_backend_pid();"`: tiada sesi menyekat.
-`$PSQL -c "SELECT name, default_version FROM pg_available_extensions WHERE name='pg_trgm';"`: 1 baris. `$PSQL -c "SELECT has_database_privilege('pp_owner', current_database(), 'CREATE');"`: `t`. `0106` memerlukannya dan berjalan selepas `0100`.
-`$PSQL -c "SELECT id, code, name FROM education_levels ORDER BY id;"`: tahap yang dipakai murid bernama `Tingkatan N` atau `Form N`.
-`deploy/vps/deploy.sh --dry-run`: `preflight passed`.
+## 3. Go / no-go
 
-## U6. Backup, kemudian lock_timeout
-`deploy/vps/backup/backup.sh --tag pre-deploy --no-files`, kemudian `D="$(ls -t /var/backups/pretasiplus/pp-backup-*-pre-deploy.dump | head -1)"; echo "$D"; $PC exec -T db pg_restore --list < "$D" > /dev/null; echo $?`.
-Jangkaan: `0`. **Tulis laluan penuh `D`.** Selain `0`: jangan deploy.
-`sudoedit /etc/pretasiplus/migrate.env`: tambah `options=-c%20lock_timeout%3D5s` pada `DATABASE_URL`. Keluarkan di U9, juga jika berhenti di U7.
+1. Exit status and the `SUMMARY` table; the failed-check list.
+2. Reconciliation: counts of the dump (`manifest.json`) against the ETL `recon` lines (users 7,026, schools 10,207, chapters 686, classrooms 12 of 33 eligible 13, and so on). Reports are in `PP_MIGRATION_OUT` (`recon-*.md`); they hold counts only. Delete the files that hold ids of people within 7 days (`core-login-gaps-*.json`, restricted id files).
+3. `second pass: N apply runs, rows inserted or updated: 0`.
+4. Database: `select count(*) from tiers` = 4; `from users where email ilike '%@demo.test'` = 0; `from spm_subject_configs` = 19; chapters 1,311 of which 569 inactive (the auto-created Tingkatan 1-3 chapters); migrations 112, none unfinished; `deploy/vps/db-roles.sh check` passes.
+5. Checks that are expected to say FAIL today and what they mean (rehearsal): `smoke-readonly.sql` F3/F6/F10 (roster accounts not flagged: accepted by KP-7), X3 (reject share above its threshold: the loader results of section 7), Z0 (the count of those); `chapters-t1-t3` (some Tingkatan 1-3 subject/level pairs have no active chapter: the 569 hidden chapters; the curriculum owner activates real ones); `intake-env` FAILs that appear only because the check runs in the migrate image (no `JOBS_WORKER_ENABLED`, no `/opt/tessdata`): re-run it inside the api container (`$PC exec -T api npm run uat:intake-env -w @pp/api` or `npx tsx`) and expect PASS; `AI_PROVIDER=mock` is the known UAT value; `support-contact` and `terbit-papers` exit 2 until the PO supplies their inputs. Anything else new is a STOP.
+6. `curl -s -o /dev/null -w '%{http_code}\n' https://uat.prestasiplus.cloud/api/ready` and `/api/health` give 200; `$PC exec -T api sh -c 'echo "$THROTTLE_GLOBAL_PER_MINUTE $TRUST_PROXY_HOPS"'` gives `3000 1`.
 
-## U7. Deploy
-`deploy/vps/deploy.sh`, kemudian taip `uat.prestasiplus.cloud` pada `Type the domain to confirm:`.
-Jangkaan: migrasi 0092 hingga 0110, `deploy complete`. Latihan pada 409k baris: `0100` kira-kira 30 s, `0106` 47 hingga 96 s. `deploy.sh` tidak berhenti antara migrasi.
-Henti jika gagal atau P3009: **jangan `migrate resolve`**. Baca `r1-operator-checklist.md` seksyen 3 dan 4, atau "Jalan balik" di bawah.
+## 4. Smoke per role (the old UAT accounts are gone with the old database: use V2 accounts given by the PO; migrated passwords are unchanged, KP-7)
 
-## U8. Selepas deploy (satu baris pada satu masa)
-`--seed-reference` meminta domain ditaip: taip `uat.prestasiplus.cloud`; jika ditampal bersama baris lain, ia berhenti dengan `not confirmed`. Ia menulis semula nama dan harga pakej sekolah serta kategori marketplace mengikut kunci, jadi suntingan admin pada baris itu di UAT hilang.
+- Pupil: log in, dashboard, Latih Tubi and a chapter quiz to the result.
+- Teacher: log in, `/guru/monitoring` (pupil numbers equal the class lists), "Cipta Pelajar" creates a pupil (proves `PUPIL_DEFAULT_PASSWORD`), intake of one PDF (scanned, OCR) to the draft.
+- School admin: log in, command centre shows the school and its pupils.
+- Admin: log in, Kurikulum (569 inactive chapters visible for curation), Bank Soalan counts, Kontrak, Pratonton Kolam, Jana Kertas through Mod Pelajar (needs a Disahkan blueprint; 4 blueprints were migrated).
+- Parent, sponsor and PPD accounts are refused with `Peranan ini belum menggunakan sistem ini.` (scope on).
+
+## 5. Rollback
+
+Before step 5 nothing in the database changed: start the api again (`$PC up -d --wait --no-deps api`), restore `prod.env` if wanted. After it:
 ```
-$PSQL -c "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL;"
-$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "VACUUM (ANALYZE) question_versions"'
-curl -s -o /dev/null -w '%{http_code}\n' https://uat.prestasiplus.cloud/api/ready
-curl -s -o /dev/null -w '%{http_code}\n' https://uat.prestasiplus.cloud/api/health
-$PC exec -T api sh -c 'echo "$THROTTLE_GLOBAL_PER_MINUTE $TRUST_PROXY_HOPS"'
-deploy/vps/deploy.sh --seed-reference
-$PSQL -c "select count(*) from tiers;"
-$PSQL -c "select count(*) from spm_subject_configs;"
-$PSQL -c "select count(*) from users where email ilike '%@demo.test';"
+deploy/vps/rebuild-db.sh --rebuild-db --restore-backup "<the pre-rebuild dump, path in the log and in /var/lib/pretasiplus-deploy/rebuild-backup.path>"
 ```
-Jangkaan: tiada baris gagal; `VACUUM`; `200`; `200`; `3000 1`; `demo modules skipped`; tiers `4`; `spm_subject_configs` mengikut kod yang wujud dalam `subjects`; demo `0`.
-Kemudian runbook 3.3 (status soalan: tiada `published`, `approved` hampir jumlah aktif) dan 3.6 (`login_count` lebih 0). Henti jika `approved` hampir 0, atau `login_count` 0: nama tahap mesti `Tingkatan N` atau `Form N`.
+Typed confirmation again. It verifies the dump (sha256, `pg_restore --list`), stops the api, drops and recreates the database, `pg_restore`, roles apply and check, restores the archived uploads, starts the PREVIOUS release (`rebuild-prev.tag`), runs the health checks. Rehearsed: 52 s on a near-empty database; UAT's 166 MB dump took 123 s to restore in the 2 Nov drill. Writes after the backup are lost. Needs PO approval.
 
-## U9. Keluarkan lock_timeout
-`sudoedit /etc/pretasiplus/migrate.env`: keluarkan `options=...`.
+## 6. After acceptance
 
-## U10. Smoke di uat.prestasiplus.cloud
-Murid, guru, admin sekolah, admin: log masuk masuk ke papan pemuka. Murid: Latih Tubi dan kuiz bab sampai keputusan. Admin: Kontrak, Pratonton Kolam, Jana Kertas melalui Mod Pelajar. Guru: `/guru/monitoring`, angka murid sama dengan senarai (angka ini turun berbanding sebelum ini, itu dijangka; #349). Akaun ibu bapa buatan UAT, jika ada: ditolak dengan `Peranan ini belum menggunakan sistem ini.`, dan murid tetap masuk.
+Remove `PP_ALLOW_DB_REBUILD=yes` from `prod.env`. Wipe the raw dump: `deploy/vps/migration/slot.sh wipe-dump "$DUMP"` and the files copy when no longer needed. `staging_cloud` was dropped by step 15 (use `--keep-staging` only if the PO wants it for a delta; then the retention date applies). Reports of the repair scripts are under `PP_MIGRATION_OUT/uat-ops` (counts only). Record the PO decision on the raw retention (section 0, item 4).
 
-## U11. Kandungan, jika pemilik mahu Jana Kertas di UAT
-DSKP dan Kontrak mengikut `r1-go-live-runsheet.md` 5.11, runbook 4 dan 5.2. Jana Kertas memerlukan blueprint Disahkan. Tiada seed untuk ini.
+## 7. Timings and rehearsal results
 
-## Jalan balik
-**Sebelum U7:** tiada apa berubah pada DB. Pulangkan `prod.env` jika mahu, dan keluarkan `options=`.
+Local, loaded host (shared VM, no dedicated cores). UAT has 4+ cores and no contention: expect equal or faster; the questions steps are single-process and database bound.
 
-**Selepas migrasi bermula:** semak dahulu `r1-operator-checklist.md` seksyen 3 dan 4. Jika pemilik memilih balik ke keluaran lama, pulihkan dump `D`:
+| Step | Measured | UAT estimate |
+|---|---|---|
+| 0 preflight | 2 s | 5 s |
+| 1 images (already built) | 1 s | 1 s; build before the window: api about 5 min cold, migrate 27 s, frontend 45 s |
+| 2 backup + verify | 4 s on an empty database | UAT dump 166 MB: 1 to 3 min |
+| 3 stop api, 4 files archive, 5 drop/create, 6 roles | 2 + 4 + 1 + 1 s | under 1 min |
+| 7 migrate 0001 to HEAD (112) | 26 to 28 s | 30 to 60 s |
+| 8 roles + check, 9 seed | 5 s, 26 to 29 s | 1 min |
+| 10 stage (load + copy), full dump | 144 s (load 94, copy 43) | 2 to 3 min |
+| 11 ETL pass 1, FULL data (451,518 V2 questions) | 1,859 s: all 77, questions plan 70 / dry-run 588 / apply 867, structured 26+25, papers 17+23 | 20 to 30 min |
+| 12 migrate:verify | 37 s | 1 min |
+| 13 ETL pass 2 | sample 370 s; full estimated 25 to 30 min (the dry-runs and applies run again, nothing is written) | 20 to 30 min |
+| 14 repairs and checks | 134 s on the sample; the backfills scale with questions and answers | 3 to 10 min |
+| 15 drop staging, 16 start + health, 17 record | 1 + 24 + 0 s | 1 min |
+| Total | sample run 1,197 s | plan 75 to 90 min for the window (api down from step 3); add 30 min of PO checks |
 
-Jangan baca `production-vps.md` bab 8 dari checkout lama di hos: arahan `$PC cp` di sana meninggalkan DB kosong.
+Assumptions: the full pass 1 was measured once on the full dump and then stopped; passes 2 and the repairs are scaled from the sample run. The UAT database may take longer on the first apply (cold cache).
 
-**Pagar 1.** Isi `D` dengan laluan bertulis dari U6. Kosong = pagar gagal dan tiada `DUMP-OK`.
-```
-cd /opt/pretasiplus
-PC="docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env"
-export PP_BACKUP_KEEP_AUX=20
-D=''
-$PC stop api frontend
-deploy/vps/backup/backup.sh --tag drill --no-offsite --no-files
-[ -s "$D" ] && (cd "$(dirname "$D")" && sha256sum -c "$(basename "$D").sha256") && $PC exec -T db pg_restore --list < "$D" > /dev/null && echo DUMP-OK
-```
-- Jangkaan: `...: OK`; `DUMP-OK`.
-- Henti jika: tiada `DUMP-OK`: **jangan drop**. Pilih dump lain yang tertulis, atau HENTI dan tanya pemilik. API kekal turun.
+Proven in the rehearsal: guards G1 to G4, G6 (negative tests: no flag, no opt-in, deny-listed domain, wrong typed name or domain, a pipe on a non-rehearsal host, wrong dump directory; nothing changed in any of them), G5 preflight and G7 backup verification, stop, drop/create, roles before and after, migrate 112, seed including the curriculum fix, stage, ETL pass 1 with every loader that exists today, second pass inserting and updating 0 rows, `migrate:verify` (hard mode fails, see below), repairs, staging drop, start with edge TLS health checks, release recording, rollback (restore, previous release started, health checks).
 
-**Pagar 2. Satu baris pada satu masa, hanya selepas `DUMP-OK`.**
-```
-$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""' </dev/null
-$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < "$D"; echo $?
-deploy/vps/db-roles.sh apply
-deploy/vps/db-roles.sh check
-```
-- Jangkaan: `DROP DATABASE`, `CREATE DATABASE`; `0`; `DB ROLES CHECK PASSED`. Kemudian (shell U1) `$PSQL -c "SELECT (SELECT count(*) FROM users) AS users, (SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL) AS migrations;"`: kedua-dua > 0. `check` membuktikan peranan, bukan restore: bukti ialah status keluar dan kiraan.
-- Henti jika: `pg_restore` bukan `0`: API kekal turun, ulang dari `drop` dengan dump yang disahkan.
-- Kemudian: `deploy/vps/rollback.sh --dry-run --checkout 6d81162c87f0`, dan sama tanpa `--dry-run`, menaip `uat.prestasiplus.cloud`. Jangan hidupkan API sebelum `check` lulus.
-Jangkaan selepas rollback: `/api/ready` 200, `current.tag` `6d81162c87f0`. Skop yang dibakar kekal `off` dalam imej lama; pulangkan `prod.env` supaya bina semula tidak berubah.
-
-**Selepas S5, untuk deploy semula:** `git -C /opt/pretasiplus checkout --detach <SHA>`, `export PP_IMAGE_TAG` baharu, dan `VITE_PROTOTYPE_SCOPE=on` semula, kemudian U4 hingga U9.
-
-**Jika `rollback.sh` berkata `already the release that is running`** (migrasi gagal sebelum `deploy complete`), selepas DB dipulihkan:
-```
-git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7
-cd /opt/pretasiplus; export PP_IMAGE_TAG=6d81162c87f0
-$PC up -d --wait --no-deps api frontend
-$PC up -d --wait --no-deps --force-recreate edge
-```
-Kemudian `/api/ready` mesti 200.
-
-**Selepas `deploy complete`:** abaikan cadangan `rollback.sh <R1_TAG>` yang dicetak; sasaran kekal `6d81162c87f0`.
+Not proven or still hooks: (a) the full `migrate:verify` after questions, structured and papers fails (`questions` target 450,819 against loaded 448,804; the new entities have no target count): verify does not know the new loaders yet. `--verify-soft` records it as a failed check. Owner: migration developers. (b) `migrate:questions` has no `--files-dir`, so 7,178 questions with an image are loaded held (`held_image`); question images are not copied until T-B9-5. (c) `paper_documents` (254) and pages are not migrated (file migration off). (d) `rewards` 50 of 50, `exam_questions` 5,704 of 5,704 and `reward_redemptions` 7 of 7 are rejected by the loaders, 32 of 36 blueprints are rejected, `questions.chapter_missing` 448,804 (questions load without a chapter), post-load flag `stimulus_missing` 13,315: the data owners decide. (e) `structured` and `papers` run through their `cli.ts` entry points (no npm alias). `--terbit` was not run. (f) The repair order follows the T-B1 runbook (trim before flag), not the proposed order of `r1-uat-rebuild-prep.md` section 5; `trim-duplicate-stem` runs as a dry-run check (the loader no longer duplicates the stem). (g) `intake-env` should run in the api container, not the migrate image.

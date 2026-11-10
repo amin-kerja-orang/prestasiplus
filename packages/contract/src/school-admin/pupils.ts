@@ -1,7 +1,8 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
-import { nonBlank, SchoolAdminInitialCredentialSchema, SchoolAdminSchoolInfoSchema } from './common'
+import { STUDENT_IMPORT_MAX_BYTES, STUDENT_IMPORT_MAX_ROWS } from '../schools/subscriptions/schema'
+import { count, nonBlank, SchoolAdminInitialCredentialSchema, SchoolAdminSchoolInfoSchema } from './common'
 import { SchoolAdminUserDetailSchema, SchoolAdminUserListMetaSchema } from './users'
 
 /**
@@ -107,3 +108,103 @@ export const SchoolAdminPupilCreatedResultSchema = z
   })
   .meta({ id: 'SchoolAdminPupilCreatedResult' })
 export type SchoolAdminPupilCreatedResult = z.infer<typeof SchoolAdminPupilCreatedResultSchema>
+
+// ---------------------------------------------------------------------------------------------
+// API-AS-06 Import Pelajar (S6-T09, R1-AS-51)
+// ---------------------------------------------------------------------------------------------
+
+/** The Tingkatan select of the import page (Tingkatan 1 to 5 only, D72). */
+export const SCHOOL_ADMIN_PUPIL_IMPORT_LEVELS = ['T1', 'T2', 'T3', 'T4', 'T5'] as const
+export const SchoolAdminPupilImportLevelSchema = z.enum(SCHOOL_ADMIN_PUPIL_IMPORT_LEVELS).meta({ id: 'SchoolAdminPupilImportLevel' })
+/** The `dryRun` call returns the first rows of the file only. */
+export const SCHOOL_ADMIN_PUPIL_IMPORT_PREVIEW_ROWS = 10
+/** The size and row limits are those of the Admin Pusat student import (E-11). */
+export const SCHOOL_ADMIN_PUPIL_IMPORT_MAX_BYTES = STUDENT_IMPORT_MAX_BYTES
+export const SCHOOL_ADMIN_PUPIL_IMPORT_MAX_ROWS = STUDENT_IMPORT_MAX_ROWS
+/** Accepted file extensions (ERR-REQ-04 prints them as "CSV, TXT"). */
+export const SCHOOL_ADMIN_PUPIL_IMPORT_EXTENSIONS = ['csv', 'txt'] as const
+
+/** Exact BM copy (PRD-20 R1-AS-51, PRD-30 R1-ADM-U-05, 40 ERR-QUOTA-01 / ERR-REQ-03 / ERR-REQ-07 / ERR-IMP-02). */
+export const SCHOOL_ADMIN_PUPIL_IMPORT_MESSAGES = {
+  quotaFull: 'Kuota penuh! Sila tingkatkan kuota dahulu.',
+  noSubscription: 'Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.',
+  tooManyRows: 'Fail melebihi 1000 baris.',
+  tooLarge: 'Fail atau data terlalu besar. Saiz maksimum ialah 2 MB.',
+  noFile: 'Sila pilih fail.',
+  noData: 'Tiada data untuk diimport.',
+  noName: 'Sila isi nama.',
+  nameLong: 'Nama penuh tidak boleh melebihi 255 aksara.',
+  badEmail: 'Format e-mel tidak sah.',
+  /** An e-mail that already exists on the platform: the row is skipped (counted in `skipped` and listed in `errors`). */
+  emailExists: 'E-mel sudah wujud (dilangkau).',
+  emailRepeated: 'E-mel berulang dalam fail.',
+  classNotFound: 'Kelas tidak dijumpai.',
+  /** Shown under the result sentence. */
+  pendingApproval: 'Pelajar yang diimport menunggu kelulusan Admin Pusat.',
+  /** ERR-IMP-02. */
+  missingColumn: (column: string): string => `Lajur wajib tiada: ${column}. Gunakan templat yang disediakan.`,
+} as const
+
+/** "{a} pelajar berjaya diimport, {b} baris gagal." (`b` = the listed failed rows, skipped duplicates included). */
+export const schoolPupilsImportedText = (created: number, failed: number): string => `${String(created)} pelajar berjaya diimport, ${String(failed)} baris gagal.`
+
+export const SchoolAdminPupilImportQuerySchema = z
+  .object({
+    dryRun: z
+      .enum(['true', 'false'])
+      .optional()
+      .meta({ description: '`true` validates the file and returns the first 10 rows as `preview`; nothing is created and nothing is audited.' }),
+  })
+  .meta({ id: 'SchoolAdminPupilImportQuery' })
+
+/**
+ * `POST /admin-sekolah/pelajar/import` body as multipart/form-data: `csvFile` is the uploaded `.csv` or `.txt` file
+ * (at most 2 MB, 1000 data rows; header `nama,email,kelas`, comma or semicolon). `level` is the Tingkatan select T1 to T5,
+ * used only for a row whose `kelas` does not name a class of the school. The school comes from the session; a
+ * `schoolId` sent by the client is ignored.
+ */
+export const SchoolAdminPupilImportMultipartSchema = z
+  .object({
+    csvFile: z.string().meta({ format: 'binary' }),
+    level: SchoolAdminPupilImportLevelSchema.optional(),
+  })
+  .meta({ id: 'SchoolAdminPupilImportMultipartRequest' })
+
+/** The same request as JSON (small files only: the global JSON limit applies). */
+export const SchoolAdminPupilImportRequestSchema = z
+  .object({
+    csvFile: z.string().max(STUDENT_IMPORT_MAX_BYTES),
+    level: SchoolAdminPupilImportLevelSchema.optional(),
+  })
+  .meta({ id: 'SchoolAdminPupilImportRequest' })
+
+export const SchoolAdminPupilImportErrorSchema = z
+  .object({ row: z.number().int().min(1).meta({ description: '1-based line of the file (the header is line 1).' }), message: z.string().min(1) })
+  .meta({ id: 'SchoolAdminPupilImportError' })
+
+export const SchoolAdminPupilImportPreviewRowSchema = z
+  .object({
+    row: z.number().int().min(1),
+    name: z.string(),
+    email: z.string().nullable(),
+    className: z.string().nullable().meta({ description: 'The `kelas` cell as typed; null when empty.' }),
+  })
+  .meta({ id: 'SchoolAdminPupilImportPreviewRow' })
+
+/**
+ * `rows` = data rows of the file. `created` = pending pupils created (0 on `dryRun`). `skipped` = e-mails that already exist
+ * (each also listed in `errors`, so "{b} baris gagal" = `errors.length`). `errors` = every row that was not created.
+ * Neither a password nor a hash is ever returned.
+ */
+export const SchoolAdminPupilImportResultSchema = z
+  .object({
+    dryRun: z.boolean(),
+    rows: count,
+    created: count,
+    skipped: count,
+    errors: z.array(SchoolAdminPupilImportErrorSchema),
+    preview: z.array(SchoolAdminPupilImportPreviewRowSchema).max(SCHOOL_ADMIN_PUPIL_IMPORT_PREVIEW_ROWS).optional(),
+  })
+  .meta({ id: 'SchoolAdminPupilImportResult' })
+export type SchoolAdminPupilImportResult = z.infer<typeof SchoolAdminPupilImportResultSchema>
+export type SchoolAdminPupilImportLevel = z.infer<typeof SchoolAdminPupilImportLevelSchema>

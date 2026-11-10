@@ -124,7 +124,8 @@ describe('admin servability reads (R1-T30)', () => {
     expect(report.activities.find((a) => a.activity === 'databank')?.served).toBe(true)
     expect(report.activities.find((a) => a.activity === 'simulasi_paper')?.served).toBe(true)
     const grouped = parseData(await admin.get(`/api/admin/servability/questions/${made.grouped}`), ServabilityReportSchema)
-    expect(grouped.activities.find((a) => a.activity === 'latih_tubi_spm')?.reasons.map((r) => r.code)).toEqual(['has_stimulus'])
+    // T-C13 (D105): a member of a complete group is served in the drills, so the old text-only reason is gone.
+    expect(grouped.activities.find((a) => a.activity === 'latih_tubi_spm')?.reasons.map((r) => r.code)).toEqual([])
     const draft = parseData(await admin.get(`/api/admin/servability/questions/${made.draft}`), ServabilityReportSchema)
     expect(draft.versionNo).toBeNull()
     expect(draft.servedCount).toBe(0)
@@ -215,7 +216,7 @@ describe('admin servability reads (R1-T30)', () => {
     const all = parseList(await admin.get('/api/admin/servability/lanes/databank?pageSize=100'), ServabilityDatabankRowSchema)
     const byId = new Map(all.map((r) => [r.questionId, r]))
     expect(byId.get(made.plain!)?.attention).toEqual([])
-    expect(byId.get(made.grouped!)?.attention.map((r) => r.code)).toEqual(['has_stimulus'])
+    expect(byId.get(made.grouped!)?.attention.map((r) => r.code)).toEqual([]) // T-C13: a complete group is served, nothing to attend to
     expect(byId.get(made.draft!)?.attention.map((r) => r.code)).toEqual(['not_approved'])
     expect(byId.has(made.tableFill!)).toBe(false) // not an MCQ: the Databank lane lists objective questions only
     expect(byId.get(made.plain!)?.subject?.id).toBe(mathId)

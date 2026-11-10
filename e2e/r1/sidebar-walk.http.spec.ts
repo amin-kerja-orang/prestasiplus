@@ -65,7 +65,7 @@ type WalkRole = 'student' | 'guru' | 'adminSekolah'
  * item's PRD module in docs/plan/r1-traceability.md. Calibrated by the CI runs of e08d5575 and 0daa328a.
  *
  * The Alat Soalan tool items of Guru (`GURU_TOOLS` in src/shells/nav/out-of-scope.ts:
- * /guru/databank, /guru/kertas-peperiksaan ...; S6-T16..S6-T20) are hidden by
+ * /guru/kertas-peperiksaan ...; S6-T16..S6-T20) are hidden by
  * `navFor` while the prototype scope is on, so they are not rendered and have no row yet. Add a row per
  * route when a card un-hides one. S6-T16 un-hid /guru/soalan-guru (item t-soalan-rujukan) and S6-T17
  * un-hid /guru/soalan-berstruktur (item t-soalan-berstruktur); both are rendered and routed by m10, so

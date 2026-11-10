@@ -1,6 +1,7 @@
 export { ExamBuilderModule } from './builder.module'
 export { BuilderRepository } from './builder.repository'
-export { BuilderService } from './builder.service'
+export { BuilderService, type ImportDraftPaperInput, type ImportDraftPaperResult, type ImportPlacement } from './builder.service'
+export { PaperImportError, PaperImportGroupSplitError, PaperImportPublishedError, PaperImportQuestionError, PaperImportSectionLimitError, type PaperImportErrorCode } from './import-errors'
 export { checkPaper, publishErrors, type CheckInput, type PaperCheck } from './paper-check'
 export {
   BijakBuilderPorts,

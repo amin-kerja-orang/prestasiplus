@@ -97,7 +97,7 @@ model Achievement {
   rewardSyiling      Int      @default(0) @map("reward_syiling")
   rewardXp           Int      @default(0) @map("reward_xp")
   /// practice_sessions, streak, lifetime_syiling, accurate_sessions, subjects, mystery_openings, completions,
-  /// math_correct, science_correct, fast_answers, referrals, unlocked, answers_accuracy, perfect_days (check).
+  /// math_correct, science_correct, fast_answers, referrals, unlocked, answers_accuracy, perfect_days, battle_wins (check).
   /// The mock camelCase identifiers are stored snake_case. Null together with `criterion_min` (check).
   criterionKind      String?  @map("criterion_kind")
   criterionMin       Int?     @map("criterion_min")
@@ -209,10 +209,12 @@ model Draw {
   ticketCostSyiling    Int       @map("ticket_cost_syiling")
   maxTicketsPerStudent Int       @map("max_tickets_per_student")
   closesAt             DateTime? @map("closes_at") @db.Timestamptz(6)
-  /// draft, open, closed (check).
+  /// draft, open, closed, drawn, cancelled (check `ck_draws_status`, DM-65).
   status               String    @default("draft")
   winnerUserId         BigInt?   @map("winner_user_id")
   drawnAt              DateTime? @map("drawn_at") @db.Timestamptz(6)
+  /// DM-65: set when the draw is cancelled.
+  cancelledAt          DateTime? @map("cancelled_at") @db.Timestamptz(6)
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   legacySource         String?   @map("legacy_source")
@@ -220,6 +222,7 @@ model Draw {
 
   prizes  DrawPrize[]
   tickets DrawTicket[]
+  winners DrawWinner[]
 
   @@unique([legacySource, legacyId], map: "uq_draws_legacy")
   @@index([status, closesAt], map: "ix_draws_status_closes_at")
@@ -238,7 +241,8 @@ model DrawPrize {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  draw Draw @relation(fields: [drawId], references: [id], onDelete: Cascade, map: "fk_draw_prizes_draw_id")
+  draw    Draw         @relation(fields: [drawId], references: [id], onDelete: Cascade, map: "fk_draw_prizes_draw_id")
+  winners DrawWinner[]
 
   @@unique([drawId, position], map: "uq_draw_prizes_draw_position")
   @@map("draw_prizes")
@@ -254,11 +258,38 @@ model DrawTicket {
   clientUuid String? @map("client_uuid") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  draw Draw @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_tickets_draw_id")
+  draw   Draw         @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_tickets_draw_id")
+  winner DrawWinner?
 
   @@index([drawId, userId], map: "ix_draw_tickets_draw_id_user_id")
   @@index([userId, createdAt], map: "ix_draw_tickets_user_id_created_at")
   @@map("draw_tickets")
+}
+
+/// DM-36 (S7-T07): one row per prize slot filled by "Cabut pemenang". `slot` counts the winners of one prize line from 0 (a line with
+/// `qty` 3 has the slots 0, 1 and 2). `(draw_prize_id, slot)` is unique, so a second draw run cannot record a second winner, and so is
+/// `(draw_id, user_id)`: one prize per pupil per draw. The users are plain columns, as on `draw_tickets` (FK in SQL only).
+model DrawWinner {
+  id            BigInt    @id @default(autoincrement())
+  drawId        BigInt    @map("draw_id")
+  drawPrizeId   BigInt    @map("draw_prize_id")
+  ticketId      BigInt    @unique(map: "uq_draw_winners_ticket_id") @map("ticket_id")
+  slot          Int       @db.SmallInt
+  userId        BigInt    @map("user_id")
+  drawnAt       DateTime  @map("drawn_at") @db.Timestamptz(6)
+  drawnById     BigInt?   @map("drawn_by_id")
+  /// Set by "Tandakan Dihantar" (the prize was handed over outside the app).
+  deliveredAt   DateTime? @map("delivered_at") @db.Timestamptz(6)
+  deliveredById BigInt?   @map("delivered_by_id")
+
+  draw      Draw       @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_winners_draw_id")
+  drawPrize DrawPrize  @relation(fields: [drawPrizeId], references: [id], onDelete: Restrict, map: "fk_draw_winners_draw_prize_id")
+  ticket    DrawTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade, map: "fk_draw_winners_ticket_id")
+
+  @@unique([drawPrizeId, slot], map: "uq_draw_winners_draw_prize_id_slot")
+  @@unique([drawId, userId], map: "uq_draw_winners_draw_id_user_id")
+  @@index([userId], map: "ix_draw_winners_user_id")
+  @@map("draw_winners")
 }
 
 /// Syiling-priced reward catalogue of the Kawalan Reward screen (M14; budgeted in sen). No .cloud source.
@@ -388,17 +419,63 @@ model RewardRedemption {
   @@map("reward_redemptions")
 }
 
-/// One mystery box opening. The four boxes are static constants in code (no table, as in the mock); `box_id` is the constant's id.
+/// One mystery box opening. `box_id` references `mystery_boxes` (FK from 0222; ids 1 to 4 are the old constant boxes, kept inactive).
+/// The prize columns and `client_uuid` are written by the pupil flow of S7-T07 part P8; rows made before it hold NULL there.
+/// DM-79 pattern: the partial unique index (user_id, client_uuid) WHERE client_uuid IS NOT NULL lives in migration 0222 only.
 model MysteryBoxOpening {
-  id        BigInt   @id @default(autoincrement())
-  userId    BigInt   @map("user_id")
-  boxId     Int      @map("box_id")
-  coins     Int
-  xp        Int
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  boxId       Int      @map("box_id")
+  coins       Int
+  xp          Int
+  /// Label, kind (syiling, token; check) and amount of the prize as drawn (NULL before P8).
+  prizeLabel  String?  @map("prize_label")
+  prizeKind   String?  @map("prize_kind")
+  prizeAmount Int?     @map("prize_amount")
+  clientUuid  String?  @map("client_uuid") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  box MysteryBox @relation(fields: [boxId], references: [id], onDelete: Restrict, map: "fk_mystery_box_openings_box_id")
 
   @@index([userId, createdAt], map: "ix_mystery_box_openings_user_id_created_at")
+  @@index([boxId], map: "ix_mystery_box_openings_box_id")
   @@map("mystery_box_openings")
+}
+
+/// DM-37: a Kotak Misteri box. Cost lives only here (R2). Ids 1 to 4 are the four old constant boxes, inactive and
+/// without prizes; id 5 is the one active box (migration 0222). There is no create route (R1): admins edit these rows.
+model MysteryBox {
+  id          Int      @id @default(autoincrement())
+  label       String
+  /// Cost of one opening in syiling (check >= 1).
+  costSyiling Int      @map("cost_syiling")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  prizes   MysteryBoxPrize[]
+  openings MysteryBoxOpening[]
+
+  @@map("mystery_boxes")
+}
+
+/// DM-37: one prize row of a box. `kind` is syiling or token (check), `amount >= 1`, `weight` an integer 0..100
+/// (the weights of a box total 100, enforced by the admin save), `stock` NULL = unlimited, 0 = out of stock.
+model MysteryBoxPrize {
+  id        BigInt   @id @default(autoincrement())
+  boxId     Int      @map("box_id")
+  label     String
+  kind      String
+  amount    Int
+  weight    Int
+  stock     Int?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  box MysteryBox @relation(fields: [boxId], references: [id], onDelete: Cascade, map: "fk_mystery_box_prizes_box_id")
+
+  @@index([boxId], map: "ix_mystery_box_prizes_box_id")
+  @@map("mystery_box_prizes")
 }
 
 /// Key/value gamification settings (mock `gamification.settings`); toggles are 0/1.

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 /**
- * Mystery-box result dialog (FR-M15-52; URS FN-M15-6.2.3, PROPOSED content). Bottom sheet below
- * `sm`, centred modal from `sm`. "Tutup" and the scrim close it. The sticker stamps in and stays
- * still under reduced motion.
+ * Mystery-box result dialog (48 GAME-23 "Tahniah! Anda dapat {prize}."). Bottom sheet below `sm`, centred modal from
+ * `sm`. "Tutup" and the scrim close it. The sticker stamps in and stays still under reduced motion.
  */
-import { DsArt3D, DsDialog, DsSticker } from '@/ds'
+import { DsArt3D, DsDialog, DsSticker, DsStack, DsText } from '@/ds'
 
 import type { MysteryBoxOpened } from '../api'
 import { BOX_COPY } from './copy'
@@ -23,19 +22,17 @@ function onOpen(value: boolean): void {
     :title="result?.boxName ?? BOX_COPY.heading"
     @update:open="onOpen"
   >
-    <div
-      v-if="result"
-      class="flex flex-col items-center gap-4 text-center"
-      data-testid="box-result"
-    >
+    <DsStack v-if="result" align="center" data-testid="box-result">
       <DsArt3D name="party" size="hero" float data-testid="box-result-icon" />
-      <p class="text-heading text-highlighted" data-testid="box-result-name">
-        {{ result.boxName }}
-      </p>
-      <DsSticker art="coin">
-        <span data-testid="box-result-reward">+{{ result.coins }} 🪙 · +{{ result.xp }} XP</span>
+      <DsText variant="heading" tone="highlighted" align="center" data-testid="box-result-name">{{
+        BOX_COPY.won(result.prize.label)
+      }}</DsText>
+      <DsSticker :art="result.prize.kind === 'syiling' ? 'coin' : 'bolt'">
+        <span data-testid="box-result-reward">{{
+          result.prize.kind === 'syiling' ? `+${result.prize.amount} 🪙` : `+${result.prize.amount} token`
+        }}</span>
       </DsSticker>
-    </div>
+    </DsStack>
     <template #footer>
       <UButton size="xl" class="min-h-14" data-testid="box-result-close" @click="emit('close')">
         {{ BOX_COPY.close }}

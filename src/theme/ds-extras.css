@@ -138,8 +138,65 @@
 
 /* Keyboard focus for anything interactive that a component did not style itself (DS tiles, rows,
    pills, custom buttons). Zero specificity (:where) so every component rule still wins; the colour
-   is the live primary, which is AA against the surfaces in all four personality x mode scopes. */
-[data-personality] :where(a[href], button, select, textarea, input, summary, [role='button'], [role='tab'], [role='link'], [tabindex]:not([tabindex='-1'])):focus-visible {
+   is the live primary, which is AA against the surfaces in all four personality x mode scopes.
+   Fields (theme `filled`: Input, Textarea, Select, SelectMenu, InputMenu...) are excluded through their
+   `focus-visible:ring-inset` class: they show exactly ONE indicator, the inset 2px ring (R1, 2026-11-09).
+   DS composites that draw their own box-shadow ring (stat tile, native select, pill nav, media card; see
+   src/ds/states.css) are excluded too: ring plus outline read as a doubled ring. */
+[data-personality] :where(a[href], button, select, textarea, input, summary, [role='button'], [role='tab'], [role='link'], [tabindex]:not([tabindex='-1'])):not([class*='focus-visible:ring-inset'], [data-ds='stat-tile'], [data-ds='native-select'], [data-ds='pill-nav'] *, [data-ds='media-card'] *):focus-visible {
   outline: 2px solid var(--ui-primary);
   outline-offset: 2px;
+}
+
+/* Menu and listbox rows (dropdown, select, command palette) are the exception: their keyboard focus is
+   the highlighted row fill (src/theme/ui/components.ts `item`), never an outline. The ring above drew a
+   thick off-centre frame on the first row (PO 2026-11-09). Higher specificity than the rule above. */
+[data-personality] :is([role='menuitem'], [role='menuitemcheckbox'], [role='menuitemradio'], [role='option']):focus-visible {
+  outline: none;
+}
+
+/* Sidebar navigation rows (both shells) take the same treatment: keyboard focus = the highlighted row fill
+   (theme `navigationMenu.link`), never a detached outline ring. */
+[data-personality] [data-orientation='vertical'] [data-slot='link']:focus-visible {
+  outline: none;
+}
+
+/* Card lists of any length (video, artikel, misi, command center...): no orphan last row. One column
+   below md, two from md, three from xl (`data-ds-fill="3"`). The last card of an odd 2-column row spans
+   both; on the 3-column track (6 units) a lone last card spans all 6, the last two span 3 each. */
+[data-ds-fill] {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 768px) {
+  [data-ds-fill] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  [data-ds-fill] > :last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+}
+@media (min-width: 1280px) {
+  [data-ds-fill='3'] {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  [data-ds-fill='3'] > * {
+    grid-column: span 2;
+  }
+  [data-ds-fill='3'] > :last-child:nth-child(3n + 1) {
+    grid-column: span 6;
+  }
+  [data-ds-fill='3'] > :last-child:nth-child(3n + 2),
+  [data-ds-fill='3'] > :nth-last-child(2):nth-child(3n + 1) {
+    grid-column: span 3;
+  }
+}
+
+/* Touch target (44px) of a plain text link inside a table or its phone card list: the link takes the
+   vertical padding (a 20px line becomes 44px) below md. Links that are buttons (inline-flex) size themselves. */
+@media (max-width: 767px) {
+  :is([data-ds='data-table'], [data-ds='drill-table']) a[href]:not([class*='inline-flex']) {
+    padding-block: 0.75rem;
+  }
 }

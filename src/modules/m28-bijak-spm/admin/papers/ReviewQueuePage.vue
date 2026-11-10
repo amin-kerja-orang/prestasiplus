@@ -173,7 +173,6 @@ function open(row: Row): void {
       <DsNativeSelect
         v-model="draft.subject"
         aria-label="Subjek"
-        class="md:w-48"
         data-testid="queue-subject"
       >
         <option value="">Semua subjek</option>
@@ -182,7 +181,6 @@ function open(row: Row): void {
       <DsNativeSelect
         v-model="draft.kertas"
         aria-label="Kertas"
-        class="md:w-40"
         data-testid="queue-kertas"
       >
         <option v-for="o in KERTAS_ITEMS" :key="o.value" :value="o.value">{{ o.label }}</option>
@@ -190,7 +188,6 @@ function open(row: Row): void {
       <DsNativeSelect
         v-model="draft.kind"
         aria-label="Jenis soalan"
-        class="md:w-44"
         data-testid="queue-kind"
       >
         <option v-for="o in KIND_ITEMS" :key="o.value" :value="o.value">{{ o.label }}</option>

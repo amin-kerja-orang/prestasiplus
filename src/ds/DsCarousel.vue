@@ -16,6 +16,10 @@ withDefaults(
   { arrows: false, dots: true, loop: false },
 )
 
+// Arrows sit in the dots row (inside the carousel), never in the page gutter. The `translate-y-0` cancels the
+// theme's vertical centring (`-translate-y-1/2`).
+const ARROW_PREV = 'top-auto bottom-0 start-0 translate-y-0 sm:start-0'
+const ARROW_NEXT = 'top-auto bottom-0 end-0 translate-y-0 sm:end-0'
 defineSlots<{ item(props: { item: T; index: number }): unknown }>()
 </script>
 
@@ -31,6 +35,8 @@ defineSlots<{ item(props: { item: T; index: number }): unknown }>()
       item: 'basis-full',
       dots: 'mt-3 bottom-auto relative inset-x-0',
       dot: 'bg-accented data-[state=active]:bg-friend',
+      prev: ARROW_PREV,
+      next: ARROW_NEXT,
     }"
     data-ds="carousel"
   >

@@ -37,7 +37,7 @@ import { candidateUnits, emptyTag, guessUnit, tagWithUnit } from './mock-units'
 
 export const MOCK_MODEL_ID = 'heuristik-1'
 
-interface Line {
+export interface Line {
   page: number
   text: string
 }
@@ -58,13 +58,13 @@ function toLines(input: AiExtractRequest): Line[] {
   return out
 }
 
-function takeMarks(text: string): { text: string; marks?: number } {
+export function takeMarks(text: string): { text: string; marks?: number } {
   const m = MARKS_RE.exec(text)
   if (!m) return { text }
   return { text: text.replace(MARKS_RE, '').trim(), marks: Number(m[1]) }
 }
 
-function modeFor(prompt: string, marks: number): AiLeafKind {
+export function modeFor(prompt: string, marks: number): AiLeafKind {
   const p = prompt.toLowerCase()
   if (/\blukis\b/.test(p)) return 'drawing'
   if (/\b(jelaskan|huraikan|bincangkan)\b/.test(p)) return marks >= 4 ? 'essay' : 'short_text'
@@ -73,9 +73,11 @@ function modeFor(prompt: string, marks: number): AiLeafKind {
   return marks >= 3 ? 'working' : 'short_text'
 }
 
-interface Draft {
+export interface Draft {
   label: string
   page: number
+  /** Direct link to a stimulus (the real-paper segmenter); the mock uses range `links` instead. */
+  stimId?: string
   stem: string[]
   options: { id: string; text: string }[]
   parts: { label: string; prompt: string[]; marks?: number }[]
@@ -110,9 +112,7 @@ function warningsOf(q: AiQuestionDraft): AiItemWarning[] {
 }
 
 export function parsePaper(input: AiExtractRequest): ExtractedDraftPaper {
-  const units = candidateUnits(input.subject, input.taxonomy)
   let stimSeq = 0
-  let questionSeq = 0
   const lines = toLines(input)
   const schemeAt = lines.findIndex((l) => /^(skema|jawapan\s*:)/i.test(l.text))
   const body = schemeAt === -1 ? lines : lines.slice(0, schemeAt)
@@ -195,8 +195,20 @@ export function parsePaper(input: AiExtractRequest): ExtractedDraftPaper {
     else cur.stem.push(t)
   }
 
+  return finishPaper(input, { drafts, stimuli, links, schemeLines }, MOCK_MODEL_ID)
+}
+
+/** The shared second half: drafts to questions, stimulus links, then the answer key and schemes. Used by the mock and by the real-paper segmenter. */
+export function finishPaper(
+  input: AiExtractRequest,
+  parts: { drafts: Draft[]; stimuli: AiIntakeStimulus[]; links: { stim: string; from: number; to: number }[]; schemeLines: Line[]; extraWarnings?: string[] },
+  model: string,
+): ExtractedDraftPaper {
+  const { drafts, stimuli, links, schemeLines } = parts
+  const units = candidateUnits(input.subject, input.taxonomy)
+  let questionSeq = 0
   /* ---- build questions */
-  const warnings: string[] = []
+  const warnings: string[] = [...(parts.extraWarnings ?? [])]
   const questions: AiQuestionDraft[] = drafts.map((d) => {
     const stemRaw = takeMarks(d.stem.join(' '))
     const parts: AiDraftPart[] = d.parts.map((p, i) => {
@@ -231,6 +243,7 @@ export function parsePaper(input: AiExtractRequest): ExtractedDraftPaper {
       confirmed: [],
       fieldConfidence: {},
       warnings: [],
+      ...(d.stimId ? { stimulusId: d.stimId } : {}),
     }
     if (!q.stem && q.parts.length === 0) q.needsManual = true
     return q
@@ -271,17 +284,20 @@ export function parsePaper(input: AiExtractRequest): ExtractedDraftPaper {
     anyN.n = 0
   }
 
+  let inKey = false
   for (const l of schemeLines) {
     const t = l.text
-    const key = /^jawapan\s*:\s*(.*)$/i.exec(t)
+    const key = /^(?:jawapan|kunci\s+jawapan)\s*:?\s*(.*)$/i.exec(t) ?? (inKey && /^(?:\d{1,3}\s*[-:.)]?\s*[A-E]\b\s*)+$/.test(t) ? ([t, t] as unknown as RegExpExecArray) : null)
     if (key) {
-      for (const m of (key[1] as string).matchAll(/(\d{1,3})\s*[-:.]?\s*([A-D])\b/g)) {
+      inKey = true
+      for (const m of (key[1] as string).matchAll(/(\d{1,3})\s*[-:.)]?\s*([A-E])\b/g)) {
         const q = byLabel.get(m[1] as string)
         if (q && q.type === 'mcq') q.scheme = { kind: 'option', marks: q.marks || 1, correct: m[2] as string, reason: '' }
         else unmatched.push(`Jawapan ${m[1] as string}-${m[2] as string}`)
       }
       continue
     }
+    if (/^skema/i.test(t)) inKey = false
     const head = /^skema\s+(\d{1,3})\s*((?:\([a-z]+\))*)\s*$/i.exec(t)
     if (head) {
       finish()
@@ -325,5 +341,5 @@ export function parsePaper(input: AiExtractRequest): ExtractedDraftPaper {
     q.warnings = warningsOf(q)
   }
 
-  return { provider: 'mock', model: MOCK_MODEL_ID, questions, stimuli, unmatched, warnings }
+  return { provider: 'mock', model, questions, stimuli, unmatched, warnings }
 }

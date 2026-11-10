@@ -9,7 +9,9 @@ afterEach(() => {
   vi.resetModules()
 })
 
-const load = async () => (await import('../../routes/laporan')).default
+// the fragment also holds `/admin/laporan` (S6-T11, always on); only the central records sit behind the flag
+const load = async () =>
+  (await import('../../routes/laporan')).default.filter((r) => r.path.startsWith('/admin/laporan-sekolah'))
 const loadAll = async () => (await import('../../routes')).default
 
 describe('central report routes', () => {

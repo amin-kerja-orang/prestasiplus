@@ -35,6 +35,7 @@ import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 import { useShellStore } from '@/stores/shell'
 
+import { isFeatureRouteOff } from '../features'
 import {
   isPathAllowed,
   isPrototypeRole,
@@ -60,7 +61,8 @@ const PASSWORD_CHANGE_ALLOWED = [PASSWORD_CHANGE_PATH, '/logout']
 /** A same-origin app path that is worth returning to (not `/`, not an auth page, no `//host`). */
 export function isSafeRedirect(value: unknown): value is string {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return false
-  if (value.includes('\\') ||value === '/') return false
+  // Backslash and control characters (a browser drops tab/newline, so `/\t/host` would become `//host`).
+  if (value.includes('\\') || /[\u0000-\u001f\u007f]/.test(value) || value === '/') return false
   const path = value.split(/[?#]/)[0] ?? ''
   return !['/login', '/logout', '/register'].includes(path)
 }
@@ -101,6 +103,15 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
   }
 
   if (roles !== undefined && (session.role === null || !roles.includes(session.role))) {
+    // The server landing of this role is the refused path itself (the API lands a school admin on `/admin`,
+    // admin only): send it to its own home, not a 403 (D106, G4 #394). Scope on or off.
+    if (
+      session.landingPath === to.path &&
+      isPrototypeRole(session.role) &&
+      scopeHomePath(session.role) !== to.path
+    ) {
+      return { kind: 'redirect', to: scopeHomePath(session.role) }
+    }
     const outcome = to.meta.onForbidden ?? DEFAULT_ON_FORBIDDEN
     if (outcome === '403') return { kind: 'in-place', status: 403 }
     if (outcome === '404') return { kind: 'in-place', status: 404 }
@@ -136,6 +147,9 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     return { kind: 'in-place', status: 404 }
   }
 
+  // Kawalan Ciri (S0-T10): a page of a feature switched OFF answers the same in-place 404 page (URL kept).
+  if (isFeatureRouteOff(to.path)) return { kind: 'in-place', status: 404 }
+
   return ALLOW
 }
 
@@ -159,7 +173,10 @@ export function installGuards(router: Router): void {
     // v2 usability: a guest sent to /login remembers the page asked for (`?redirect=`); the login
     // page returns there when the role may open it. The 401 policy and `/logout` stay plain.
     if (decision.to === LOGIN_PATH && isSafeRedirect(to.fullPath)) {
-      return { path: LOGIN_PATH, query: { redirect: to.fullPath } }
+      // A session just ended by a 401 says `kembali` (banner + return, AC-ERR-2) even when this guard wins the race with the
+      // 401 redirect; a plain guest keeps `redirect` (no banner).
+      const key = session.takeEndedByUnauthorized() ? 'kembali' : 'redirect'
+      return { path: LOGIN_PATH, query: { [key]: to.fullPath } }
     }
     return decision.to
   })

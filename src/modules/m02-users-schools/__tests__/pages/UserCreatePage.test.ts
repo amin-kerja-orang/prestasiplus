@@ -136,7 +136,7 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     expect(t(w, 'user-phone').attributes('maxlength')).toBe('14')
     expect(t(w, 'user-phone').attributes('inputmode')).toBe('tel')
     expect(t(w, 'user-phone').attributes('placeholder')).toBe('Cth: 0191234567')
-    expect(t(w, 'user-password').attributes('placeholder')).toBe('Minimum 6 aksara')
+    expect(t(w, 'user-password').attributes('placeholder')).toBe('Minimum 8 aksara')
     expect(t(w, 'user-password-confirm').attributes('placeholder')).toBe('Taip semula kata laluan')
     for (const id of [
       'user-name',
@@ -268,7 +268,7 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
         message: 'The given data was invalid.',
         fields: {
           name: 'The name field is required.',
-          password: 'The password field must be at least 6 characters.',
+          password: 'The password field must be at least 8 characters.',
           grade: 'The grade field is required when role is student.',
         },
       }),
@@ -276,14 +276,14 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     const w = await render()
     await type(w, 'user-role', 'student')
     await type(w, 'user-email', 'kekal@contoh.test')
-    await type(w, 'user-password', 'abc')
-    await type(w, 'user-password-confirm', 'abc')
+    await type(w, 'user-password', 'abcdefgh')
+    await type(w, 'user-password-confirm', 'abcdefgh')
     await w.get('form').trigger('submit')
     await flushPromises()
     const alert = t(w, 'user-form-alert')
     expect(alert.findAll('p').map((p) => p.text())).toEqual([
       'The name field is required.',
-      'The password field must be at least 6 characters.',
+      'The password field must be at least 8 characters.',
       'The grade field is required when role is student.',
     ])
     expect((t(w, 'user-role').element as HTMLSelectElement).value).toBe('student')
@@ -292,6 +292,38 @@ describe('UserCreatePage (M02 S2) role-driven form', () => {
     expect((t(w, 'user-password-confirm').element as HTMLInputElement).value).toBe('')
     expect(router.currentRoute.value.path).toBe('/form')
     expect(useFlashStore().pending).toBeNull()
+  })
+})
+
+describe('UserCreatePage (M02 S2) password minimum 8 (FR-ADM-U02.4)', () => {
+  it('refuses a typed password shorter than 8 characters before any request', async () => {
+    const w = await render()
+    await type(w, 'user-role', 'admin')
+    await type(w, 'user-name', 'Pentadbir Contoh')
+    await type(w, 'user-email', 'pentadbir@contoh.test')
+    await type(w, 'user-password', 'abc1234')
+    await type(w, 'user-password-confirm', 'abc1234')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(users.createAdminUser).not.toHaveBeenCalled()
+    expect(
+      t(w, 'user-form-alert')
+        .findAll('p')
+        .map((p) => p.text()),
+    ).toEqual(['Kata laluan mesti sekurang-kurangnya 8 aksara.'])
+  })
+
+  it('accepts exactly 8 characters', async () => {
+    users.createAdminUser.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await render()
+    await type(w, 'user-role', 'admin')
+    await type(w, 'user-name', 'Pentadbir Contoh')
+    await type(w, 'user-email', 'pentadbir@contoh.test')
+    await type(w, 'user-password', 'abcd1234')
+    await type(w, 'user-password-confirm', 'abcd1234')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(users.createAdminUser).toHaveBeenCalledTimes(1)
   })
 })
 

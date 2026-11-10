@@ -82,7 +82,7 @@ export function monitoringRoutes({
             title: 'Monitoring Penglibatan Sekolah - Admin',
             header: {
               title: 'Monitoring Penglibatan',
-              subtitle: 'Pantau penglibatan sekolah & pelajar dalam platform',
+              subtitle: 'Pemantauan penglibatan pelajar & sekolah',
             },
           },
         },

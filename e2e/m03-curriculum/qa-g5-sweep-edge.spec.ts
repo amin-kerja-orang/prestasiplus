@@ -332,7 +332,7 @@ test.describe('QA G5 validation and edge cases', MODULE, () => {
     ]) {
       await gotoApp(`/admin/curriculum?${q}`)
       await expect(page.getByTestId('curriculum-filter'), q).toBeVisible()
-      await expect(page.getByTestId('shell-admin-title'), q).toHaveText('Pengurusan Kurikulum')
+      await expect(page.getByTestId('shell-admin-title'), q).toHaveText('Kurikulum')
       await expectNoHorizontalScroll(page)
       // No raw error / blank page: either the prompt, an empty tree or a red message box.
       const visible = await page

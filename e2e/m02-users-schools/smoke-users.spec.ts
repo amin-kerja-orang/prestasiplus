@@ -35,7 +35,7 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   })
 
   test('totals, role cards, layout and no horizontal scroll', async ({ page }) => {
-    await expectTabTitle(page, 'Pengurusan Pengguna - Admin Panel')
+    await expectTabTitle(page, 'Senarai Pengguna | PRESTASIPLUS')
     await expect(page.getByTestId('user-row')).toHaveCount(25)
 
     for (const [role, count] of Object.entries(ROLE_COUNTS)) {

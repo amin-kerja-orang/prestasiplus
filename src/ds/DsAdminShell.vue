@@ -26,10 +26,10 @@ import {
 } from '@/theme/admin-shell-ui'
 import { uiLocale } from '@/theme/locale-ms'
 
+import DsBadge from './DsBadge.vue'
 import DsBrandLogo from './DsBrandLogo.vue'
 import DsCallout from './DsCallout.vue'
 import DsConfirmHost from './DsConfirmHost.vue'
-import DsIcon from './DsIcon.vue'
 import DsThemeScope from './DsThemeScope.vue'
 import type {
   DsShellAccountIcon,
@@ -83,7 +83,7 @@ const flashText = computed(() => {
 /** Menu items; the sub-group indent applies to the expanded sidebar only (the rail keeps one column). */
 const navItemsFor = (collapsed: boolean): NavigationMenuItem[][] =>
   props.groups.map((g) => [
-    { label: g.label, type: 'label' as const, value: g.key },
+    ...(g.label ? [{ label: g.label, type: 'label' as const, value: g.key }] : []),
     ...g.rows.map((r) =>
       r.kind === 'sub'
         ? { label: r.label, type: 'label' as const, value: `sub:${r.label}`, class: adminNavSubLabel }
@@ -94,6 +94,7 @@ const navItemsFor = (collapsed: boolean): NavigationMenuItem[][] =>
             active: r.active,
             value: `${g.key}:${r.id}`,
             ...(r.nested && !collapsed ? { class: adminNavNestedLink } : {}),
+            ...(r.badge ? { dsBadge: r.badge } : {}),
           },
     ),
   ])
@@ -171,7 +172,7 @@ const accountMenu = computed(() =>
               variant="outline"
               size="md"
               :kbds="adminSearchKbds"
-              class="h-10 w-full"
+              class="mb-2 h-10 w-full"
               :class="collapsed ? 'justify-center' : 'justify-start px-2.5 font-normal text-muted'"
               :ui="adminSearchUi"
               data-testid="pentadbiran-search"
@@ -189,50 +190,36 @@ const accountMenu = computed(() =>
               <template #item-leading="{ item }">
                 <span
                   v-if="item.icon"
-                  class="grid size-7 shrink-0 place-items-center rounded-md"
+                  class="relative grid size-7 shrink-0 place-items-center rounded-md"
                   :class="chipOf(item.value)"
-                  ><UIcon :name="item.icon" class="size-4"
-                /></span>
+                  ><UIcon :name="item.icon" class="size-4" />
+                  <!-- Icon rail: the label and its pill are hidden, so a dot and a screen-reader name carry the badge. -->
+                  <template v-if="item.dsBadge && collapsed">
+                    <span
+                      class="absolute end-0 top-0 size-2 rounded-full bg-error"
+                      aria-hidden="true"
+                      data-testid="pentadbiran-nav-badge-dot"
+                    />
+                    <span class="sr-only" data-testid="pentadbiran-nav-badge-sr"
+                      >{{ item.label }} {{ item.dsBadge }}</span
+                    >
+                  </template></span
+                >
               </template>
               <template #item-label="{ item }"
-                ><span class="truncate" :title="item.label">{{ item.label }}</span></template
-              >
+                ><span class="truncate" :title="item.label">{{ item.label }}</span
+                ><DsBadge
+                  v-if="item.dsBadge"
+                  :label="String(item.dsBadge)"
+                  tone="error"
+                  emphasis="strong"
+                  size="sm"
+                  class="ml-1.5 px-1.5"
+                  data-testid="pentadbiran-nav-badge"
+              /></template>
             </UNavigationMenu>
           </template>
 
-          <template #footer="{ collapsed }">
-            <UDropdownMenu
-              :items="accountMenu"
-              :content="{ align: 'start', side: 'top' }"
-              :ui="adminAccountMenuUi"
-            >
-              <UButton
-                color="neutral"
-                variant="ghost"
-                block
-                class="h-auto justify-start gap-2.5 p-1.5 text-start"
-                aria-label="Menu akaun"
-                data-testid="pentadbiran-account"
-              >
-                <span
-                  class="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
-                  aria-hidden="true"
-                  >{{ initials }}</span
-                >
-                <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
-                  <span
-                    class="block truncate text-label text-highlighted"
-                    :title="accountName || 'Akaun'"
-                    >{{ accountName || 'Akaun' }}</span
-                  >
-                  <span class="block truncate text-caption text-muted" :title="accountCaption">{{
-                    accountCaption
-                  }}</span>
-                </span>
-                <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
-              </UButton>
-            </UDropdownMenu>
-          </template>
         </UDashboardSidebar>
 
         <UDashboardPanel
@@ -243,7 +230,7 @@ const accountMenu = computed(() =>
             <UDashboardNavbar
               :toggle="false"
               :as="{ title: 'div' }"
-              :ui="{ title: 'min-w-0', right: 'gap-2' }"
+              :ui="{ root: 'px-4 sm:px-4 md:px-6', left: 'min-w-0 flex-1', title: 'min-w-0', right: 'gap-2' }"
               data-testid="pentadbiran-header"
             >
               <template #leading>
@@ -309,6 +296,40 @@ const accountMenu = computed(() =>
                   data-testid="pentadbiran-theme-toggle"
                   @click="$emit('toggleTheme')"
                 />
+                <!-- Account menu sits in the navbar (PO 2026-11-09), not the sidebar footer. -->
+                <UDropdownMenu
+                  :items="accountMenu"
+                  :content="{ align: 'end', side: 'bottom' }"
+                  :ui="adminAccountMenuUi"
+                >
+                  <!-- Avatar only (PO 2026-11-09): the name and role head the dropdown. -->
+                  <button
+                    type="button"
+                    class="group ml-1 grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline-none md:size-10"
+                    :aria-label="`Menu akaun: ${accountName || 'Akaun'}`"
+                    :title="accountName || 'Akaun'"
+                    data-testid="pentadbiran-account"
+                  >
+                    <span
+                      class="grid size-8 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on ring-2 ring-transparent ring-offset-2 ring-offset-default transition group-hover:ring-primary/40 group-focus-visible:ring-primary"
+                      aria-hidden="true"
+                      >{{ initials }}</span
+                    >
+                  </button>
+                  <template #content-top>
+                    <div class="flex items-center gap-2.5 px-3 pt-3 pb-2" data-testid="pentadbiran-account-head">
+                      <span
+                        class="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
+                        aria-hidden="true"
+                        >{{ initials }}</span
+                      >
+                      <span class="min-w-0 leading-tight">
+                        <span class="block truncate text-label text-highlighted">{{ accountName || 'Akaun' }}</span>
+                        <span class="block truncate text-caption text-muted">{{ accountCaption }}</span>
+                      </span>
+                    </div>
+                  </template>
+                </UDropdownMenu>
               </template>
             </UDashboardNavbar>
           </template>

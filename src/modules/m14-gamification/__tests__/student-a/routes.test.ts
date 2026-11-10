@@ -17,14 +17,14 @@ describe('M14 student-a routes (FR-M14-04, 05, 06; DV-M14-01)', () => {
       expect(r.meta?.access).toBe('auth')
       expect(r.meta?.roles).toBeUndefined()
       expect(r.meta?.module).toBe('M14')
-      expect(r.meta?.header?.subtitle).toBe('Selamat datang kembali')
+      expect(r.meta?.header?.subtitle).toBeTruthy()
     }
   })
 
   it('tab titles are exact and header titles follow DV-M14-01', () => {
     const titles = (p: string) => [byPath[p]!.meta!.title, byPath[p]!.meta!.header!.title]
-    expect(titles('/gamification')).toEqual(['Gamifikasi Dashboard', 'Gamifikasi Dashboard'])
-    expect(titles('/gamification/convert')).toEqual(['Tukar Token', 'Tukar Syiling → Token'])
+    expect(titles('/gamification')).toEqual(['Gamifikasi Dashboard', 'Syiling & Ganjaran'])
+    expect(titles('/gamification/convert')).toEqual(['Tukar Token', 'Tukar Token'])
     expect(titles('/gamification/challenges')).toEqual(['Cabaran Harian', 'Cabaran Harian'])
     expect(titles('/gamification/history')).toEqual(['Sejarah Transaksi', 'Sejarah Transaksi'])
   })

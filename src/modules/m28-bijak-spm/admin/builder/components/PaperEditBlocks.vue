@@ -12,7 +12,7 @@ import { builderCopy as t } from '../domain/copy'
 import { firstStimulusOf, hasStimulus } from '../domain/stimulus'
 import type { SectionPatch } from '../server/api'
 
-const props = defineProps<{ editor: PaperEditorData; readonly?: boolean; busy?: boolean }>()
+const props = defineProps<{ editor: PaperEditorData; readonly?: boolean; busy?: boolean; passagesOnly?: boolean }>()
 const emit = defineEmits<{
   section: [sectionId: string, patch: SectionPatch]
   passage: [groupId: string, label: string]
@@ -58,7 +58,7 @@ function savePassage(id: string): void {
 
 <template>
   <div class="flex flex-col gap-6" data-testid="edit-blocks">
-    <section class="flex flex-col gap-3" data-testid="edit-sections">
+    <section v-if="!passagesOnly" class="flex flex-col gap-3" data-testid="edit-sections">
       <h3 class="text-heading text-highlighted">{{ t.sectionsEdit }}</h3>
       <form
         v-for="(s, si) in editor.paper.sections"

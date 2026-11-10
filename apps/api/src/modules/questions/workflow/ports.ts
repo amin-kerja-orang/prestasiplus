@@ -29,7 +29,7 @@
  *    status change, its `question_status_events` row and a report update commit or roll back together.
  */
 import { Injectable } from '@nestjs/common'
-import type { QuestionPart, QuestionWorkflowActor, QuestionWorkflowStatus } from '@pp/contract'
+import type { QuestionPart, QuestionSchemeRules, QuestionWorkflowActor, QuestionWorkflowStatus } from '@pp/contract'
 
 /** What `getStatus` returns (mirrors BE-09 `QuestionStatusInfo`). */
 export interface QuestionStatusInfo {
@@ -89,6 +89,13 @@ export interface QuestionGateData {
   hasChapters?: boolean
   /** Codes of the SP nodes that are not under the unit (gate-check repeats FR-ADM-QE4.3). */
   spOutsideUnit?: string[]
+  /** DM-05 stimulus flag of the version (rows 25 and 26); absent = none. */
+  stimulusFlag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated' | null
+  flagDismissedAt?: Date | null
+  /** The reference the text names ("Rajah 3"), for the row 25 text. */
+  stimulusRefText?: string | null
+  /** S1-T09a: the question's `scheme_rules`; with the leaf marks it feeds the question-level penalty cap (SCHEME_PENALTY). Absent = no check. */
+  schemeRules?: QuestionSchemeRules | null
 }
 
 export interface SetStatusOptions {
@@ -153,6 +160,12 @@ export interface ImportedQuestionInput {
   language?: 'en' | 'ms+en'
   /** S1-T05 part 2: the stimulus (id) the one leaf is shown with (`part_stimulus`); the importer sets it after it creates the group's stimuli. */
   partStimulusId?: string
+  /**
+   * S1-T05 part 5a: `true_false` / `mcq_multi` rows (absent = mcq). `parts` is the one V3 leaf the importer built and validated with the
+   * contract schemas (`QuestionTrueFalseLeafSchema` / `QuestionLeafPartV3Schema`); the adapter sends it as `parts` to `QuestionsService.create`.
+   */
+  questionType?: 'true_false' | 'mcq_multi'
+  parts?: unknown[]
 }
 
 /** The stem and subject of one exact version (the version a report was filed against), for the reporter's own list. */

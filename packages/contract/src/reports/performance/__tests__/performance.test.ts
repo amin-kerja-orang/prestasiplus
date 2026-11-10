@@ -302,26 +302,16 @@ describe('performance contract (BE-19)', () => {
   })
 
   it('parses ranking, leaderboard and public profile', () => {
-    expect(
-      PerformanceRankingSchema.safeParse({
-        scope: null,
-        title: 'Kedudukan Nasional',
-        showFooter: true,
-        states: ['Negeri Contoh'],
-        rows: [
-          {
-            rank: 1,
-            userId: null,
-            name: 'Murid Contoh',
-            schoolName: 'SMK Contoh',
-            tahap: 3,
-            correct: 10,
-            accuracy: 88.5,
-          },
-        ],
-        total: 1,
-      }).success,
-    ).toBe(true)
+    const nearby = [{ rank: 1, name: 'Murid', syiling: 5, me: true }]
+    const ok = { syiling: 5, scopes: [{ scope: 'sekolah', rank: 1, total: 1, percentile: 100, nearby }] }
+    expect(PerformanceRankingSchema.safeParse(ok).success).toBe(true)
+    // a pupil without a state: the negeri entry is all null
+    expect(PerformanceRankingSchema.safeParse({ syiling: 0, scopes: [{ scope: 'negeri', rank: null, total: null, percentile: null, nearby: [] }] }).success).toBe(true)
+    expect(PerformanceRankingSchema.safeParse({ syiling: 0, scopes: [] }).success).toBe(true)
+    // the old table shape, an unknown scope and more than 5 nearby rows are refused
+    expect(PerformanceRankingSchema.safeParse({ scope: null, title: 'x', showFooter: true, states: [], rows: [], total: 0 }).success).toBe(false)
+    expect(PerformanceRankingSchema.safeParse({ syiling: 1, scopes: [{ scope: 'daerah', rank: 1, total: 1, percentile: 100, nearby: [] }] }).success).toBe(false)
+    expect(PerformanceRankingSchema.safeParse({ syiling: 1, scopes: [{ scope: 'kelas', rank: 1, total: 6, percentile: 17, nearby: Array(6).fill(nearby[0]) }] }).success).toBe(false)
     expect(
       PerformanceLeaderboardSchema.safeParse({
         period: 'week',

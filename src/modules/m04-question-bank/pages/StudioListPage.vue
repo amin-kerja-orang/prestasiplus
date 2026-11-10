@@ -40,7 +40,7 @@ import {
 
 import { useMedia } from '@/ds/useMedia'
 
-import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
+import { fetchEducationLevels, fetchStudioFilterOptions, fetchSubjects } from '../api/lookups'
 import { fetchQuestionSummary, type QuestionBulkFilter } from '../api/questions'
 import {
   createGroup,
@@ -86,12 +86,16 @@ const editPath = (id: string): string => `${STUDIO_PATH}/questions/${id}/sunting
 
 /** Kertas 1 to 4 and the exam types of the source paper (V2 "Jenis"). */
 const KERTAS_OPTIONS = ['1', '2', '3', '4']
+/** V2 `exam_types` in their order. */
 const JENIS_OPTIONS = [
-  { value: 'sebenar', label: 'Sebenar' },
   { value: 'percubaan', label: 'Percubaan' },
+  { value: 'sebenar', label: 'Sebenar' },
   { value: 'modul', label: 'Modul' },
-  { value: 'topikal', label: 'Topikal' },
-  { value: 'latihan', label: 'Latihan' },
+]
+/** V2 `exam_boards` ("Negeri") in their order (ProvenanceVocabSeeder). */
+const NEGERI_OPTIONS = [
+  'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak', 'Selangor',
+  'Terengganu', 'WP Kuala Lumpur', 'WP Labuan', 'WP Putrajaya', 'MRSM', 'SBP', 'SABK', 'SMKA', 'SPM(U)', 'PPD',
 ]
 const PAGE_SIZES = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
@@ -180,6 +184,20 @@ const groupProblems = ref<string[]>([])
 const groupBusy = ref(false)
 const levels = useApi((signal) => (available ? fetchEducationLevels({ signal }) : Promise.resolve(null)))
 const levelOptions = computed(() => levels.data.value?.data ?? [])
+const filterOptions = useApi((signal) => (available ? fetchStudioFilterOptions({ signal }) : Promise.resolve(null)))
+/** Tahun: the years of the source papers; the applied value stays selectable when the list has not loaded or no longer holds it. */
+const tahunOptions = computed(() => {
+  const years = (filterOptions.data.value?.tahun ?? []).map(String)
+  return applied.value.tahun !== '' && !years.includes(applied.value.tahun) ? [applied.value.tahun, ...years] : years
+})
+/** Negeri: the V2 boards, then any other value found on a source paper. */
+const negeriOptions = computed(() => {
+  const known = new Set(NEGERI_OPTIONS.map((n) => n.toLowerCase()))
+  const extra = (filterOptions.data.value?.negeri ?? []).filter((n) => !known.has(n.toLowerCase()))
+  const out = [...NEGERI_OPTIONS, ...extra]
+  const a = applied.value.negeri
+  return a !== '' && !out.some((n) => n.toLowerCase() === a.toLowerCase()) ? [a, ...out] : out
+})
 
 function openStart(): void {
   startGroup.value = false
@@ -532,12 +550,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', remeasure))
 const META_CLASS = 'class'
 const cellClass = (th: string, td = th): { meta: Record<string, unknown> } => ({ meta: { [META_CLASS]: { th, td } } })
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'no', header: 'No.', ...cellClass('w-16') },
+  { accessorKey: 'no', header: 'No.', ...cellClass('w-28') },
   { accessorKey: 'stem', header: 'Soalan', ...cellClass('min-w-48') },
   { accessorKey: 'kertas', header: 'Kertas', ...cellClass('hidden lg:table-cell w-40') },
   { accessorKey: 'sumber', header: 'Sumber', ...cellClass('hidden lg:table-cell w-24') },
-  { id: 'status', header: 'Status', ...cellClass('w-36') },
-  { id: 'actions', header: ' ', ...cellClass('w-36 text-end', 'w-36') },
+  { id: 'status', header: 'Status', ...cellClass('w-44') },
+  { id: 'actions', header: ' ', ...cellClass('w-52') },
 ]
 const cardFields: CardField[] = [
   { key: 'kertas', label: 'Kertas' },
@@ -556,7 +574,7 @@ const cardFields: CardField[] = [
     <DsCallout v-if="!available" tone="info" data-testid="studio-unavailable">{{ STUDIO_UNAVAILABLE }}</DsCallout>
 
     <template v-else>
-      <DsGrid :cols="{ base: 2, md: 4 }" gap="md" data-testid="studio-tiles">
+      <DsGrid :tiles="STATUS_ORDER.length" gap="md" data-testid="studio-tiles">
         <DsStatTile
           v-for="s in STATUS_ORDER"
           :key="s"
@@ -576,6 +594,7 @@ const cardFields: CardField[] = [
         :chips="chips"
         apply-label="Tapis"
         reset-label="Set Semula"
+        :show-reset="true"
         data-testid="studio-filter"
         @apply="submitFilter"
         @reset="resetFilter"
@@ -586,7 +605,7 @@ const cardFields: CardField[] = [
             <UInput v-model="draft.search" type="text" name="search" placeholder="Cari soalan..." aria-label="Cari" icon="i-ph-magnifying-glass" class="w-full" data-testid="studio-search" />
           </div>
         </template>
-        <div class="w-full min-w-0 md:w-48">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-subject" v-model="draft.subject_id" name="subject_id" aria-label="Subjek" data-testid="studio-subject-filter">
             <option value="">Semua subjek</option>
             <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
@@ -600,27 +619,33 @@ const cardFields: CardField[] = [
           <option value="">Semua</option>
           <option v-for="o in DSKP_TAG_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
         </DsNativeSelect>
-        <div class="w-full min-w-0 md:w-48">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-status-filter" v-model="draft.status" name="status" aria-label="Status" data-testid="studio-status-filter">
             <option value="">Semua status</option>
             <option v-for="s in STATUS_ORDER" :key="s" :value="s">{{ statusBadge(s) }}</option>
           </DsNativeSelect>
         </div>
-        <div class="w-full min-w-0 md:w-28">
-          <UInput v-model="draft.tahun" type="text" name="tahun" inputmode="numeric" maxlength="4" placeholder="Tahun" aria-label="Tahun" data-testid="studio-tahun-filter" />
+        <div class="w-full min-w-0">
+          <DsNativeSelect id="studio-tahun-filter" v-model="draft.tahun" name="tahun" aria-label="Tahun" data-testid="studio-tahun-filter">
+            <option value="">Semua Tahun</option>
+            <option v-for="y in tahunOptions" :key="y" :value="y">{{ y }}</option>
+          </DsNativeSelect>
         </div>
-        <div class="w-full min-w-0 md:w-48">
-          <UInput v-model="draft.negeri" type="text" name="negeri" maxlength="64" placeholder="Negeri / badan" aria-label="negeri atau badan peperiksaan" data-testid="studio-negeri-filter" />
+        <div class="w-full min-w-0">
+          <DsNativeSelect id="studio-negeri-filter" v-model="draft.negeri" name="negeri" aria-label="Negeri" data-testid="studio-negeri-filter">
+            <option value="">Semua Negeri</option>
+            <option v-for="n in negeriOptions" :key="n" :value="n">{{ n }}</option>
+          </DsNativeSelect>
         </div>
-        <div class="w-full min-w-0 md:w-44">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-kertas-filter" v-model="draft.kertas" name="kertas" aria-label="Kertas" data-testid="studio-kertas-filter">
             <option value="">Semua kertas</option>
             <option v-for="k in KERTAS_OPTIONS" :key="k" :value="k">Kertas {{ k }}</option>
           </DsNativeSelect>
         </div>
-        <div class="w-full min-w-0 md:w-40">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-jenis-filter" v-model="draft.jenis" name="jenis" aria-label="Jenis" data-testid="studio-jenis-filter">
-            <option value="">Semua jenis</option>
+            <option value="">Semua Jenis</option>
             <option v-for="j in JENIS_OPTIONS" :key="j.value" :value="j.value">{{ j.label }}</option>
           </DsNativeSelect>
         </div>
@@ -681,7 +706,7 @@ const cardFields: CardField[] = [
           </div>
         </template>
         <template #actions-cell="{ row }">
-          <DsRowActions :actions="rowActions(row.original.raw)" :inline="3" testid="studio-row-more" />
+          <DsRowActions :actions="rowActions(row.original.raw)" :inline="3" align="start" testid="studio-row-more" />
         </template>
         <template #card="{ row }">
           <DsStack gap="xs" align="start" data-testid="studio-card">
@@ -712,7 +737,7 @@ const cardFields: CardField[] = [
           </DsStack>
         </template>
         <template #card-actions="{ row }">
-          <DsRowActions :actions="rowActions((row as TableRow).raw)" :inline="3" testid="studio-row-more" />
+          <DsRowActions :actions="rowActions((row as TableRow).raw)" :inline="3" align="start" testid="studio-row-more" />
         </template>
       </DsDataTable>
     </template>

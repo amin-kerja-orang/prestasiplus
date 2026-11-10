@@ -115,7 +115,7 @@ test.describe('M02 S5 DELIMa student import', { tag: [TAG.smoke, moduleTag(2)] }
   })
 
   test('title, content, both class groups, modes and no horizontal scroll', async ({ page }) => {
-    await expectTabTitle(page, 'Import Pelajar (ID Delima) | PRESTASIPLUS')
+    await expectTabTitle(page, 'Import Pelajar | PRESTASIPLUS')
     await expect(byId(page, 'student-hero')).toContainText('Import Pelajar via ID Delima')
     await expect(page.getByText('Borang Import Pelajar')).toBeVisible()
     await expect(page.locator('input[name=class_level]')).toHaveCount(11)

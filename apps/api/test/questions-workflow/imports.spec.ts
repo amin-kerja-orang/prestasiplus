@@ -5,6 +5,8 @@ import {
   QUESTION_IMPORT_GURU_HEADER,
   QUESTION_IMPORT_GURU_TEMPLATE_CSV,
   QUESTION_IMPORT_GURU_TEMPLATE_FILENAME,
+  QUESTION_IMPORT_HEADER,
+  QUESTION_IMPORT_MESSAGES,
   QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
   QUESTION_IMPORT_TEMPLATE_CSV,
   QUESTION_IMPORT_TEMPLATE_FILENAME,
@@ -21,6 +23,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { crc32, deflateRawSync, deflateSync } from 'node:zlib'
 
+import { TRUE_FALSE_OPTIONS } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../src/common/errors/api-error'
@@ -404,6 +407,27 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
     expect(await count(t.db, 'select count(*) as n from questions')).toBe(before + 2)
   })
 
+  it('[CI] AC-QA-34: 10 questions with 1 invalid: 9 imported, the error CSV has exactly one line', async () => {
+    const before = await count(t.db, 'select count(*) as n from questions')
+    const rows = Array.from({ length: 10 }, (_, i) =>
+      line({ question_key: `QA34-${String(i + 1)}`, number_label: String(20 + i), ...(i === 6 ? { sp_kod: 'TIADA-SP' } : {}) }),
+    )
+    const res = await importAdmin(csvOf(...rows), 'sepuluh.csv')
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const body = QuestionImportCreatedSchema.parse(res.body)
+    expect(body.data.importedCount).toBe(9)
+    expect(body.data.failedCount).toBe(1)
+    expect(body.status).toBe(QUESTION_IMPORT_MESSAGES.imported(9, 1))
+    expect(body.status).toBe('Import selesai: 9 soalan diimport, 1 gagal.')
+    expect(await count(t.db, 'select count(*) as n from questions')).toBe(before + 9)
+    const csv = await c.admin.get(`/api/question-imports/${body.data.id}/errors`)
+    expect(csv.status).toBe(200)
+    const lines = csv.text.split('\r\n').filter((l) => l !== '')
+    expect(lines[0]).toBe('baris,question_key,medan,kod_ralat,mesej')
+    expect(lines).toHaveLength(2)
+    expect(lines[1]).toMatch(/^8,QA34-7,sp_kod,/)
+  })
+
   it('[CI] unknown header cells give a warning in the answer, and the legacy header gives none', async () => {
     const res = await importAdmin(`${HEAD},Warna\n${line({ question_key: 'W1' })},merah`)
     expect(res.status).toBe(201)
@@ -412,6 +436,106 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
     expect(legacy.status).toBe(201)
     expect(legacy.body.warnings).toBeUndefined()
     expect(legacy.body.data.failures).toEqual([])
+  })
+
+  it('[CI] a T1-T3 Subjek + Tingkatan with unit nodes only (no SP) imports through the code header with no SP or TP (SP nodes only, #453)', async () => {
+    const [free] = await t.db.query<{ subject_id: string; code: string; level_id: string }>(
+      `select s.id::text as subject_id, s.code, l.id::text as level_id from subjects s, education_levels l
+        where l.code = 'T1' and not exists (select 1 from curriculum_nodes n where n.subject_id = s.id and n.education_level_id = l.id)
+          and not exists (select 1 from chapters ch where ch.subject_id = s.id and ch.education_level_id = l.id) limit 1`,
+    )
+    expect(free, 'a subject without DSKP nodes or chapters at T1').toBeDefined()
+    const [unit] = await t.db.query<{ code: string }>(
+      `insert into curriculum_nodes (subject_id, education_level_id, kind, code, title, edition) values ($1::bigint, $2::bigint, 'unit', 'U-IMP-NOSP', 'Unit tanpa SP', 'KSSM') returning code`,
+      [free!.subject_id, free!.level_id],
+    )
+    const res = await importAdmin(
+      csvOf(line({ question_key: 'T1U', subject_code: free!.code, tingkatan: '1', kertas: '', unit_code: unit!.code, sp_kod: '', tp: '', aras: '', bab_kod: '', topik_kod: '', difficulty: '2' })),
+    )
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.body.data.failures).toEqual([])
+    const [v] = await t.db.query<{ difficulty_tp: number | null; difficulty_level: number | null; sp: number }>(
+      `select v.difficulty_tp, v.difficulty_level, (select count(*)::int from question_version_sp_nodes where question_version_id = v.id) as sp
+         from question_versions v where v.subject_id = $1::bigint and v.education_level_id = $2::bigint order by v.id desc limit 1`,
+      [free!.subject_id, free!.level_id],
+    )
+    expect(v).toEqual({ difficulty_tp: null, difficulty_level: 2, sp: 0 })
+  })
+
+  describe('S1-T05 part 5a: true_false and mcq_multi rows (real bank, V3 write path)', () => {
+    const lastVersion = async () => {
+      const [v] = await t.db.query<{ question_id: string; type: string; status: string }>('select question_id::text, type, status from question_versions order by id desc limit 1')
+      return v!
+    }
+    const tfRow = (over: Record<string, string> = {}) => line({ type: 'true_false', option_a: '', option_b: '', option_c: '', option_d: '', correct: 'betul', ...over })
+    const optionsOf = async (questionId: string) =>
+      t.db.query<{ label: string; body: string; is_correct: boolean }>(
+        `select o.label, o.body_ms as body, (o.label = k.content->>'correct' or o.label in (select jsonb_array_elements_text(case when jsonb_typeof(k.content->'correctOptionIds') = 'array' then k.content->'correctOptionIds' else '[]'::jsonb end))) as is_correct
+           from part_options o join question_parts p on p.id = o.part_id join answer_keys k on k.part_id = p.id
+          where p.question_version_id = (select id from question_versions where question_id = $1::bigint order by version_no desc limit 1) order by o.label`,
+        [questionId],
+      )
+
+    it('[CI] true_false betul and SALAH are stored as type mcq with exactly TRUE_FALSE_OPTIONS and the single key', async () => {
+      const res = await importAdmin(csvOf(tfRow({ question_key: 'TF1', correct: 'betul' }), tfRow({ question_key: 'TF2', correct: 'SALAH', number_label: '13' })))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 0 gagal.')
+      const rows = await t.db.query<{ question_id: string; type: string }>('select question_id::text, type from question_versions order by id desc limit 2')
+      // Ruling (S-4): type stays 'mcq' (the readers of `type = 'mcq'` must keep seeing it); the D8 form is the two fixed options.
+      expect(rows.map((r) => r.type)).toEqual(['mcq', 'mcq'])
+      const [salah, betul] = rows
+      expect((await optionsOf(betul!.question_id)).map((o) => [o.label, o.body, o.is_correct])).toEqual([['A', 'Betul', true], ['B', 'Salah', false]])
+      expect((await optionsOf(salah!.question_id)).map((o) => [o.label, o.body, o.is_correct])).toEqual([['A', 'Betul', false], ['B', 'Salah', true]])
+      const read = await c.admin.get(`/api/questions/${betul!.question_id}`)
+      expect(read.status, JSON.stringify(read.body)).toBe(200)
+      expect(JSON.stringify(read.body)).toContain('"correct":"A"')
+      expect((await optionsOf(betul!.question_id)).map((o) => [o.label, o.body])).toEqual(TRUE_FALSE_OPTIONS.map((o) => [o.label, o.body.ms]))
+    })
+
+    it('[CI] true_false with an option cell filled, or a blank or "ya" correct, is a row error and nothing is saved', async () => {
+      const before = await count(t.db, 'select count(*) as n from questions')
+      const res = await importAdmin(csvOf(tfRow({ question_key: 'X1', option_a: 'Betul' }), tfRow({ question_key: 'X2', correct: '' }), tfRow({ question_key: 'X3', correct: 'ya' })))
+      expect(res.status).toBe(201)
+      expect(res.body.status).toBe('Import selesai: 0 soalan diimport, 3 gagal.')
+      expect(res.body.data.failures).toEqual([
+        { row: 2, message: 'Baris 2: Jenis soalan tidak sah.', questionKey: 'X1', field: 'option_a', code: 'TYPE_INVALID' },
+        { row: 3, message: 'Baris 3: Sila pilih jawapan betul.', questionKey: 'X2', field: 'correct', code: 'CORRECT_REQUIRED' },
+        { row: 4, message: 'Baris 4: Sila pilih jawapan betul.', questionKey: 'X3', field: 'correct', code: 'CORRECT_REQUIRED' },
+      ])
+      expect(await count(t.db, 'select count(*) as n from questions')).toBe(before)
+    })
+
+    it('[CI] mcq_multi A;C with 4 options is stored as the multi leaf with 2 correct and reads back so (A;A saves one correct)', async () => {
+      const res = await importAdmin(csvOf(line({ question_key: 'M1', type: 'mcq_multi', correct: 'A;C' }), line({ question_key: 'M2', type: 'mcq_multi', correct: 'A;A', number_label: '13' })))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 0 gagal.')
+      const [dup, two] = await t.db.query<{ question_id: string; type: string }>('select question_id::text, type from question_versions order by id desc limit 2')
+      // #820 versionTypeOf: an mcq leaf with modeConfig.multi is stored as 'mcq_multi'.
+      expect([two!.type, dup!.type]).toEqual(['mcq_multi', 'mcq_multi'])
+      const opts = await optionsOf(two!.question_id)
+      expect(opts.map((o) => o.label)).toEqual(['A', 'B', 'C', 'D'])
+      expect(opts.filter((o) => o.is_correct).map((o) => o.label)).toEqual(['A', 'C'])
+      expect((await optionsOf(dup!.question_id)).filter((o) => o.is_correct).map((o) => o.label)).toEqual(['A'])
+      const read = await c.admin.get(`/api/questions/${two!.question_id}`)
+      expect(read.status, JSON.stringify(read.body)).toBe(200)
+      expect(JSON.stringify(read.body)).toContain('"correctOptionIds":["A","C"]')
+      expect(JSON.stringify(read.body)).toContain('"multi":true')
+    })
+
+    it('[CI] mcq_multi with every option correct gives the count message, and a letter outside the options gives "Sila pilih jawapan betul."', async () => {
+      const res = await importAdmin(csvOf(line({ question_key: 'N1', type: 'mcq_multi', correct: 'A;B;C;D' }), line({ question_key: 'N2', type: 'mcq_multi', correct: 'A;E' })))
+      expect(res.status).toBe(201)
+      expect(res.body.data.failures).toEqual([
+        { row: 2, message: 'Baris 2: Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.', questionKey: 'N1', field: 'correct', code: 'CORRECT_REQUIRED' },
+        { row: 3, message: 'Baris 3: Sila pilih jawapan betul.', questionKey: 'N2', field: 'correct', code: 'CORRECT_REQUIRED' },
+      ])
+    })
+
+    it('[CI] a plain mcq row is still stored as type mcq', async () => {
+      const res = await importAdmin(csvOf(line({ question_key: 'P1' })))
+      expect(res.status).toBe(201)
+      expect((await lastVersion()).type).toBe('mcq')
+    })
   })
 
   describe('the Guru route takes all three header formats into the intake, never the bank (S6-T06 ruling)', () => {

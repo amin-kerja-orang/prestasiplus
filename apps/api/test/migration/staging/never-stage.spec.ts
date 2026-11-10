@@ -9,11 +9,23 @@ import { findTable, TABLES } from '../../../src/migration/ddl/spec'
  * No database: this reads the spec only.
  */
 
-/** Framework and session tables of the source application: they hold tokens or queue payloads and are never copied. */
-const NEVER_TABLES = [
-  'password_resets', 'password_reset_tokens', 'personal_access_tokens', 'sessions',
-  'jobs', 'job_batches', 'failed_jobs', 'cache', 'cache_locks',
-] as const
+/** Session and password-reset tables of the source application: they hold tokens and are never copied. */
+const NEVER_TABLES = ['password_resets', 'password_reset_tokens', 'sessions'] as const
+
+/**
+ * T-B2 (10 Nov 2026): the Laravel runtime tables are staged COUNTS-ONLY so a dump that carries them is recognised. Only
+ * the columns listed here exist; every column that can hold a token, queue payload, exception text or cache value is
+ * absent and must stay absent.
+ */
+const COUNTS_ONLY: Record<string, readonly string[]> = {
+  personal_access_tokens: ['tokenable_type', 'tokenable_id', 'last_used_at', 'expires_at'],
+  jobs: ['queue', 'attempts'],
+  failed_jobs: ['queue', 'failed_at'],
+  job_batches: ['total_jobs', 'pending_jobs', 'failed_jobs'],
+  cache: ['expiration'],
+  cache_locks: ['expiration'],
+}
+const FORBIDDEN_RUNTIME_COLUMNS = ['token', 'abilities', 'payload', 'uuid', 'connection', 'exception', 'name', 'options', 'value', 'key', 'owner']
 
 /** [table, column] pairs: sensitive or free text that nothing reads (FIT-FIX and PDPA-MIN). */
 const NEVER_COLUMNS: readonly (readonly [string, string])[] = [
@@ -27,8 +39,7 @@ const NEVER_COLUMNS: readonly (readonly [string, string])[] = [
   ['structured_attempt_answers', 'answer'],
   ['teacher_reference_documents', 'file_path'],
   ['teacher_reference_papers', 'title'],
-  ['paper_documents', 'source_file'],
-  ['paper_document_pages', 'path'],
+  // Lifted 10 Nov 2026 (T-B13, Kertas Subjektif): paper_documents.source_file (the source file name of a paper, no personal data) and paper_document_pages.path (the page image to copy, files-dir manifest) are read by the paper-document loader.
   // PDPA-MIN
   ['psychometric_results', 'details'],
   ['foster_applications', 'applicant_name'], ['foster_applications', 'reason'],
@@ -40,6 +51,12 @@ const NEVER_COLUMNS: readonly (readonly [string, string])[] = [
 describe('never-stage list (L1)', () => {
   it.each(NEVER_TABLES)('the spec has no table %s', (table) => {
     expect(TABLES.map((t) => t.name)).not.toContain(table)
+  })
+
+  it.each(Object.entries(COUNTS_ONLY))('%s is staged counts-only: id, own timestamps and the listed columns, nothing that holds a secret or payload', (table, allowed) => {
+    const names = (findTable(table)?.columns.map((c) => c.name) ?? []).filter((n) => !['id', 'created_at', 'updated_at'].includes(n))
+    expect(names.sort()).toEqual([...allowed].sort())
+    for (const bad of FORBIDDEN_RUNTIME_COLUMNS) expect(names, `${table}.${bad}`).not.toContain(bad)
   })
 
   it.each(NEVER_COLUMNS)('%s.%s is not a staged column', (table, column) => {
@@ -61,6 +78,6 @@ describe('never-stage list (L1)', () => {
     }
     for (const table of ['sponsors', 'foster_applications']) expect(findTable(table)?.pk, table).toBe('id')
     expect(TABLES.filter((t) => t.group === 'staging')).toHaveLength(89)
-    expect(TABLES.filter((t) => t.group === 'archive')).toHaveLength(38)
+    expect(TABLES.filter((t) => t.group === 'archive')).toHaveLength(45)
   })
 })

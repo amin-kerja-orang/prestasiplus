@@ -13,8 +13,8 @@ const LEVEL = ':level(T1|T4)'
 
 const base = { layout: 'user', access: 'auth', title: TAB_TITLE, module: 'M07', v2: true } as const
 const pksk = {
-  title: 'PKSK',
-  subtitle: 'Persediaan Kemasukan SBP / MRSM / SMKA',
+  title: 'PKSK PRO',
+  subtitle: 'Bank soalan Pentaksiran Kompetensi & Sijil Kemahiran',
 } as const
 
 const routes: RouteRecordRaw[] = [

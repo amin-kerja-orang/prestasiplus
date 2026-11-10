@@ -41,6 +41,7 @@ export const TICKET_CREATED_FLASH =
 export const SETTINGS_MESSAGES = {
   emailInvalid: 'E-mel tidak sah.',
   phoneInvalid: 'No. telefon tidak sah.',
+  hoursTooLong: 'Waktu perkhidmatan tidak boleh melebihi 120 aksara.',
 } as const
 export const SETTINGS_SAVED_FLASH = 'Tetapan disimpan.'
 
@@ -68,6 +69,12 @@ export const ADMIN_TICKET_FLASH = {
   replySaved: 'Balasan disimpan.',
   statusSaved: 'Status dikemas kini.',
 } as const
+
+/** `GET /api/config/support`; a value may be empty. */
+export interface SupportContact {
+  email: string
+  whatsapp: string
+}
 
 /** Role filter of the admin queue (30 P20-02, the word Murid as ruled on #507): the value is the stored role. */
 export const ROLE_FILTER_ITEMS = [
@@ -98,7 +105,7 @@ export interface Ticket {
 
 export interface TicketList {
   data: Ticket[]
-  meta: { total: number }
+  meta: { total: number; counts: { status: TicketStatus; count: number }[] }
 }
 
 /** `QueueRow` of §7 (no body, no e-mail, no user id). */

@@ -11,7 +11,7 @@ defineProps<{ categories: readonly MarketplaceCategory[]; active: string }>()
 </script>
 
 <template>
-  <nav class="flex gap-2 overflow-x-auto sm:flex-wrap" data-testid="marketplace-chips">
+  <nav class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2" data-testid="marketplace-chips">
     <UButton
       to="/marketplace"
       size="lg"

@@ -17,6 +17,7 @@ const ALLOWED_ROLE: Record<string, ActorRole> = {
   'GET /question-reports': 'admin', // "Admin only"
   'GET /admin-sekolah/dashboard': 'school_admin',
   'GET /admin-sekolah/guru/pending': 'school_admin', // BE-21 AC13
+  'GET /admin-sekolah/tanda-karangan': 'school_admin', // the school door of Tanda Karangan: school_admin only (the Admin Pusat door is /admin/spm/tanda-karangan)
   'GET /intake/batches': 'teacher', // Guru (own batches) and Admin Pusat (all); BE-37
   'GET /amaran/effectiveness': 'teacher', // admin, school_admin, teacher
   'GET /headcounts': 'teacher', // admin, teacher, school_admin
