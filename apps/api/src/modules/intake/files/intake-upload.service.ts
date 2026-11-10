@@ -52,13 +52,20 @@ export const INTAKE_SCAN_UNAVAILABLE_CODE = 'UPLOAD_SCAN_UNAVAILABLE'
 export const INTAKE_SCAN_MESSAGES = {
   infected: 'Fail ini mengandungi perisian berbahaya (virus) dan telah ditolak. Muat naik tidak diterima.',
   tooLarge: (mb: number) => `Fail terlalu besar untuk diimbas (had ${String(mb)} MB). Kecilkan fail dan cuba lagi.`,
-  unscannable: 'Fail ini tidak dapat diimbas sepenuhnya (dilindungi kata laluan atau terlalu kompleks) dan telah ditolak.',
+  encrypted: 'Fail dilindungi kata laluan dan tidak dapat diimbas, jadi ditolak. Buka kunci fail dan cuba lagi.',
+  tooComplex: 'Fail terlalu kompleks untuk diimbas sepenuhnya, jadi ditolak. Ringkaskan fail atau pecahkannya dan cuba lagi.',
   unavailable: 'Pengimbasan keselamatan fail tidak tersedia buat masa ini. Sila cuba lagi sebentar nanti.',
 } as const
 
-/** clamd with AlertExceedsMax / AlertEncrypted* answers FOUND for archives it could not fully scan and for encrypted content: not malware, but not accepted. */
-export function isUnscannableSignature(signature: string): boolean {
-  return /^Heuristics.(Limits.Exceeded|Encrypted.)/i.test(signature)
+/**
+ * clamd with AlertEncrypted* / AlertExceedsMax answers FOUND for encrypted content and for archives it could not fully scan: not malware, but not accepted.
+ * Each has its own message and its own audit event (never the virus message, never `intake.file_infected`).
+ */
+export type ScanVerdictKind = 'malware' | 'encrypted' | 'limits_exceeded'
+export function classifySignature(signature: string): ScanVerdictKind {
+  if (/^Heuristics.Encrypted./i.test(signature)) return 'encrypted'
+  if (/^Heuristics.Limits.Exceeded/i.test(signature)) return 'limits_exceeded'
+  return 'malware'
 }
 
 function invalid(message: string): ApiError {
@@ -249,8 +256,9 @@ export class IntakeUploadService {
         this.scanned.add(part.buffer)
         return null
       }
-      await this.auditInfected(auth, who, part, outcome.signature, isUnscannableSignature(outcome.signature))
-      return invalid(isUnscannableSignature(outcome.signature) ? INTAKE_SCAN_MESSAGES.unscannable : INTAKE_SCAN_MESSAGES.infected)
+      const kind = classifySignature(outcome.signature)
+      await this.auditRefusedScan(auth, who, part, outcome.signature, kind)
+      return invalid(kind === 'encrypted' ? INTAKE_SCAN_MESSAGES.encrypted : kind === 'limits_exceeded' ? INTAKE_SCAN_MESSAGES.tooComplex : INTAKE_SCAN_MESSAGES.infected)
     } catch (err) {
       if (err instanceof ScannerUnavailableError && err.reason === 'size_limit') return invalid(INTAKE_SCAN_MESSAGES.tooLarge(Math.floor(this.scanner.maxBytes / (1024 * 1024))))
       if (!(err instanceof ScannerUnavailableError)) this.log.error(`virus scan failed unexpectedly: ${err instanceof Error ? err.message : String(err)}`)
@@ -280,10 +288,10 @@ export class IntakeUploadService {
     return dup !== null
   }
 
-  private async auditInfected(auth: AuthContext, who: CallerInfo, part: UploadedPart, signature: string, unscannable: boolean): Promise<void> {
+  private async auditRefusedScan(auth: AuthContext, who: CallerInfo, part: UploadedPart, signature: string, kind: ScanVerdictKind): Promise<void> {
     try {
       await this.audit.record({
-        action: AUDIT_ACTIONS.INTAKE_FILE_INFECTED,
+        action: kind === 'malware' ? AUDIT_ACTIONS.INTAKE_FILE_INFECTED : AUDIT_ACTIONS.INTAKE_FILE_UNSCANNABLE,
         actorUserId: auth.userId,
         actorRole: auth.active.role,
         scopeLevel: auth.active.scope.level,
@@ -293,7 +301,7 @@ export class IntakeUploadService {
         requestId: who.requestId,
         ip: who.ip,
         isTest: auth.mode !== null,
-        details: { signature, kind: unscannable ? 'unscannable' : 'malware', sha256: createHash('sha256').update(part.buffer).digest('hex'), name: sanitizeOriginalName(decodeUploadName(part.originalname)), bytes: part.buffer.length },
+        details: { signature, kind, sha256: createHash('sha256').update(part.buffer).digest('hex'), name: sanitizeOriginalName(decodeUploadName(part.originalname)), bytes: part.buffer.length },
       })
     } catch (e) {
       this.log.error(`infected-file audit event could not be written: ${e instanceof Error ? e.message : String(e)}`)

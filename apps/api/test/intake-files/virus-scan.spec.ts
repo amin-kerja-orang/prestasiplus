@@ -90,7 +90,7 @@ describe('intake upload virus scan with a configured scanner', () => {
   beforeEach(async () => {
     clamd.mode = 'scan'
     clamd.scans = 0
-    await t.db.query(`delete from audit_events where action = 'intake.file_infected'`)
+    await t.db.query(`delete from audit_events where action in ('intake.file_infected', 'intake.file_unscannable')`)
   })
 
   it('admin: a clean PDF is scanned and accepted', async () => {
@@ -159,14 +159,18 @@ describe('intake upload virus scan with a configured scanner', () => {
     await nothingStored(t)
   })
 
-  it.each([['limits-exceeded', 'Heuristics.Limits.Exceeded'], ['encrypted', 'Heuristics.Encrypted.Zip']] as const)('clamd %s (could not be fully scanned) is refused with the distinct "tidak dapat diimbas" message, audited as unscannable', async (mode, signature) => {
+  it.each([
+    ['encrypted', 'Heuristics.Encrypted.Zip', INTAKE_SCAN_MESSAGES.encrypted],
+    ['limits-exceeded', 'Heuristics.Limits.Exceeded', INTAKE_SCAN_MESSAGES.tooComplex],
+  ] as const)('clamd %s: its own BM 422, never the virus message, own audit event and no intake.file_infected', async (mode, signature, message) => {
     clamd.mode = mode
     const b = await createBatch(admin)
-    expectFilesError(await uploadFiles(admin, b.id, [{ bytes: textPdf(1, 813) }]), INTAKE_SCAN_MESSAGES.unscannable)
-    expect(INTAKE_SCAN_MESSAGES.unscannable).not.toBe(INTAKE_SCAN_MESSAGES.infected)
+    expectFilesError(await uploadFiles(admin, b.id, [{ bytes: textPdf(1, 813) }]), message)
+    expect(message).not.toBe(INTAKE_SCAN_MESSAGES.infected)
     await nothingStored(t)
-    const audit = await t.db.query<{ detail: { signature: string; kind: string } }>(`select detail from audit_events where action = 'intake.file_infected'`)
-    expect(audit.map((r) => r.detail)).toEqual([expect.objectContaining({ signature, kind: 'unscannable' })])
+    expect(await t.db.query(`select 1 from audit_events where action = 'intake.file_infected'`)).toHaveLength(0)
+    const audit = await t.db.query<{ detail: { signature: string; kind: string } }>(`select detail from audit_events where action = 'intake.file_unscannable'`)
+    expect(audit.map((r) => r.detail)).toEqual([expect.objectContaining({ signature, kind: mode === 'encrypted' ? 'encrypted' : 'limits_exceeded' })])
   })
 
   it('the pre-scan duplicate check does not reveal the uploads of other people: a teacher uploading a file an admin already has is scanned (the later rule still refuses it)', async () => {

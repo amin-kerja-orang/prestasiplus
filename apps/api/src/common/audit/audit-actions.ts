@@ -96,6 +96,8 @@ export const AUDIT_ACTIONS = {
   INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
   // Backlog #78: an intake upload was refused because the virus scan found malware (details: signature, sha256, name; no bytes are stored).
   INTAKE_FILE_INFECTED: 'intake.file_infected',
+  // Backlog #78 (O-4): refused because clamd could not scan the file fully (encrypted, or archive limits exceeded). Not malware: its own event.
+  INTAKE_FILE_UNSCANNABLE: 'intake.file_unscannable',
   INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
   KIRKPATRICK_INTERVENTION_CREATED: 'kirkpatrick.intervention.created',
   KIRKPATRICK_INTERVENTION_REVIEWED: 'kirkpatrick.intervention.reviewed',
