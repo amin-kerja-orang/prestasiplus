@@ -77,7 +77,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
 
     await expect(page.getByTestId('diagrams-subject').locator('option')).toHaveCount(32)
     await expect(page.getByTestId('diagrams-school').locator('option')).toHaveCount(10221)
-    await expect(page.getByTestId('diagrams-filter-submit')).toHaveText('Tapis')
+    await expect(page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' })).toHaveText('Tapis')
 
     await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText('MCQ (6144)')
     await expect(mcqCards(page)).toHaveCount(20)
@@ -119,7 +119,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(page.getByTestId('diagram-upload').first()).toBeVisible()
     await expect(page.getByTestId('diagram-file').first()).toBeAttached()
     await expectTouchTarget(page.getByTestId('diagram-upload').first())
-    await expectTouchTarget(page.getByTestId('diagrams-filter-submit'), 44)
+    await expectTouchTarget(page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' }), 44)
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true)
@@ -134,7 +134,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
     await page.getByTestId('diagrams-subject').selectOption({ label: 'Fizik' })
-    await page.getByTestId('diagrams-filter-submit').click()
+    await page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' }).click()
     await expect(page).toHaveURL(/subject_id=9/)
     await expect(statValue(page, 'mcq')).toHaveText('718')
     // DV-M04-11: the cards follow the filter, "Jumlah" is their sum.
@@ -175,7 +175,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
     await page.getByTestId('diagrams-school').selectOption('380')
-    await page.getByTestId('diagrams-filter-submit').click()
+    await page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' }).click()
     await expect(page).toHaveURL(/school_id=380/)
     await expect(page.getByTestId('diagrams-mcq')).toHaveCount(0)
     await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText('Struktur (522)')
