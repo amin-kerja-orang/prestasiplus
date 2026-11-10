@@ -121,7 +121,7 @@ pp_intake_av_problem() {
 # pp_image_has_scanner IMAGE: the api image carries the upload scan code (the CLAMAV_SCAN_ENABLED marker in its bundled dist/main.js).
 # Unreadable or unknown = no (fail closed).
 pp_image_has_scanner() {
-  docker run --rm --no-deps --entrypoint sh "$1" -c 'grep -q CLAMAV_SCAN_ENABLED /app/apps/api/dist/main.js' >/dev/null 2>&1
+  docker run --rm --entrypoint sh "$1" -c 'grep -q CLAMAV_SCAN_ENABLED /app/apps/api/dist/main.js' >/dev/null 2>&1
 }
 
 # pp_compose ARGS... -> docker compose with the production overlay, prod.env and the configured profiles.

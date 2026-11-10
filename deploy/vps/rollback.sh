@@ -80,7 +80,12 @@ fi
 # (Skipping the scanner proof instead would leave a no-scanner build serving teacher uploads: the less safe choice.)
 if ! pp_intake_flag_off; then
   img="${prefix}pretasiplus-api:${tag}"
-  if [ "$(pp_cfg PP_BUILD_MODE local)" != pull ] || docker image inspect "$img" >/dev/null 2>&1; then
+  if [ "$(pp_cfg PP_BUILD_MODE local)" = pull ] && ! docker image inspect "$img" >/dev/null 2>&1; then
+    # Pull mode: the image may not be on the host yet. Fetch it first so the check below reads the real image (a skipped check would fail open).
+    if [ "$dry" = 1 ]; then pp_warn "DRY-RUN: $img is not on this host and is not pulled in a dry run; the scanner check of the target build is skipped"
+    else pp_log "pulling $img to check it for the upload scanner"; docker pull "$img" >/dev/null || pp_die "cannot pull $img: the scanner check of the target build needs the image. Nothing was changed" 3; fi
+  fi
+  if [ "$dry" = 0 ] || docker image inspect "$img" >/dev/null 2>&1; then
     pp_image_has_scanner "$img" \
       || pp_die "INTAKE_TEACHER_ENABLED is on in $PP_ENV_DIR/api.env but release $tag has no upload scan code: teacher uploads would not be virus-scanned. Set INTAKE_TEACHER_ENABLED=false in api.env first, then run the rollback again. Nothing was changed" 3
   fi

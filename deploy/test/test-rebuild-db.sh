@@ -33,7 +33,21 @@ case "$1" in
       *" run "*) exit 0 ;;
     esac
     exit 0 ;;
-  run) [ "${STUB_IMG_SCANNER:-1}" = 1 ] || exit 1; exit 0 ;;
+  run)
+    # `docker run` rejects options it does not have (a compose-only flag such as --no-deps is an error): a stub that accepted anything hid O-1.
+    shift
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --rm|-d|-i|-t|-it|--init|--read-only) shift ;;
+        --entrypoint|--user|-u|-v|--volume|-e|--env|-w|--workdir|--name|--network|--env-file|--label|--restart|--security-opt|--memory|--cpus|--pull|--platform) shift 2 ;;
+        --*=*) shift ;;
+        -*) echo "unknown flag: $1" >&2; exit 125 ;;
+        *) break ;;
+      esac
+    done
+    [ "${STUB_IMG_SCANNER:-1}" = 1 ] || exit 1; exit 0 ;;
+  pull) [ "${STUB_PULL_FAIL:-0}" = 0 ] || exit 1; echo "docker pull $2" >>"$DOCKER_LOG"; exit 0 ;;
+  image) [ "${STUB_IMG_PRESENT:-1}" = 1 ] || exit 1; exit 0 ;;
   volume) exit 0 ;;
   *) exit 0 ;;
 esac
@@ -261,6 +275,25 @@ rbk() { # rbk EXPECTED_RC TEXT FLAG SCANNER_IN_IMAGE
 rbk 3 'has no upload scan code' true 0
 rbk 0 'DRY-RUN would run' true 1
 rbk 0 'DRY-RUN would run' false 0
+# O-2: pull mode, the target image is not on the host: it is pulled first and then checked (never skipped)
+rbk2() { # rbk2 EXPECTED_RC TEXT ENV... -- ROLLBACK_ARGS... (intake on, PP_BUILD_MODE=pull, image absent)
+  local want="$1" text="$2" rc=0 envs=(); shift 2
+  while [ "$1" != -- ]; do envs+=("$1"); shift; done; shift
+  printf 'INTAKE_TEACHER_ENABLED=true\nCLAMAV_HOST=clamav\n' >"$w/env/api.env"
+  : >"$DOCKER_LOG"
+  env STUB_IMG_PRESENT=0 "${envs[@]}" PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash "$vps/rollback.sh" "$@" oldtag </dev/null >"$w/log" 2>&1 || rc=$?
+  if [ "$rc" = "$want" ] && grep -qF -- "$text" "$w/log"; then ok "rollback (pull mode) exit $rc: $text"; else bad "rollback (pull mode) want exit $want + '$text', got exit $rc" "$w/log"; fi
+}
+mkprod "PP_BUILD_MODE=pull"
+rbk2 3 'has no upload scan code' STUB_IMG_SCANNER=0 -- --yes
+if grep -q '^docker pull ' "$DOCKER_LOG"; then ok 'pull mode: the image was pulled before the check'; else bad 'pull mode: no docker pull before the check' "$DOCKER_LOG"; fi
+rbk2 3 'cannot pull' STUB_PULL_FAIL=1 -- --yes
+rbk2 0 'scanner check of the target build is skipped' STUB_IMG_SCANNER=0 -- --dry-run
+mkprod
+# O-3: a persisted verify waiver in prod.env stops a rebuild before anything changes
+mkprod "PP_VERIFY_ACCEPT_REJECTS=questions|INVALID_VALUE|options=5"; rb 2 'PP_VERIFY_ACCEPT_REJECTS is set in' -- "${dry[@]}"
+mkprod "PP_VERIFY_ACCEPT_REJECTS_FILE=$w/accept.txt"; rb 2 'PP_VERIFY_ACCEPT_REJECTS_FILE is set in' -- "${dry[@]}"
+mkprod
 printf 'x\n' >"$w/env/api.env"; mkprod
 grep -q 'CLAMAV_SCAN_ENABLED' "$vps/../../apps/api/src/common/config/env.schema.ts" && ok 'the real env schema declares the CLAMAV_SCAN_ENABLED marker' || bad 'env.schema.ts lacks the CLAMAV_SCAN_ENABLED marker'
 grep -q 'pp_intake_av_problem' "$vps/deploy.sh" && ok 'deploy.sh preflight (G5) calls pp_intake_av_problem' || bad 'deploy.sh preflight does not call pp_intake_av_problem'

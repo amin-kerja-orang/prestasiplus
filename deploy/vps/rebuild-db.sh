@@ -181,6 +181,10 @@ assert_target_db() { # the one place that decides which database may be dropped
   deny_list PP_REBUILD_DENY_DBS
   for x in ${DENY_ITEMS[@]+"${DENY_ITEMS[@]}"}; do [ "$db" != "$x" ] || pp_die "refusing to touch the database '$db' (PP_REBUILD_DENY_DBS, G3)" 2; done
   [ "$(pp_env_value "$PP_PROD_ENV" PP_ALLOW_DB_REBUILD)" = yes ] || pp_die "refused: PP_ALLOW_DB_REBUILD=yes is not in $PP_PROD_ENV (G2)" 3
+  # A persisted verify waiver in prod.env is refused by slot.sh at step 12, after the drop: refuse it here, before anything changes (X-3, O-3).
+  for x in PP_VERIFY_ACCEPT_REJECTS PP_VERIFY_ACCEPT_REJECTS_FILE; do
+    [ -z "$(pp_env_value "$PP_PROD_ENV" "$x")" ] || pp_die "refused: $x is set in $PP_PROD_ENV; the verify allowlist is a one-run waiver for the shell, never a persisted setting. Remove it from the file (G3)" 2
+  done
   # Deny list (the exact production names, then every host below the production domains, then anything with a port or other odd character).
   case "$domain" in prestasiplus.cloud|www.prestasiplus.cloud|admin.prestasiplus.cloud|prestasiplus.my|www.prestasiplus.my|app.example.my|'')
     pp_die "refused: PP_DOMAIN '$domain' is on the deny list or unset (G3)" 3 ;; esac
