@@ -25,6 +25,7 @@ import {
   provisional,
   viewportWidth,
 } from '../support'
+import { expectSchoolName, navbarSubtitle, navbarTitle } from './shell'
 
 const MODULE = { tag: ['@m27'] }
 const S4 = '/amaran/sekolah'
@@ -130,8 +131,8 @@ test.describe('S4 header and sidebar (E2E-M27-41, 42; S4 part)', MODULE, () => {
   }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Amaran Awal — Sekolah')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
+    await expect(navbarTitle(page)).toHaveText('Amaran Awal — Sekolah')
+    await expectSchoolName(page, SCHOOL_P1)
     await expectTabTitle(page, TAB_TITLE)
     await expect(page.getByTestId('am-page')).not.toContainText('Dashboard Sekolah')
     await expect(page.getByTestId('am-page').getByRole('link', { name: /←/ })).toHaveCount(0)
@@ -143,7 +144,7 @@ test.describe('S4 header and sidebar (E2E-M27-41, 42; S4 part)', MODULE, () => {
   }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp, '?tingkatan=T5')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
+    await expect(navbarSubtitle(page)).toHaveText(
       `${SCHOOL_P1} — Tingkatan 5`,
     )
     await expectTabTitle(page, TAB_TITLE)
@@ -156,11 +157,11 @@ test.describe('S4 header and sidebar (E2E-M27-41, 42; S4 part)', MODULE, () => {
     test.skip(viewportWidth(page) < 1280, 'E2E-M27-42 runs at 1280 only')
     await signIn(page, AZLAN)
     await open(page, gotoApp, '?tingkatan=T4')
-    const sidebar = page.getByTestId('shell-user-sidebar')
+    const sidebar = page.getByTestId('pembelajaran-nav')
     await expect(sidebar).toBeVisible()
-    await expect(sidebar.locator('[data-nav-id="sa-amaran-awal"]')).toHaveClass(/\bactive\b/)
-    await expect(sidebar.locator('[data-nav-id="sa-dashboard"]')).not.toHaveClass(/\bactive\b/)
-    await expect(sidebar.locator('a.active')).toHaveCount(1)
+    await expect(sidebar.locator('a[href="/amaran/sekolah"]')).toHaveAttribute('aria-current', 'page')
+    await expect(sidebar.locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
+    await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1)
   })
 
   test('E2E-M27-72 the sidebar item "Amaran Awal" opens /amaran/sekolah', async ({
@@ -171,7 +172,7 @@ test.describe('S4 header and sidebar (E2E-M27-41, 42; S4 part)', MODULE, () => {
     await signIn(page, AZLAN)
     await gotoApp('/admin-sekolah')
     await expect(page.getByTestId('sd-page')).toBeVisible({ timeout: 60_000 })
-    const item = page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-amaran-awal"]')
+    const item = page.getByTestId('pembelajaran-nav').locator('a[href="/amaran/sekolah"]')
     await expect(item).toHaveAttribute('href', S4)
     await item.click()
     await expect(page).toHaveURL(new RegExp(`${S4}$`))
@@ -291,7 +292,7 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     })
     await expect(page.getByTestId('am-pill-T4')).toHaveAttribute('data-active', 'true')
     await expect(page.getByTestId('am-pill-all')).toHaveAttribute('data-active', 'false')
-    await expect(page.getByTestId('shell-user-subtitle')).toContainText(' — Tingkatan 4')
+    await expect(navbarSubtitle(page)).toContainText(' — Tingkatan 4')
     const [t4, g, y, r] = (await tileValues(page)) as [number, number, number, number]
     expect(t4).toBeLessThanOrEqual(all!)
     expect(g + y + r).toBe(t4)
