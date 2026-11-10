@@ -18,10 +18,10 @@ test.describe('M08 G5 style (admin)', { tag: [moduleTag(8)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
   for (const path of HEADER_PAGES) {
-    test(`table headers are upper case by CSS on ${path}`, async ({ page, gotoApp, loginAs }) => {
+    test(`table headers keep the v2 sentence case on ${path}`, async ({ page, gotoApp, loginAs }) => {
       await loginAs('admin@demo.test')
       await gotoApp(path)
-      const th = page.getByTestId('shell-user-main').locator('thead th')
+      const th = page.locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]').locator('thead th')
       await expect(th.first()).toBeVisible()
       const transforms = await th.evaluateAll((els) =>
         els
@@ -29,7 +29,8 @@ test.describe('M08 G5 style (admin)', { tag: [moduleTag(8)] }, () => {
           .map((e) => getComputedStyle(e).textTransform),
       )
       expect(transforms.length).toBeGreaterThan(3)
-      expect(transforms.every((t) => t === 'uppercase')).toBe(true)
+      // v2 theme (text-th): column headers are sentence case, no upper-case transform.
+      expect(transforms.every((t) => t === 'none')).toBe(true)
     })
   }
 
@@ -68,7 +69,7 @@ test.describe('M08 G5 school admin S1 (OQ-M08-04, provisional)', { tag: [moduleT
     await loginAs('adminsekolah@demo.test')
     await gotoApp('/prestasi/sekolah')
     await expect(page.getByTestId('prestasi-sekolah-page')).toBeVisible()
-    const t = (await page.getByTestId('shell-user-main').innerText()).replace(/\s+/g, ' ')
+    const t = (await page.locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]').innerText()).replace(/\s+/g, ' ')
     expect(t).toContain('Ringkasan prestasi keseluruhan · 2 kelas · 9 murid')
     expect(t).toContain('5.33')
     expect(t).toContain('Sederhana')

@@ -9,7 +9,7 @@ import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, moduleTag } from '../support'
 
 async function text(page: Page): Promise<string> {
-  const main = page.getByTestId('shell-user-main')
+  const main = page.locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]')
   await expect(main).not.toBeEmpty()
   return (await main.innerText()).replace(/\s+/g, ' ').trim()
 }
@@ -87,7 +87,7 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
       'href',
       '/headcount/213/summary',
     )
-    const html = await page.getByTestId('shell-user-main').innerHTML()
+    const html = await page.locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]').innerHTML()
     expect(html).toMatch(/width: 46\.66\d*%/)
     expect(html).toMatch(/width: 53\.33\d*%/)
   })
@@ -123,19 +123,19 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/analitik/kelas?classroom_id=4')
     await expect(page.getByText('Lihat Analitik').first()).toBeVisible()
     const hrefs = await page
-      .getByTestId('shell-user-main')
+      .locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]')
       .locator('a[href^="/prestasi/"]')
       .evaluateAll((as) => as.map((a) => a.getAttribute('href')))
     expect(hrefs.length).toBeGreaterThanOrEqual(12)
     for (const h of hrefs) expect(h).toMatch(/^\/prestasi\/\d+$/)
     await page.getByText('Lihat Analitik').first().click()
     await expect.poll(() => new URL(page.url()).pathname).toMatch(/^\/prestasi\/\d+$/)
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Prestasi 360')
+    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveText('Prestasi 360')
   })
 
   test('AC-36.1 / 36.3 S22 header, back link, cards and buttons', async ({ page, gotoApp }) => {
     await gotoApp('/headcount/213/summary')
-    await expect(page.getByText('Taburan Prestasi Per OTR')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Taburan Prestasi Per OTR' })).toBeVisible()
     const t = await text(page)
     for (const f of [
       'Ringkasan Kelas',
