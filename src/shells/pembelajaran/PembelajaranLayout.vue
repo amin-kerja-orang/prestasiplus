@@ -87,7 +87,6 @@ const theme = useThemeMode(personality)
 // One rule for every role: the navbar prints the page title (h1); DsPageHeader leaves its own out.
 provideShellTitle()
 
-
 const { friend, pickerOpen, promptOpen, dismissPrompt, choose, openPicker } = useFriend()
 // The first-run prompt belongs to the dashboard only: leaving it closes the prompt for good.
 const promptShown = computed(() => learner.value && promptOpen.value && route.path === '/dashboard')
@@ -142,7 +141,12 @@ const searchGroups = computed(() => {
         icon: phClass(l.icon, learner.value),
         to: l.to,
       })),
-      { id: 'logout', label: 'Log Keluar', icon: phClass('sign-out', learner.value), to: '/logout' },
+      {
+        id: 'logout',
+        label: 'Log Keluar',
+        icon: phClass('sign-out', learner.value),
+        to: '/logout',
+      },
     ],
   })
   return groups
@@ -219,7 +223,13 @@ const accountMenu = computed(() => [
   links.value.map((l) => ({ label: l.label, icon: phClass(l.icon, learner.value), to: l.to })),
   [
     ...(learner.value
-      ? [{ label: 'Tukar Rakan Belajar', icon: phClass('smiley', true), onSelect: () => openPicker() }]
+      ? [
+          {
+            label: 'Tukar Rakan Belajar',
+            icon: phClass('smiley', true),
+            onSelect: () => openPicker(),
+          },
+        ]
       : []),
   ],
   [
@@ -275,8 +285,10 @@ const navUi = computed(() => ({
 
 const slotById = computed(() => {
   const m = new Map<string, number>()
-  for (const i of [...flatItems(sidebar.value), ...flatItems(drawer.value)]) m.set(i.id, chipSlot(i))
-  for (const e of [...sidebar.value, ...drawer.value]) if (e.kind === 'group') m.set(e.id, chipSlot(e))
+  for (const i of [...flatItems(sidebar.value), ...flatItems(drawer.value)])
+    m.set(i.id, chipSlot(i))
+  for (const e of [...sidebar.value, ...drawer.value])
+    if (e.kind === 'group') m.set(e.id, chipSlot(e))
   return m
 })
 /** Text of the nav row pill ("LIVE"), when the row has one. */
@@ -368,11 +380,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   size="sm"
                   class="ml-1.5 shrink-0 px-1.5"
                   data-testid="pembelajaran-nav-badge"
-              /></template
-              >
+              /></template>
             </UNavigationMenu>
           </template>
-
         </UDashboardSidebar>
 
         <UDashboardPanel
@@ -409,27 +419,27 @@ const chipClass = (chip: unknown, active: boolean): string =>
               </template>
               <template #title>
                 <div class="flex min-w-0 flex-col">
-                <div class="flex min-w-0 items-baseline gap-2">
-                  <span v-if="crumb" class="hidden truncate text-body text-muted xl:block"
-                    >{{ crumb }} <span aria-hidden="true">/</span></span
+                  <div class="flex min-w-0 items-baseline gap-2">
+                    <span v-if="crumb" class="hidden truncate text-body text-muted xl:block"
+                      >{{ crumb }} <span aria-hidden="true">/</span></span
+                    >
+                    <component
+                      :is="route.meta.ownsH1 ? 'p' : 'h1'"
+                      v-if="title"
+                      class="truncate text-body font-semibold text-highlighted sm:text-subheading"
+                      :data-testid="route.meta.ownsH1 ? 'shell-title' : undefined"
+                    >
+                      {{ title }}
+                    </component>
+                  </div>
+                  <p
+                    v-if="subtitle"
+                    class="truncate text-[10px] font-medium text-muted sm:text-caption"
+                    :title="subtitle"
+                    data-testid="pembelajaran-subtitle"
                   >
-                  <component
-                    :is="route.meta.ownsH1 ? 'p' : 'h1'"
-                    v-if="title"
-                    class="truncate text-body font-semibold text-highlighted sm:text-subheading"
-                    :data-testid="route.meta.ownsH1 ? 'shell-title' : undefined"
-                  >
-                    {{ title }}
-                  </component>
-                </div>
-                <p
-                  v-if="subtitle"
-                  class="hidden truncate text-caption text-muted md:block"
-                  :title="subtitle"
-                  data-testid="pembelajaran-subtitle"
-                >
-                  {{ subtitle }}
-                </p>
+                    {{ subtitle }}
+                  </p>
                 </div>
               </template>
               <template #right>
@@ -586,7 +596,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
         aria-label="Navigasi bawah"
         data-testid="pembelajaran-bottom-nav"
       >
-        <ul class="mx-auto flex max-w-xl items-stretch justify-around gap-0.5 p-1.5 sm:gap-1 sm:p-2">
+        <ul
+          class="mx-auto flex max-w-xl items-stretch justify-around gap-0.5 p-1.5 sm:gap-1 sm:p-2"
+        >
           <li v-for="tab in tabs" :key="tab.id" class="min-w-0 flex-1">
             <RouterLink
               :to="tab.to"
@@ -612,7 +624,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   class="absolute end-3 top-1.5 size-2 rounded-full bg-error"
                   aria-hidden="true"
                 />
-                <span class="sr-only" data-testid="pembelajaran-tab-live">{{ dsCopy.statusLive }}</span>
+                <span class="sr-only" data-testid="pembelajaran-tab-live">{{
+                  dsCopy.statusLive
+                }}</span>
               </template>
             </RouterLink>
           </li>
@@ -646,8 +660,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
               >{{ initials }}</span
             >
             <span class="min-w-0">
-              <span class="block break-words text-label text-highlighted">{{ name }}</span>
-              <span v-if="schoolName" class="block break-words text-caption text-muted">{{
+              <span class="block text-label break-words text-highlighted">{{ name }}</span>
+              <span v-if="schoolName" class="block text-caption break-words text-muted">{{
                 schoolName
               }}</span>
             </span>
@@ -669,16 +683,15 @@ const chipClass = (chip: unknown, active: boolean): string =>
             </template>
             <template #item-label="{ item }"
               ><span class="min-w-0" :title="labelTitle(item.label)">{{ item.label }}</span
-                ><DsBadge
-                  v-if="badgeOf(item)"
-                  :label="badgeOf(item)"
-                  tone="error"
-                  emphasis="strong"
-                  size="sm"
-                  class="ml-1.5 shrink-0 px-1.5"
-                  data-testid="pembelajaran-nav-badge"
-              /></template
-            >
+              ><DsBadge
+                v-if="badgeOf(item)"
+                :label="badgeOf(item)"
+                tone="error"
+                emphasis="strong"
+                size="sm"
+                class="ml-1.5 shrink-0 px-1.5"
+                data-testid="pembelajaran-nav-badge"
+            /></template>
           </UNavigationMenu>
         </template>
       </USlideover>
