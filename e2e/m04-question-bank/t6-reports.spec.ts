@@ -62,7 +62,7 @@ test.describe('M04 S7 admin report triage', { tag: [TAG.smoke, moduleTag(4)] }, 
     await loginAs(ADMIN)
     await openS7(page, gotoApp)
     await expectTabTitle(page, 'Laporan Soalan | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Laporan Soalan')
     await expect(page.getByTestId('reports-subtitle')).toHaveText(
       'Soalan yang dilaporkan oleh pelajar dari kuiz, latihan & Papan Bijak',
@@ -228,7 +228,7 @@ test.describe('M04 S13 and S14 as the pelajar', { tag: [TAG.smoke, moduleTag(4)]
     await gotoApp(S13)
     await expectTabTitle(page, 'Laporan Soalan Saya | PRESTASIPLUS')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Laporan Soalan Saya')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText('Jejak status laporan soalan yang anda hantar')
     await expect(page.locator('[data-testid^=my-reports-count-]')).toHaveText([
       '0Jumlah',
       '0Menunggu',
