@@ -41,7 +41,7 @@ live tracker `docs/plan/r1-pelan-100-peratus.md`.
 
 1. `migrate:verify` does not know the new loaders (questions all statuses, structured, papers, documents,
    files) — extend `apps/api/src/migration/verify/*` so the rebuild can run without `--verify-soft`.
-2. Legacy V2 papers: 64 of 69 published papers have no duration; V2 served them untimed (elapsed clock).
+2. Terbit pass: `load/papers/terbit-nest.ts` boots Nest under tsx (no decorator metadata) and fails (NotificationsService deps); build it through the API build (vite + swc, metadata on), e.g. a second entry in vite.build.config.ts run with node from the api image, then run `migrate:papers --apply --terbit` on UAT. Legacy V2 papers: 64 of 69 published papers have no duration; V2 served them untimed (elapsed clock).
    V3 `ck_papers_duration` forbids untimed simulasi — allow untimed legacy papers (V2 parity) so they stay
    published. Kertas inference (`load/papers/plan.ts` `inferKertas`, rules `papers-3`) is written but
    untested: add unit tests, run the papers specs.
