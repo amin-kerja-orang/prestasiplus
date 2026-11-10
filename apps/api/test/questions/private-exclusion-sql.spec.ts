@@ -4,7 +4,7 @@ import { Prisma } from '../../src/db/generated/client'
 import { QUESTION_COUNT_SQL } from '../../src/modules/account/account-data.repository'
 import { TeacherQuestionStatsProvider } from '../../src/modules/classes/question-bridge/teacher-question-stats.provider'
 import { PracticeAnalyticsRepository } from '../../src/modules/practice/reads/analytics/analytics.repository'
-import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
+import { NEWEST_WINDOWS, OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import type { AnswerLogPort } from '../../src/modules/practice/answer-log.port'
 import { PracticeRepository } from '../../src/modules/practice/practice.repository'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
@@ -122,7 +122,7 @@ describe('DM-42: private questions are absent from the counts and reports of oth
       () => overview.newestIdsOf(new QuestionsRepository(o.prisma).scopeSql({ status: 'approved' } as never, true), 5),
       () => overview.chapterQuestionCounts(['1', '2']),
     )
-    expect(o.sqls).toHaveLength(3)
+    expect(o.sqls).toHaveLength(2 + NEWEST_WINDOWS.length) // the newest-list read is one statement per id window
     for (const s of o.sqls) expect(s).toContain(BANK)
 
     const l = capture()

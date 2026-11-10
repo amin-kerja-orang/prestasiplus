@@ -122,9 +122,15 @@ export interface Paged<T> {
 }
 
 /** A page of a lane whose items are not its rows: Latih Tubi lists cells and counts questions. */
+/** The query-independent counts of the Latih Tubi lane (see `latihTubiLaneCounts`). */
+export interface LatihTubiLaneCounts {
+  totals: LatihTubiCellCount[]
+  servable: LatihTubiCellCount[]
+}
+
 export type LatihTubiLanePage = Paged<ServabilityLatihTubiCell> & { count: number; switchEnabled: boolean }
 
-interface LatihTubiCellCount {
+export interface LatihTubiCellCount {
   subject_id: bigint | null
   subject_name: string | null
   level_id: bigint | null
@@ -403,14 +409,9 @@ export class ServabilityReadsService {
    * draw (`filterOf`, the pupil's own filter), so the cells add up to the `latih_tubi_spm` row of the overview. The lane holds no
    * question status, so `status` is ignored. A question with no subject has no cell but stays in `count` when nothing is filtered.
    */
-  async latihTubiLane(q: ServabilityLaneQuery): Promise<LatihTubiLanePage> {
-    const live = { status: SERVABLE_STATUS, active: true } as const
-    const [totals, servable, listed, switchEnabled] = await Promise.all([
-      this.latihTubiCounts(this.questions.scopeSql(live, false)),
-      this.latihTubiCounts(this.questions.scopeSql({ ...filterOf('latih_tubi_spm'), ...live }, false)),
-      this.subjectsListed(),
-      this.latihTubiSwitch(),
-    ])
+  async latihTubiLane(q: ServabilityLaneQuery, counts?: LatihTubiLaneCounts): Promise<LatihTubiLanePage> {
+    // The two bank-wide counts do not depend on the query (the filters below are applied to their rows), so the controller may hand in a cached pair.
+    const [{ totals, servable }, listed, switchEnabled] = await Promise.all([counts ?? this.latihTubiLaneCounts(), this.subjectsListed(), this.latihTubiSwitch()])
     const key = (r: LatihTubiCellCount): string => `${idToString(r.subject_id ?? 0n)}:${r.level_id === null ? '' : idToString(r.level_id)}`
     const served = new Map(servable.flatMap((r) => (r.subject_id !== null && listed.has(idToString(r.subject_id)) ? [[key(r), r.n] as const] : [])))
     const term = q.search?.toLowerCase()
@@ -445,6 +446,16 @@ export class ServabilityReadsService {
       count: cells.reduce((sum, c) => sum + c.total, noSubject),
       switchEnabled,
     }
+  }
+
+  /** The two bank-wide counts of the Latih Tubi lane (every approved active question, and the part the pupil draw serves), per subject and Tingkatan. About 20 s on the real bank before the fixes, so the lane route keeps them in the overview cache. */
+  async latihTubiLaneCounts(): Promise<LatihTubiLaneCounts> {
+    const live = { status: SERVABLE_STATUS, active: true } as const
+    const [totals, servable] = await Promise.all([
+      this.latihTubiCounts(this.questions.scopeSql(live, false)),
+      this.latihTubiCounts(this.questions.scopeSql({ ...filterOf('latih_tubi_spm'), ...live }, false)),
+    ])
+    return { totals, servable }
   }
 
   private latihTubiCounts(scope: { from: Prisma.Sql; where: Prisma.Sql }): Promise<LatihTubiCellCount[]> {

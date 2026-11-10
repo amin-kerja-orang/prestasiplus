@@ -8,7 +8,7 @@ import { listMeta, ok } from '../../../common/http/respond'
 import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../common/throttle'
 import { isIdString } from '../../../db/ids'
 import { toMytTimestamp } from '../../../common/time/myt'
-import { OverviewCache } from '../serving/overview-cache'
+import { LATIH_TUBI_LANE_SCOPE, OverviewCache } from '../serving/overview-cache'
 import { PaperServabilityService } from '../serving/paper-servability.service'
 import { ServabilityReadsService } from '../serving/servability-reads.service'
 import { ServabilityService } from '../serving/servability.service'
@@ -116,7 +116,10 @@ export class ServabilityController {
   @Get('lanes/latih-tubi')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async latihTubi(@Query() query: unknown) {
-    const [res, subjects] = await Promise.all([this.reads.latihTubiLane(this.laneQuery(query)), this.reads.activeSubjects()])
+    // The two bank-wide counts are cached like the overview (stale-while-revalidate, dropped by the question events); the filters, paging and the switch are applied live.
+    const parsed = this.laneQuery(query)
+    const [counts, subjects] = await Promise.all([this.overviewCache.get(() => this.reads.latihTubiLaneCounts(), LATIH_TUBI_LANE_SCOPE), this.reads.activeSubjects()])
+    const res = await this.reads.latihTubiLane(parsed, counts.value)
     return { data: res.rows, meta: { ...listMeta(res.page, res.pageSize, res.total), switchEnabled: res.switchEnabled }, subjects, count: res.count, attention: this.attentionOf('latih-tubi') }
   }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { Prisma } from '../../src/db/generated/client'
-import { MEDIA_RESOLVED_SQL, SPM_SERVABLE_SQL, VERSION_STIMULI_SQL, mediaResolvedSql } from '../../src/modules/questions/learner-visibility'
+import { MEDIA_RESOLVED_SQL, SPM_SERVABLE_SQL, UNSHOWABLE_STIMULUS_SQL, VERSION_STIMULI_SQL, mediaResolvedSql } from '../../src/modules/questions/learner-visibility'
 
 /** S1-T06 (FR-X1-4f): the pupil-serving media rule is the approve-gate rule, written once (no DB needed). */
 describe('MEDIA_RESOLVED_SQL (S1-T06, FR-X1-4f)', () => {
@@ -20,8 +20,10 @@ describe('MEDIA_RESOLVED_SQL (S1-T06, FR-X1-4f)', () => {
     expect(VERSION_STIMULI_SQL.sql).toContain('stimulus_group_stimuli gs WHERE gs.group_id = q.group_id')
   })
 
-  it('is built by the same function the approve gate uses (one definition) and is part of SPM_SERVABLE_SQL', () => {
-    expect(mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`).sql).toBe(MEDIA_RESOLVED_SQL.sql)
+  it('shares ONE stimulus predicate with the approve-gate function and is part of SPM_SERVABLE_SQL', () => {
+    // The pupil form is three anti-joins (speed on 450 thousand questions); pupil-read-speed.spec.ts proves it returns the same rows as the UNION form of `mediaResolvedSql`.
+    expect(mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`).sql).toContain(UNSHOWABLE_STIMULUS_SQL.sql)
+    expect(MEDIA_RESOLVED_SQL.sql).toContain(UNSHOWABLE_STIMULUS_SQL.sql)
     expect(SPM_SERVABLE_SQL.sql).toContain(MEDIA_RESOLVED_SQL.sql)
   })
 })

@@ -13,6 +13,7 @@ import { SpmHubService } from './hub.service'
 import { SpmMockService } from './mock.service'
 import { SpmMocksController } from './mocks.controller'
 import { SpmPoolService } from './pool.service'
+import { SpmPoolWarmer } from './pool-warmer'
 import { SPM_COIN_SOURCES } from './config'
 import { SpmPorts } from './ports'
 import { SpmPortsModule } from './spm-ports.module'
@@ -35,6 +36,7 @@ import { WalkthroughService } from './walkthrough.service'
     SpmRepository,
     SpmCatalogService,
     SpmPoolService,
+    SpmPoolWarmer,
     SpmTrackingService,
     SpmHubService,
     SpmHistoryService,

@@ -107,6 +107,9 @@ const view = <T>(e: Entry<T>): Cached<T> => ({ value: e.value, computedAt: new D
 /** Scope of the admin overview: today a single, national one (Admin Pusat reads the whole bank). */
 export const OVERVIEW_SCOPE_ALL = 'all'
 
+/** Slot of the same cache that holds the two query-independent counts of the admin Latih Tubi lane (`ServabilityReadsService.latihTubiLaneCounts`). */
+export const LATIH_TUBI_LANE_SCOPE = 'lane:latih-tubi'
+
 /**
  * H-A21: the cache in front of `ServabilityReadsService.overview()` (22.5 s on a 400k bank). Per scope, 5 minutes, stale-while-
  * revalidate, single flight. Invalidated (marked stale) by the question events that change what pupils are served (approve, archive,

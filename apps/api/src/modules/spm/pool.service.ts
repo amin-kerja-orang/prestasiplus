@@ -15,6 +15,16 @@ export interface PoolCell {
   n: number
 }
 
+/** A cached count: valid until `until` (ms), computed under question-event `generation`. */
+interface Memo<T> {
+  until: number
+  value: T
+  generation: number
+}
+
+/** Background refreshes of stale counts that run at the same time (each is a bank-wide count of one subject). */
+const REFRESH_PARALLEL = 2
+
 /** The SQL scope of the SPM pool of a subject: live-published, active, SPM-servable (offered level, no tag), one multiple-choice leaf outside any group (the same shape `inPool` / `mcqItemOf` accept, so counts and draws agree). */
 const poolFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'mcq', spmPool: true, ungrouped: true, singleMcqLeaf: true })
 
@@ -45,16 +55,19 @@ const inPool = (r: QuestionRecord): boolean => r.isActive && r.version.status ==
  * The SPM pool (BR-M06-02), computed through the BE-09 doorway only. Counts are ONE grouped SQL statement per subject
  * (`QuestionsRepository.groupCountsByLevelTp` over the `spmPool` filter): no id list and no hydration, whatever the bank size.
  * A draw is `QuestionsRepository.sampleIds` (SQL, LIMIT) plus a hydration of the drawn ids only. The cells of a subject are
- * reused for `SPM_POOL_CACHE_SECONDS` (default 60; 0 turns the cache off) and single-flighted per subject.
+ * reused for `SPM_POOL_CACHE_SECONDS` (default 300; 0 turns the cache off) and single-flighted per subject. Past the TTL a count is still served while one refresh runs behind it; only a question event or a cold start makes a read wait (see `memo`).
  */
 @Injectable()
 export class SpmPoolService {
   private readonly inflight = new Map<string, Promise<PoolCell[]>>()
-  private readonly cache = new Map<string, { until: number; cells: PoolCell[]; generation: number }>()
+  private readonly cache = new Map<string, Memo<PoolCell[]>>()
   private readonly databankInflight = new Map<string, Promise<number>>()
   private readonly unitCellsInflight = new Map<string, Promise<PoolCell[]>>()
-  private readonly unitCellsCache = new Map<string, { until: number; cells: PoolCell[]; generation: number }>()
-  private readonly databankCache = new Map<string, { until: number; n: number; generation: number }>()
+  private readonly unitCellsCache = new Map<string, Memo<PoolCell[]>>()
+  private readonly databankCache = new Map<string, Memo<number>>()
+  /** Background refreshes waiting for their turn: at most `REFRESH_PARALLEL` run at once, so a hub whose 19 subjects expired together never starts 19 bank-wide counts. */
+  private readonly refreshQueue: (() => void)[] = []
+  private refreshing = 0
 
   constructor(
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
@@ -76,29 +89,68 @@ export class SpmPoolService {
     return (Number.isInteger(n) && n >= 0 ? n : POOL_CACHE_SECONDS) * 1000
   }
 
-  /** The pool of a subject as counts per (level, difficulty). */
-  async cells(subjectId: string, options: { fresh?: boolean } = {}): Promise<PoolCell[]> {
+  /**
+   * The one cache rule of the three counts below. A value of the CURRENT generation (no question event since) is served as it is; once it is older than the
+   * TTL it is still served at once and ONE refresh runs behind it (stale-while-revalidate), so a pupil never waits for a count that is only old, not changed.
+   * After a question event (a new generation) or with no value yet (cold) the read computes and waits, so a change shows on the next load. Concurrent
+   * computes of one key and generation share one statement. `fresh` skips the cache. A TTL of 0 turns the cache off.
+   */
+  private memo<T>(store: Map<string, Memo<T>>, flights: Map<string, Promise<T>>, key: string, fresh: boolean | undefined, load: () => Promise<T>): Promise<T> {
     const ttl = this.ttlMs()
     const now = this.clock.now().getTime()
-    const hit = this.cache.get(subjectId)
     const generation = this.generation()
-    if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.cells
-    // Single-flight: concurrent reads of one subject share one statement, but never across a question event (the key holds the generation).
-    const flight = `${subjectId}:${String(generation)}`
-    const running = this.inflight.get(flight)
-    if (running) return running
-    const load = (async () => {
-      const rows = await this.questions.groupCountsByLevelTp({ ...poolFilter(subjectId), status: 'approved', active: true })
-      const cells = mergeCells(rows)
-      if (ttl > 0) this.cache.set(subjectId, { until: now + ttl, cells, generation })
-      return cells
-    })()
-    this.inflight.set(flight, load)
-    try {
-      return await load
-    } finally {
-      this.inflight.delete(flight)
+    const hit = store.get(key)
+    if (!fresh && ttl > 0 && hit && hit.generation === generation) {
+      if (hit.until <= now) this.refreshBehind(store, flights, key, generation, load)
+      return Promise.resolve(hit.value)
     }
+    // Single-flight: concurrent reads of one key share one statement, but never across a question event (the flight key holds the generation).
+    const flight = `${key}:${String(generation)}`
+    const running = flights.get(flight)
+    if (running) return running
+    const run = (async () => {
+      const value = await load()
+      if (ttl > 0) store.set(key, { until: now + ttl, value, generation })
+      return value
+    })()
+    flights.set(flight, run)
+    const done = () => flights.delete(flight)
+    run.then(done, done)
+    return run
+  }
+
+  /** Starts the one background refresh of a stale value (none when it is already running); a failure keeps the stale value. */
+  private refreshBehind<T>(store: Map<string, Memo<T>>, flights: Map<string, Promise<T>>, key: string, generation: number, load: () => Promise<T>): void {
+    const flight = `${key}:${String(generation)}`
+    if (flights.has(flight)) return
+    const run = this.inBackground(async () => {
+      const value = await load()
+      // A question event during the refresh moved the generation: this value is already old, the next read computes its own.
+      if (this.generation() === generation) store.set(key, { until: this.clock.now().getTime() + this.ttlMs(), value, generation })
+      return value
+    })
+    flights.set(flight, run)
+    const done = () => flights.delete(flight)
+    run.then(done, done)
+  }
+
+  private inBackground<T>(job: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const start = () => {
+        this.refreshing++
+        job().then(resolve, reject).finally(() => {
+          this.refreshing--
+          this.refreshQueue.shift()?.()
+        })
+      }
+      if (this.refreshing < REFRESH_PARALLEL) start()
+      else this.refreshQueue.push(start)
+    })
+  }
+
+  /** The pool of a subject as counts per (level, difficulty). */
+  cells(subjectId: string, options: { fresh?: boolean } = {}): Promise<PoolCell[]> {
+    return this.memo(this.cache, this.inflight, subjectId, options.fresh, async () => mergeCells(await this.questions.groupCountsByLevelTp({ ...poolFilter(subjectId), status: 'approved', active: true })))
   }
 
   /**
@@ -106,7 +158,7 @@ export class SpmPoolService {
    * flight, dropped when a question event moves `generation`).
    */
   databankCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
-    return this.databankUnits(subjectId, options)
+    return this.memo(this.databankCache, this.databankInflight, subjectId, options.fresh, () => this.questions.unitCount(databankFilter(subjectId)))
   }
 
   /** The Latih Tubi SPM total of a subject: the sum of `latihTubiCells`, ONE statement and ONE cache, so total and breakdowns are equal by construction. */
@@ -118,48 +170,8 @@ export class SpmPoolService {
    * The Latih Tubi cells of a subject by (level, difficulty) in UNITS (see `latihTubiFilter`): they sum to `latihTubiCount` (which is their sum), because a
    * group sits in one bucket (the level and TP of its first member, `unitCountsByLevelTp`). Cached like `databankCount`.
    */
-  async latihTubiCells(subjectId: string, options: { fresh?: boolean } = {}): Promise<PoolCell[]> {
-    const ttl = this.ttlMs()
-    const now = this.clock.now().getTime()
-    const generation = this.generation()
-    const hit = this.unitCellsCache.get(subjectId)
-    if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.cells
-    const flight = `${subjectId}:${String(generation)}`
-    const running = this.unitCellsInflight.get(flight)
-    if (running) return running
-    const load = (async () => {
-      const cells = mergeCells(await this.questions.unitCountsByLevelTp(latihTubiFilter(subjectId)))
-      if (ttl > 0) this.unitCellsCache.set(subjectId, { until: now + ttl, cells, generation })
-      return cells
-    })()
-    this.unitCellsInflight.set(flight, load)
-    try {
-      return await load
-    } finally {
-      this.unitCellsInflight.delete(flight)
-    }
-  }
-
-  private async databankUnits(subjectId: string, options: { fresh?: boolean }): Promise<number> {
-    const ttl = this.ttlMs()
-    const now = this.clock.now().getTime()
-    const generation = this.generation()
-    const hit = this.databankCache.get(subjectId)
-    if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.n
-    const flight = `${subjectId}:${String(generation)}`
-    const running = this.databankInflight.get(flight)
-    if (running) return running
-    const load = (async () => {
-      const n = await this.questions.unitCount(databankFilter(subjectId))
-      if (ttl > 0) this.databankCache.set(subjectId, { until: now + ttl, n, generation })
-      return n
-    })()
-    this.databankInflight.set(flight, load)
-    try {
-      return await load
-    } finally {
-      this.databankInflight.delete(flight)
-    }
+  latihTubiCells(subjectId: string, options: { fresh?: boolean } = {}): Promise<PoolCell[]> {
+    return this.memo(this.unitCellsCache, this.unitCellsInflight, subjectId, options.fresh, async () => mergeCells(await this.questions.unitCountsByLevelTp(latihTubiFilter(subjectId))))
   }
 
   /** Pool size of a subject, optionally of one level and one difficulty. */

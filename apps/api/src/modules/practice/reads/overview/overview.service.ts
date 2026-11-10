@@ -99,11 +99,13 @@ export class OverviewService {
   ) {}
 
   /**
-   * Per process memo of the global bank counts. It is NOT invalidated when staff publish or deactivate a
-   * question, so a count can be up to `bankTtlMs` (60 s by default) stale. Test boots must set `bankTtlMs: 0`
-   * (see `bootOverviewApp` in apps/api/test/practice-reads/overview/helpers.ts) or they read old counts.
+   * Per process memo of the global bank counts. It is NOT invalidated when staff publish or deactivate a question, so a count can be up to
+   * `bankTtlMs` (60 s by default) stale. Past that age the old counts are still served at once and ONE refresh runs behind them (stale-while-revalidate:
+   * the counting statement takes 1 to 4 s on a 450 thousand question bank, and a pupil must not wait for it every minute); only the very first read waits,
+   * unless `warm()` ran at start. Test boots must set `bankTtlMs: 0` (see `bootOverviewApp` in apps/api/test/practice-reads/overview/helpers.ts) or they read old counts.
    */
-  private bankMemo: { at: number; facts: Promise<BankFacts> } | null = null
+  private bankMemo: { at: number; facts: Promise<BankFacts>; settled: boolean } | null = null
+  private bankRefreshing = false
 
   /** Per process memo of the chapter question counts, by chapter-id set; same `bankTtlMs` and the same staleness rule. */
   private readonly chapterMemo = new Map<string, { at: number; counts: Promise<Map<string, number>> }>()
@@ -124,20 +126,48 @@ export class OverviewService {
     return counts
   }
 
-  /** The grouped bank counts; reused for `bankTtlMs` of monotonic time (performance, not business time). */
+  /** The grouped bank counts; reused for `bankTtlMs` of monotonic time (performance, not business time), then refreshed behind the stale value. */
   private bankFacts(): Promise<BankFacts> {
     const ttl = this.options.bankTtlMs
     const nowMs = performance.now()
-    if (ttl > 0 && this.bankMemo && nowMs - this.bankMemo.at < ttl) return this.bankMemo.facts
+    const memo = this.bankMemo
+    if (ttl > 0 && memo) {
+      if (nowMs - memo.at >= ttl && memo.settled && !this.bankRefreshing) this.refreshBankFacts()
+      return memo.facts
+    }
     const facts = this.repo.bankMatrix().then((cells) => new BankFacts(cells))
     if (ttl > 0) {
-      const memo = { at: nowMs, facts }
-      this.bankMemo = memo
-      facts.catch(() => {
-        if (this.bankMemo === memo) this.bankMemo = null
-      })
+      const entry = { at: nowMs, facts, settled: false }
+      this.bankMemo = entry
+      facts.then(
+        () => {
+          entry.settled = true
+        },
+        () => {
+          if (this.bankMemo === entry) this.bankMemo = null
+        },
+      )
     }
     return facts
+  }
+
+  /** One background recount of the bank; a failure keeps the stale counts and is logged. */
+  private refreshBankFacts(): void {
+    this.bankRefreshing = true
+    this.repo
+      .bankMatrix()
+      .then((cells) => {
+        this.bankMemo = { at: performance.now(), facts: Promise.resolve(new BankFacts(cells)), settled: true }
+      })
+      .catch((err: unknown) => this.logger.warn(`bank counts refresh failed: ${err instanceof Error ? err.message : String(err)}`))
+      .finally(() => {
+        this.bankRefreshing = false
+      })
+  }
+
+  /** Fills the bank counts ahead of the first pupil (the dashboard and the practice subject cards read them); the warm-up at start calls it. */
+  async warm(): Promise<void> {
+    await this.bankFacts()
   }
 
   // --- S1 -------------------------------------------------------------------------------------------

@@ -39,6 +39,9 @@ export interface BankCell {
 
 const big = (ids: readonly string[]): bigint[] => ids.map((id) => idFromString(id))
 
+/** Upper ends of the id windows `newestIdsOf` reads in turn, counted down from the top id; `null` = no lower bound. */
+export const NEWEST_WINDOWS: readonly (number | null)[] = [16_384, 131_072, null]
+
 /**
  * Reads of the overview screens (BE-13). Every figure of the caller is computed from the DIMENSION columns of
  * `practice_answers` (subject_id, chapter_id, is_correct, ...), never from a join to `questions` (AC2).
@@ -146,9 +149,20 @@ export class OverviewRepository {
    * so the shape check never scans the bank. `QuestionsRepository.listIds` also computes totals and per-status counts, which the dashboard does not need.
    */
   async newestIdsOf(scope: { from: Prisma.Sql; where: Prisma.Sql }, limit: number, below?: string): Promise<string[]> {
-    const page = below === undefined ? Prisma.empty : Prisma.sql`AND q.id < ${idFromString(below)}::bigint`
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${scope.from} WHERE ${scope.where} ${page} ORDER BY q.id DESC LIMIT ${limit}`
-    return rows.map((r) => idToString(r.id))
+    // On the real bank (450 thousand questions) the planner did not walk the primary key backwards: it evaluated the whole scope (330 thousand rows,
+    // 10 million buffers, 5 to 7 s on UAT) to keep 60 ids. So the newest ids are read in widening id windows under the top (or under `below`), each a
+    // cheap range of the primary key (on UAT the newest servable question is 12 thousand ids under the top, so the first window holds the 60 in 0.2 s). Same rows, same order as one unbounded read; the last window has no lower bound.
+    const top = below === undefined ? Prisma.sql`(SELECT max(id) + 1 FROM questions)` : Prisma.sql`${idFromString(below)}::bigint`
+    const ids: string[] = []
+    let from = 0
+    for (const to of NEWEST_WINDOWS) {
+      const range = Prisma.sql`${from === 0 ? Prisma.empty : Prisma.sql`AND q.id < ${top} - ${from}::bigint`} ${to === null ? Prisma.empty : Prisma.sql`AND q.id >= ${top} - ${to}::bigint`}`
+      const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${scope.from} WHERE ${scope.where} AND q.id < ${top} ${range} ORDER BY q.id DESC LIMIT ${limit - ids.length}`
+      ids.push(...rows.map((r) => idToString(r.id)))
+      if (ids.length >= limit) break
+      if (to !== null) from = to
+    }
+    return ids
   }
 
   /**

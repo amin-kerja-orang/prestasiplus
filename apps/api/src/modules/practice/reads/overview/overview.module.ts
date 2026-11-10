@@ -10,6 +10,7 @@ import { WalletModule } from '../../../wallet'
 import { OverviewController } from './overview.controller'
 import { OverviewRepository } from './overview.repository'
 import { DEFAULT_OVERVIEW_OPTIONS, OVERVIEW_OPTIONS, OverviewService } from './overview.service'
+import { BankCountsWarmer } from './bank-counts-warmer'
 import { OverviewTopicProgress } from './topic-progress.provider'
 
 /**
@@ -20,7 +21,7 @@ import { OverviewTopicProgress } from './topic-progress.provider'
 @Module({
   imports: [CurriculumModule, FilesModule, QuestionsModule, SubscriptionsModule, UsersModule, WalletModule, BannersModule],
   controllers: [OverviewController],
-  providers: [OverviewRepository, OverviewService, OverviewTopicProgress, { provide: OVERVIEW_OPTIONS, useValue: DEFAULT_OVERVIEW_OPTIONS }],
+  providers: [OverviewRepository, OverviewService, BankCountsWarmer, OverviewTopicProgress, { provide: OVERVIEW_OPTIONS, useValue: DEFAULT_OVERVIEW_OPTIONS }],
   exports: [OverviewTopicProgress],
 })
 export class PracticeOverviewReadsModule implements OnModuleInit {

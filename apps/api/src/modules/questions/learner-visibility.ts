@@ -69,15 +69,21 @@ export const TABLE_GRID_READABLE_SQL = Prisma.sql`(CASE jsonb_typeof(s.table_dat
     ELSE false END)`
 
 /**
+ * A stimulus row `s` that cannot be shown: a picture kind without its file, a table with no grid, no file and no pipe table in the body, a passage with no text.
+ * The ONE definition, used by `mediaResolvedSql` (any set of stimuli) and by `MEDIA_RESOLVED_SQL` (the pupil-serving form below).
+ */
+export const UNSHOWABLE_STIMULUS_SQL = Prisma.sql`((s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
+        OR (s.kind = 'table' AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%') AND NOT coalesce(${TABLE_GRID_READABLE_SQL}, false))
+        OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = ''))`
+
+/**
  * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
  * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
  */
 export const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma.Sql => Prisma.sql`(
   NOT EXISTS (
     SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
-     WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
-        OR (s.kind = 'table' AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%') AND NOT coalesce(${TABLE_GRID_READABLE_SQL}, false))
-        OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
+     WHERE ${UNSHOWABLE_STIMULUS_SQL}
   )
   AND NOT coalesce(jsonb_typeof(${importIssues}) = 'array' AND ${importIssues} @> '[{"code": "legacy_image_unresolved"}]'::jsonb, false)
 )`
@@ -91,8 +97,17 @@ export const VERSION_STIMULI_SQL = Prisma.sql`SELECT vs.stimulus_id AS sid FROM 
  * FR-X1-4f (S1-T06): the pupil-serving form of `mediaResolvedSql` over the LIVE version `v` of question `q`. A question whose own stimulus has no file is
  * not served; a question of a stimulus group is not served when ANY stimulus of the group lacks its file (the group's stimuli are in
  * `VERSION_STIMULI_SQL`, so every member of the group drops together: the complete-group rule). Written once, ANDed wherever `NOT_FLAGGED_SQL` is.
+ *
+ * Gives the same answer as `mediaResolvedSql(VERSION_STIMULI_SQL, v.import_issues)`, written as one NOT EXISTS per link kind (version link, part link,
+ * group link). Each is a plain anti-join the planner runs as a hash anti-join over the few unshowable stimuli, where the UNION form could not be pulled up
+ * and cost three index probes per candidate row (about 2 million buffers on the 330 thousand candidates of a bank-wide count, measured on UAT).
  */
-export const MEDIA_RESOLVED_SQL = mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`)
+export const MEDIA_RESOLVED_SQL = Prisma.sql`(
+  NOT EXISTS (SELECT 1 FROM question_version_stimuli vs JOIN stimuli s ON s.id = vs.stimulus_id WHERE vs.question_version_id = v.id AND ${UNSHOWABLE_STIMULUS_SQL})
+  AND NOT EXISTS (SELECT 1 FROM question_parts p JOIN stimuli s ON s.id = p.stimulus_id WHERE p.question_version_id = v.id AND ${UNSHOWABLE_STIMULUS_SQL})
+  AND NOT EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id WHERE gs.group_id = q.group_id AND ${UNSHOWABLE_STIMULUS_SQL})
+  AND NOT coalesce(jsonb_typeof(v.import_issues) = 'array' AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb, false)
+)`
 
 /**
  * S1-T09a (AC-PA-35, D-PA-6): an `mcq_multi` question (several correct options, ticks sent together) is not served in a drill that takes ONE option

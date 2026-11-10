@@ -11,6 +11,7 @@ import { ServabilityReadsService, ServabilityService } from './serving'
 import { PaperServabilityService } from './serving/paper-servability.service'
 import { OverviewCache } from './serving/overview-cache'
 import { OverviewWarmer } from './serving/overview-warmer'
+import { LatihTubiLaneWarmer } from './serving/lane-warmer'
 import { QuestionPaperServabilityController, ServabilityController } from './http/servability.controller'
 import { QuestionCountsAdapter } from './curriculum-bridge'
 import { AdminQuestionsController, GuruQuestionsController, GuruStructuredQuestionsController, GuruStructuredSubmissionsController, StimuliController, StructuredQuestionsController } from './http'
@@ -34,7 +35,7 @@ import { StudioController, StudioDskpService } from './studio'
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule, IntakeFilesModule],
   controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, GuruStructuredQuestionsController, GuruStructuredSubmissionsController, StimuliController, StudioController, ServabilityController, QuestionPaperServabilityController, RegroupController],
-  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, RegroupService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, PaperServabilityService, OverviewCache, OverviewWarmer],
+  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, RegroupService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, PaperServabilityService, OverviewCache, OverviewWarmer, LatihTubiLaneWarmer],
   exports: [QuestionsRepository, QuestionsService, StimuliService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, PaperServabilityService, OverviewCache],
 })
 export class QuestionsModule implements OnModuleInit {

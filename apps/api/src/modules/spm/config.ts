@@ -70,8 +70,8 @@ export const CANNED_WALKTHROUGH: Readonly<Record<string, string>> = {
 /** Default simulated delay of the walkthrough in milliseconds (the mock's 1500); `SPM_WALKTHROUGH_DELAY_MS` overrides it. */
 export const WALKTHROUGH_DELAY_MS = 1500
 
-/** Seconds a per-subject SPM pool read is reused (`SPM_POOL_CACHE_SECONDS`; 0 turns the cache off). */
-export const POOL_CACHE_SECONDS = 60
+/** Seconds a per-subject SPM pool read is reused (`SPM_POOL_CACHE_SECONDS`; 0 turns the cache off; past it a count is served stale while one refresh runs behind). */
+export const POOL_CACHE_SECONDS = 300
 
 /** Per-user ceilings (requests per minute) on the two routes that cost a pool draw or a simulated solve. */
 export const SPM_LIMITS = {
