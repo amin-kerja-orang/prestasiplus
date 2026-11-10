@@ -62,6 +62,7 @@ import {
 import { FRIEND_OPTIONS, useFriend } from '@/composables/useFriend'
 import { LG_QUERY, useMediaQuery } from '@/shells/admin/useMinWidth'
 import ModPelajarBanner from '@/shells/shared/ModPelajarBanner.vue'
+import ImpersonationBanner from '@/shells/user/ImpersonationBanner.vue'
 import { useShellTabTitle } from '@/shells/shared/useShellTabTitle'
 import { useIntervalWhileVisible } from '@/composables/useIntervalWhileVisible'
 import { BELL_REFRESH_MS, NOTIFICATION_PUSH_EVENT } from '@/shells/user/constants'
@@ -73,6 +74,8 @@ import { useShellUser } from './useShellUser'
 const route = useRoute()
 const { role, name, schoolName } = useShellUser()
 const modeOn = computed(() => useSessionStore().mode !== null)
+// M27 "Menyamar": the amber bar (h-11) sits above the frame, which starts below it.
+const impersonating = computed(() => Boolean(useSessionStore().impersonator))
 const { allows } = usePrototypeScope()
 // Logo link: the role's own dashboard (teacher `/guru`, school admin `/admin-sekolah`), scope on or off.
 const home = computed(() => shellHomePath(role.value))
@@ -315,12 +318,19 @@ const chipClass = (chip: unknown, active: boolean): string =>
         >Langkau ke kandungan</a
       >
 
+      <ImpersonationBanner />
       <ModPelajarBanner />
       <UDashboardGroup
         storage="local"
         storage-key="pembelajaran-dashboard-v3"
         unit="rem"
-        :style="modeOn ? { top: 'var(--mod-bar-h, 2.5rem)' } : undefined"
+        :style="
+          modeOn
+            ? { top: 'var(--mod-bar-h, 2.5rem)' }
+            : impersonating
+              ? { top: '2.75rem' }
+              : undefined
+        "
         class="overflow-clip bg-muted"
       >
         <!-- Sidebar (>= lg): full height, collapses to an icon rail -->

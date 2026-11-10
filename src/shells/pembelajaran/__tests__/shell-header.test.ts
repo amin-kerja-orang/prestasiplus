@@ -16,6 +16,12 @@ import { NOTIFICATION_PUSH_EVENT } from '@/shells/user/constants'
 import { setUnauthorizedRedirect } from '@/stores'
 import { useNotificationBadgeStore } from '@/stores/notification-badge'
 
+const leave = vi.hoisted(() => vi.fn())
+vi.mock('@/modules/m27-school-admin', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  leaveImpersonation: leave,
+}))
+
 const Page = defineComponent({ name: 'HeaderPage', setup: () => () => h('p', 'page') })
 
 const REGISTRY: readonly ModuleManifest[] = [
@@ -44,8 +50,11 @@ beforeAll(async () => {
 let pinia: Pinia
 let wrapper: VueWrapper | null = null
 
-async function open(path: string): Promise<VueWrapper> {
-  logIn(STUDENT)
+async function open(
+  path: string,
+  session: Parameters<typeof logIn>[1] = {},
+): Promise<VueWrapper> {
+  logIn(STUDENT, session)
   const router = createAppRouter({ history: createMemoryHistory(), registry: REGISTRY })
   await router.push(path)
   wrapper = mount(LayoutHost, { global: { plugins: [pinia, router] }, attachTo: document.body })
@@ -66,6 +75,7 @@ beforeEach(() => {
   setRouteOutcome(null)
   installTransport(fakeTransport(() => ({})))
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+  leave.mockReset()
 })
 
 afterEach(() => {
@@ -118,5 +128,24 @@ describe('PembelajaranLayout title and subtitle (C-7)', () => {
     expect(classes).not.toContain('hidden')
     expect(classes).toContain('text-[10px]')
     expect(classes).toContain('sm:text-caption')
+  })
+})
+
+describe('PembelajaranLayout impersonation banner (C-10)', () => {
+  it('shows no banner for an ordinary session', async () => {
+    const w = await open('/peta-belajar')
+    expect(w.find('[data-testid="impersonation-banner"]').exists()).toBe(false)
+  })
+
+  it('shows the target name while impersonating and "Kembali ke Admin" calls the leave action', async () => {
+    leave.mockRejectedValue(new Error('stop here'))
+    const w = await open('/peta-belajar', {
+      impersonator: { id: 8, name: 'Admin Contoh', returnTo: '/admin-sekolah/pelajar' },
+    })
+    expect(w.get('[data-testid="impersonation-text"]').text()).toBe(
+      `Mod menyamar — anda melihat sebagai ${STUDENT.name}`,
+    )
+    await w.get('[data-testid="impersonation-leave"]').trigger('click')
+    expect(leave).toHaveBeenCalledTimes(1)
   })
 })
