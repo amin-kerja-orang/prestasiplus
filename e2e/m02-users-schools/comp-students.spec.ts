@@ -22,6 +22,13 @@ const ADMIN = 'admin@demo.test'
 
 const byId = (page: Page, id: string) => page.getByTestId(id)
 
+/** The list rows: table rows from 768 px, cards below (DsDataTable has no row test id). */
+const rowsOf = (page: Page) =>
+  page.locator(
+    '[data-testid=comp-table] tbody tr, [data-testid=comp-table] [data-ds=data-table-cards] > li',
+  )
+const isWide = (page: Page) => (page.viewportSize()?.width ?? 0) >= 768
+
 test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
@@ -30,29 +37,40 @@ test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, (
     await gotoApp('/admin/comp-students')
   })
 
-  test('title, summary, 90 students over 2 pages, upper-case headers and no horizontal page scroll', async ({
+  test('title, summary, 90 students over 2 pages, column headers and no horizontal page scroll', async ({
     page,
     gotoApp,
   }) => {
     await expectTabTitle(page, 'Pelajar Komplimen | PRESTASIPLUS')
     await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 90 / 90 pelajar komplimen')
     await expect(byId(page, 'comp-add')).toHaveAttribute('href', '/admin/comp-students/create')
-    await expect(byId(page, 'comp-row')).toHaveCount(50)
-    await expect(byId(page, 'comp-account').first()).toHaveText('AKTIF')
-    await expect(byId(page, 'comp-coins').first()).toHaveText('OFF')
+    await expect(rowsOf(page)).toHaveCount(50)
+    await expect(rowsOf(page).first()).toContainText('Aktif')
+    await expect(rowsOf(page).first()).toContainText('OFF')
     await expect(byId(page, 'comp-name').first()).toHaveAttribute(
       'href',
       /^\/admin\/comp-students\/\d+$/,
     )
-    await expect(byId(page, 'comp-table').locator('thead th').nth(1)).toHaveCSS(
-      'text-transform',
-      'uppercase',
+    if (isWide(page)) {
+      // v2 theme: sentence-case column headers (no upper-case transform).
+      await expect(byId(page, 'comp-table').locator('thead th')).toHaveText([
+        '',
+        'Nama',
+        'IC',
+        'Sekolah',
+        'Kelas / Cikgu',
+        'Akaun',
+        'Syiling',
+        'Pakej tamat',
+      ])
+    }
+    await expect(page.locator('[data-ds=data-table-pager]')).toContainText(
+      'Menunjukkan 1-50 daripada 90 hasil',
     )
-    await expect(byId(page, 'comp-pager')).toContainText(/Showing 1 to 50 of 90 results|Next/)
     await expectNoHorizontalScroll(page)
 
     await gotoApp('/admin/comp-students?page=2')
-    await expect(byId(page, 'comp-row')).toHaveCount(40)
+    await expect(rowsOf(page)).toHaveCount(40)
     await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 90 / 90 pelajar komplimen')
     await expectNoHorizontalScroll(page)
   })
@@ -60,10 +78,13 @@ test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, (
   test('the table scrolls inside its card and the last column is reachable (DV-M02-05)', async ({
     page,
   }) => {
-    const scroller = page
-      .locator('[data-testid=comp-table]')
-      .locator('xpath=ancestor::div[contains(@class,"overflow-x-auto")]')
-    await expect(byId(page, 'comp-row')).toHaveCount(50)
+    // Below 768 px the list is cards (no table to scroll); the page itself must not scroll sideways.
+    await expect(rowsOf(page)).toHaveCount(50)
+    if (!isWide(page)) {
+      await expectNoHorizontalScroll(page)
+      return
+    }
+    const scroller = byId(page, 'comp-table').locator('div.overflow-x-auto').first()
     await scroller.evaluate((el) => {
       el.scrollLeft = el.scrollWidth
     })
@@ -78,9 +99,9 @@ test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, (
     provisional('The result flash copy is a placeholder (SRS §8)'),
     async ({ page }) => {
       await expect(byId(page, 'comp-bulk-bar')).toHaveCount(0)
-      const boxes = byId(page, 'comp-select')
-      await boxes.nth(0).check()
-      await boxes.nth(1).check()
+      const box = (i: number) => rowsOf(page).nth(i).getByRole('checkbox')
+      await box(0).check()
+      await box(1).check()
       const bar = byId(page, 'comp-bulk-bar')
       await expect(bar).toContainText('2 dipilih')
       await expect(bar.getByRole('button')).toHaveText([
@@ -95,18 +116,22 @@ test.describe('M02 S6 complimentary list', { tag: [TAG.smoke, moduleTag(2)] }, (
       await byId(page, 'comp-bulk-clear').click()
       await expect(bar).toHaveCount(0)
 
-      await byId(page, 'comp-select-all').check()
+      const selectAll = page.getByRole('checkbox', { name: 'Pilih semua' })
+      // Below 768 px the cards have no select-all box: tick every card instead.
+      if (isWide(page)) await selectAll.check()
+      else for (let i = 0; i < 50; i++) await box(i).check()
       await expect(byId(page, 'comp-selected-count')).toHaveText('50')
-      await byId(page, 'comp-select-all').uncheck()
+      if (isWide(page)) await selectAll.uncheck()
+      else await byId(page, 'comp-bulk-clear').click()
       await expect(bar).toHaveCount(0)
 
-      await boxes.nth(0).check()
-      await boxes.nth(1).check()
+      await box(0).check()
+      await box(1).check()
       await byId(page, 'comp-bulk-coins_on').click()
       await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 88 / 90 pelajar komplimen')
-      await expect(byId(page, 'comp-coins').nth(0)).toHaveText('ON')
-      await expect(byId(page, 'comp-coins').nth(1)).toHaveText('ON')
-      await expect(byId(page, 'comp-coins').nth(2)).toHaveText('OFF')
+      await expect(rowsOf(page).nth(0)).toContainText('ON')
+      await expect(rowsOf(page).nth(1)).toContainText('ON')
+      await expect(rowsOf(page).nth(2)).toContainText('OFF')
       await expect(byId(page, 'cmp-flash')).toBeVisible()
       await expect(bar).toHaveCount(0)
       await expectNoHorizontalScroll(page)
@@ -133,7 +158,10 @@ test.describe('M02 S7 register complimentary students', { tag: [TAG.smoke, modul
     await expect(byId(page, 'comp-expiry')).toHaveValue(/^\d{4}-12-31$/)
     await expect(byId(page, 'comp-class')).toBeDisabled()
     await expect(byId(page, 'comp-help')).toContainText('NAMA, NOKP')
-    await expect(byId(page, 'comp-back')).toHaveAttribute('href', '/admin/comp-students')
+    await expect(page.getByRole('link', { name: 'Senarai pelajar komplimen' })).toHaveAttribute(
+      'href',
+      '/admin/comp-students',
+    )
     await expectNoHorizontalScroll(page)
 
     // Fixture teacher 5302 owns 3 classes; 5301 owns none (SRS §6.14).
@@ -167,12 +195,12 @@ test.describe('M02 S7 register complimentary students', { tag: [TAG.smoke, modul
         '2 pelajar komplimen berjaya didaftarkan.',
       )
       await expect(byId(page, 'comp-summary')).toHaveText('Syiling OFF: 92 / 92 pelajar komplimen')
-      const usernames = byId(page, 'comp-row').locator('td:nth-child(3)')
-      await expect(usernames.filter({ hasText: '077701@prestasiplus.my' })).toHaveCount(1)
-      await expect(usernames.filter({ hasText: '088802@prestasiplus.my' })).toHaveCount(1)
-      const created = byId(page, 'comp-row').filter({ hasText: '088802@prestasiplus.my' })
-      await expect(created.getByTestId('comp-coins')).toHaveText('OFF')
-      await expect(created.getByTestId('comp-account')).toHaveText('AKTIF')
+      // The username is the sub line of the name cell (table) or part of the card text.
+      await expect(rowsOf(page).filter({ hasText: '077701@prestasiplus.my' })).toHaveCount(1)
+      await expect(rowsOf(page).filter({ hasText: '088802@prestasiplus.my' })).toHaveCount(1)
+      const created = rowsOf(page).filter({ hasText: '088802@prestasiplus.my' })
+      await expect(created).toContainText('OFF')
+      await expect(created).toContainText('Aktif')
       await expectNoHorizontalScroll(page)
     },
   )
@@ -206,7 +234,7 @@ test.describe('M02 S8 complimentary detail', { tag: [TAG.smoke, moduleTag(2)] },
       'Baki syiling / coins',
     ])
     await expect(byId(page, 'comp-username')).toContainText('@prestasiplus.my')
-    await expect(byId(page, 'comp-status')).toHaveText('AKTIF')
+    await expect(byId(page, 'comp-status')).toHaveText('Aktif')
     await expect(byId(page, 'comp-coins')).toHaveText('OFF (tak boleh kumpul/claim)')
     await expect(byId(page, 'comp-expiry')).toHaveText(/^\d{2}\/\d{2}\/\d{4}$/)
     await expect(byId(page, 'comp-balance')).toHaveText('0 syiling · 0 coins')
@@ -217,13 +245,12 @@ test.describe('M02 S8 complimentary detail', { tag: [TAG.smoke, moduleTag(2)] },
       'Cikgu',
       'Status',
     ])
-    await expect(byId(page, 'comp-classes').locator('thead th').first()).toHaveCSS(
-      'text-transform',
-      'uppercase',
-    )
     expect(await byId(page, 'comp-class-row').count()).toBeGreaterThan(0)
-    await expect(byId(page, 'comp-class-row').first().locator('td').last()).toHaveText('active')
-    await expect(byId(page, 'comp-back')).toHaveAttribute('href', '/admin/comp-students')
+    await expect(byId(page, 'comp-class-status').first()).toHaveText('Aktif')
+    await expect(page.getByRole('link', { name: 'Senarai pelajar komplimen' })).toHaveAttribute(
+      'href',
+      '/admin/comp-students',
+    )
     await expectNoHorizontalScroll(page)
   })
 
@@ -237,7 +264,7 @@ test.describe('M02 S8 complimentary detail', { tag: [TAG.smoke, moduleTag(2)] },
       await expect(byId(page, 'comp-toggle-coins')).toHaveText('Matikan syiling')
 
       await byId(page, 'comp-toggle-active').click()
-      await expect(byId(page, 'comp-status')).toHaveText('TIDAK AKTIF')
+      await expect(byId(page, 'comp-status')).toHaveText('Tidak Aktif')
       await expect(byId(page, 'comp-toggle-active')).toHaveText('Aktifkan akaun')
       await expect(byId(page, 'cmp-flash')).toBeVisible()
       await expectNoHorizontalScroll(page)
