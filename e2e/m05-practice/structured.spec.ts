@@ -13,7 +13,6 @@ import {
   expectTabTitle,
   expectTouchTarget,
   isDesktopShell,
-  isMobileWidth,
   moduleTag,
   provisional,
   viewportWidth,
@@ -36,6 +35,20 @@ const columnsOf = (page: Page, testId: string) =>
     (el) => getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length,
   )
 
+/** USelect (Nuxt UI): open the trigger and read the options of the teleported listbox, then close it. */
+async function optionTexts(page: Page, testid: string): Promise<string[]> {
+  await tid(page, testid).click()
+  await expect(page.getByRole('option').first()).toBeVisible()
+  const texts = (await page.getByRole('option').allInnerTexts()).map((t) => t.trim())
+  await page.keyboard.press('Escape')
+  return texts
+}
+
+async function pickOption(page: Page, testid: string, label: string): Promise<void> {
+  await tid(page, testid).click()
+  await page.getByRole('option', { name: label, exact: true }).click()
+}
+
 test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
@@ -50,10 +63,11 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
       'Latih tubi format Kertas 2 — jawab & semak secara automatik',
     )
     // "Semua Subjek" + the 31 subjects; "Semua" + KBAT 1–6.
-    await expect(page.locator('[data-testid=filter-subject] option')).toHaveCount(32)
-    await expect(page.locator('[data-testid=filter-kbat] option')).toHaveCount(7)
-    await expect(page.locator('[data-testid=filter-kbat] option').nth(1)).toHaveText('LOTS 1')
-    await expect(page.locator('[data-testid=filter-kbat] option').nth(6)).toHaveText('HOTS 6')
+    expect(await optionTexts(page, 'filter-subject')).toHaveLength(32)
+    const kbatOpts = await optionTexts(page, 'filter-kbat')
+    expect(kbatOpts).toHaveLength(7)
+    expect(kbatOpts[1]).toBe('LOTS 1')
+    expect(kbatOpts[6]).toBe('HOTS 6')
 
     const cards = page.locator('[data-testid^=structured-card-]')
     await expect(cards).toHaveCount(12)
@@ -68,7 +82,8 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     await expectTouchTarget(card.getByTestId('card-start'))
     await expectTouchTarget(tid(page, 'filter-submit'))
     // Plain list: no variant-only lines.
-    await expect(page.getByTestId('card-parts')).toHaveCount(0)
+    // V2 pelajar/latihan-berstruktur.blade.php:197-208 prints "n bahagian · m markah" on every card.
+    await expect(page.getByTestId('card-parts')).toHaveCount(12)
     await expect(page.getByTestId('card-level-chip')).toHaveCount(0)
 
     // 1 / `sm` 2 / `xl` 3 columns.
@@ -86,13 +101,9 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     await gotoApp('/latihan-berstruktur?kbat_level=3')
     const pager = tid(page, 'structured-pager')
     await expect(pager).toBeVisible()
-    if (isMobileWidth(page)) {
-      await expect(pager.getByText('Next »')).toBeVisible()
-      await expect(pager.getByText(/Showing 1 to/)).toBeHidden()
-    } else {
-      await expect(pager).toContainText(/Showing 1 to \d+ of [\d,]+ results/)
-    }
-    await pager.getByRole('link', { name: /Next/ }).first().click()
+    // UPagination: page 1 is current and the strip offers page 2 (no Laravel "Showing x to y" text).
+    await expect(pager.getByRole('button', { name: /^(Page |Halaman )?1$/ })).toHaveAttribute('aria-current', 'page')
+    await pager.getByRole('button', { name: /^(Page |Halaman )?2$/ }).click()
     await expect(page).toHaveURL(/kbat_level=3/)
     await expect(page).toHaveURL(/page=2/)
     await expect(page.locator('[data-testid^=structured-card-]').first()).toBeVisible()
@@ -106,17 +117,17 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     const expected: [number, string, RegExp][] = [
-      [1, 'LOTS 1', /bg-green-100/],
-      [2, 'LOTS 2', /bg-green-100/],
-      [3, 'MOTS 3', /bg-amber-100/],
-      [4, 'HOTS 4', /bg-red-100/],
-      [5, 'HOTS 5', /bg-red-100/],
-      [6, 'HOTS 6', /bg-red-100/],
+      [1, 'LOTS 1', /bg-success/],
+      [2, 'LOTS 2', /bg-success/],
+      [3, 'MOTS 3', /bg-warning/],
+      [4, 'HOTS 4', /bg-error/],
+      [5, 'HOTS 5', /bg-error/],
+      [6, 'HOTS 6', /bg-error/],
     ]
     await gotoApp('/latihan-berstruktur')
     for (const [level, label, cls] of expected) {
       // In-page navigation through the filter: one page load for all six levels.
-      await tid(page, 'filter-kbat').selectOption(String(level))
+      await pickOption(page, 'filter-kbat', label)
       await tid(page, 'filter-submit').click()
       await expect(page).toHaveURL(new RegExp(`kbat_level=${String(level)}$`))
       const badge = page.locator('[data-testid^=structured-card-]').first().getByTestId('card-kbat')
@@ -132,13 +143,13 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/latihan-berstruktur')
-    await tid(page, 'filter-subject').selectOption({ label: 'Matematik' })
+    await pickOption(page, 'filter-subject', 'Matematik')
     await tid(page, 'filter-submit').click()
     await expect(page).toHaveURL(/subjectId=\d+&kbat_level=(&|$)/)
-    await expect(tid(page, 'filter-subject').locator('option:checked')).toHaveText('Matematik')
+    await expect(tid(page, 'filter-subject')).toHaveText('Matematik')
     await expect(page.locator('[data-testid=card-subject]').first()).toHaveText('Matematik')
 
-    await tid(page, 'filter-subject').selectOption({ label: 'Sains Sukan' })
+    await pickOption(page, 'filter-subject', 'Sains Sukan')
     await tid(page, 'filter-submit').click()
     await expect(tid(page, 'structured-empty')).toContainText('Tiada soalan berstruktur ditemui')
     await expect(tid(page, 'structured-empty')).toContainText(
@@ -162,10 +173,9 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
       )
       await expect(tid(page, 'structured-back')).toHaveText('Kembali ke Subjektif SPM')
       await expect(tid(page, 'structured-back')).toHaveAttribute('href', '/spm/subjektif')
-      await expect(page.locator('[data-testid=filter-subject] option')).toHaveCount(16)
-      await expect(page.locator('[data-testid=filter-subject] option').nth(1)).toHaveText(
-        'Bahasa Melayu',
-      )
+      const subjectOpts = await optionTexts(page, 'filter-subject')
+      expect(subjectOpts).toHaveLength(16)
+      expect(subjectOpts[1]).toBe('Bahasa Melayu')
       const card = page.locator('[data-testid^=structured-card-]').first()
       await expect(card.getByTestId('card-level-chip')).toHaveText(/^Tingkatan [45]$/)
       await expect(card.getByTestId('card-parts')).toContainText(/\d+ bahagian · \d+ markah/)
@@ -174,7 +184,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
         /^\/latihan-berstruktur\/\d+\/jawab\?scope=spm$/,
       )
       // The filter keeps `scope`.
-      await tid(page, 'filter-kbat').selectOption('4')
+      await pickOption(page, 'filter-kbat', 'HOTS 4')
       await tid(page, 'filter-submit').click()
       await expect(page).toHaveURL(/scope=spm/)
       await expect(page).toHaveURL(/kbat_level=4/)
@@ -196,7 +206,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, 'structured-info')).toContainText('BM dahulu, BI kemudian')
       await expect(tid(page, 'structured-info')).toContainText('Paper-based tracking')
       await expect(tid(page, 'structured-found')).toHaveText(/\d+ set ditemui/)
-      await expect(page.locator('[data-testid=filter-subject] option')).toHaveText([
+      expect(await optionTexts(page, 'filter-subject')).toEqual([
         'Semua Subjek',
         'Bahasa Melayu',
         'Bahasa Inggeris',
