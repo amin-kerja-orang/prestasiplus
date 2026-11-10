@@ -150,11 +150,11 @@ test.describe('M03 S6 subject list', MODULE, () => {
       await expect(hex).toBeHidden()
       await expect
         .poll(() => questions.evaluate((el) => (el as HTMLElement).innerText.trim()))
-        .toBe('13872')
+        .toBe('6110')
     } else {
       await expect(hex).toBeVisible()
       await expect(hex).toHaveText('#0f766e')
-      await expect(questions).toHaveText('13872 soalan')
+      await expect(questions).toHaveText('6110 soalan') // Matematik: TABLE_A[3] T1-T5 1300+1300+900+1511+1090 = 6101 plus 9 level-less rows, m04 tables.ts:66 and :93-94 (D72 hides the Darjah levels; was 13872)
     }
 
     // The table fits its card from 1280 and scrolls inside the card below it (DV-M03-03).
