@@ -43,7 +43,7 @@ async function expectHeader(page: Page, backLabel: string): Promise<void> {
   )
   // standalone page: no shell
   await expect(page.getByTestId('shell-admin-sidebar')).toHaveCount(0)
-  await expect(page.getByTestId('shell-user-sidebar')).toHaveCount(0)
+  await expect(page.getByTestId('pembelajaran-sidebar')).toHaveCount(0)
 }
 
 async function expectNotFound(page: Page): Promise<void> {
