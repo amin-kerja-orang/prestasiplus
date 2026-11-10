@@ -13,7 +13,6 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
-  isDesktopShell,
   isMobileWidth,
   moduleTag,
   provisional,
@@ -25,6 +24,10 @@ const PELAJARMAJU = 'pelajarmaju@demo.test'
 const ADMIN = 'admin@demo.test'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
+
+/** The page title the Pembelajaran navbar prints (h1, or `shell-title` when the page owns its h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
 const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 /** Number of tracks of a CSS grid container. */
@@ -64,10 +67,8 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/practice')
     await expectTabTitle(page, 'Latih Tubi | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi')
-    if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Pilih subjek dan mula berlatih')
-    }
+    await expect(shellTitle(page)).toHaveText('Latih Tubi SPM')
+    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Pilih subjek untuk mula berlatih')
     await expect(tid(page, 'practice-title')).toHaveText('Latih Tubi 🎯')
     await expect(page.getByText('Pilih subjek dan mula berlatih!')).toBeVisible()
 
@@ -154,9 +155,9 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(PELAJARMAJU)
     await gotoApp('/practice/MATH')
-    await expectTabTitle(page, 'Matematik - Latihan')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi')
-    await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
+    await expectTabTitle(page, 'Matematik - Latihan | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('Latih Tubi')
+    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Selamat datang kembali')
     await expect(tid(page, 'config-back')).toHaveAttribute('href', '/practice')
     await expect(tid(page, 'config-back')).toHaveText('Kembali ke Senarai Subjek')
     await expect(tid(page, 'config-name')).toHaveText('Matematik')
@@ -329,10 +330,10 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
     provisional('LS-1: the live random quiz was never opened; the S7 source is the pattern'),
     async ({ page, loginAs, gotoApp, mock }) => {
       await loginAs(PELAJARMAJU)
-      await gotoApp('/practice/MATH/quiz?level=1&count=5')
+      await gotoApp('/practice/MATH/quiz?level=10&count=5')
       await expect(tid(page, 'quiz-title')).toHaveText('Matematik')
-      await expectTabTitle(page, 'Matematik - Latihan')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi')
+      await expectTabTitle(page, 'Matematik - Latihan | PRESTASIPLUS')
+      await expect(shellTitle(page)).toHaveText('Latih Tubi')
 
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
       await expect(tid(page, 'quiz-header').getByRole('progressbar')).toHaveAttribute(
@@ -422,7 +423,7 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
     ),
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(PELAJARMAJU)
-      await gotoApp('/practice/MATH/quiz?level=1&count=10')
+      await gotoApp('/practice/MATH/quiz?level=10&count=10')
       const right = await answerFrom(page, 1, 10)
       const score = right.filter(Boolean).length
       const percent = score * 10
@@ -497,7 +498,7 @@ test.describe('M05 S2 / S3 / Q1 responsive sweep', { tag: [moduleTag(5)] }, () =
     gotoApp,
   }) => {
     await loginAs(PELAJARMAJU)
-    for (const url of ['/practice', '/practice/MATH', '/practice/MATH/quiz?level=1&count=5']) {
+    for (const url of ['/practice', '/practice/MATH', '/practice/MATH/quiz?level=10&count=5']) {
       await gotoApp(url)
       await expect(
         page.locator(
@@ -533,7 +534,7 @@ test.describe('M05 S2 / S3 / Q1 responsive sweep', { tag: [moduleTag(5)] }, () =
       }
     }
 
-    await gotoApp('/practice/MATH/quiz?level=1&count=5')
+    await gotoApp('/practice/MATH/quiz?level=10&count=5')
     await expect(tid(page, 'quiz-title')).toBeVisible()
     for (const id of ['option-A', 'option-B']) await expectTouchTarget(tid(page, id))
   })
