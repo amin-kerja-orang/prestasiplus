@@ -25,6 +25,10 @@ import {
 } from '../support'
 import { expectSchoolName, navbarTitle, openMenu } from './shell'
 
+/** The data rows of an S3 list tab: `la-guru-row` / `la-murid-row` are gone, the rows are the DsDataTable body rows that hold a name. */
+const tabRows = (page: Page, tab: 'guru' | 'murid') =>
+  page.getByTestId(`la-${tab}-table`).locator('tbody tr').filter({ has: page.getByTestId(`la-${tab}-name`) })
+
 const MODULE = { tag: ['@m27'] }
 const S1 = '/admin-sekolah/statistik-penggunaan'
 const AZLAN = 'azlan@demo.test'
@@ -148,7 +152,7 @@ test.describe('S1 header, breadcrumb, sidebar (E2E-M27-41, 42)', MODULE, () => {
     const current = page.locator('[data-testid="su-breadcrumb"] [aria-current="page"]')
     await expect(current).toHaveText('Statistik Penggunaan')
     expect(await current.evaluate((e) => e.tagName)).not.toBe('A')
-    expect(Number(await current.evaluate((e) => getComputedStyle(e).fontWeight))).toBeGreaterThanOrEqual(700)
+    expect(Number(await current.evaluate((e) => getComputedStyle(e).fontWeight))).toBeGreaterThanOrEqual(600) // v2: the emphasis weight is font-semibold (600)
     const y = async (id: string) => (await page.getByTestId(id).boundingBox())!.y
     expect(await y('su-breadcrumb')).toBeLessThan(await y('su-pills'))
     expect(await y('su-pills')).toBeLessThan(await y('su-tiles'))
@@ -243,7 +247,7 @@ test.describe('S1 pills and tiles, populated school (E2E-M27-48…52)', MODULE, 
         expect(t.accuracy).toBeGreaterThanOrEqual(0)
         expect(t.accuracy).toBeLessThanOrEqual(100)
         const raw = (await page.getByTestId('su-tile-accuracy').getByTestId('su-tile-value').innerText()).trim()
-        expect(raw).toMatch(/^\d+\.\d%$/)
+        expect(raw).toMatch(/^\d+%$/)
       }
     }
     // windows nest: today <= 7 days <= 30 days
@@ -314,13 +318,17 @@ test.describe('S1 pills and tiles, populated school (E2E-M27-48…52)', MODULE, 
         'Sesi',
         'Ketepatan Purata',
       ])
-      const rows = await page.getByTestId('su-mode-row').evaluateAll((els) =>
-        els.map((e) => ({
-          label: (e.querySelector('[data-testid="su-mode-label"]')?.textContent ?? '').trim(),
-          sessions: Number((e.querySelector('[data-testid="su-mode-sessions"]')?.textContent ?? '').replace(/,/g, '')),
-          accuracy: (e.querySelector('[data-testid="su-mode-accuracy"]')?.textContent ?? '').trim(),
-        })),
-      )
+      // v2: the rows are the body rows of the DsDataTable (`su-mode-row` is gone); read each row's three cells.
+      const rows = await page
+        .getByTestId('su-modes-table')
+        .locator('tbody tr')
+        .evaluateAll((els) =>
+          els.map((e) => ({
+            label: (e.querySelector('[data-testid="su-mode-label"]')?.textContent ?? '').trim(),
+            sessions: Number((e.querySelector('[data-testid="su-mode-sessions"]')?.textContent ?? '').replace(/,/g, '')),
+            accuracy: (e.querySelector('[data-testid="su-mode-accuracy"]')?.textContent ?? '').trim(),
+          })),
+        )
       expect(rows.length).toBeGreaterThan(0)
       const labels = rows.map((r) => r.label)
       expect(new Set(labels).size).toBe(labels.length)
@@ -330,7 +338,7 @@ test.describe('S1 pills and tiles, populated school (E2E-M27-48…52)', MODULE, 
         expect(a.sessions > b.sessions || (a.sessions === b.sessions && a.label <= b.label)).toBe(true)
       }
       expect(rows.reduce((s, r) => s + r.sessions, 0)).toBe(sessions)
-      for (const r of rows) expect(r.accuracy).toMatch(/^(\d+\.\d%|—)$/)
+      for (const r of rows) expect(r.accuracy).toMatch(/^(\d+%|—)$/)
       await expect(page.getByTestId('su-empty')).toHaveCount(0)
     }
   })
@@ -457,12 +465,10 @@ test.describe('S1 responsive (E2E-M27-43)', MODULE, () => {
       const box = (await card.boundingBox())!
       expect(box.x).toBeGreaterThanOrEqual(0)
       expect(box.x + box.width).toBeLessThanOrEqual(width + 0.5)
-      if (await page.getByTestId('su-modes-scroll').count()) {
-        expect(
-          await page
-            .getByTestId('su-modes-scroll')
-            .evaluate((e) => getComputedStyle(e).overflowX === 'auto'),
-        ).toBe(true)
+      // v2: the mode table is a fixed-layout DsDataTable (cards on a phone); it never needs an inner scroller
+      if (await page.getByTestId('su-modes-table').count()) {
+        const t = (await page.getByTestId('su-modes-table').boundingBox())!
+        expect(t.x + t.width).toBeLessThanOrEqual(width + 0.5)
       }
     })
   }
@@ -555,7 +561,7 @@ test.describe('S3 header, tabs, range (E2E-M27-41, 42, 63)', MODULE, () => {
     expect(await current.evaluate((e) => e.tagName)).not.toBe('A')
     expect(
       Number(await current.evaluate((e) => getComputedStyle(e).fontWeight)),
-    ).toBeGreaterThanOrEqual(700)
+    ).toBeGreaterThanOrEqual(600) // v2: the emphasis weight is font-semibold (600)
     if (viewportWidth(page) >= 1280) {
       const sidebar = page.getByTestId('pembelajaran-nav')
       await expect(sidebar.locator('a[href="/admin-sekolah/laporan-aktiviti"]')).toHaveAttribute('aria-current', 'page')
@@ -575,8 +581,8 @@ test.describe('S3 header, tabs, range (E2E-M27-41, 42, 63)', MODULE, () => {
     await openS3(page, gotoApp, '?range=5')
     await expect(page.getByTestId('la-tabs').locator('button')).toHaveCount(3)
     await expect(page.getByTestId('la-tab-overview')).toHaveText('Overview')
-    await expect(page.getByTestId('la-tab-guru')).toHaveText(/^Guru \([\d,]+\)$/)
-    await expect(page.getByTestId('la-tab-murid')).toHaveText(/^Murid \([\d,]+\)$/)
+    await expect(page.getByTestId('la-tab-guru')).toHaveText(/^\s*Guru \([\d,]+\)\s*$/)
+    await expect(page.getByTestId('la-tab-murid')).toHaveText(/^\s*Murid \([\d,]+\)\s*$/)
     await expect(page.getByTestId('la-tab-overview')).toHaveAttribute('data-active', 'true')
     await expect(page.getByTestId('la-page')).not.toContainText('Sekolah (')
     await expect(page.getByTestId('la-pills')).toContainText('Tempoh:')
@@ -746,8 +752,8 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
       `Senarai Guru (${total.toLocaleString('en-US')})`,
     )
     await expect(page.getByTestId('la-guru-pill-semua')).toHaveText('Semua')
-    await expect(page.getByTestId('la-guru-pill-pernah')).toHaveText(/^Pernah Login \(/)
-    await expect(page.getByTestId('la-guru-pill-belum')).toHaveText(/^Belum Login \(/)
+    await expect(page.getByTestId('la-guru-pill-pernah')).toHaveText(/^\s*Pernah Login \(/)
+    await expect(page.getByTestId('la-guru-pill-belum')).toHaveText(/^\s*Belum Login \(/)
     const logged = digits(await page.getByTestId('la-guru-pill-pernah').innerText())
     const not = digits(await page.getByTestId('la-guru-pill-belum').innerText())
     expect(logged + not).toBe(total)
@@ -774,12 +780,12 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     await expect(page.getByTestId('la-guru').locator('select')).toHaveCount(0)
     await expect(page.getByTestId('la-guru-table')).not.toContainText('Sekolah')
     // the rows follow the pills: "Ya" for "Pernah Login", "Belum" for "Belum Login"
-    expect(await page.getByTestId('la-guru-row').count()).toBe(total)
+    expect(await tabRows(page, 'guru').count()).toBe(total)
     await page.getByTestId('la-guru-pill-pernah').click()
-    expect(await page.getByTestId('la-guru-row').count()).toBe(logged)
+    expect(await tabRows(page, 'guru').count()).toBe(logged)
     for (const t of await textsOf(page, 'la-guru-login')) expect(t).toBe('Ya')
     await page.getByTestId('la-guru-pill-belum').click()
-    expect(await page.getByTestId('la-guru-row').count()).toBe(not)
+    expect(await tabRows(page, 'guru').count()).toBe(not)
     for (const t of await textsOf(page, 'la-guru-login')) expect(t).toBe('Belum')
     for (const t of await textsOf(page, 'la-guru-last')) expect(t).toBe('Belum login')
     // search by name (case-insensitive); no match shows no rows
@@ -788,14 +794,12 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     if (first) {
       const needle = first.slice(0, 4).toLowerCase()
       await page.getByTestId('la-guru-search').fill(needle.toUpperCase())
-      const hits = await page
-        .getByTestId('la-guru-row')
-        .evaluateAll((els) => els.map((e) => (e.textContent ?? '').toLowerCase()))
+      const hits = await tabRows(page, 'guru').evaluateAll((els) => els.map((e) => (e.textContent ?? '').toLowerCase()))
       expect(hits.length).toBeGreaterThan(0)
       for (const h of hits) expect(h).toContain(needle)
     }
     await page.getByTestId('la-guru-search').fill('zzz-tiada-padanan')
-    await expect(page.getByTestId('la-guru-row')).toHaveCount(0)
+    await expect(tabRows(page, 'guru')).toHaveCount(0)
   })
 
   test('E2E-M27-68 P4 Murid tab: heading "Top 200", pills each listing rows, at most 200 rows, search, tiles, columns', async ({
@@ -842,7 +846,7 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     // each pill lists its pupils (up to 200); "Belum Login" rows never signed in
     const rowCount = async (pill: string) => {
       await page.getByTestId(`la-murid-pill-${pill}`).click()
-      return page.getByTestId('la-murid-row').count()
+      return tabRows(page, 'murid').count()
     }
     const semua = await rowCount('semua')
     const aktif = await rowCount('aktif')
@@ -855,7 +859,7 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     // cells of the full list: accuracy at most 100 %, time "{h}j {m}m"
     await page.getByTestId('la-murid-pill-semua').click()
     for (const a of await textsOf(page, 'la-murid-ketepatan')) {
-      expect(a).toMatch(/^\d+\.\d%$/)
+      expect(a).toMatch(/^\d+%$/)
       expect(parseFloat(a)).toBeLessThanOrEqual(100)
     }
     for (const m of await textsOf(page, 'la-murid-masa')) expect(m).toMatch(/^\d+j \d+m$/)
@@ -864,7 +868,7 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     await page.getByTestId('la-murid-search').fill(first.slice(0, 4).toUpperCase())
     expect((await textsOf(page, 'la-murid-name')).length).toBeGreaterThan(0)
     await page.getByTestId('la-murid-search').fill('zzz-tiada-padanan')
-    await expect(page.getByTestId('la-murid-row')).toHaveCount(0)
+    await expect(tabRows(page, 'murid')).toHaveCount(0)
   })
 
   test('E2E-M27-68b P1 (no pupil, no teacher): zeros, no rows, "—" for the accuracy', async ({
@@ -880,10 +884,10 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     await expect(page.getByTestId('la-never-row')).toHaveCount(0)
     await page.getByTestId('la-tab-guru').click()
     await expect(page.getByTestId('la-guru-title')).toHaveText('Senarai Guru (0)')
-    await expect(page.getByTestId('la-guru-row')).toHaveCount(0)
+    await expect(tabRows(page, 'guru')).toHaveCount(0)
     await page.getByTestId('la-tab-murid').click()
     await expect(page.getByTestId('la-murid-title')).toHaveText('Senarai Murid (0) — Top 200')
-    await expect(page.getByTestId('la-murid-row')).toHaveCount(0)
+    await expect(tabRows(page, 'murid')).toHaveCount(0)
     await expect(
       page.getByTestId('la-murid-tile-accuracy').getByTestId('la-tile-value'),
     ).toHaveText('—')
@@ -939,9 +943,8 @@ test.describe('S3 responsive (E2E-M27-43)', MODULE, () => {
       await expect(page.getByTestId(`la-${tab}-table`)).toBeVisible()
       await expectNoHorizontalScroll(page)
       expect(await smallText()).toEqual([])
-      const scroll = page.getByTestId(`la-${tab}-scroll`)
-      expect(await scroll.evaluate((e) => getComputedStyle(e).overflowX)).toBe('auto')
-      const box = (await scroll.boundingBox())!
+      // v2: the list is a DsDataTable (cards on a phone), no inner scroller: it stays inside the viewport
+      const box = (await page.getByTestId(`la-${tab}-table`).boundingBox())!
       expect(box.x).toBeGreaterThanOrEqual(0)
       expect(box.x + box.width).toBeLessThanOrEqual(width + 0.5)
     }
