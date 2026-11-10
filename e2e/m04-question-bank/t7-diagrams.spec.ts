@@ -89,18 +89,14 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expectTouchTarget(card.getByTestId('diagram-upload'))
     await expectTouchTarget(card.getByTestId('diagram-dismiss'), 44)
 
-    if (isMobileWidth(page)) {
-      await expect(
-        page.getByTestId('diagrams-mcq-pager').getByRole('navigation').getByText('Next »'),
-      ).toBeVisible()
-    } else {
-      await expect(page.getByTestId('diagrams-mcq-pager')).toContainText(
-        'Showing 1 to 20 of 6144 results',
-      )
-      await expect(page.getByTestId('diagrams-structured-pager')).toContainText(
-        'Showing 1 to 20 of 522 results',
-      )
-    }
+    // UPagination (no Laravel "Showing x to y" text): page 1 is current, the last page is ceil(total / 20):
+    // 6144 MCQ (anchor, discovery M04:529) -> 308, 522 structured -> 27. Red while the mock computes 5,652 (data deferred).
+    const pageBtn = (testid: string, n: number) =>
+      page.getByTestId(testid).getByRole('button', { name: new RegExp('^(Page |Halaman )?' + String(n) + '$') })
+    await expect(pageBtn('diagrams-mcq-pager', 1)).toHaveAttribute('aria-current', 'page')
+    await expect(pageBtn('diagrams-mcq-pager', 308)).toBeVisible()
+    await expect(pageBtn('diagrams-structured-pager', 1)).toHaveAttribute('aria-current', 'page')
+    await expect(pageBtn('diagrams-structured-pager', 27)).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -153,13 +149,11 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
 
     // DV-M04-16: the MCQ pager keeps subject_id, uses mcq_page and never carries str_page.
     if (!isMobileWidth(page)) {
+      // The pager and the school filter are V3 additions with no V2 source (V2 lists 30 rows, no pager). UPagination
+      // renders buttons, not links, so the check is the URL after the click (DiagramAuditPage.vue goToPage:145).
       const link = page
         .getByTestId('diagrams-mcq-pager')
-        .getByRole('link', { name: 'Go to page 2' })
-      await expect(link).toHaveAttribute(
-        'href',
-        /^\/admin\/soalan-gambar\?subject_id=9&mcq_page=2$/,
-      )
+        .getByRole('button', { name: /^(Page |Halaman )?2$/ })
       await link.click()
       await expect(page).toHaveURL(/subject_id=9&mcq_page=2$/)
       await expect(statValue(page, 'mcq')).toHaveText('718')
@@ -167,14 +161,16 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expectNoHorizontalScroll(page)
   })
 
+  // V3 addition, no V2 source (V2 has no school filter).
   test('the school filter applies to the MCQ list only (school 380 has no MCQ)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
+    test.setTimeout(150_000) // the school select has 10,221 native options
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
-    await page.getByTestId('diagrams-school').selectOption('380')
+    await page.getByTestId('diagrams-school').selectOption('380', { timeout: 120_000 })
     await page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' }).click()
     await expect(page).toHaveURL(/school_id=380/)
     await expect(page.getByTestId('diagrams-mcq')).toHaveCount(0)
