@@ -49,15 +49,15 @@ test.describe('QA G5 lookups', MODULE, () => {
   test.use({ mockInit: { latency: 0 } })
   test.setTimeout(90_000 * TIMEOUT_FACTOR)
 
-  test('E2E-M03-25 a deactivated subject and level leave the lookups (M04 form + list filter) but stay in admin lists and S1', async ({
+  test('E2E-M03-25 a deactivated subject and level leave the lookups (M04 question form) but stay in admin lists and S1', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
 
-    // Baseline: both are offered by the M04 question form.
-    await gotoApp('/admin/questions/create')
+    // Baseline: both are offered by the M04 question form (edit of question 564159: the create route now redirects to Studio, which needs the real server).
+    await gotoApp('/admin/questions/564159/edit')
     await expect(page.getByTestId('q-subject')).toBeVisible()
     const subjectsBefore = await optionValues(page, 'q-subject')
     const levelsBefore = await optionValues(page, 'q-level')
@@ -75,7 +75,7 @@ test.describe('QA G5 lookups', MODULE, () => {
     await expectSwitch(levelRow(page, 11), false)
 
     // Lookup consumers: M04 question form no longer offers them; the others are unchanged and ordered.
-    await gotoApp('/admin/questions/create')
+    await gotoApp('/admin/questions/564159/edit')
     await expect(page.getByTestId('q-subject')).toBeVisible()
     const subjectsAfter = await optionValues(page, 'q-subject')
     const levelsAfter = await optionValues(page, 'q-level')
@@ -86,11 +86,8 @@ test.describe('QA G5 lookups', MODULE, () => {
     const ids = subjectsAfter.map(Number)
     expect(ids).toEqual([...ids].sort((a, b) => a - b))
 
-    // M04 list filter.
-    await gotoApp('/admin/questions')
-    await expect(page.getByTestId('questions-subject')).toBeVisible()
-    expect(await optionValues(page, 'questions-subject')).not.toContain('12')
-    expect(await optionValues(page, 'questions-level')).not.toContain('11')
+    // The M04 list filter is no longer reachable in the mock build: /admin/questions redirects to Studio,
+    // which only exists against the real server (STUDIO_UNAVAILABLE). Not asserted here.
 
     // Admin screens still list them (BR-11): S6, S9 and the S1 filter.
     await gotoApp('/admin/subjects')
@@ -112,7 +109,7 @@ test.describe('QA G5 lookups', MODULE, () => {
     await expectListLoaded(page, 'levels')
     await rowSwitch(levelRow(page, 11)).click()
     await expectSwitch(levelRow(page, 11), true)
-    await gotoApp('/admin/questions/create')
+    await gotoApp('/admin/questions/564159/edit')
     await expect(page.getByTestId('q-subject')).toBeVisible()
     expect(await optionValues(page, 'q-subject')).toContain('12')
     expect(await optionValues(page, 'q-level')).toContain('11')
@@ -134,7 +131,7 @@ test.describe('QA G5 lookups', MODULE, () => {
     const id = await idOfRow(row)
     expect(id).toBeTruthy()
 
-    await gotoApp('/admin/questions/create')
+    await gotoApp('/admin/questions/564159/edit')
     await expect(page.getByTestId('q-subject')).toBeVisible()
     expect(await optionValues(page, 'q-subject')).toContain(id)
 
@@ -142,7 +139,7 @@ test.describe('QA G5 lookups', MODULE, () => {
     await expectListLoaded(page, 'subjects')
     await confirmDelete(page, () => chooseDelete(page, subjectRow(page, id)))
     await expect(subjectRow(page, id)).toHaveCount(0)
-    await gotoApp('/admin/questions/create')
+    await gotoApp('/admin/questions/564159/edit')
     await expect(page.getByTestId('q-subject')).toBeVisible()
     expect(await optionValues(page, 'q-subject')).not.toContain(id)
   })
