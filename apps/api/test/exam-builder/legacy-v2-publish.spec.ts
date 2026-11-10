@@ -54,7 +54,7 @@ describe('KP-14: publishLegacyV2', () => {
     const res = await admin.post('/api/admin/papers', { title: 'Set V2', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const id = Created.parse(res.body).data.id
-    if (migrated) await q(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('v2', 'exam_papers', $1, $2)`, [`legacy-${id}`, id])
+    if (migrated) await q(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('cloud', 'exam_papers', $1, $2)`, [`legacy-${id}`, id])
     // the API created it, which wrote Studio audit rows; a migration-loaded paper has none
     await q(`delete from audit_events where target_type = 'bijak_paper' and target_id = $1`, [id])
     const e = Editor.parse((await admin.get(`/api/admin/papers/${id}`)).body).data

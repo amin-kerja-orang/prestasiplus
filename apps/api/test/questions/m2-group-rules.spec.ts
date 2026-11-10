@@ -77,7 +77,25 @@ describe('M2 group rules (real database)', () => {
     // every member on the same paper: allowed, the paper is reported
     const whole = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [both1, both2] })
     expect(whole.status, JSON.stringify(whole.body)).toBe(200)
-    expect(whole.body.meta.affectedPapers).toEqual([{ id: paper.id, title: 'Kertas m6' }])
+    expect(whole.body.meta.affectedPapers).toEqual([{ id: paper.id, title: 'Kertas m6', status: 'published' }])
+
+    // R-1: not consecutive, out of order, or partial on a DRAFT paper: refused on the post-regroup membership
+    const mk = async (title: string, status: string, order: string[]) => {
+      const p = (await q<{ id: string }>(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status) values ('pilihan', $1, $2, 2, 60, $3) returning id::text id`, [title, refs.mathId, status]))[0]!
+      const sec = (await q<{ id: string }>(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'A', 3, 3) returning id::text id`, [p.id]))[0]!
+      for (const [i, id] of order.entries()) await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, $3)`, [sec.id, id, i + 1])
+    }
+    const [g1, g2, other] = [await served('Soalan kumpulan satu. Lima.'), await served('Soalan kumpulan dua. Enam.'), await served('Soalan lain. Tujuh.')]
+    await mk('Draf tidak berturutan', 'draft', [g1, other, g2])
+    const gap = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [g1, g2] })
+    expect(gap.status, JSON.stringify(gap.body)).toBe(409)
+    const [h1, h2] = [await served('Soalan kumpulan tiga. Lapan.'), await served('Soalan kumpulan empat. Sembilan.')]
+    await mk('Draf terbalik', 'draft', [h2, h1])
+    const reversed = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [h1, h2] })
+    expect(reversed.status, JSON.stringify(reversed.body)).toBe(409)
+    const [d1, d2] = [await served('Soalan kumpulan lima. Sepuluh.'), await served('Soalan kumpulan enam. Sebelas.')]
+    await mk('Draf separa', 'draft', [d1])
+    expect((await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [d1, d2] })).status).toBe(409)
 
     // an unplaced member: grouped, no warning
     const ok = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [free] })

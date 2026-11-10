@@ -7,8 +7,7 @@
  *
  * - `held`, `media_unresolved`  a picture that cannot be shown (the `legacy_image_unresolved` import hold, or an unresolved stimulus / option picture).
  *                               Always refused for a new placement.
- * - `inactive`, `taken_down`, `flagged`  a withdrawn question, a taken-down source, an open `stimulus_missing` / `figure_only` flag. Refused unless a
- *                               published paper already pins the question (decision 56).
+ * Nothing else is refused here: V2 does not check status or `is_active` at Terbit, decision 56 keeps flags out, and a taken-down source is REQB-058's own rule.
  *
  * KP-15: this is for NEW placements and new papers only. A paper that already holds such a question keeps it (a published paper is a fixed set): the
  * pupil sees a placeholder instead of the picture, see `be09-practice-question-source` and the Bijak bridge.
@@ -17,15 +16,12 @@
  */
 import { unservableReasonsOf, type UnservableDb } from '../../questions/questions.repository'
 
-export type PlacementBlockCode = 'held' | 'media_unresolved' | 'inactive' | 'taken_down' | 'flagged'
+export type PlacementBlockCode = 'held' | 'media_unresolved'
 
 /** Phrases that complete "Soalan N tidak boleh diletakkan dalam kertas: ...". */
 export const PLACEMENT_BLOCK_TEXT: Readonly<Record<PlacementBlockCode, string>> = {
   held: 'gambar belum diselesaikan (import)',
   media_unresolved: 'gambar atau rangsangan belum lengkap',
-  inactive: 'soalan tidak aktif',
-  taken_down: 'sumber soalan telah ditarik balik',
-  flagged: 'rangsangan soalan bertanda belum disemak',
 }
 
 /** Question id -> why it cannot be placed on a new paper. Ids with no blocker are absent from the map. */

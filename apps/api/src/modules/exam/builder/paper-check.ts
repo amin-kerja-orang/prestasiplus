@@ -166,6 +166,55 @@ export interface CheckIssue {
   section?: string
 }
 
+/** A group-integrity finding of a paper (D90): the pure rules of `checkPaperDetailed`, shared with the regroup guard so both read one definition. */
+export interface GroupIssue {
+  code: 'GROUP_SPLIT' | 'GROUP_NOT_CONSECUTIVE' | 'GROUP_INCOMPLETE' | 'GROUP_OUT_OF_ORDER'
+  groupId: string
+  /** Index of the section (absent for GROUP_SPLIT, which spans sections). */
+  sectionIndex?: number
+  /** GROUP_INCOMPLETE: how many members of the group are missing from the section. */
+  missing?: number
+}
+
+/** The group findings of ONE section, in the order the check reports them (per unit: not consecutive, incomplete, out of order). */
+export function groupIssuesOfSection(ids: readonly string[], groupOf: GroupOf, membersOf: (groupId: string) => readonly string[], sectionIndex = 0): GroupIssue[] {
+  const out: GroupIssue[] = []
+  const groupsSeen = new Set<string>()
+  for (const u of unitsOf(ids, groupOf)) {
+    if (!u.groupId) continue
+    if (groupsSeen.has(u.groupId)) out.push({ code: 'GROUP_NOT_CONSECUTIVE', groupId: u.groupId, sectionIndex })
+    groupsSeen.add(u.groupId)
+    const all = membersOf(u.groupId)
+    const missing = all.filter((m) => !ids.includes(m))
+    if (missing.length) out.push({ code: 'GROUP_INCOMPLETE', groupId: u.groupId, sectionIndex, missing: missing.length })
+    // D90: the members run in the group's published order.
+    const expected = all.filter((m) => u.ids.includes(m))
+    if (!missing.length && expected.some((m, i) => u.ids[i] !== m)) out.push({ code: 'GROUP_OUT_OF_ORDER', groupId: u.groupId, sectionIndex })
+  }
+  return out
+}
+
+/** A group must live in ONE section: the GROUP_SPLIT findings of the whole paper. */
+export function groupSplitIssues(sections: readonly { questionIds: readonly string[] }[], groupOf: GroupOf): GroupIssue[] {
+  const out: GroupIssue[] = []
+  const sectionOfGroup = new Map<string, number>()
+  sections.forEach((s, si) => {
+    for (const id of s.questionIds) {
+      const g = groupOf(id)
+      if (!g) continue
+      const prev = sectionOfGroup.get(g)
+      if (prev !== undefined && prev !== si) out.push({ code: 'GROUP_SPLIT', groupId: g })
+      sectionOfGroup.set(g, si)
+    }
+  })
+  return out
+}
+
+/** Every group finding of a paper: the split ones, then each section's own. The regroup guard evaluates this on the POST-regroup membership. */
+export function groupIssuesOf(sections: readonly { questionIds: readonly string[] }[], groupOf: GroupOf, membersOf: (groupId: string) => readonly string[]): GroupIssue[] {
+  return [...groupSplitIssues(sections, groupOf), ...sections.flatMap((s, i) => groupIssuesOfSection(s.questionIds, groupOf, membersOf, i))]
+}
+
 export function checkPaper(input: CheckInput): PaperCheck {
   return checkPaperDetailed(input).check
 }
@@ -197,16 +246,7 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
   if (tooSmall.size) addPaper('GROUP_MIN_MEMBERS', GROUP_MIN_MEMBERS_MESSAGE)
 
   // A group must live in one section, contiguous and complete.
-  const sectionOfGroup = new Map<string, number>()
-  sections.forEach((s, si) => {
-    for (const id of s.questionIds) {
-      const g = groupOf(id)
-      if (!g) continue
-      const prev = sectionOfGroup.get(g)
-      if (prev !== undefined && prev !== si) addPaper('GROUP_SPLIT', LINES.groupSplit(g))
-      sectionOfGroup.set(g, si)
-    }
-  })
+  for (const issue of groupSplitIssues(sections, groupOf)) addPaper('GROUP_SPLIT', LINES.groupSplit(issue.groupId))
 
   const sectionCodes: BijakBuilderBlockerCode[][] = []
   const out: SectionCheck[] = specs.map((spec, i) => {
@@ -228,18 +268,10 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
       if (new Set(marksList).size > 1)
         notes.push('Soalan pilihan sepatutnya sama markah supaya pilihan adil')
     }
-    const unitList = unitsOf(ids, groupOf)
-    const groupsSeen = new Set<string>()
-    for (const u of unitList) {
-      if (!u.groupId) continue
-      if (groupsSeen.has(u.groupId)) addSec('GROUP_NOT_CONSECUTIVE', LINES.groupNotConsecutive(u.groupId))
-      groupsSeen.add(u.groupId)
-      const all = membersOf(u.groupId)
-      const missing = all.filter((m) => !ids.includes(m))
-      if (missing.length) addSec('GROUP_INCOMPLETE', LINES.groupIncomplete(u.groupId, missing.length))
-      // D90: the members run in the group's published order.
-      const expected = all.filter((m) => u.ids.includes(m))
-      if (!missing.length && expected.some((m, i) => u.ids[i] !== m)) addSec('GROUP_OUT_OF_ORDER', LINES.groupOutOfOrder(u.groupId))
+    for (const issue of groupIssuesOfSection(ids, groupOf, membersOf)) {
+      if (issue.code === 'GROUP_NOT_CONSECUTIVE') addSec(issue.code, LINES.groupNotConsecutive(issue.groupId))
+      else if (issue.code === 'GROUP_INCOMPLETE') addSec(issue.code, LINES.groupIncomplete(issue.groupId, issue.missing ?? 0))
+      else if (issue.code === 'GROUP_OUT_OF_ORDER') addSec(issue.code, LINES.groupOutOfOrder(issue.groupId))
     }
     const notLive = ids.filter((id) => !isLive(id))
     if (notLive.length) addSec('NOT_PUBLISHED', LINES.notPublished(notLive.length))

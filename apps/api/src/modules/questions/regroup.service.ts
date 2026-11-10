@@ -18,6 +18,7 @@ import { refreshStimulusFlagsOf } from './effective-leaf'
 import { GroupMembers } from './group-members'
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import { QuestionsService } from './questions.service'
+import { groupIssuesOf } from '../exam/builder/paper-check'
 import { StimuliRepository, plainExcerpt } from './stimuli.repository'
 import { StimuliService } from './stimuli.service'
 
@@ -244,14 +245,15 @@ export class RegroupService {
     // m-6 (PO ruling P-5, KP-14): a member that a published paper places MAY be regrouped (Audit Rajah repair); the papers are returned as `affectedPapers`, as
     // `retireGroup` does. What is refused is a move that would leave a PARTIAL group on any paper, draft or published (a group is never split, D90): a paper that
     // places some of the members but not all of them.
-    const affectedPapers = await this.repo.publishedPapersPlacing(memberIds)
-    if (memberIds.length > 1) {
-      const rows = await this.db.$queryRaw<{ n: bigint }[]>`
-        SELECT count(DISTINCT pl.question_id) AS n
-          FROM paper_placements pl JOIN paper_sections s ON s.id = pl.paper_section_id
-         WHERE pl.question_id = ANY(${memberIds.map((m) => BigInt(m))}::bigint[])
-         GROUP BY s.paper_id`
-      if (rows.some((r) => Number(r.n) > 0 && Number(r.n) < new Set(memberIds).size)) throw conflict(M.conflict)
+    const placing = await this.repo.papersPlacing(memberIds)
+    const affectedPapers = placing.map((p) => ({ id: p.id, title: p.title, status: p.status }))
+    // R-1: the group rules of the paper check (the ONE definition, `groupIssuesOf`) evaluated on the POST-regroup membership, on every paper that places a member, draft or
+    // published: the new group must be complete, consecutive and in group order wherever it is placed, else 409 and nothing is written.
+    const NEW_GROUP = 'new-group'
+    const inGroup = new Set(memberIds)
+    for (const paper of placing) {
+      const issues = groupIssuesOf(paper.sections, (qid) => (inGroup.has(qid) ? NEW_GROUP : undefined), () => memberIds).filter((i) => i.groupId === NEW_GROUP)
+      if (issues.length > 0) throw conflict(M.conflict)
     }
     const memberSubjects = new Set(memberIds.map((id) => facts.get(id)?.subjectId ?? ''))
     if (memberSubjects.size > 1) throw fail({ memberQuestionIds: M.memberMixed })

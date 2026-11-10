@@ -176,7 +176,7 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
       } catch (e) {
         if (!(e instanceof UnsupportedQuestionError)) throw e
         // KP-15: a pinned question of a published paper whose picture FILE is missing stays in its place with the placeholder (never refused).
-        if (e.reasonCode === 'file_missing' && pinned.includes(record.id)) {
+        if (e.code === 'file_missing' && pinned.includes(record.id)) {
           try {
             const group = record.groupId ? (groups.get(record.groupId) ?? null) : null
             const bundle = mapBe09Question(record, group, labels.get(labelKey(record)) as CurriculumLabels, { ...media, tolerateMissingFiles: true }, true)

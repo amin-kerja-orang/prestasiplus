@@ -990,6 +990,7 @@ export class BuilderService {
       // KP-14: a V2-published paper drops the lines caused by the status / is_active / held picture of its questions (see `publishLegacyV2`).
       const dropped: string[] = []
       const droppedCodes: Record<string, number> = {}
+      let causeIds: string[] = []
       let blockers = all
       if (legacy) {
         // P-6: only a migration-owned, unedited paper may take this path (the one shared rule of `isMigrationOwnedUneditedPaper`).
@@ -1005,6 +1006,7 @@ export class BuilderService {
         )
         const byCause = (b: (typeof all)[number]): boolean =>
           b.code === 'NOT_PUBLISHED' || (['NOT_SERVABLE', 'UNKNOWN_QUESTION', 'INELIGIBLE'].includes(b.code) && b.questionId !== undefined && cause.has(b.questionId))
+        causeIds = [...cause]
         blockers = all.filter((b) => !byCause(b))
         for (const b of all.filter(byCause)) {
           dropped.push(b.message)
@@ -1059,7 +1061,7 @@ export class BuilderService {
           overridden: (legacy ? lifted : overridable).slice(0, 50),
           count: (legacy ? lifted : overridable).length,
           // P-7: exactly which blockers were lifted: the count per code, the lines and the question ids they name.
-          ...(legacy ? { legacyV2: true, liftedByCode: droppedCodes, liftedQuestionIds: [...new Set(all.filter((b) => dropped.includes(b.message) && b.questionId !== undefined).map((b) => b.questionId))].slice(0, 200) } : {}),
+          ...(legacy ? { legacyV2: true, liftedByCode: droppedCodes, liftedQuestionIds: causeIds.slice(0, 200), liftedQuestionCount: causeIds.length } : {}),
         })
         return { ok: true, errors: [], overridden: legacy ? lifted : overridable, ...review }
       }

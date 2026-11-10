@@ -99934,11 +99934,15 @@
                     },
                     "title": {
                       "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
                     }
                   },
                   "required": [
                     "id",
-                    "title"
+                    "title",
+                    "status"
                   ]
                 }
               }

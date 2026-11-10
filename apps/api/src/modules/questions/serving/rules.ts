@@ -242,8 +242,7 @@ function simulasiPaperReasons(f: ServabilityFacts): ServabilityReason[] {
   if (f.live === null) return [reason(f.latest.version.status === 'archived' ? 'archived' : 'not_approved', activity)]
   if (!SERVABLE_STATUSES.includes(f.live.version.status)) return [reason('not_approved', activity)]
   // M2: a picture that cannot be shown (an unresolved stimulus or the `legacy_image_unresolved` import hold) is never served, pinned or not: the pupil would
-  // sit the paper without it. A withdrawn (inactive) question is refused too unless a published paper already pins it (decision 56 below).
-  if (!f.live.isActive && !f.onPublishedPaper) return [reason('withdrawn', activity)]
+  // sit the paper without it. Status and `is_active` are not checked here (V2 parity: a published set may hold non-approved questions).
   // Decision 56 (FR-ADM-G7.3 lists papers, the lead chose A): a published paper PINS its version and the bridge serves that pinned version, so the stimulus flag
   // does NOT exclude a question here (`flagReasons` is deliberately not called). Only the missing-key check applies: a leaf with no key cannot be marked.
   const keys = keyReasons(f.live, activity)

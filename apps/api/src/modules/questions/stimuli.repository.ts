@@ -864,6 +864,31 @@ export class StimuliRepository {
     return rows.map((r) => ({ id: idToString(r.id), title: r.title }))
   }
 
+  /**
+   * Every paper (draft, Terbit or withdrawn) that places any of the questions, with its whole section layout (the placements of ALL its questions, in order),
+   * in ONE query: the regroup guard evaluates the post-regroup group rules on it and reports the papers. Read only: the placement tables belong to the exam module.
+   */
+  async papersPlacing(questionIds: readonly string[]): Promise<{ id: string; title: string; status: string; sections: { id: string; questionIds: string[] }[] }[]> {
+    const keys = [...new Set(questionIds.map(bi).filter((k): k is bigint => k !== null))]
+    if (keys.length === 0) return []
+    const rows = await this.db.$queryRaw<{ paper_id: bigint; title: string; status: string; section_id: bigint; question_id: bigint }[]>`
+      SELECT p.id AS paper_id, p.title, p.status, s.id AS section_id, pl.question_id
+        FROM papers p
+        JOIN paper_sections s ON s.paper_id = p.id
+        JOIN paper_placements pl ON pl.paper_section_id = s.id
+       WHERE p.id IN (SELECT ps.paper_id FROM paper_placements x JOIN paper_sections ps ON ps.id = x.paper_section_id WHERE x.question_id IN (${Prisma.join(keys)}))
+       ORDER BY p.id, s.position, s.id, pl.position, pl.id`
+    const out = new Map<string, { id: string; title: string; status: string; sections: Map<string, string[]> }>()
+    for (const r of rows) {
+      const id = idToString(r.paper_id)
+      const paper = out.get(id) ?? { id, title: r.title, status: r.status, sections: new Map<string, string[]>() }
+      const sid = idToString(r.section_id)
+      paper.sections.set(sid, [...(paper.sections.get(sid) ?? []), idToString(r.question_id)])
+      out.set(id, paper)
+    }
+    return [...out.values()].map((p) => ({ id: p.id, title: p.title, status: p.status, sections: [...p.sections].map(([id, questionIds]) => ({ id, questionIds })) }))
+  }
+
   // --- helpers ------------------------------------------------------------------------------------
 
   private columns(d: StimulusData) {

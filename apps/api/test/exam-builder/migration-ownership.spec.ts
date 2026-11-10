@@ -33,7 +33,7 @@ describe('isMigrationOwnedUneditedPaper', () => {
       )[0]!.id,
     )
     if (status === 'published') await q(`update papers set updated_at = published_at where id = $1`, [id])
-    if (over.mapped !== false) await q(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('v2', 'exam_papers', $1, $2)`, [`own-${String(n)}`, id])
+    if (over.mapped !== false) await q(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('cloud', 'exam_papers', $1, $2)`, [`own-${String(n)}`, id])
     return id
   }
   const audit = (id: string, action: string, requestId: string | null) =>
@@ -83,7 +83,7 @@ describe('isMigrationOwnedUneditedPaper', () => {
     const id = await loaded()
     const exec = pgExecutor({ query: async (s, p) => ({ rows: await t.db.query<Record<string, unknown>>(s, p) }) })
     expect(await isMigrationOwnedUneditedPaper(exec, id)).toEqual({ owned: true })
-    expect(await isMigrationOwnedUneditedPaper(exec, id, { legacySource: 'v2' })).toEqual({ owned: true })
+    expect(await isMigrationOwnedUneditedPaper(exec, id, { legacySource: 'cloud' })).toEqual({ owned: true })
     expect(await isMigrationOwnedUneditedPaper(exec, id, { legacySource: 'other' })).toEqual({ owned: false, reason: 'no_etl_id_map_entry' })
   })
 
