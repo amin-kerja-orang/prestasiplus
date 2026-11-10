@@ -26,6 +26,35 @@ const MP3 = { name: 'audio.mp3', mimeType: 'audio/mpeg', buffer: Buffer.from('ID
 
 test.use({ mockInit: { latency: 0 } })
 
+/** A short silent mono WAV (8 kHz, 8-bit, 1 s): a valid, playable audio body for the player. */
+function silentWav(): Buffer {
+  const samples = 8000
+  const head = Buffer.alloc(44)
+  head.write('RIFF', 0)
+  head.writeUInt32LE(36 + samples, 4)
+  head.write('WAVEfmt ', 8)
+  head.writeUInt32LE(16, 16)
+  head.writeUInt16LE(1, 20)
+  head.writeUInt16LE(1, 22)
+  head.writeUInt32LE(8000, 24)
+  head.writeUInt32LE(8000, 28)
+  head.writeUInt16LE(1, 32)
+  head.writeUInt16LE(8, 34)
+  head.write('data', 36)
+  head.writeUInt32LE(samples, 40)
+  return Buffer.concat([head, Buffer.alloc(samples, 0x80)])
+}
+
+/**
+ * The mock has no audio asset: its section URLs (/storage/audio-kbat/{id}/audioN.mp3, mock/handlers/audio.ts:42-43)
+ * fall through to the SPA index (200 text/html). This fixture serves a real tiny WAV so the player can be tested.
+ */
+async function serveAudioFixture(page: Page): Promise<void> {
+  await page.route('**/storage/audio-kbat/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'audio/wav', body: silentWav() }),
+  )
+}
+
 /** Client-side navigation (keeps the in-page mock store). */
 async function spaGo(page: Page, path: string): Promise<void> {
   await page.evaluate(async (to) => {
@@ -120,8 +149,15 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     ).toBeVisible()
 
     const levels = await optionTexts(page, 'filter-level')
-    expect(levels).toHaveLength(12)
-    expect(levels[0]).toBe('Semua Tahap')
+    // D72: Darjah 1-6 are hidden, so the list is Semua Tahap plus Tingkatan 1-5 (V1 live had 12).
+    expect(levels).toEqual([
+      'Semua Tahap',
+      'Tingkatan 1',
+      'Tingkatan 2',
+      'Tingkatan 3',
+      'Tingkatan 4',
+      'Tingkatan 5',
+    ])
     const subjects = await optionTexts(page, 'filter-subject')
     expect(subjects).toHaveLength(32)
     expect(subjects.slice(0, 4)).toEqual([
@@ -133,7 +169,18 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
 
     const submit = page.getByTestId('audio-filter').getByRole('button', { name: 'Tapis', exact: true })
     await expect(submit).toHaveText('Tapis')
-    await expect(submit).toHaveCSS('color', 'rgb(255, 255, 255)')
+    // V1 was white text on a solid fill; the V3 design-system filter button is the soft primary variant
+    // (class bg-primary/10, text in the primary token), so the exact expectation is the primary token colour.
+    const primary = await submit.evaluate((el) => {
+      const probe = document.createElement('span')
+      probe.style.color = 'var(--ui-primary)'
+      el.appendChild(probe)
+      const c = getComputedStyle(probe).color
+      probe.remove()
+      return c
+    })
+    expect(primary).toMatch(/^rgb\(/)
+    await expect(submit).toHaveCSS('color', primary)
     const bg = await submit.evaluate((el) => getComputedStyle(el).backgroundColor)
     expect(bg).not.toBe('rgba(0, 0, 0, 0)')
     expect(bg).not.toBe('rgb(255, 255, 255)')
@@ -179,6 +226,7 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
       'the player, its copy "Hantar" and the score display are INFERRED / PROPOSED (L-3)',
     ),
     async ({ page, gotoApp, loginAs, mock }) => {
+      await serveAudioFixture(page)
       await loginAs(ADMIN)
       await seedAndSwitch(page, mock, gotoApp)
 
@@ -208,23 +256,52 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
       const counts: number[] = []
       for (let i = 0; i < 4; i++) {
         const s = sections.nth(i)
+        // The V3 theme uses DsAudioPlayer (hidden <audio> + custom controls), not native controls (D28-D32).
         await expect(s.locator('audio')).toHaveCount(1)
-        await expect(s.locator('audio')).toHaveAttribute('controls', '')
+        await expect(s.locator('audio')).toHaveAttribute(
+          'src',
+          new RegExp('/storage/audio-kbat/\\d+/audio\\.mp3$'),
+        )
+        await expect(s.getByRole('button', { name: 'Main' })).toBeVisible()
         counts.push(await s.getByTestId('audio-question').count())
-        expect(await s.locator('input[type=radio]').count()).toBe(counts[i]! * 4)
+        // V3 URadioGroup renders role=radio buttons (4 per question), not native inputs.
+        expect(await s.getByRole('radio').count()).toBe(counts[i]! * 4)
       }
       expect(counts).toEqual([8, 8, 8, 6])
+
+      // The DS play control toggles play and pause.
+      const first = sections.first()
+      await first.getByRole('button', { name: 'Main' }).click()
+      await expect(first.getByRole('button', { name: 'Jeda' })).toBeVisible()
+      await first.getByRole('button', { name: 'Jeda' }).click()
+      await expect(first.getByRole('button', { name: 'Main' })).toBeVisible()
       await expect(page.getByTestId('player-submit')).toHaveText('Hantar')
       await expectTouchTarget(page.getByTestId('player-submit'))
       await expectNoHorizontalScroll(page)
 
       for (let n = 1; n <= 30; n++) {
-        await page.getByTestId(`q${String(n)}-A`).check()
+        await page.getByTestId(`q${String(n)}`).getByRole('radio', { name: /^A\. / }).click()
       }
       await page.getByTestId('player-submit').click()
       await expect(page.getByTestId('player-result')).toBeVisible()
       await expect(page.getByTestId('result-score')).toHaveText('30')
       await expect(page.getByTestId('result-total')).toHaveText('30')
+      await expectNoHorizontalScroll(page)
+    },
+  )
+
+  test(
+    'SRS §12 #46 a section whose audio file is missing shows the audioFailed alert @m09',
+    provisional('the player and its audioFailed copy are INFERRED (L-3)'),
+    async ({ page, gotoApp, loginAs, mock }) => {
+      // No fixture here: the mock URL answers the SPA index (200 text/html), which the browser cannot decode.
+      await loginAs(ADMIN)
+      await seedAndSwitch(page, mock, gotoApp)
+      await spaGo(page, '/audio-kbat/1')
+      const first = page.getByTestId('audio-section').first()
+      await expect(first.getByTestId('section-audio-error')).toBeVisible()
+      await expect(first).toContainText('Fail audio tidak dapat dimuatkan.')
+      await expect(first.getByRole('button', { name: 'Cuba Semula' })).toBeVisible()
       await expectNoHorizontalScroll(page)
     },
   )
