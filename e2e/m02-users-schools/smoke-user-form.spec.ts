@@ -91,8 +91,9 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     )
     await expect(byId(page, 'user-active')).toBeChecked()
     await expect(page.getByText('Pengguna yang tidak aktif tidak boleh log masuk')).toBeVisible()
-    await expect(byId(page, 'grade-cards').locator('input[type=radio]')).toHaveCount(11)
-    await expect(byId(page, 'grade-cards').locator('input:checked')).toHaveCount(0)
+    // v2: secondary grades only (Ting. 1-5); the Darjah group is hidden (GradeCards).
+    await expect(byId(page, 'grade-cards').getByRole('radio')).toHaveCount(5)
+    await expect(byId(page, 'grade-cards').locator('[role=radio][aria-checked=true]')).toHaveCount(0)
     await expect(byId(page, 'user-ic')).toHaveAttribute('placeholder', 'Cth: 031215101234')
     await expect(page.getByText('12 digit MyKad. Dilindungi PDPA.')).toBeVisible()
     await expect(byId(page, 'std-school-search')).toHaveAttribute(
@@ -111,8 +112,8 @@ test.describe('M02 S2 create user', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await expectTouchTarget(byId(page, 'user-role'))
       await expectTouchTarget(byId(page, 'form-submit'))
       await expectTouchTarget(byId(page, 'form-cancel'))
-      await expectTouchTarget(page.locator('label:has([data-testid=grade-1])'))
-      await expectTouchTarget(page.locator('label:has([data-testid=grade-11])'))
+      await expectTouchTarget(byId(page, 'grade-cards').locator('label').first())
+      await expectTouchTarget(byId(page, 'grade-cards').locator('label').last())
     }
 
     // Teacher keeps only the school; parent only the linker; admin neither.
