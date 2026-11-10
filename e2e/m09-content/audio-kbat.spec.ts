@@ -40,6 +40,20 @@ async function spaGo(page: Page, path: string): Promise<void> {
   }, path)
 }
 
+/** Option labels of a Nuxt UI select (opens the list, reads it, closes it). */
+async function optionTexts(page: Page, testId: string): Promise<string[]> {
+  await page.getByTestId(testId).click()
+  const texts = (await page.getByRole('option').allTextContents()).map((t) => t.trim())
+  await page.keyboard.press('Escape')
+  return texts
+}
+
+/** Picks one label in a Nuxt UI select. */
+async function pickOption(page: Page, testId: string, label: string): Promise<void> {
+  await page.getByTestId(testId).click()
+  await page.getByRole('option', { name: label, exact: true }).click()
+}
+
 /** Creates a set through S13 (as the logged-in admin) with an audio file per section. */
 async function createSet(
   page: Page,
@@ -63,7 +77,7 @@ async function createSet(
       el.dispatchEvent(new Event('input', { bubbles: true }))
     }
   })
-  await page.getByTestId('audio-submit').click()
+  await page.getByTestId('form-submit').click()
   await expect(page).toHaveURL(/\/admin\/audio-kbat$/)
 }
 
@@ -95,27 +109,20 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     await expect(headerBlock).not.toContainText('Dashboard')
     await expect(headerBlock).not.toContainText('Selamat datang kembali')
 
+    // The gradient hero card is gone (design-system page header; V2 has none either, content/audio-kbat.blade.php):
+    // the pill keeps "Ujian Mendengar" and the page header carries the intro line.
     const intro = page.getByTestId('audio-intro')
-    await expect(intro).toHaveClass(/text-white/)
-    expect(await intro.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('gradient')
-    await expect(intro.getByText('Ujian Mendengar')).toBeVisible()
-    const h1 = intro.locator('h1')
-    await expect(h1).toHaveText('Audio KBAT')
-    await expect(h1).toHaveCSS('color', 'rgb(255, 255, 255)')
-    const p = intro.locator('p')
-    await expect(p).toContainText(
-      'Dengar audio mengikut bahagian dan jawab soalan yang dipaparkan serentak.',
-    )
-    await expect(p).toHaveCSS('color', /rgb\(254, 243, 199\)|oklch\(0\.962/)
+    await expect(intro).toHaveText('Ujian Mendengar')
+    await expect(
+      page
+        .getByTestId('audio-kbat-page')
+        .getByText('Dengar audio mengikut bahagian dan jawab soalan yang dipaparkan serentak.'),
+    ).toBeVisible()
 
-    const levels = await page
-      .getByTestId('filter-level')
-      .evaluate((el) => [...(el as HTMLSelectElement).options].map((o) => o.text.trim()))
+    const levels = await optionTexts(page, 'filter-level')
     expect(levels).toHaveLength(12)
     expect(levels[0]).toBe('Semua Tahap')
-    const subjects = await page
-      .getByTestId('filter-subject')
-      .evaluate((el) => [...(el as HTMLSelectElement).options].map((o) => o.text.trim()))
+    const subjects = await optionTexts(page, 'filter-subject')
     expect(subjects).toHaveLength(32)
     expect(subjects.slice(0, 4)).toEqual([
       'Semua Subjek',
@@ -124,7 +131,7 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
       'Bahasa Inggeris',
     ])
 
-    const submit = page.getByTestId('filter-submit')
+    const submit = page.getByTestId('audio-filter').getByRole('button', { name: 'Tapis', exact: true })
     await expect(submit).toHaveText('Tapis')
     await expect(submit).toHaveCSS('color', 'rgb(255, 255, 255)')
     const bg = await submit.evaluate((el) => getComputedStyle(el).backgroundColor)
@@ -136,21 +143,13 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     await expect(page.getByTestId('audio-empty')).toContainText(
       'Audio KBAT akan muncul di sini selepas dimuat naik dan diterbitkan.',
     )
-    await page.getByTestId('filter-level').selectOption({ label: 'Tingkatan 4' })
-    await page.getByTestId('filter-subject').selectOption({ label: 'Bahasa Melayu' })
+    await pickOption(page, 'filter-level', 'Tingkatan 4')
+    await pickOption(page, 'filter-subject', 'Bahasa Melayu')
     await submit.click()
     await expect(page).toHaveURL(/\/audio-kbat\?education_level_id=10&subject_id=\d+$/)
     await expect(page.getByTestId('audio-empty')).toBeVisible()
-    expect(
-      await page
-        .getByTestId('filter-level')
-        .evaluate((el) => (el as HTMLSelectElement).selectedOptions[0]?.text.trim()),
-    ).toBe('Tingkatan 4')
-    expect(
-      await page
-        .getByTestId('filter-subject')
-        .evaluate((el) => (el as HTMLSelectElement).selectedOptions[0]?.text.trim()),
-    ).toBe('Bahasa Melayu')
+    await expect(page.getByTestId('filter-level')).toHaveText('Tingkatan 4')
+    await expect(page.getByTestId('filter-subject')).toHaveText('Bahasa Melayu')
     await expectNoHorizontalScroll(page)
   })
 
@@ -163,7 +162,9 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     await gotoApp('/audio-kbat')
     await expect(page.getByTestId('audio-kbat-page')).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Audio KBAT')
-    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
+      'Dengar soalan pemikiran aras tinggi mengikut subjek',
+    )
     await expect(page.getByTestId('pembelajaran-header')).toHaveCount(0)
   })
 
@@ -188,11 +189,11 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
       await expectNoHorizontalScroll(page)
 
       // The filter narrows by subject: the approved set is BM, so Bahasa Inggeris is empty.
-      await page.getByTestId('filter-subject').selectOption({ label: 'Bahasa Inggeris' })
-      await page.getByTestId('filter-submit').click()
+      await pickOption(page, 'filter-subject', 'Bahasa Inggeris')
+      await page.getByTestId('audio-filter').getByRole('button', { name: 'Tapis', exact: true }).click()
       await expect(page.getByTestId('audio-empty')).toBeVisible()
-      await page.getByTestId('filter-subject').selectOption({ label: 'Semua Subjek' })
-      await page.getByTestId('filter-submit').click()
+      await pickOption(page, 'filter-subject', 'Semua Subjek')
+      await page.getByTestId('audio-filter').getByRole('button', { name: 'Tapis', exact: true }).click()
       await expect(page.getByTestId('audio-set')).toHaveCount(1)
 
       await expectTouchTarget(page.getByTestId('set-link'))

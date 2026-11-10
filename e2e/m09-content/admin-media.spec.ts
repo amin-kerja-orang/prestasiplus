@@ -403,7 +403,7 @@ async function createSet(page: Page, title: string, status: string): Promise<voi
       el.dispatchEvent(new Event('input', { bubbles: true }))
     }
   })
-  await page.getByTestId('audio-submit').click()
+  await page.getByTestId('form-submit').click()
 }
 
 test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
@@ -676,7 +676,7 @@ test.describe('M09 S13 create Audio KBAT set', MODULE, () => {
   }) => {
     await gotoApp('/admin/audio-kbat/create')
     await expect(page.getByTestId('audio-form')).toBeVisible()
-    await page.getByTestId('audio-submit').click()
+    await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL(/\/admin\/audio-kbat\/create$/)
     const invalid = await page
       .getByTestId('audio-form')
@@ -696,7 +696,7 @@ test.describe('M09 S13 create Audio KBAT set', MODULE, () => {
   }) => {
     await gotoApp('/admin/audio-kbat/create')
     await expect(page.getByTestId('audio-form')).toBeVisible()
-    const submit = page.getByTestId('audio-submit')
+    const submit = page.getByTestId('form-submit')
     await expect(submit).toHaveText('Simpan Set Audio KBAT')
     await expect(submit).toBeInViewport()
     await page.evaluate(() => window.scrollTo(0, 3000))
