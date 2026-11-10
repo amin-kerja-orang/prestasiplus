@@ -63,6 +63,7 @@ export function buildAnswerRecord(
     correctLabel: optionLabel(question.options, result.correctOptionId),
     isCorrect: result.isCorrect,
     explanation: result.explanation,
+    ...(question.stimuli && question.stimuli.length > 0 ? { stimuli: question.stimuli } : {}),
   }
 }
 

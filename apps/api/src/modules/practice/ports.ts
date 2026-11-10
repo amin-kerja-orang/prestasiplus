@@ -21,7 +21,7 @@ import type { AuthContext } from '../../common/scope/auth-context'
 import type { TxClient } from '../../db/client'
 import type { Prng } from '../../db/prng'
 import type { StimulusGroupRecord } from '../questions/types'
-import type { PracticeMode } from '@pp/contract'
+import type { PracticeMode, PracticeQuizStimulus } from '@pp/contract'
 
 /* --------------------------------------------------------------------------------- BE-09: questions */
 
@@ -52,7 +52,7 @@ export interface PracticeQuestion {
   /** The teacher's "Rujukan" link (FR-GUR-44a-9): set only for a private (personal) question served in a mission; a bank question has none. */
   referenceUrl?: string | null
   /** Options in served order; the zero-based index is the wire `selectedOptionId`. Labels `A`..`H`. */
-  options: { label: string; text: string; /** Only on a surface that allows figures (S1-T06). */ imageId?: string }[]
+  options: { label: string; text: string; /** Only on a surface that allows figures (S1-T06). */ imageId?: string; /** T-C13: the file token URL of `imageId`. */ imageUrl?: string }[]
   /** Flat stem figure file id; set only on a surface that allows figures (S1-T06). */
   stemImageId?: string
   /**
@@ -62,6 +62,8 @@ export interface PracticeQuestion {
   groupId?: string
   groupPosition?: number | null
   stimulusGroup?: StimulusGroupRecord
+  /** T-C13 (D105): what the question is shown with (group stimuli first, then its own), as the wire carries it. Set only on a surface that serves figures. */
+  stimuli?: PracticeQuizStimulus[]
   /** SERVER ONLY: the key label. Never put it in a start response (AC 4). */
   correctLabel: string | null
   /** SERVER ONLY until the check. */

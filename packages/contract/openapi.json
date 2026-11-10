@@ -69684,113 +69684,91 @@
           "posts"
         ]
       },
-      "PerformanceRankingQuery": {
-        "type": "object",
-        "properties": {
-          "scope": {
-            "type": "string",
-            "description": "nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered."
-          },
-          "subjectId": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "tingkatan": {
-            "type": "string",
-            "description": "T4 or T5."
-          },
-          "negeri": {
-            "type": "string",
-            "description": "State name; used when scope = negeri."
-          }
-        }
-      },
       "PerformanceRanking": {
         "type": "object",
         "properties": {
+          "syiling": {
+            "type": "integer"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceKedudukanScope"
+            }
+          }
+        },
+        "required": [
+          "syiling",
+          "scopes"
+        ]
+      },
+      "PerformanceKedudukanScope": {
+        "type": "object",
+        "properties": {
           "scope": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": "string",
             "enum": [
-              "nasional",
-              "negeri",
-              "daerah",
+              "kelas",
               "sekolah",
-              null
+              "negeri",
+              "kebangsaan"
             ]
           },
-          "title": {
-            "type": "string"
-          },
-          "showFooter": {
-            "type": "boolean"
-          },
-          "states": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "rank": {
-                  "type": "integer"
-                },
-                "userId": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/Id"
-                    },
-                    {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    }
-                  ]
-                },
-                "name": {
-                  "type": "string"
-                },
-                "schoolName": {
-                  "type": "string"
-                },
-                "tahap": {
-                  "type": "integer"
-                },
-                "correct": {
-                  "type": "integer"
-                },
-                "accuracy": {
-                  "type": "number"
-                }
-              },
-              "required": [
-                "rank",
-                "userId",
-                "name",
-                "schoolName",
-                "tahap",
-                "correct",
-                "accuracy"
-              ]
-            }
+          "rank": {
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "total": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "percentile": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "nearby": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceKedudukanNearby"
+            },
+            "maxItems": 5
           }
         },
         "required": [
           "scope",
-          "title",
-          "showFooter",
-          "states",
-          "rows",
-          "total"
+          "rank",
+          "total",
+          "percentile",
+          "nearby"
+        ]
+      },
+      "PerformanceKedudukanNearby": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "syiling": {
+            "type": "integer"
+          },
+          "me": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rank",
+          "name",
+          "syiling",
+          "me"
         ]
       },
       "PerformanceLeaderboardQuery": {
@@ -74114,7 +74092,8 @@
           "audio_kbat",
           "cms_screenshot",
           "timeline_photo",
-          "marketplace_image"
+          "marketplace_image",
+          "kertas_page"
         ]
       },
       "FileRef": {
@@ -79259,6 +79238,12 @@
           },
           "text": {
             "type": "string"
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 300,
+            "pattern": "^\\/api\\/files\\/[A-Za-z0-9_-]+$",
+            "description": "Picture of the option (T-C13, D105); only on a drill surface that serves figures."
           }
         },
         "required": [
@@ -79328,6 +79313,41 @@
             "items": {
               "$ref": "#/components/schemas/PracticeQuizOption"
             }
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeQuizStimulus"
+            },
+            "maxItems": 6,
+            "description": "Rajah, petikan or jadual shown with the question: its group stimuli first, then its own (D105). Absent or empty = none."
+          },
+          "group": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "index": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "id",
+              "index",
+              "size"
+            ],
+            "additionalProperties": false,
+            "description": "Set when the question is a member of a stimulus group (T-C13); the group is served whole and in order (D90, D105)."
           }
         },
         "required": [
@@ -79339,6 +79359,117 @@
           "hasDskp",
           "contributor",
           "options"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeQuizStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "passage",
+              "image",
+              "diagram",
+              "table",
+              "map",
+              "infographic",
+              "graph"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "example": "Rajah 1"
+          },
+          "title": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string",
+            "description": "Accessible description of the picture."
+          },
+          "text": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source line (\"Sumber: ...\")."
+          },
+          "table": {
+            "type": "object",
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          },
+          "image": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "maxLength": 300,
+                "pattern": "^\\/api\\/files\\/[A-Za-z0-9_-]+$"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "alt"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeQuizGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "size"
         ],
         "additionalProperties": false
       },
@@ -92803,6 +92934,509 @@
         "required": [
           "error"
         ]
+      },
+      "KertasDokumenSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject code; null = \"Lain-lain\" (V2 group name)."
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 4,
+            "description": "Kertas 2, 3 or 4.",
+            "example": 2
+          },
+          "negeri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Negeri or board label as printed (free text)."
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pages of the question paper (`m/s`)."
+          },
+          "schemePageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "marks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`markah`; null = not stated."
+          },
+          "durationMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`min`; null = not stated."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "subjectName",
+          "kertas",
+          "negeri",
+          "year",
+          "pageCount",
+          "schemePageCount",
+          "marks",
+          "durationMinutes"
+        ],
+        "additionalProperties": false
+      },
+      "KertasDokumenPage": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Relative `/api/files/{token}`; the file read rule admits the page while the document is published."
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "position",
+          "url",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false
+      },
+      "KertasDokumen": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject code; null = \"Lain-lain\" (V2 group name)."
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 4,
+            "description": "Kertas 2, 3 or 4.",
+            "example": 2
+          },
+          "negeri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Negeri or board label as printed (free text)."
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pages of the question paper (`m/s`)."
+          },
+          "schemePageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "marks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`markah`; null = not stated."
+          },
+          "durationMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`min`; null = not stated."
+          },
+          "paperPages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KertasDokumenPage"
+            }
+          },
+          "schemePages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KertasDokumenPage"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "subjectName",
+          "kertas",
+          "negeri",
+          "year",
+          "pageCount",
+          "schemePageCount",
+          "marks",
+          "durationMinutes",
+          "paperPages",
+          "schemePages"
+        ],
+        "additionalProperties": false
+      },
+      "KertasDokumenStatus": {
+        "type": "string",
+        "enum": [
+          "draf",
+          "terbit"
+        ]
+      },
+      "KertasDokumenAdminRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject code; null = \"Lain-lain\" (V2 group name)."
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 4,
+            "description": "Kertas 2, 3 or 4.",
+            "example": 2
+          },
+          "negeri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Negeri or board label as printed (free text)."
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pages of the question paper (`m/s`)."
+          },
+          "schemePageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "marks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`markah`; null = not stated."
+          },
+          "durationMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`min`; null = not stated."
+          },
+          "status": {
+            "$ref": "#/components/schemas/KertasDokumenStatus"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "subjectName",
+          "kertas",
+          "negeri",
+          "year",
+          "pageCount",
+          "schemePageCount",
+          "marks",
+          "durationMinutes",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "KertasDokumenAdminDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject code; null = \"Lain-lain\" (V2 group name)."
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 4,
+            "description": "Kertas 2, 3 or 4.",
+            "example": 2
+          },
+          "negeri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Negeri or board label as printed (free text)."
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pages of the question paper (`m/s`)."
+          },
+          "schemePageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "marks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`markah`; null = not stated."
+          },
+          "durationMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`min`; null = not stated."
+          },
+          "paperPages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KertasDokumenPage"
+            }
+          },
+          "schemePages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KertasDokumenPage"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/KertasDokumenStatus"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "subjectName",
+          "kertas",
+          "negeri",
+          "year",
+          "pageCount",
+          "schemePageCount",
+          "marks",
+          "durationMinutes",
+          "paperPages",
+          "schemePages",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "KertasDokumenAdminQuery": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Subject code."
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 4
+          },
+          "status": {
+            "$ref": "#/components/schemas/KertasDokumenStatus"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 30
+          }
+        },
+        "additionalProperties": false
+      },
+      "KertasDokumenCounts": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "published": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "withScheme": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "total",
+          "published",
+          "withScheme"
+        ],
+        "additionalProperties": false
+      },
+      "KertasDokumenAdminList": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KertasDokumenAdminRow"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows matching the filters (all pages)."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/KertasDokumenCounts"
+          }
+        },
+        "required": [
+          "rows",
+          "total",
+          "counts"
+        ],
+        "additionalProperties": false
+      },
+      "KertasDokumenToggleResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/KertasDokumenStatus"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status"
+        ],
+        "additionalProperties": false
       },
       "IntakeLeafKind": {
         "type": "string",
@@ -143869,51 +144503,10 @@
         "tags": [
           "performance"
         ],
-        "summary": "Ranking table (S19)",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "description": "nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered."
-            },
-            "required": false,
-            "description": "nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered.",
-            "name": "scope",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "$ref": "#/components/schemas/Id"
-            },
-            "required": false,
-            "description": "Opaque entity id (string). Never parse or construct on the client.",
-            "name": "subjectId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "T4 or T5."
-            },
-            "required": false,
-            "description": "T4 or T5.",
-            "name": "tingkatan",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "State name; used when scope = negeri."
-            },
-            "required": false,
-            "description": "State name; used when scope = negeri.",
-            "name": "negeri",
-            "in": "query"
-          }
-        ],
+        "summary": "Kedudukan: own rank per scope and \"Sekitar anda\" (R1-MUR-18, API-RPT-13)",
         "responses": {
           "200": {
-            "description": "Ranking table (S19)",
+            "description": "Kedudukan: own rank per scope and \"Sekitar anda\" (R1-MUR-18, API-RPT-13)",
             "content": {
               "application/json": {
                 "schema": {
@@ -154022,6 +154615,402 @@
         }
       }
     },
+    "/bijak/kertas-dokumen": {
+      "get": {
+        "tags": [
+          "kertas-dokumen"
+        ],
+        "summary": "Kertas Subjektif page-image documents a pupil can open (published only)",
+        "description": "V2 `GET /kertas-subjektif`. Published documents only, ordered Kertas then Negeri; the screen groups them by subject beside the question-based papers. Student role (admin inside Mod Pelajar).",
+        "responses": {
+          "200": {
+            "description": "Published documents.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/KertasDokumenSummary"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use this route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/kertas-dokumen/{id}": {
+      "get": {
+        "tags": [
+          "kertas-dokumen"
+        ],
+        "summary": "One published document with its paper and scheme page images",
+        "description": "V2 `GET /kertas-subjektif/{paper}`. 404 for an unknown id or a Draf document (never serves an unpublished page). Student role.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Document id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Document id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KertasDokumen"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use this route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\" (unknown id, or a document that is not published).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kertas-dokumen": {
+      "get": {
+        "tags": [
+          "kertas-dokumen"
+        ],
+        "summary": "Admin list of every document with its publish state and the three tiles",
+        "description": "V2 `GET /admin/kertas-subjektif`: filters subject, kertas, status; ordered subject, kertas, negeri. `counts` ignores the filters. Admin Pusat only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code."
+            },
+            "required": false,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 4
+            },
+            "required": false,
+            "name": "kertas",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/KertasDokumenStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KertasDokumenAdminList"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use this route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (a bad filter).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kertas-dokumen/{id}": {
+      "get": {
+        "tags": [
+          "kertas-dokumen"
+        ],
+        "summary": "Admin preview of one document (any status)",
+        "description": "The `Pratonton` link of V2: the same view a pupil gets, readable for a Draf document too. Admin Pusat only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Document id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Document id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KertasDokumenAdminDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use this route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\" (unknown id, or a document that is not published).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kertas-dokumen/{id}/terbit": {
+      "post": {
+        "tags": [
+          "kertas-dokumen"
+        ],
+        "summary": "Flip the publish state (Terbit / Sembunyi)",
+        "description": "V2 `POST /admin/kertas-subjektif/{paper}/terbit`. A published document is hidden; a Draf one is published only when it has at least one paper page, else 422 \"“{title}” tiada halaman — tidak boleh diterbitkan.\". Audited. Admin Pusat only; CSRF required.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Document id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Document id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KertasDokumenToggleResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use this route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (no page: the title line above).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me/parent-invite": {
       "get": {
         "tags": [
@@ -157689,7 +158678,7 @@
           "files"
         ],
         "summary": "Upload one file",
-        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin; timeline_photo none (written only by POST /timeline, so POST /files answers 403); marketplace_image admin (JPG, PNG, WebP, 2 MB). Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
+        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin; timeline_photo none (written only by POST /timeline, so POST /files answers 403); marketplace_image admin (JPG, PNG, WebP, 2 MB); kertas_page none (written only by the V2 migration, so POST /files answers 403). Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
         "parameters": [
           {
             "schema": {
@@ -157798,7 +158787,7 @@
           "files"
         ],
         "summary": "Download a file",
-        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); marketplace_image any signed-in user; timeline_photo as avatar: the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a file written under Mod Pelajar: the owner and admin only); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
+        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); marketplace_image any signed-in user; kertas_page admin, and a signed-in pupil only while the page belongs to a published Kertas Subjektif document; timeline_photo as avatar: the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a file written under Mod Pelajar: the owner and admin only); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
         "parameters": [
           {
             "schema": {

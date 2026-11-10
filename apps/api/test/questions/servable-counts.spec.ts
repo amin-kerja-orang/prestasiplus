@@ -59,6 +59,11 @@ afterAll(async () => {
   await t?.app.close()
 })
 
+/** Servable stimulus groups of the demo seed per subject (SEED-GRP-PASAR-1..3 are ONE BM group): one unit each in the drills. */
+const GROUP_UNITS = { BM: 1, MATH: 0, SCI: 0 } as const
+/** Their members: the practice card counts QUESTIONS (a pupil asks for N questions), so each member counts (T-C13, D105). */
+const GROUP_MEMBERS = { BM: 3, MATH: 0, SCI: 0 } as const
+
 describe('counts on the full demo seed: login = cards = details = drawable', () => {
   it('reports the login count, the per-subject cards, the details and a full draw for BM, MATH and SCI', async () => {
     const loginCount = await login()
@@ -79,15 +84,17 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
       const servableInDb = Number((await t.db.query<{ c: string }>(`${QUESTION_COUNT_SQL} AND v.subject_id = $1`, [id]))[0]?.c)
       cards[code] = { practiceCard, databank: databank ?? null, latihTubiCard: lt ?? null, details, poolCount, drawn: drawnIds.length, distinctDrawn: new Set(drawnIds).size, loginSqlForSubject: servableInDb }
       // card = details = drawable (one definition behind every SPM surface).
-      expect(databank, `${code} databank`).toBe(poolCount)
-      expect(lt, `${code} latihTubi card`).toBe(poolCount)
-      expect(details, `${code} details`).toBe(poolCount)
+      // T-C13 (D105): the drills serve whole stimulus groups, and a group counts as ONE unit (D91); the Mock K1 pool (`poolCount`, `drawn`) stays singles-only.
+      const units = poolCount + GROUP_UNITS[code]
+      expect(databank, `${code} databank`).toBe(units)
+      expect(lt, `${code} latihTubi card`).toBe(units)
+      expect(details, `${code} details`).toBe(units)
       expect(drawnIds.length, `${code} drawable`).toBe(poolCount)
       expect(new Set(drawnIds).size).toBe(drawnIds.length)
       // Everything drawn is servable: live, active, approved, an offered level.
       expect(drawn.every((r) => r.isActive && r.version.status === 'approved' && offeredIds.includes(r.version.educationLevelId ?? ''))).toBe(true)
       // D91 (T04): `bankMatrix` has `group_id IS NULL`, so the practice card equals the drawable size per surface (BM 50, not 53).
-      expect(practiceCard, `${code} practice card = drawable`).toBe(poolCount)
+      expect(practiceCard, `${code} practice card = drawable questions (singles + group members)`).toBe(poolCount + GROUP_MEMBERS[code])
       // The login SQL counts every servable question of any activity (stimulus-group members included), so it is an upper bound.
       expect(servableInDb, `${code} login SQL >= drawable`).toBeGreaterThanOrEqual(poolCount)
       cards[code] = { ...(cards[code] as object), gapPracticeCardVsDrawable: practiceCard - poolCount }
@@ -113,10 +120,10 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
     for (const code of SUBJECTS) {
       const n = known[code]
       expect(cards[code], `${code} card = details = drawable = ${String(n)}`).toMatchObject({
-        practiceCard: n,
-        databank: n,
-        latihTubiCard: n,
-        details: n,
+        practiceCard: n + GROUP_MEMBERS[code],
+        databank: n + GROUP_UNITS[code],
+        latihTubiCard: n + GROUP_UNITS[code],
+        details: n + GROUP_UNITS[code],
         poolCount: n,
         drawn: n,
         distinctDrawn: n,

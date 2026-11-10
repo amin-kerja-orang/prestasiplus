@@ -31,6 +31,7 @@ import {
   type StoredCheck,
 } from './practice.repository'
 import { HISTORY_PAGE_SIZE, feedbackText, selectedLabelOf } from './rules'
+import { quizQuestionsOf } from './practice-wire'
 import { PracticeStartPlanner } from './start.planner'
 
 export interface Caller {
@@ -159,17 +160,7 @@ export class PracticeService {
       subject: subject ? { code: subject.code, name: subject.name, color: subject.color } : null,
       ...(chapter ? { chapter: { id: idToString(chapter.id), number: chapter.chapterNumber, name: chapter.name } } : {}),
       // The key and the explanation are never part of a served question (AC 4).
-      questions: questions.map((q) => ({
-        id: q.id,
-        questionText: q.questionText,
-        textDirection: q.textDirection,
-        scriptType: q.scriptType,
-        wrongTimes: wrong.get(q.id) ?? 0,
-        hasDskp: q.hasDskp,
-        contributor: q.contributor ? { name: q.contributor.name, profileUrl: q.contributor.profileUrl } : null,
-        ...(q.referenceUrl ? { referenceUrl: q.referenceUrl } : {}),
-        options: q.options.map((o, i) => ({ id: i, label: o.label, text: o.text })),
-      })),
+      questions: quizQuestionsOf(questions, (id) => wrong.get(id) ?? 0),
       ...(s.mode === 'revision' && revisionMeta ? { revisionMeta } : {}),
       // R1/R7: a set has no timer, also when a resumed legacy session stored a limit.
       ...(s.mode === 'question_set' ? { timeLimitSec: null } : {}),

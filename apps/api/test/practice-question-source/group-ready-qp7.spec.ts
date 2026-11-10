@@ -8,6 +8,7 @@ import { ALL_GROUP_SURFACES, evaluate } from '../../src/modules/questions/servin
 import { ServabilityService } from '../../src/modules/questions/serving/servability.service'
 import type { UsersRepository } from '../../src/modules/users'
 import { adminActor, mcqInput, tagOf, type Tag } from '../questions/fixtures'
+import { filesOf } from '../support/files-stub'
 import { bootQuestionsApp, type QuestionsTestApp } from '../questions/helpers'
 
 /**
@@ -56,7 +57,7 @@ beforeAll(async () => {
   for (const k of ['g1', 'g2', 'g3']) members.push(await publish(k, { stimulusGroupId: groupId }))
 
   const surfaces = ALL_GROUP_SURFACES
-  source = new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, surfaces)
+  source = new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, surfaces, filesOf(t.db) as never)
   overview = new OverviewRepository({ client: t.db.prisma } as never, surfaces)
 }, 240_000)
 

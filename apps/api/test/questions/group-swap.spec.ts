@@ -10,6 +10,7 @@ import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-
 import { QuestionsRepository } from '../../src/modules/questions'
 import { GROUP_SURFACES } from '../../src/modules/questions/serving'
 import type { UsersRepository } from '../../src/modules/users'
+import { filesOf } from '../support/files-stub'
 import { bootQuestionsApp, loginAs, type Client, type QuestionsTestApp } from './helpers'
 import { mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
 
@@ -572,7 +573,7 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
       expect(await members(s.id)).toEqual([c, b, a])
       // the practice read (the drills draw a group whole, in group order); only this group's members are eligible
       await q(`update questions set is_active = false where id <> all($1::bigint[])`, [s.ids])
-      const source = new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, [...GROUP_SURFACES, 'latih_tubi_spm', 'databank', 'bab'])
+      const source = new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, [...GROUP_SURFACES, 'latih_tubi_spm', 'databank', 'bab'], filesOf(t.db) as never)
       const drawn = await source.sample({ subjectId: refs.mathId, activity: 'latih_tubi_spm', spmPool: true }, 10, prngStream('group-swap:q05-1'))
       expect(drawn).toEqual([c, b, a])
     })

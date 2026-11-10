@@ -14,6 +14,7 @@ import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { ALL_GROUP_SURFACES, GROUP_SURFACES, ServabilityService, evaluateAll, filterOf } from '../../src/modules/questions/serving'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
+import { filesOf } from '../support/files-stub'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
 
 /**
@@ -64,7 +65,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     repo = t.app.get(QuestionsRepository)
     servability = t.app.get(ServabilityService)
     pool = t.app.get(QuestionsBijakPoolSource)
-    practice = new Be09PracticeQuestionSource(repo, {} as UsersRepository)
+    practice = new Be09PracticeQuestionSource(repo, {} as UsersRepository, undefined, filesOf(t.db) as never)
     bijak = new Be09BijakQuestionSource(repo, t.app.get(CurriculumRepository), {
       publicIdsOf: async (ids: readonly string[]) => {
         const rows = ids.length === 0 ? [] : await q(`select id::text id, public_id from files where id = any($1::bigint[])`, [ids])
@@ -289,10 +290,10 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(databank.has(made.plain!)).toBe(true)
   })
 
-  it('latih_tubi_spm (GROUP_SURFACES without the drills, until S5-T03 renders groups) gives the text-only practice reason and the SQL scope filter agrees', async () => {
-    expect(reasonsOf('stemImage', 'latih_tubi_spm')).toEqual(['has_stimulus'])
-    expect(reasonsOf('optionImage', 'latih_tubi_spm')).toEqual(['has_option_image'])
-    expect(reasonsOf('groupA', 'latih_tubi_spm')).toEqual(['has_stimulus'])
+  it('latih_tubi_spm (default GROUP_SURFACES, T-C13) serves figure questions and the group; the other reasons stand and the SQL scope filter agrees', async () => {
+    expect(reasonsOf('stemImage', 'latih_tubi_spm')).toEqual([])
+    expect(reasonsOf('optionImage', 'latih_tubi_spm')).toEqual([])
+    expect(reasonsOf('groupA', 'latih_tubi_spm')).toEqual([])
     expect(reasonsOf('structured', 'latih_tubi_spm')).toEqual(['shape_unsupported'])
     expect(reasonsOf('draft', 'latih_tubi_spm')).toEqual(['not_approved'])
     expect(reasonsOf('archivedLive', 'latih_tubi_spm')).toEqual(['archived'])
@@ -306,8 +307,9 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     for (const id of servedBy('latih_tubi_spm')) expect(inScope.has(id), id).toBe(true)
   })
 
-  it('S1-T06: GROUP_SURFACES starts as Bijak papers and the Jana set; the drills and games are not in it', () => {
-    expect([...GROUP_SURFACES].sort()).toEqual(['jana_kertas', 'simulasi_paper'])
+  it('T-C13 (D105): GROUP_SURFACES holds the three drills, Bijak papers and the Jana set; games and the quiz are not in it', () => {
+    expect([...GROUP_SURFACES].sort()).toEqual(['bab', 'databank', 'jana_kertas', 'latih_tubi_spm', 'simulasi_paper'])
+    expect(GROUP_SURFACES).not.toContain('permainan')
     expect(ALL_GROUP_SURFACES).toEqual(expect.arrayContaining(['latih_tubi_spm', 'databank', 'bab']))
   })
 
@@ -381,7 +383,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(sorted(drawn)).toEqual(sorted([...servedBy('bab')].filter((id) => withChapter.has(id))))
     expect(servedBy('bab').has(made.plain!)).toBe(true)
     expect(reasonsOf('noChapter', 'bab')).toEqual(['no_chapter'])
-    expect(reasonsOf('groupA', 'bab')).toContain('has_stimulus')
+    expect(reasonsOf('groupA', 'bab')).not.toContain('has_stimulus') // T-C13: a complete group is served in Bab
   })
 
   it('simulasi_kuiz: the bank SQL draw plus the kuiz mapper keep exactly the served set (groups and pictures allowed, D90)', async () => {
@@ -586,9 +588,10 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       for (const k of ['groupA', 'groupB', 'stemImage', 'optionImage', 'plain']) expect(inScope.has(made[k]!), `${k} in ${activity} scope`).toBe(true)
       expect(inScope.has(made.structured!), `structured in ${activity} scope`).toBe(false)
     }
-    // Games stay out: the default (shipped) filter keeps the text-only ungrouped shape.
-    expect(filterOf('latih_tubi_spm').ungrouped).toBe(true)
-    expect(filterOf('latih_tubi_spm', {}, all).ungrouped).toBeUndefined()
+    // T-C13: the shipped default now lists the drills (QuizRunner shows the rajah); a list without them keeps the text-only ungrouped shape; games always do.
+    expect(filterOf('latih_tubi_spm').ungrouped).toBeUndefined()
+    expect(filterOf('latih_tubi_spm', {}, ['simulasi_paper', 'jana_kertas']).ungrouped).toBe(true)
+    expect(filterOf('permainan').ungrouped).toBe(true)
 
     // AC-QP-7: a group whose second member is only a draft is excluded whole, in the indicator and in the draw.
     const passage = await svc.createStimulus({ kind: 'passage', label: 'Petikan B', bodyMs: 'Teks petikan B.', bodyEn: null, altText: null, assetFileId: null })

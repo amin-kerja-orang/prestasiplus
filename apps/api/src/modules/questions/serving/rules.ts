@@ -13,9 +13,9 @@
  *  - Jana Kertas:                         `describeQuestion` of exam-core (the pool's base eligibility) plus the bridge.
  * The SQL half (counts, draws) is `filters.ts`; the parity spec proves both halves agree with the real draws.
  *
- * D105 (supersedes D87 U2 / D92-1): every drill (Databank, Latih Tubi SPM, Bab) serves figure questions and WHOLE stimulus groups.
- * Until the screen that renders them lands, a surface is listed in `GROUP_SURFACES` only when it can show a group; on the others
- * the practice bridge's text-only rule still holds and a question with a stimulus, a group or a picture is reported with the reason
+ * D105 (supersedes D87 U2 / D92-1): every drill (Databank, Latih Tubi SPM, Bab) serves figure questions and WHOLE stimulus groups (T-C13:
+ * `QuizRunner.vue` shows the stimulus panel, so the three drills are in `GROUP_SURFACES`). A surface NOT in `GROUP_SURFACES` (a test list)
+ * keeps the practice bridge's text-only rule and reports a question with a stimulus, a group or a picture with the reason
  * (`practiceShapeReasons`), not hidden. The surfaces the PRD excludes for good (Remedial, Misi, PKSK, games) are not activities here.
  */
 import { describeQuestion, type IneligibleReason } from '@pp/exam-core'
@@ -47,11 +47,11 @@ export const SERVABLE_STATUSES: readonly string[] = [SERVABLE_STATUS]
  * The surfaces that serve figure questions and whole stimulus groups (D105, S1-T06). On a surface in this set a question outside a
  * group, with or without a figure, and a member of a COMPLETE group are served (`wholeGroups`, whole-group predicate); on a surface
  * NOT in it the text-only practice shape holds and `has_stimulus` / `has_option_image` explain a refusal.
- * Starts as what already renders groups today: Bijak papers (`simulasi_paper`) and the Jana set (`jana_kertas`). S5-T03 adds
- * `latih_tubi_spm` and `bab` in the PR of its Part B (QuizRunner.vue), S3-T07 adds `databank` (one line each, cross-sector).
+ * T-C13 (S5-T03 Part B, D105): Bijak papers (`simulasi_paper`), the Jana set (`jana_kertas`) and the three practice drills
+ * `latih_tubi_spm`, `databank` and `bab` (the pupil runner `QuizRunner.vue` shows the stimulus panel and the figures).
  * `simulasi_kuiz` reads its own mapper and is not decided by this set. Games (`permainan`) are never in it (FR-X1-4e, 46 section 5.1).
  */
-export const GROUP_SURFACES: readonly ServabilityActivity[] = ['simulasi_paper', 'jana_kertas']
+export const GROUP_SURFACES: readonly ServabilityActivity[] = ['latih_tubi_spm', 'databank', 'bab', 'simulasi_paper', 'jana_kertas']
 
 /** Every INCLUDE surface of 46 section 5.1 among the six activities: what the unit tests run with. */
 export const ALL_GROUP_SURFACES: readonly ServabilityActivity[] = ['latih_tubi_spm', 'databank', 'bab', 'simulasi_paper', 'simulasi_kuiz', 'jana_kertas']

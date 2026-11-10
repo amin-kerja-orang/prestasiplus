@@ -3,6 +3,8 @@ import type { ServabilityActivity } from '@pp/contract'
 
 import { isIdString } from '../../../db/ids'
 import { mulberry32, type Prng } from '../../../db/prng'
+import { ownStimuliOf } from '../../bijak/kuiz/own-stimuli'
+import { FilesService } from '../../files'
 import { QuestionsRepository } from '../../questions'
 import { isBankVersion } from '../../questions/learner-visibility'
 import { GROUP_SURFACES, drawUnits, filterOf as servingFilterOf, type DrawCandidate } from '../../questions/serving'
@@ -11,6 +13,7 @@ import { UsersRepository } from '../../users'
 import type { PracticeDrillActivity, PracticeQuestion, PracticeQuestionSource, PracticeSelection } from '../ports'
 import { PRACTICE_GROUP_SURFACES, versionKey } from '../ports'
 import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practice-mapping'
+import { mediaFileIds, practiceMediaOf, type PracticeMedia } from './practice-media'
 
 const DRILLS: readonly PracticeDrillActivity[] = ['latih_tubi_spm', 'databank', 'bab']
 
@@ -56,6 +59,8 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(UsersRepository) private readonly users: UsersRepository,
     @Optional() @Inject(PRACTICE_GROUP_SURFACES) private readonly surfaces: readonly ServabilityActivity[] = GROUP_SURFACES,
+    /** T-C13: public tokens of the pictures a drill question shows. Absent (a unit test): a question with a picture is not served. */
+    @Optional() @Inject(FilesService) private readonly files?: Pick<FilesService, 'publicIdsOf'>,
   ) {}
 
   /** True when the drill is in the surface list: whole groups and figures are served and counted (D105). */
@@ -165,8 +170,8 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     if (wanted.length === 0) return new Map()
     if (this.allows(activity)) {
       // S1-T06: figures and whole groups. A member of a group with a member that cannot be served is dropped with the whole group.
-      const { records, groups } = await this.servableRecords(wanted, allowPrivate)
-      return this.mapServable([...records.values()], (r) => r.id, true, groups)
+      const { records, groups, media } = await this.servableRecords(wanted, allowPrivate)
+      return this.mapServable([...records.values()], (r) => r.id, true, groups, media)
     }
     const records = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r)))
     return this.mapAll(records, (r) => r.id)
@@ -183,7 +188,9 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     if (wanted.length === 0) return new Map()
     const records = await this.questions.getVersions(wanted)
     // Grading a version a session already served: once a drill joins the set it may have been served as a figure or a group member.
-    return this.mapAll(records, (r) => versionKey(r.id, r.version.versionNo), DRILLS.some((a) => this.allows(a)))
+    const figures = DRILLS.some((a) => this.allows(a))
+    // The group's stimuli are shared content (not versioned): read them now so a resumed session still shows its rajah.
+    return this.mapAll(records, (r) => versionKey(r.id, r.version.versionNo), figures, figures ? await this.groupUnitsOf(records) : new Map())
   }
 
   // --- internals ------------------------------------------------------------------------------------
@@ -209,7 +216,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
    * kept only when its WHOLE group is: every eligible member of the group must pass the shape check and the group must hold a
    * stimulus (the same rule as `wholeGroups` in SQL, plus the per-record shape), else the whole group is out.
    */
-  private async servableRecords(ids: readonly string[], allowPrivate = false): Promise<{ records: Map<string, QuestionRecord>; groups: Map<string, GroupUnit> }> {
+  private async servableRecords(ids: readonly string[], allowPrivate = false): Promise<{ records: Map<string, QuestionRecord>; groups: Map<string, GroupUnit>; media: Map<string, PracticeMedia | null> }> {
     const records = new Map<string, QuestionRecord>()
     const groups = new Map<string, GroupUnit>()
     const loaded: QuestionRecord[] = []
@@ -234,7 +241,19 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
       if (r.groupId !== null && !groups.has(r.groupId)) continue
       if (this.check(r, true)) records.set(r.id, r)
     }
-    return { records, groups }
+    // T-C13 (D105, D90): what a question must SHOW (rajah, figure, option pictures) has to be showable, else it is not served: the draw,
+    // the chapter page and `live` all see the same verdict. A group is judged with ALL its servable members, so one bad member drops the whole group.
+    const judged = new Map(records)
+    for (const u of groups.values()) for (const m of u.members) judged.set(m.id, m)
+    const media = await this.mediaOf([...judged.values()], groups)
+    for (const id of [...records.keys()]) if (media.get(id) == null) records.delete(id)
+    for (const [gid, u] of [...groups]) {
+      if (u.members.some((m) => media.get(m.id) == null)) {
+        groups.delete(gid)
+        for (const [id, r] of [...records]) if (r.groupId === gid) records.delete(id)
+      }
+    }
+    return { records, groups, media }
   }
 
   /** The `drawUnits` candidates of a window of ids: servable singles and the members of complete groups, each with its group size. */
@@ -283,23 +302,62 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return m.ok
   }
 
-  private mapAll(records: QuestionRecord[], keyOf: (r: QuestionRecord) => string, allowStimulus = false): Promise<Map<string, PracticeQuestion>> {
+  private mapAll(records: QuestionRecord[], keyOf: (r: QuestionRecord) => string, allowStimulus = false, groups: ReadonlyMap<string, GroupUnit> = new Map()): Promise<Map<string, PracticeQuestion>> {
     return this.mapServable(
       records.filter((r) => this.check(r, allowStimulus)),
       keyOf,
       allowStimulus,
-      new Map(),
+      groups,
     )
   }
 
-  private async mapServable(servable: QuestionRecord[], keyOf: (r: QuestionRecord) => string, allowStimulus: boolean, groups: ReadonlyMap<string, GroupUnit>): Promise<Map<string, PracticeQuestion>> {
+  /** The stimulus groups of `records` as they are stored (no narrowing: a pinned read keeps every member). */
+  private async groupUnitsOf(records: readonly QuestionRecord[]): Promise<Map<string, GroupUnit>> {
+    const ids = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
+    const out = new Map<string, GroupUnit>()
+    if (ids.length === 0) return out
+    for (const g of await this.questions.groupsByIds(ids)) out.set(g.id, { group: g, members: [] })
+    return out
+  }
+
+  private async mapServable(
+    servable: QuestionRecord[],
+    keyOf: (r: QuestionRecord) => string,
+    allowStimulus: boolean,
+    groups: ReadonlyMap<string, GroupUnit>,
+    known?: ReadonlyMap<string, PracticeMedia | null>,
+  ): Promise<Map<string, PracticeQuestion>> {
     const contributors = await this.contributorsOf(servable)
+    const media = known ?? (allowStimulus ? await this.mediaOf(servable, groups) : new Map<string, PracticeMedia | null>())
     const out = new Map<string, PracticeQuestion>()
     for (const r of servable) {
       const group = r.groupId === null ? null : (groups.get(r.groupId)?.group ?? null)
-      const q = toPracticeQuestion(r, r.createdById ? (contributors.get(r.createdById) ?? null) : null, { allowStimulus, group })
+      const m = media.get(r.id) ?? null
+      const q = allowStimulus && m === null ? null : toPracticeQuestion(r, r.createdById ? (contributors.get(r.createdById) ?? null) : null, { allowStimulus, group, media: m })
       if (q) out.set(keyOf(r), q)
     }
+    return out
+  }
+
+  /**
+   * T-C13 (D105, D90): the stimuli and picture URLs of each question (group stimuli once per member, own stimuli, option pictures), read in
+   * a few round trips for the whole batch. A question whose media cannot be shown maps to null, and so does every member of its group:
+   * a group is served whole or not at all.
+   */
+  private async mediaOf(records: readonly QuestionRecord[], groups: ReadonlyMap<string, GroupUnit>): Promise<Map<string, PracticeMedia | null>> {
+    const out = new Map<string, PracticeMedia | null>()
+    const groupOf = (r: QuestionRecord): StimulusGroupRecord | null => (r.groupId === null ? null : (groups.get(r.groupId)?.group ?? null))
+    const own = await ownStimuliOf(this.questions, records, new Map([...groups].map(([id, u]) => [id, u.group] as const)))
+    const fileIds = new Set<string>()
+    for (const r of records) for (const f of mediaFileIds(r, groupOf(r), own)) fileIds.add(f)
+    const tokens = fileIds.size === 0 || this.files === undefined ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
+    const badGroups = new Set<string>()
+    for (const r of records) {
+      const m = practiceMediaOf(r, groupOf(r), own, tokens)
+      out.set(r.id, m)
+      if (m === null && r.groupId !== null) badGroups.add(r.groupId)
+    }
+    for (const r of records) if (r.groupId !== null && badGroups.has(r.groupId)) out.set(r.id, null)
     return out
   }
 

@@ -114,7 +114,7 @@ describe('planner: group-ready', () => {
     expect(plan.served.map((q) => q.id)).toEqual(['s1', 's2', 's3', 's4', 's5'])
   })
 
-  it('revision, ramalan, mission and remedial stay text-only: they ask the source with NO drill surface, so a group member or a figure question is never served', async () => {
+  it('ramalan and mission stay text-only (no drill surface); remedial and the revision drill ask with the Bab surface, so a wrong figure or group question is drilled again WITH its rajah (T-C13, D105)', async () => {
     const calls: (PracticeDrillActivity | undefined)[] = []
     const figure = { ...question('f1'), stemImageId: 'F' } as PracticeQuestion
     const mixed = [question('t1'), question('g1', ['g1', 'g2']), question('g2', ['g1', 'g2']), figure, question('t2')]
@@ -137,16 +137,20 @@ describe('planner: group-ready', () => {
       linkedSessions: () => Promise.resolve([]),
       queue: () => Promise.resolve(all.map((questionId) => ({ questionId }))),
       weakTopicQuestionIds: () => Promise.resolve([]),
+      weakDimensions: () => Promise.resolve({ chapterIds: [], levelIds: [], answered: 0 }),
     }
     const p = new PracticeStartPlanner(curriculum as never, ports, repo as never, { trial: () => Promise.resolve({ active: false, remaining: 1 }) } as never)
 
     const ramalan = await p.plan('u', req({ mode: 'ramalan', subjectCode: 'ZZ', year: 2024, setNo: 1 }), now, false)
     const mission = await p.plan('u', req({ mode: 'mission', missionId: '5' }), now, false)
+    expect(calls).toEqual([undefined, undefined])
+    calls.length = 0
     const remedial = await p.plan('u', req({ mode: 'remedial', remedialTestId: '6' }), now, false)
-    // The fake source filters text-only itself, so what is asserted is the planner's call: every path asks with no drill surface (the real source then refuses groups and figures).
-    for (const plan of [ramalan, mission, remedial]) expect(plan.served.length).toBeGreaterThan(0)
     await new RemedialSelector(repo as never, ports).select('u', '1') // the auto revision drill and the remedial suggestions
-    expect(calls.length).toBeGreaterThanOrEqual(4)
-    expect(calls.every((a) => a === undefined)).toBe(true)
+    for (const plan of [ramalan, mission, remedial]) expect(plan.served.length).toBeGreaterThan(0)
+    // The remedial test and the revision drill carry the wrong figure / group questions with their rajah.
+    expect(remedial.served.map((q) => q.id)).toEqual(all)
+    expect(calls.length).toBeGreaterThanOrEqual(2)
+    expect(calls.every((a) => a === 'bab')).toBe(true)
   })
 })

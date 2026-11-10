@@ -104,7 +104,8 @@ export class RemedialSelector {
   async select(userId: string, subjectId: string): Promise<RemedialDrill> {
     const queue = await this.repo.queue(userId, { subjectId })
     // XL-19: only questions eligible for practice are served and counted.
-    const wrongLive = await this.ports.questions.live(queue.map((q) => q.questionId))
+    // T-C13 (D105): a wrong answer on a figure or group question is drilled again with its rajah (the member alone; the group stays whole in a draw).
+    const wrongLive = await this.ports.questions.live(queue.map((q) => q.questionId), 'bab')
     const wrong = queue.map((q) => wrongLive.get(q.questionId)).filter((q): q is PracticeQuestion => q !== undefined)
     const served = wrong.slice(0, REVISION_LENGTH)
     if (served.length < REVISION_LENGTH) {
@@ -113,7 +114,7 @@ export class RemedialSelector {
         (id) => !taken.has(id),
       )
       if (candidates.length > 0) {
-        const live = await this.ports.questions.live(candidates)
+        const live = await this.ports.questions.live(candidates, 'bab')
         for (const id of candidates) {
           if (served.length >= REVISION_LENGTH) break
           const q = live.get(id)
@@ -135,7 +136,7 @@ export class RemedialSelector {
     const take = async (ids: readonly string[]): Promise<void> => {
       const fresh = ids.filter((id) => !taken.has(id))
       if (fresh.length === 0) return
-      const live = await this.ports.questions.live(fresh)
+      const live = await this.ports.questions.live(fresh, 'bab')
       for (const id of fresh) {
         if (served.length >= REVISION_LENGTH) return
         const q = live.get(id)
@@ -409,7 +410,7 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, remedialTestId: req.remedialTestId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds)
+    const served = await this.serve(res.questionIds, 'bab')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, { subjectId: res.subjectId, remedialTestId: req.remedialTestId, served })
   }

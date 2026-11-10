@@ -25,7 +25,7 @@ import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
-import { GROUP_SURFACES, ServabilityService } from '../../src/modules/questions'
+import { ServabilityService } from '../../src/modules/questions'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -657,44 +657,65 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
   })
 
-  describe('5. the approved MCQs reach Databank and Latih Tubi SPM; grouped members do not (R1 U2)', () => {
+  describe('5. the approved MCQs reach Databank and Latih Tubi SPM; complete groups too, whole and with their rajah (D105, T-C13)', () => {
     const solos = () => [fx.soloA, fx.soloB, fx.soloC]
+    const members = () => [...fx.imageMembers, ...fx.passageMembers]
+    type Served = { id: string; stimuli?: { kind: string; image?: { url: string }; text?: string }[]; group?: { id: string; index: number; size: number } | null }
 
-    it('Databank and Latih Tubi SPM count exactly the solo MCQs (grouped members and the essay are not counted)', async () => {
+    /** Every member of a group carries the rajah and its place; the members are contiguous. */
+    const expectWholeGroups = (qs: Served[]): void => {
+      for (const memberId of members()) {
+        const q = qs.find((x) => x.id === memberId)
+        expect(q, `member ${memberId} is served`).toBeDefined()
+        expect(q?.stimuli?.length, `member ${memberId} carries the rajah`).toBeGreaterThan(0)
+        expect(q?.group?.id).toBeTruthy()
+      }
+      const byGroup = new Map<string, number[]>()
+      qs.forEach((q, i) => {
+        if (q.group) byGroup.set(q.group.id, [...(byGroup.get(q.group.id) ?? []), i])
+      })
+      expect(byGroup.size).toBe(2)
+      for (const [gid, at] of byGroup) {
+        expect(at.at(-1)! - at[0]! + 1, `group ${gid} is contiguous`).toBe(at.length)
+        const placed = at.map((i) => qs[i]!.group!)
+        expect(placed.map((g) => g.index), `group ${gid} is in order`).toEqual(placed.map((_, i) => i + 1))
+        expect(placed.every((g) => g.size === at.length)).toBe(true)
+      }
+    }
+
+    it('Databank and Latih Tubi SPM count the solo MCQs plus each complete group once (the essay is not counted)', async () => {
       const databank = await pupil.get('/api/spm/databank')
       expect(databank.status, JSON.stringify(databank.body)).toBe(200)
-      expect((databank.body.data as { code: string; databankCount: number }[]).find((d) => d.code === 'MATH')?.databankCount).toBe(solos().length)
+      expect((databank.body.data as { code: string; databankCount: number }[]).find((d) => d.code === 'MATH')?.databankCount).toBe(solos().length + 2)
       const lt = await pupil.get('/api/spm/latih-tubi/MATH')
       expect(lt.status, JSON.stringify(lt.body)).toBe(200)
-      // Latih Tubi counts what its draw serves (D91): solos, plus the two complete groups once each when the surface serves groups (GROUP_SURFACES).
-      expect(lt.body.data.total).toBe(solos().length + (GROUP_SURFACES.includes('latih_tubi_spm') ? 2 : 0))
+      // Latih Tubi counts what its draw serves (D91): solos, plus the two complete groups once each.
+      expect(lt.body.data.total).toBe(solos().length + 2)
     })
 
-    it('a Latih Tubi SPM session draws the solo MCQs and NONE of the D90 group members (explicit refusal)', async () => {
+    it('a Latih Tubi SPM session serves the solo MCQs and the WHOLE groups, each member with its rajah, in order; never the essay', async () => {
       const res = await pupil.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 40 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const served = (res.body.data.questions as { id: string }[]).map((q) => q.id).sort()
-      expect(served).toEqual(solos().sort())
-      for (const member of [...fx.imageMembers, ...fx.passageMembers]) expect(served).not.toContain(member)
-      expect(served).not.toContain(fx.essay)
+      const qs = res.body.data.questions as Served[]
+      expect(qs.map((q) => q.id).sort()).toEqual([...solos(), ...members()].sort())
+      expect(qs.map((q) => q.id)).not.toContain(fx.essay)
+      expectWholeGroups(qs)
     })
 
-    it('a Databank (Tahun Lepas) session draws the same set', async () => {
+    it('a Databank (Tahun Lepas) session serves the same set', async () => {
       const res = await pupil.post('/api/practice/sessions', { mode: 'past_year', subjectCode: 'MATH', count: 10 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const served = (res.body.data.questions as { id: string }[]).map((q) => q.id).sort()
-      expect(served).toEqual(solos().sort())
+      const qs = res.body.data.questions as Served[]
+      expect(qs.map((q) => q.id).sort()).toEqual([...solos(), ...members()].sort())
+      expectWholeGroups(qs)
     })
 
-    it('"Buka Soalan Sama" on a grouped member is refused (422), on a solo MCQ it opens', async () => {
+    it('"Buka Soalan Sama" on a grouped member is refused (422: a group is never served split), on a solo MCQ it opens', async () => {
       const refused = await pupil.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 1, targetQuestionId: fx.passageMembers[0] })
       expect(refused.status, JSON.stringify(refused.body)).toBe(422)
       const opened = await pupil.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 1, targetQuestionId: fx.soloA })
       expect(opened.status, JSON.stringify(opened.body)).toBe(201)
     })
-
-    // R1 U2 / R2: serving group members together with their stimulus in Databank / Latih Tubi is R2 (D90 in the practice family).
-    it.todo('R2: grouped members appear in Databank / Latih Tubi SPM WITH their stimulus (today they are refused: ungrouped filter)')
   })
 
   // R1-20.4 / AC-18.1 / AC-18.3 / AC-18.4 (T51): each applicable activity serves exactly what its rule says, and the admin reason for an exclusion
@@ -711,13 +732,12 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz', 'simulasi_paper']) expect(v[a], a).toMatchObject({ served: true, reasons: [] })
     })
 
-    it('a stimulus-group member is served in Simulasi only: Databank / Latih Tubi SPM refuse it with the reason has_stimulus (AC-18.3, D87 U2)', async () => {
+    it('a stimulus-group member is served in Simulasi AND in Databank / Latih Tubi SPM (D105, T-C13: whole groups in the drills; the old has_stimulus refusal is gone)', async () => {
       const v = await activities(fx.passageMembers[0]!)
       expect(v.simulasi_paper).toMatchObject({ served: true })
       for (const a of ['databank', 'latih_tubi_spm']) {
-        expect(v[a]!.served, a).toBe(false)
-        expect(v[a]!.reasons.map((r) => r.code), a).toContain('has_stimulus')
-        expect(v[a]!.reasons[0]!.message.length, a).toBeGreaterThan(10)
+        expect(v[a]!.reasons.map((r) => r.code), a).not.toContain('has_stimulus')
+        expect(v[a]!.reasons.map((r) => r.code), a).not.toContain('has_option_image')
       }
     })
 

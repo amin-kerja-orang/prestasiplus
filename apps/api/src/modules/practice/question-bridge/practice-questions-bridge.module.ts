@@ -1,5 +1,6 @@
 import { Inject, Logger, Module, type OnModuleInit } from '@nestjs/common'
 
+import { FilesModule } from '../../files'
 import { QuestionsModule } from '../../questions'
 import { UsersModule } from '../../users'
 import { PracticeModule } from '../practice.module'
@@ -13,7 +14,7 @@ import { Be09PracticeQuestionSource } from './be09-practice-question-source'
  * bound (a test fake plugged in before `app.init()`) is left as it is and logged, never overwritten.
  */
 @Module({
-  imports: [QuestionsModule, UsersModule, PracticeModule],
+  imports: [QuestionsModule, UsersModule, FilesModule, PracticeModule],
   providers: [Be09PracticeQuestionSource],
   exports: [Be09PracticeQuestionSource],
 })
