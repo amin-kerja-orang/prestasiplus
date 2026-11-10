@@ -431,7 +431,7 @@ describe('S5 ROI and insights (AC-M12-24.1 ... 24.3)', () => {
   it('shows the three insight sentences (DV-M12-13 "(22.8%)") and the disclaimer', async () => {
     const { wrapper: w } = await open()
     expect(all(w, 'insight-row').map((r) => squash(r.text()))).toEqual([
-      'Hanya 946 daripada 4,158 pelajar T4/T5 (22.8%) menggunakan platform. Data perbandingan terhad kepada pelajar aktif sahaja.',
+      'Hanya 946 daripada 4,158 pelajar (22.8%) menggunakan platform. Data perbandingan terhad kepada pelajar aktif sahaja.',
       'Purata ketepatan pelajar aktif dalam platform: 83%. Ini bersamaan anggaran gred A.',
       'GPS keseluruhan dari headcount (tahun 2025): 4.30. Trend menunjukkan peningkatan dari tahun ke tahun.',
     ])

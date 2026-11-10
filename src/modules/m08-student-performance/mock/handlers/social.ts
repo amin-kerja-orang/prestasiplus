@@ -10,7 +10,6 @@ import {
   int,
   notFound,
   ok,
-  queryInt,
   queryString,
   requireAuth,
   route,
@@ -33,7 +32,7 @@ import type {
 } from '../../api/types'
 import { PRACTICE_MODE_SET } from '../repository/reads'
 import { capPercent, pct, round } from '../repository/rules'
-import { PERIODS, leaderboardOf, rankingOf, type RankingQuery } from '../repository/social'
+import { PERIODS, kedudukanOf, leaderboardOf } from '../repository/social'
 import { activityRepo, timelineRepo } from '../repository/stores'
 import type { TimelinePostRow } from '../repository/types'
 import { viewerOf } from './common'
@@ -257,16 +256,14 @@ export const socialRoutes: RouteDef[] = [
 
   route('GET', '/api/rankings', [requireAuth()], (req) => {
     const viewer = viewerOf(req)
-    const query: RankingQuery = {}
-    const scope = queryString(req.query, 'scope')
-    const subjectId = queryInt(req.query, 'subjectId')
-    const tingkatan = queryString(req.query, 'tingkatan')
-    const negeri = queryString(req.query, 'negeri')
-    if (scope !== undefined) query.scope = scope
-    if (subjectId !== undefined) query.subjectId = subjectId
-    if (tingkatan !== undefined && tingkatan !== '') query.tingkatan = tingkatan
-    if (negeri !== undefined && negeri !== '') query.negeri = negeri
-    return ok(rankingOf(query, viewer.schoolId))
+    return ok(
+      kedudukanOf({
+        id: viewer.id,
+        role: viewer.role,
+        schoolId: viewer.schoolId,
+        name: viewer.user.name,
+      }),
+    )
   }),
 
   route('GET', '/api/leaderboard', [requireAuth()], (req, ctx) => {

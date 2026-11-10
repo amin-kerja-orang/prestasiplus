@@ -5,6 +5,7 @@ import { NOW } from './fixtures'
 import { InMemoryClasses } from './in-memory-classes'
 import { InMemoryDirectory } from './in-memory-directory'
 import { InMemoryGamification } from './in-memory-gamification'
+import { InMemoryKedudukan } from './in-memory-kedudukan'
 import { InMemoryPracticeRead } from './in-memory-practice-read'
 
 export interface SocialWorld {
@@ -12,6 +13,7 @@ export interface SocialWorld {
   classes: InMemoryClasses
   practice: InMemoryPracticeRead
   gamification: InMemoryGamification
+  kedudukan: InMemoryKedudukan
   ports: PerformancePorts
   clock: FixedClock
   ranking: RankingService
@@ -29,6 +31,7 @@ export function socialWorld(): SocialWorld {
   const classes = new InMemoryClasses()
   const practice = new InMemoryPracticeRead()
   const gamification = new InMemoryGamification()
+  const kedudukan = new InMemoryKedudukan()
   const ports = new PerformancePorts(undefined, classes, practice, gamification)
   const clock = new FixedClock(NOW)
   return {
@@ -36,9 +39,10 @@ export function socialWorld(): SocialWorld {
     classes,
     practice,
     gamification,
+    kedudukan,
     ports,
     clock,
-    ranking: new RankingService(ports, directory),
+    ranking: new RankingService(kedudukan),
     board: new LeaderboardService(ports, clock, directory),
     profile: new PublicProfileService(ports, directory, clock),
     weekly: new WeeklyReportService(ports, clock, {} as never),

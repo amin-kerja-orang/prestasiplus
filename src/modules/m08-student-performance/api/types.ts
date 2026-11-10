@@ -466,23 +466,29 @@ export interface PublicProfile {
 // #21, #22 Ranking and leaderboard (S19, S20)
 // ---------------------------------------------------------------------------------------------
 
-export type RankingScope = 'nasional' | 'negeri' | 'daerah' | 'sekolah'
+export type KedudukanScope = 'kelas' | 'sekolah' | 'negeri' | 'kebangsaan'
 
+/** One row of "Sekitar anda"; the pupil's own row has `me` (the "ANDA" marker); others are a first name only. */
+export interface KedudukanNearby {
+  rank: number
+  name: string
+  syiling: number
+  me: boolean
+}
+
+/** The pupil's rank in one scope; rank, total and percentile are null for "Belum tersedia" (no state). */
+export interface KedudukanScopeCard {
+  scope: KedudukanScope
+  rank: number | null
+  total: number | null
+  percentile: number | null
+  nearby: KedudukanNearby[]
+}
+
+/** #21 `GET /api/rankings` (S19 Kedudukan, R1-MUR-18, API-RPT-13): no scopes means no standing. */
 export interface Ranking {
-  scope: RankingScope | null
-  title: string
-  showFooter: boolean
-  states: string[]
-  rows: {
-    rank: number
-    userId: number | null
-    name: string
-    schoolName: string
-    tahap: number
-    correct: number
-    accuracy: number
-  }[]
-  total: number
+  syiling: number
+  scopes: KedudukanScopeCard[]
 }
 
 export type LeaderboardPeriod = 'all' | 'week' | 'month'

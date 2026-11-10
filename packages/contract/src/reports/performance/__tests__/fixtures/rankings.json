@@ -1,38 +1,65 @@
 {
-  "scope": "nasional",
-  "title": "Kedudukan Nasional",
-  "showFooter": true,
-  "states": [
-    "Selangor"
-  ],
-  "rows": [
+  "syiling": 374,
+  "scopes": [
     {
-      "rank": 1,
-      "userId": null,
-      "name": "Nur Aina Demo",
-      "schoolName": "SMK DEMO",
-      "tahap": 8,
-      "correct": 2223,
-      "accuracy": 93.48
-    },
-    {
+      "scope": "kelas",
       "rank": 2,
-      "userId": null,
-      "name": "Adam Firdaus Demo",
-      "schoolName": "SMK DEMO",
-      "tahap": 10,
-      "correct": 5293,
-      "accuracy": 83.79
+      "total": 30,
+      "percentile": 7,
+      "nearby": [
+        {
+          "rank": 1,
+          "name": "Aina",
+          "syiling": 400,
+          "me": false
+        },
+        {
+          "rank": 2,
+          "name": "Murid Contoh",
+          "syiling": 374,
+          "me": true
+        },
+        {
+          "rank": 3,
+          "name": "Bakar",
+          "syiling": 300,
+          "me": false
+        }
+      ]
     },
     {
-      "rank": 3,
-      "userId": null,
-      "name": "Siti Hajar Demo",
-      "schoolName": "SMK DEMO",
-      "tahap": 10,
-      "correct": 17612,
-      "accuracy": 89.94
+      "scope": "sekolah",
+      "rank": 406,
+      "total": 864,
+      "percentile": 47,
+      "nearby": [
+        {
+          "rank": 405,
+          "name": "Chong",
+          "syiling": 375,
+          "me": false
+        },
+        {
+          "rank": 406,
+          "name": "Murid Contoh",
+          "syiling": 374,
+          "me": true
+        }
+      ]
+    },
+    {
+      "scope": "negeri",
+      "rank": null,
+      "total": null,
+      "percentile": null,
+      "nearby": []
+    },
+    {
+      "scope": "kebangsaan",
+      "rank": 2141,
+      "total": 4806,
+      "percentile": 45,
+      "nearby": []
     }
-  ],
-  "total": 3
+  ]
 }

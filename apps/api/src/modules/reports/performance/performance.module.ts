@@ -7,7 +7,7 @@ import { FilesModule } from '../../files'
 import { SchoolsModule } from '../../schools'
 import { UsersModule } from '../../users'
 import { XsQueries } from '../../school-admin/xs-queries'
-import { UsersDirectoryAdapter, XsPupilRosterAdapter } from './adapters'
+import { KedudukanRepository, UsersDirectoryAdapter, XsPupilRosterAdapter } from './adapters'
 import { HeadcountFactsService } from './headcount/headcount-facts.service'
 import { HeadcountController } from './headcount/headcount.controllers'
 import { HeadcountRepository } from './headcount/headcount.repository'
@@ -16,7 +16,7 @@ import { GuruWeeklyReportController } from './http/guru-weekly-report.controller
 import { CtxFactory } from './http/request'
 import { AnalyticsController, ItemAnalysisController, PerformanceController } from './http/performance.controllers'
 import { PublicStudentController, SocialController } from './http/social.controllers'
-import { PerformancePorts, DIRECTORY_PORT, PUPIL_ROSTER_PORT, TIMELINE_READ_PORT, XS_COUNTS_PORT } from './ports'
+import { PerformancePorts, DIRECTORY_PORT, KEDUDUKAN_PORT, PUPIL_ROSTER_PORT, TIMELINE_READ_PORT, XS_COUNTS_PORT } from './ports'
 import {
   AnalyticsService,
   ClassPerformanceService,
@@ -52,6 +52,8 @@ import { TimelineService } from './timeline/timeline.service'
     XsQueries,
     { provide: XS_COUNTS_PORT, useExisting: XsQueries },
     { provide: PUPIL_ROSTER_PORT, useClass: XsPupilRosterAdapter },
+    // R1-MUR-18 Kedudukan: rank by the current wallet balance.
+    { provide: KEDUDUKAN_PORT, useClass: KedudukanRepository },
     CtxFactory,
     StatsService,
     AnalyticsService,

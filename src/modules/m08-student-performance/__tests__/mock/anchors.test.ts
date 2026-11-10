@@ -697,39 +697,32 @@ describe('S16 – S18 timeline and public profile', () => {
 })
 
 describe('S19 Kedudukan', () => {
-  it('lists the three observed ranked students by Betul ascending', async () => {
-    const r = await get<Ranking>(ADMIN, '/api/rankings')
-    expect(r).toMatchObject({
-      scope: 'nasional',
-      title: 'Kedudukan Nasional',
-      showFooter: true,
-      total: 3,
-    })
-    expect(r.rows.map((x) => [x.rank, x.name, x.tahap, x.correct, x.accuracy])).toEqual([
-      [1, 'Nur Aina Demo', 8, 2223, 93.48],
-      [2, 'Adam Firdaus Demo', 10, 5293, 83.79],
-      [3, 'Siti Hajar Demo', 10, 17612, 89.94],
-    ])
-    expect(r.states).toEqual(['Selangor'])
+  it('ranks the pupil by wallet syiling; Sekitar anda holds the own row once with consecutive ranks', async () => {
+    const r = await get<Ranking>(2, '/api/rankings')
+    const school = r.scopes.find((x) => x.scope === 'sekolah')
+    const nation = r.scopes.find((x) => x.scope === 'kebangsaan')
+    expect(r.syiling).toBeGreaterThanOrEqual(0)
+    expect(school?.rank).toBeGreaterThanOrEqual(1)
+    expect(school?.total).toBeGreaterThanOrEqual(school?.rank ?? 0)
+    expect(nation?.total).toBeGreaterThanOrEqual(school?.total ?? 0)
+    const mine = nation?.nearby.filter((n) => n.me) ?? []
+    expect(mine).toHaveLength(1)
+    expect(mine[0]).toMatchObject({ rank: nation?.rank, syiling: r.syiling })
+    const ranks = nation?.nearby.map((n) => n.rank) ?? []
+    expect(ranks).toEqual(ranks.map((_, i) => (ranks[0] ?? 0) + i))
+    expect(nation?.nearby.length).toBeLessThanOrEqual(5)
+    expect((nation?.nearby ?? []).filter((n) => !n.me).every((n) => !n.name.includes(' '))).toBe(true)
   })
 
-  it('Matematik figures in list order; negeri without a state is empty; unknown scope has no footer', async () => {
-    const m = await get<Ranking>(ADMIN, '/api/rankings?subjectId=3')
-    expect(m.rows.map((x) => [x.tahap, x.correct, x.accuracy])).toEqual([
-      [4, 128, 48.85],
-      [7, 530, 35.5],
-      [8, 889, 99.78],
-    ])
-    const neg = await get<Ranking>(ADMIN, '/api/rankings?scope=negeri')
-    expect(neg).toMatchObject({ rows: [], total: 0, title: 'Kedudukan Negeri', showFooter: false })
-    const sel = await get<Ranking>(ADMIN, '/api/rankings?scope=negeri&negeri=Selangor')
-    expect(sel.title).toBe('Kedudukan Selangor')
-    expect(sel.rows).toHaveLength(3)
-    const unk = await get<Ranking>(ADMIN, '/api/rankings?scope=xyz')
-    expect(unk).toMatchObject({ scope: null, title: 'Kedudukan Nasional', showFooter: false })
-    expect(unk.rows).toHaveLength(3)
-    const t4 = await get<Ranking>(ADMIN, '/api/rankings?tingkatan=T4')
-    expect(t4.rows).toEqual([])
+  it('negeri has no state in the mock: "Belum tersedia" (all null)', async () => {
+    const r = await get<Ranking>(2, '/api/rankings')
+    expect(r.scopes.find((x) => x.scope === 'negeri')).toEqual({
+      scope: 'negeri',
+      rank: null,
+      total: null,
+      percentile: null,
+      nearby: [],
+    })
   })
 })
 

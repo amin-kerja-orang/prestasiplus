@@ -1,80 +1,43 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  accuracyClass,
-  activeScope,
-  apiQuery,
-  formQuery,
-  readRankingState,
-  scopeLabel,
-  scopeQuery,
-  tabTitle,
-} from '../../lib/ranking'
+import type { KedudukanScopeCard } from '../../api/types'
+import { SCOPE_META, nearbyCard, rankSub, rankText } from '../../lib/ranking'
 
-const state = (q: Record<string, string>) => readRankingState(q)
-
-describe('S19 scope and title (FR-M08-108, DV-22)', () => {
-  it('labels each scope and defaults to Nasional', () => {
-    expect(scopeLabel(state({}))).toBe('Nasional')
-    expect(scopeLabel(state({ scope: 'nasional' }))).toBe('Nasional')
-    expect(scopeLabel(state({ scope: 'negeri' }))).toBe('Negeri')
-    expect(scopeLabel(state({ scope: 'daerah' }))).toBe('Daerah')
-    expect(scopeLabel(state({ scope: 'sekolah' }))).toBe('Sekolah')
-  })
-
-  it('uses the negeri value on the negeri scope only', () => {
-    expect(scopeLabel(state({ scope: 'negeri', negeri: 'Selangor' }))).toBe('Selangor')
-    expect(tabTitle(state({ scope: 'negeri', negeri: 'Selangor' }))).toBe('Kedudukan Selangor')
-    expect(scopeLabel(state({ scope: 'daerah', negeri: 'Selangor' }))).toBe('Daerah')
-    expect(scopeLabel(state({ scope: 'nasional', negeri: 'Selangor' }))).toBe('Nasional')
-  })
-
-  it('treats an unknown scope as Nasional with no pill active', () => {
-    expect(activeScope('xyz')).toBeNull()
-    expect(scopeLabel(state({ scope: 'xyz' }))).toBe('Nasional')
-    expect(tabTitle(state({ scope: 'xyz' }))).toBe('Kedudukan Nasional')
-    expect(activeScope('')).toBe('nasional')
-  })
+const card = (over: Partial<KedudukanScopeCard>): KedudukanScopeCard => ({
+  scope: 'sekolah',
+  rank: 1,
+  total: 1,
+  percentile: 100,
+  nearby: [],
+  ...over,
 })
 
-describe('S19 query strings (FR-M08-109, FR-M08-110)', () => {
-  const filters = { subjectId: '3', tingkatan: '', negeri: 'Selangor' }
-
-  it('keeps the non-empty filters on the pills, then the scope', () => {
-    const q = scopeQuery(filters, 'daerah')
-    expect(Object.entries(q)).toEqual([
-      ['subject_id', '3'],
-      ['negeri', 'Selangor'],
-      ['scope', 'daerah'],
+describe('Kedudukan helpers (R1-MUR-18)', () => {
+  it('card titles', () => {
+    expect(Object.values(SCOPE_META).map((m) => m.label)).toEqual([
+      'Dalam kelas',
+      'Dalam sekolah',
+      'Dalam negeri',
+      'Kebangsaan',
     ])
-    expect(scopeQuery({ subjectId: '', tingkatan: '', negeri: '' }, 'negeri')).toEqual({
-      scope: 'negeri',
-    })
   })
 
-  it('submits the hidden scope first (the native GET form) and drops empty selects', () => {
-    expect(Object.keys(formQuery(filters, 'negeri'))).toEqual(['scope', 'subject_id', 'negeri'])
+  it('rank texts: grouped digits; without a rank no value and "Belum tersedia"', () => {
+    expect(rankText(card({ rank: 2141 }))).toBe('#2,141')
+    expect(rankText(card({ rank: null }))).toBeNull()
+    expect(rankSub(card({ total: 864, percentile: 47 }))).toBe('/ 864 · Kumpulan 47% teratas')
+    expect(rankSub(card({ total: null, percentile: null }))).toBe('Belum tersedia')
   })
 
-  it('maps the URL to the client query', () => {
-    expect(apiQuery(state({}))).toEqual({})
-    expect(
-      apiQuery(state({ scope: 'negeri', subject_id: '3', tingkatan: 'T4', negeri: 'Johor' })),
-    ).toEqual({
-      scope: 'negeri',
-      subjectId: 3,
-      tingkatan: 'T4',
-      negeri: 'Johor',
-    })
-    expect(apiQuery(state({ subject_id: 'abc' }))).toEqual({})
-  })
-})
-
-describe('S19 accuracy colour (FR-M08-112)', () => {
-  it('is green from 50 and red below', () => {
-    expect(accuracyClass(50)).toBe('text-success')
-    expect(accuracyClass(93.48)).toBe('text-success')
-    expect(accuracyClass(49.99)).toBe('text-error')
-    expect(accuracyClass(35.5)).toBe('text-error')
+  it('"Sekitar anda" follows the class, else the school, else the nation; negeri never', () => {
+    const k = card({ scope: 'kelas' })
+    const s = card({ scope: 'sekolah' })
+    const n = card({ scope: 'negeri' })
+    const b = card({ scope: 'kebangsaan' })
+    expect(nearbyCard([s, n, b, k])?.scope).toBe('kelas')
+    expect(nearbyCard([s, n, b])?.scope).toBe('sekolah')
+    expect(nearbyCard([n, b])?.scope).toBe('kebangsaan')
+    expect(nearbyCard([card({ scope: 'negeri', rank: null })])).toBeNull()
+    expect(nearbyCard([])).toBeNull()
   })
 })

@@ -841,36 +841,36 @@ export const PerformancePublicProfileSchema = z
   })
   .meta({ id: 'PerformancePublicProfile' })
 
-export const PerformanceRankingQuerySchema = z
+/** One row of "Sekitar anda": the pupil's own row has `me` true (the "ANDA" marker); other pupils are a first name only. */
+export const PerformanceKedudukanNearbySchema = z
   .object({
-    scope: z.string().optional().meta({
-      description:
-        'nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered.',
-    }),
-    subjectId: IdSchema.optional(),
-    tingkatan: z.string().optional().meta({ description: 'T4 or T5.' }),
-    negeri: z.string().optional().meta({ description: 'State name; used when scope = negeri.' }),
+    rank: count,
+    name: z.string(),
+    syiling: count,
+    me: z.boolean(),
   })
-  .meta({ id: 'PerformanceRankingQuery' })
+  .meta({ id: 'PerformanceKedudukanNearby' })
+
+/**
+ * Kedudukan (R1-MUR-18, API-RPT-13): the pupil's rank in each applicable scope by the current wallet balance. A scope that
+ * does not apply is absent (no class: no kelas; no school: no sekolah and no negeri). A pupil in a school whose state is
+ * unknown has the negeri entry with rank, total and percentile null ("Belum tersedia"). `nearby` is up to 2 pupils
+ * above, the own row and up to 2 below (5 rows at most), in the same order as the rank.
+ */
+export const PerformanceKedudukanScopeSchema = z
+  .object({
+    scope: z.enum(['kelas', 'sekolah', 'negeri', 'kebangsaan']),
+    rank: count.nullable(),
+    total: count.nullable(),
+    percentile: count.nullable(),
+    nearby: z.array(PerformanceKedudukanNearbySchema).max(5),
+  })
+  .meta({ id: 'PerformanceKedudukanScope' })
 
 export const PerformanceRankingSchema = z
   .object({
-    scope: z.enum(['nasional', 'negeri', 'daerah', 'sekolah']).nullable(),
-    title: z.string(),
-    showFooter: z.boolean(),
-    states: z.array(z.string()),
-    rows: z.array(
-      z.object({
-        rank: z.number().int(),
-        userId: IdSchema.nullable(),
-        name: z.string(),
-        schoolName: z.string(),
-        tahap: count,
-        correct: count,
-        accuracy: pct,
-      }),
-    ),
-    total: count,
+    syiling: count,
+    scopes: z.array(PerformanceKedudukanScopeSchema),
   })
   .meta({ id: 'PerformanceRanking' })
 

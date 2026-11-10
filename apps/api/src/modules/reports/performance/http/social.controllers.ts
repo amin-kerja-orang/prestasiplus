@@ -1,5 +1,5 @@
 import { Controller, Get, Inject, Param, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
-import { PerformanceLeaderboardQuerySchema, PerformanceRankingQuerySchema } from '@pp/contract'
+import { PerformanceLeaderboardQuerySchema } from '@pp/contract'
 import type { Request } from 'express'
 
 import { Public } from '../../../../common/guards/decorators'
@@ -12,7 +12,6 @@ import {
   PublicProfileService,
   RankingService,
   WeeklyReportService,
-  type RankingQueryInput,
 } from '../services'
 import { BoundedQueryPipe, CtxFactory, overloadTo429, SafeIdPipe } from './request'
 
@@ -47,12 +46,10 @@ export class SocialController {
     @Inject(CtxFactory) private readonly ctx: CtxFactory,
   ) {}
 
+  /** Kedudukan (R1-MUR-18, API-RPT-13): no query; the viewer comes from the session only. */
   @Get('rankings')
-  async ranking(
-    @Query(new BoundedQueryPipe(), new ZodValidationPipe(PerformanceRankingQuerySchema)) query: RankingQueryInput,
-    @Req() req: Req,
-  ) {
-    return ok(await overloadTo429(async () => this.rankings.rankings(await this.ctx.of(req), query)))
+  async ranking(@Req() req: Req) {
+    return ok(await overloadTo429(async () => this.rankings.rankings(await this.ctx.of(req))))
   }
 
   @Get('leaderboard')
