@@ -28,10 +28,10 @@ Setiap baris mesti lulus dengan bukti sebenar (output ujian, laporan recon, tang
 | KP-2 | Data V2: ganti penuh (DB UAT dibina semula) | Diputuskan 10 Nov |
 | KP-3 | `OCR_ENGINE=tesseract` di UAT | Diputuskan 10 Nov |
 | KP-4 | Had muat naik 32 MB / 336 MB | Diputuskan 10 Nov |
-| KP-5 | Skop bank soalan: 43,165 diarkib + 155 draf; soalan berstruktur/subjektif; set SPM V2 | **Terbuka** (perlu sebelum T-B9, T-B10) |
-| KP-6 | Nilai hadiah V2 (Q8) untuk `gifts` dan tebusan | **Terbuka** (perlu sebelum T-B8) |
-| KP-7 | Kata laluan lalai akaun roster (`PP_MIGRATE_ROSTER_DEFAULT_HASHES`): paksa tukar kata laluan atau kekal | **Terbuka** (perlu sebelum T-B5) |
-| KP-8 | V2 selepas cutover: dibekukan, diubah hala, atau terus hidup (perubahan selepas dump hilang) | **Terbuka** (perlu sebelum Fasa 5) |
+| KP-5 | Skop bank soalan: 43,165 diarkib + 155 draf; soalan berstruktur/subjektif; set SPM V2 | Diputuskan 10 Nov: bawa semua yang tidak dipadam (diarkib dan draf kekal statusnya); V3 menyambung pengurusan V2 |
+| KP-6 | Nilai hadiah V2 (Q8) untuk `gifts` dan tebusan | Ditutup: guna nilai V2 sendiri (gifts.price_token dan lain-lain), tiada input PO |
+| KP-7 | Kata laluan lalai akaun roster (`PP_MIGRATE_ROSTER_DEFAULT_HASHES`): paksa tukar kata laluan atau kekal | Diputuskan 10 Nov: kekal, tiada paksaan tukar kata laluan |
+| KP-8 | V2 selepas cutover: dibekukan, diubah hala, atau terus hidup (perubahan selepas dump hilang) | Di luar skop (PO): peralihan V2 bukan tugas ini; sasaran ialah UAT V3 dengan DB V2 diklon |
 | KP-9 | Notis downtime kepada pengguna UAT dan tetingkap deploy | **Terbuka** (Fasa 5) |
 | KP-10 | Lulus push branch ke origin | **Terbuka** (Fasa 5) |
 | KP-11 | Soalan rajah/berstimulus dalam latihan murid ikut Bab (T-C13): bina sekarang atau tangguh | Bina: V2 papar gambar soalan dalam latihan murid (latih-tubi/quiz.blade.php), jadi ini pariti V2 |
@@ -74,11 +74,11 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | T-B2 | Tambah ~10 jadual produksi V2 yang tiada dalam spec staging (senarai dari skema produksi, baca sahaja) | backend-developer | T-B1 | 0.5 | ✅ | spec staging 134 jadual (89+45), +7 jadual (6 Laravel runtime + school_battle_rankings); staging_cloud.sql dan fixture tiny dijana semula |
 | T-B3 | Dump V2 baharu (baca sahaja, ikut `docs/ops/cloud-dump-procedure.md`, data sebenar tanpa anonimisasi); simpan di luar repo, disulitkan/berhad, padam selepas cutover | devops-engineer | T-B2 | 0.5 | 🔄 | |
 | T-B4 | `staging:load` + `staging:profile` lokal; luaskan peta enum, senarai yatim dan pendua; laporan profil | backend-developer | T-B3 | 0.5 | ⬜ | |
-| T-B5 | Pengguna: peranan `agent` dan `jpn_officer`; terbit `grade` dari teks `kelas` V2 (aturan dipersetujui); pengendalian hash roster (KP-7); pendua e-mel | backend-developer | T-B4, KP-7 | 1 | ⬜ | |
+| T-B5 | Pengguna: peranan `agent` dan `jpn_officer`; terbit `grade` dari teks `kelas` V2 (aturan dipersetujui); pengendalian hash roster (KP-7); pendua e-mel | backend-developer | T-B4 | 1 | ⬜ | |
 | T-B6 | Kandungan: baiki tolakan artikel (92), nota (10), tiket (3); salin fail kandungan (banner, artikel, nota, audio) dengan manifest `SHA256SUMS` | backend-developer | T-B4 | 1 | ⬜ | |
 | T-B7 | Kelas guru (20 tidak layak), sesi/jawapan/dompet yatim (227 / 1,965 / 527), headcount (12): muat atau rekod sebab yang dipersetujui | backend-developer | T-B4 | 1 | ⬜ | |
-| T-B8 | Gamifikasi: `gifts` (50) dan tebusan (7) dengan nilai KP-6; semak semula langkah dompet, lejar, streak, pencapaian | backend-developer | T-B4, KP-6 | 0.5 | ⬜ | |
-| T-B9 | Bank soalan: 1,801 tolakan diluluskan; stimulus (1,931) dan gambar rajah (perlu akses baca storan fail V2, item K3); soalan berstruktur (4,061 / 10,296 sub) dan subjektif (2,015); diarkib/draf ikut KP-5; semua boleh dibaiki dalam skrin V3 (Regroup, Soalan tanpa Bab, Audit Rajah). **Wajib (PO, D90/D105): baiki kecacatan V2 — soalan ke-2 dan seterusnya yang merujuk rajah sama tiada rajah; rajah yang terasing menjadi "soalan" sendiri. ETL mesti mengesan dan menukar rajah terasing kepada rangsangan kumpulan, dan memautkan setiap soalan "Rajah n" kepada rangsangan yang sama; yang tidak dapat dipastikan masuk senarai kerja Audit Rajah/Regroup** | solution-architect (reka bentuk) + backend-developer | T-B4, KP-5 | 3 | 🔄 | |
+| T-B8 | Gamifikasi: `gifts` (50) dan tebusan (7) dengan nilai KP-6; semak semula langkah dompet, lejar, streak, pencapaian | backend-developer | T-B4 | 0.5 | ⬜ | |
+| T-B9 | Bank soalan: 1,801 tolakan diluluskan; stimulus (1,931) dan gambar rajah (perlu akses baca storan fail V2, item K3); soalan berstruktur (4,061 / 10,296 sub) dan subjektif (2,015); diarkib/draf ikut KP-5; semua boleh dibaiki dalam skrin V3 (Regroup, Soalan tanpa Bab, Audit Rajah). **Wajib (PO, D90/D105): baiki kecacatan V2 — soalan ke-2 dan seterusnya yang merujuk rajah sama tiada rajah; rajah yang terasing menjadi "soalan" sendiri. ETL mesti mengesan dan menukar rajah terasing kepada rangsangan kumpulan, dan memautkan setiap soalan "Rajah n" kepada rangsangan yang sama; yang tidak dapat dipastikan masuk senarai kerja Audit Rajah/Regroup** | solution-architect (reka bentuk) + backend-developer | T-B4 | 3 | 🔄 | |
 | T-B10 | Bijak SPM: peta dan muat 60 set ramalan, 175 `exam_papers`, 36 blueprint ke model kertas/kontrak/blueprint V3 (atau keputusan bina semula ikut KP-5) | solution-architect + backend-developer | T-B9 | 1.5 | 🔄 | |
 | T-B11 | Raptai penuh lokal: DB kosong → migrate HEAD → seed rujukan → `migrate:all --apply` → `migrate:verify` → larian kedua (0 perubahan); catat masa setiap langkah; laporan recon V2 lawan V3 setiap entiti | devops-engineer + backend-developer | T-A3, T-B5..B10 | 1 | ⬜ | |
 | T-B12 | Ujian asap atas data dimigrasi: log masuk setiap peranan (akaun sampel), latihan, keputusan, kelas guru, admin sekolah, Bijak SPM, soalan rajah bergambar | qa-engineer | T-B11 | 0.5 | ⬜ | |
@@ -151,3 +151,4 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | 2026-11-10 | T-A1, T-C5, T-C6, T-C7, T-C12 ✅ (dae94516f). Ditambah T-C14 (Kedudukan R1-MUR-18) dan T-C15 (label/jenis T1..T5). T-C13 (rajah dalam latihan murid) diputuskan bina kerana V2 memaparkan gambar soalan dalam latihan (pariti). |
 | 2026-11-10 | Keperluan teras PO direkodkan untuk T-C13 dan T-B9: setiap soalan dalam kumpulan rajah memaparkan rajah (bukan soalan pertama sahaja); rajah tidak pernah menjadi soalan sendiri; kecacatan V2 ini dibaiki semasa migrasi, bukan disalin. |
 | 2026-11-10 | Dimulakan selari: T-B3 (dump V2 baca sahaja + inventori fail), reka bentuk T-B9/T-B10 (docs/architecture/v2-question-bank-migration.md), T-C4 (pengekstrak PDF tesseract), T-C10 (Mod Pelajar 375, mahkota Profil). 8 ejen aktif. |
+| 2026-11-10 | KP-5 (bawa semua yang tidak dipadam), KP-7 (kata laluan roster kekal) diputuskan; KP-6 ditutup (nilai V2); KP-8 di luar skop. |
