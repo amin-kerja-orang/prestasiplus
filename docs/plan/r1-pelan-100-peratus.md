@@ -104,7 +104,7 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | T-C13 | Soalan berkumpulan / berstimulus (rajah) dalam Latihan Bab dan latihan murid (D105 / S5-T03 Part B): kontrak latihan, mula sesi, `QuizRunner.vue`, bendera `GROUP_SURFACES`. Wajib jika soalan rajah V2 (T-B9) mahu boleh dilatih murid | backend-developer + frontend-developer | — | 2 | ✅ | 1dbfb83e0: Latih Tubi, Databank, Soalan by Chapter, Set Soalan Guru, Remedial, Ulang Kaji; rajah pada setiap ahli kumpulan; kumpulan tidak dipecah; ujian HTTP sebenar lulus |
 | T-C14 | Kedudukan murid ikut R1-MUR-18 (kad "Dalam sekolah / Dalam negeri / Kebangsaan", "Sekitar anda", susunan ikut syiling dompet; penapis V3 dibuang) — kad S7-T06 | backend-developer + frontend-developer | — | 1 | ✅ | Kedudukan ikut syiling: kad kelas/sekolah/negeri/kebangsaan, Sekitar anda; spec SQL sebenar 7/7; 375/768/1280 tiada skrol mendatar |
 | T-C15 | Jenis frontend tahap T1..T5 (m11 `api/types.ts`); label "Pelajar Berdaftar (T4/T5)" di komponen M12 dibuang "(T4/T5)" ikut PRD | frontend-developer | T-C5 | 0.25 | ✅ | jenis T1..T5; label M12 tanpa "T4/T5" |
-| T-C16 | Tracking A sokong soalan rajah/kumpulan (D105); baiki spec pipeline-chain (pasangan Bab–Tajuk); kemas kini PRD 46 §5.1 ikut D105 | backend-developer | T-C13 | 0.75 | 🔄 | |
+| T-C16 | Tracking A sokong soalan rajah/kumpulan (D105); baiki spec pipeline-chain (pasangan Bab–Tajuk); kemas kini PRD 46 §5.1 ikut D105 | backend-developer | T-C13 | 0.75 | ✅ | 17ba836dd: Tracking A rajah + kumpulan (susunan V2); pipeline-chain 48/48; PRD 46/49 ikut D105; servability-lanes 26/26 |
 
 ### Gerbang G-100 (Fasa 4)
 
@@ -165,3 +165,4 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | 2026-11-10 | T-C13 ✅ (1dbfb83e0). T-C16 dimulakan untuk baki: Tracking A, spec pipeline-chain, PRD. ETL dimaklumkan: files.public_id dan pautan kumpulan wajib supaya rajah V2 dipaparkan. |
 | 2026-11-10 | T-B1 ✅. Baki kegagalan ujian migrasi diserahkan kepada T-B9a (kiraan KP-5, bendera rangsangan, senarai never-stage). |
 | 2026-11-10 | Anggaran ditukar kepada jam ejen (PO: jangan kira masa manusia). Baki kerja dijangka siap malam ini; raptai penuh + G-100 esok pagi. |
+| 2026-11-10 | T-C16 ✅. Arahan PO: ujian data di PC local guna SAMPEL pelbagai senario sahaja; muatan penuh hanya di UAT — semua ejen data dimaklumkan. |
