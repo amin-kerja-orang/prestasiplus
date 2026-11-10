@@ -6,7 +6,6 @@
 
 import type { Page } from '@playwright/test'
 
-import { waitForApp } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, isDesktopShell, moduleTag } from '../support'
 
@@ -204,57 +203,56 @@ test.describe('QA G5 user-portal nav and S11 badge', { tag: [moduleTag(4), '@qa'
   test.use({ mockInit: { latency: 0 } })
   test.setTimeout(150_000)
 
-  test('E2E-M04-55 user-portal sidebar entries (desktop) (AC-28.4)', async ({
+  test('E2E-M04-55 Portal Pentadbiran menu entries (AC-28.4)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
-    test.skip(!isDesktopShell(page), 'sidebar is desktop only; drawer checked below')
     await loginAs(ADMIN)
     await gotoApp('/admin/master-notes')
-    const sb = byId(page, 'shell-user-sidebar')
-    await expect(sb).toContainText(/Kawalan Kualiti/i)
-    await expect(sb.locator('a[href="/admin/master-notes"]')).toContainText('Semakan Nota Master')
-    await expect(sb.locator('a[href="/laporan-soalan"]')).toContainText('Laporan Soalan')
-    await expect(sb.locator('a[href="/admin/question-submissions"]')).toContainText(
-      'Kertas Soalan Guru',
+    if (!isDesktopShell(page)) await byId(page, 'pentadbiran-menu-button').click()
+    const nav = page.locator('[data-testid="pentadbiran-nav"]:visible')
+    await expect(nav).toBeVisible()
+    await expect(nav.locator('a[href="/admin/question-reports"]').first()).toContainText(
+      'Laporan Soalan',
     )
-    await expect(sb.locator('a[href="/admin/soalan-gambar"]')).toContainText('Gambar Rajah')
-    await expect(sb.locator('a[href="/admin/soalan-gambar"]')).toContainText('6,144')
+    await expect(nav.locator('a[href="/admin/soalan-gambar"]').first()).toContainText('Audit Rajah')
+    await expect(nav.locator('a[href="/admin/questions/quality"]').first()).toContainText(
+      'Kualiti Soalan',
+    )
   })
 
-  test('E2E-M04-55 mobile drawer shows the two M04 entries (AC-28.4)', async ({
+  test('E2E-M04-55 Kertas Soalan Guru is reached through Import & Semakan, tab Kiriman Guru', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
-    test.skip(isDesktopShell(page), 'drawer is below 1024')
     await loginAs(ADMIN)
-    await gotoApp('/admin/master-notes')
-    await byId(page, 'shell-user-bottom-nav').getByText('Lagi').click()
-    const dr = byId(page, 'shell-user-drawer')
-    await expect(dr.locator('a[href="/admin/master-notes"]')).toContainText('Semakan Nota Master')
-    await expect(dr.locator('a[href="/laporan-soalan"]')).toContainText('Laporan Soalan')
-    await expect(dr.locator('a[href="/admin/question-submissions"]')).toHaveCount(0)
-    await expect(dr.locator('a[href="/admin/soalan-gambar"]')).toHaveCount(0)
+    await gotoApp('/admin/questions')
+    if (!isDesktopShell(page)) await byId(page, 'pentadbiran-menu-button').click()
+    const nav = page.locator('[data-testid="pentadbiran-nav"]:visible')
+    await nav.locator('a[href="/admin/spm/soalan/ekstrak"]').first().click()
+    await expect(page).toHaveURL(/\/admin\/spm\/soalan\/ekstrak/)
+    await byId(page, 'import-tab-kiriman').click()
+    await expect(page).toHaveURL(/\/admin\/question-submissions$/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kertas Soalan Guru')
   })
 
-  test('E2E-M04-51 dismissing a diagram question lowers the "Gambar Rajah" badge by 1 (AC-26.2, 28.4)', async ({
+  test('E2E-M04-55 menu link Semakan Nota Master (R1 out of scope: M25 Pusat AI)', async () => {
+    test.skip(true, 'R1 out of scope: M25 Semakan Nota Master not in menu (SCOPE-STATUS.md)')
+  })
+
+  test('E2E-M04-51 dismissing a diagram question lowers the MCQ diagram count by 1 (AC-26.2)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
-    test.skip(!isDesktopShell(page), 'badge is on the desktop user sidebar')
     await loginAs(ADMIN)
     await gotoApp('/admin/soalan-gambar')
     const card = page.locator('[data-kind="mcq"][data-question-id]').first()
     await expect(card).toBeVisible()
     await card.getByTestId('diagram-dismiss').click()
     await expect(byId(page, 'diagrams-stat-mcq-value')).toHaveText('6,143')
-    await page.goto('/admin/master-notes')
-    await waitForApp(page, 90_000)
-    const badge = byId(page, 'shell-user-sidebar').locator('a[href="/admin/soalan-gambar"]')
-    await expect(badge).toContainText('6,143')
   })
 })
 
