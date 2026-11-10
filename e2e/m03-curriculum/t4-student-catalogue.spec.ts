@@ -378,19 +378,18 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
     await expect(
       page.locator('[data-testid=map-bar][role=progressbar], [data-testid=map-bar] [role=progressbar]').first(),
     ).toHaveAttribute('aria-valuenow', '0')
-    const hasShimmer = await page.evaluate(() => {
-      for (const sheet of document.styleSheets) {
-        for (const rule of sheet.cssRules) {
-          if (rule instanceof CSSKeyframesRule && rule.name === 'shimmer') return true
-        }
-      }
-      return false
-    })
-    expect(hasShimmer).toBe(false)
+    // Static bar: the app stylesheet now defines a global "shimmer" keyframe (skeleton loaders), so the check is on
+    // the bar itself: neither the bar nor anything inside it runs an animation.
+    const animated = await page.getByTestId('map-bar').first().evaluate((bar) =>
+      [bar, ...bar.querySelectorAll('*')]
+        .filter((el) => getComputedStyle(el).animationName !== 'none')
+        .map((el) => el.tagName),
+    )
+    expect(animated).toEqual([])
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M03-42 layout: alternating sides from md, centred below, fade-in on scroll', async ({
+  test('E2E-M03-42 layout: alternating sides above 768px (first right, then left), centred at 768px and below, fade-in on scroll', async ({
     page,
     loginAs,
     gotoApp,
@@ -409,8 +408,9 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
     await expect(second).toHaveAttribute('data-visible', 'true')
     const b0 = (await nodes.first().boundingBox())!
     const b1 = (await second.boundingBox())!
-    // v2 design: no path line or dots; from md the nodes alternate right then left of the centre.
-    if (viewportWidth(page) >= 768) {
+    // V2 (peta-belajar.blade.php): no path line in V3; above 768px the islands alternate, the first on the right of the
+    // centre then the left; at 768px and below every island is centred.
+    if (viewportWidth(page) > 768) {
       expect(b0.x).toBeGreaterThan(center - 2)
       expect(b1.x + b1.width).toBeLessThan(center + 2)
     } else {
