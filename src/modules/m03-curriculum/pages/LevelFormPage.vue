@@ -215,6 +215,7 @@ async function submit(): Promise<void> {
             maxlength="10"
             placeholder="cth: T1"
             class="w-full"
+            :ui="{ base: 'uppercase' }"
             data-testid="level-code"
           />
         </DsFormField>
