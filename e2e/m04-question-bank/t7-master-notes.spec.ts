@@ -36,7 +36,7 @@ async function openAll(page: Page, gotoApp: (path: string) => Promise<void>) {
 test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('renders in the user shell with the readable header card, the tabs and the empty flagged tab', async ({
+  test('renders in the Portal Pentadbiran with the readable header card, the tabs and the empty flagged tab', async ({
     page,
     loginAs,
     gotoApp,
@@ -44,11 +44,13 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await loginAs(ADMIN)
     await gotoApp(PATH)
     await expect(page.getByTestId('notes-empty')).toHaveText('Tiada nota dalam tab ini.')
-    await expect(page.locator('[data-layout="user"]')).toBeVisible()
-    await expect(page.locator('[data-layout="admin"]')).toHaveCount(0)
+    await expect(page.locator('[data-layout="pentadbiran"]')).toBeVisible()
+    await expect(page.locator('[data-layout="pembelajaran"]')).toHaveCount(0)
     await expectTabTitle(page, 'Master Notes — Admin Review')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Master Notes — Admin Review')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveCount(0)
+    await expect(
+      page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 }),
+    ).toHaveText('Master Notes — Admin Review')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
 
     // DV-M04-14: the card h1 is white on the dark card.
     const h1 = page.getByTestId('notes-header').getByRole('heading', { level: 1 })
