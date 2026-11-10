@@ -14,7 +14,11 @@ import {
 import pg from 'pg'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { PracticePorts } from '../../src/modules/practice'
+import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
+import { QuestionsRepository } from '../../src/modules/questions'
 import { SpmTrackingService } from '../../src/modules/spm'
+import { UsersRepository } from '../../src/modules/users'
 import { SpmRepository } from '../../src/modules/spm/spm.repository'
 import { addPool, addQuestion, addSet, bootSpmApp, expectCsrfInvalid, expectError, idOf, loginAs, parseData, type Client, type SpmTestApp } from './helpers'
 
@@ -262,9 +266,9 @@ describe('Tracking A admin', () => {
     }, 30_000)
   })
 
-  // TODO(S5-T03, S5-T15): the group tests below are skipped while `trackingAFilter` is text-only and ungrouped (no group is a candidate); lift with the filter.
+  // T-C16: `trackingAFilter` serves groups and figures (D105), so these group tests run.
   describe('FR-ADM-Q17.6: a stimulus group is one unit', () => {
-    it.skip('[CI] AC-ADM-Q17.3, PO 15: a group of 4 with 3 free slots is refused whole; with 4 free it goes in together, in group order', async () => {
+    it('[CI] AC-ADM-Q17.3, PO 15: a group of 4 with 3 free slots is refused whole; with 4 free it goes in together, in group order', async () => {
       const { subjectId, ids } = await fresh('AKAUN', 10, 8)
       const rajah = ids.slice(6, 10)
       const groupId = await group('Rajah 3', [...rajah].reverse())
@@ -289,7 +293,7 @@ describe('Tracking A admin', () => {
       expect(reasonOf(await admin.put(`${ROUTE}/${set.id}`, { items: qs([ids[2] as string, ids[0] as string]) }))).toBe(PROPOSED.groupMember(2))
     })
 
-    it.skip('[CI] candidateItems lists a group once with its size; a group with a member that is not servable is not a candidate (D-10)', async () => {
+    it('[CI] candidateItems lists a group once with its size; a group with a member that is not servable is not a candidate (D-10)', async () => {
       const { subjectId, ids } = await fresh('SEJ', 5, 5)
       const whole = await group('Rajah 2', ids.slice(0, 2))
       const broken = await group('Rajah 4', ids.slice(2, 4))
@@ -301,7 +305,7 @@ describe('Tracking A admin', () => {
       expect(set.candidateItems.find((c) => c.id === ids[4])).toMatchObject({ kind: 'question', questions: 1 })
     })
 
-    it.skip('[CI] D90: on the wire a group counts once in candidates and is one candidate item with its size', async () => {
+    it('[CI] D90: on the wire a group counts once in candidates and is one candidate item with its size', async () => {
       const { subjectId, ids } = await fresh('GEO', 5, 10)
       const groupId = await group('Rajah 5', ids.slice(0, 3))
       const set = await create(subjectId, 1)
@@ -309,7 +313,7 @@ describe('Tracking A admin', () => {
       expect(set.candidateItems.map((c) => [c.kind, c.id, c.questions])).toEqual([['group', groupId, 3], ['question', ids[3], 1], ['question', ids[4], 1]])
     })
 
-    it.skip('[CI] a group with a member of another subject is never split: refused on PUT, and no candidate in either subject', async () => {
+    it('[CI] a group with a member of another subject is never split: refused on PUT, and no candidate in either subject', async () => {
       const { subjectId, ids } = await fresh('PHY', 3, 5)
       const other = await fresh('EKON', 1, 5)
       const groupId = await group('Rajah 6', [ids[0] as string, other.ids[0] as string, ids[1] as string])
@@ -337,45 +341,63 @@ describe('Tracking A admin', () => {
     })
   })
 
-  describe('temporary limit: stimulus questions are not Tracking A candidates (lead ruling on #717)', () => {
-    // TODO(S5-T03, S5-T15): lift when the pupil start serves stimulus questions.
-    const figure = async (questionId: string): Promise<void> => {
-      const stimulus = (await q<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', 'Rajah ujian', 'Rajah') returning id::text id`))[0]?.id as string
+  describe('T-C16 (D105): figure and group questions are Tracking A candidates and the pupil start serves them', () => {
+    const figure = async (questionId: string, label = 'Rajah ujian'): Promise<void> => {
+      const stimulus = (await q<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', $1, 'Rajah') returning id::text id`, [label]))[0]?.id as string
       await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, 1 from question_versions where question_id = $1`, [questionId, stimulus])
     }
 
-    it('[CI] 15 plain plus 5 figure questions: candidates exclude the figures, a set of the 15 is short of 20, a figure is refused on PUT', async () => {
+    it('[CI] 15 plain plus 5 figure questions: all 20 are candidates, a set of the 20 is complete and a figure is accepted on PUT', async () => {
       const { subjectId, ids } = await fresh('PSI', 20, 20)
       for (const id of ids.slice(15)) await figure(id)
       const set = await create(subjectId, 1)
-      expect(set.candidates).toBe(15)
-      expect(set.candidateItems.map((c) => c.id).sort()).toEqual([...ids.slice(0, 15)].sort())
-      const saved = parse(await admin.put(`${ROUTE}/${set.id}`, { items: qs(ids.slice(0, 15)) }))
-      expect(saved.filled).toBe(15)
-      expect(saved.attention).not.toEqual([])
-      expect(await members(set.id)).toEqual(ids.slice(0, 15))
-      const refused = await admin.put(`${ROUTE}/${set.id}`, { items: qs(ids.slice(0, 15).concat(ids.slice(15, 16))) })
-      expect(refused.status).toBe(422)
+      expect(set.candidates).toBe(20)
+      expect(set.candidateItems.map((c) => c.id).sort()).toEqual([...ids].sort())
+      const saved = parse(await admin.put(`${ROUTE}/${set.id}`, { items: qs(ids) }))
+      expect(saved.filled).toBe(20)
+      expect(saved.attention).toEqual([])
+      expect(await members(set.id)).toEqual(ids)
     })
 
-    it('[CI] a set already holding 15 plain and 5 figure questions is not complete and is not listed for pupils', async () => {
-      const { subjectId, ids } = await fresh('CHEM', 20, 20)
+    it('[CI] a set holding 15 plain and 5 figure questions is complete and listed for pupils', async () => {
+      const { ids } = await fresh('CHEM', 20, 20)
       for (const id of ids.slice(15)) await figure(id)
       await addSet(t.db, 'CHEM', 1, ids)
-      const lane = await admin.get('/api/admin/servability/lanes/tracking-a?pageSize=100')
-      const row = (lane.body as { data: { id: string; attention: string[] }[] }).data.find((r) => r.attention.some((a) => a.startsWith('Hanya 15 daripada 20')))
-      expect(row, JSON.stringify(lane.body)).toBeDefined()
       const s = parseData(await student.get('/api/spm/tracking-a/CHEM'), SpmTrackingASubjectResultSchema) as SpmTrackingASubject
-      expect(s.sets).toEqual([])
-      expect(subjectId).toBeTruthy()
+      expect(s.sets.map((x) => [x.setNo, x.readyCount])).toEqual([[1, 20]])
     })
 
-    it('[CI] a set of figure-only questions is not listed for pupils', async () => {
+    it('[CI] the pupil start serves the set in position order: a plain question, a group whole and in group order (the rajah on EVERY member), a figure question', async () => {
+      const { subjectId, ids } = await fresh('SEJ', 6, 6)
+      const [plainA, g1, g2, g3, fig] = ids as [string, string, string, string, string, string]
+      const groupId = await group('Rajah T-C16', [g1, g2, g3])
+      await figure(fig, 'Rajah sendiri')
+      const set = await create(subjectId, 1)
+      // The group is saved as one unit (members expanded in group order), the others as questions.
+      const saved = parse(await admin.put(`${ROUTE}/${set.id}`, { items: [{ kind: 'question', id: plainA }, { kind: 'group', id: groupId }, { kind: 'question', id: fig }, { kind: 'question', id: ids[5] as string }] }))
+      expect(saved.filled).toBe(6)
+      expect(await members(set.id)).toEqual([plainA, g1, g2, g3, fig, ids[5]])
+      // The SPM test app has no question bridge: bind the real bank source (real database, default surface list) to the practice port.
+      t.app.get(PracticePorts).provideQuestions(new Be09PracticeQuestionSource(t.app.get(QuestionsRepository), t.app.get(UsersRepository)))
+      const res = await student.post('/api/practice/sessions', { mode: 'ramalan', subjectCode: 'SEJ', year: 2026, setNo: 1 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const served = (res.body as { data: { questions: { id: string | number; stimuli?: { label: string; text?: string }[]; group?: { id: string; index: number; size: number } | null }[] } }).data.questions
+      expect(served.map((x) => String(x.id))).toEqual([plainA, g1, g2, g3, fig, ids[5]])
+      for (const m of served.slice(1, 4)) {
+        expect(m.stimuli?.map((s) => s.label)).toEqual(['Rajah T-C16'])
+        expect(m.stimuli?.[0]?.text).toBe('Petikan ujian')
+      }
+      expect(served.slice(1, 4).map((x) => [x.group?.index, x.group?.size])).toEqual([[1, 3], [2, 3], [3, 3]])
+      expect(served[4]?.stimuli?.map((s) => s.label)).toEqual(['Rajah sendiri'])
+      expect(served[0]?.stimuli ?? []).toEqual([])
+    })
+
+    it('[CI] a set of figure-only questions is listed for pupils', async () => {
       const { ids } = await fresh('EKON', 3, 3)
       for (const id of ids) await figure(id)
       await addSet(t.db, 'EKON', 1, ids)
       const s = parseData(await student.get('/api/spm/tracking-a/EKON'), SpmTrackingASubjectResultSchema) as SpmTrackingASubject
-      expect(s.sets).toEqual([])
+      expect(s.sets.map((x) => x.readyCount)).toEqual([3])
     })
   })
 

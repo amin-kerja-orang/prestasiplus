@@ -19,7 +19,7 @@ import { join } from 'node:path'
 
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { SessionSchema } from '@pp/contract'
+import { SessionSchema, unitsOfChapter } from '@pp/contract'
 import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -782,8 +782,35 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
      * The Studio path: the admin edits the question and sets its Bab (PUT /api/questions/:id with curriculumChapterId), then sends the new version
      * through Semakan and Terbit again (the real bulk route). On an approved question the edit makes a new version; it is live once re-approved.
      */
+    /**
+     * The Tajuk DSKP that belongs with a Bab (G-02, `unitsOfChapter`, the same rule the API enforces: a mismatched pair is refused with 422), read
+     * from the curriculum seed; where the link is not known (`null`) any unit is accepted and the chain's own unit stays.
+     */
+    const unitFor = async (chapterId: string): Promise<string> => {
+      const chapters = await db.query<{ id: string; chapterNumber: number | null; dskpCode: string | null }>(
+        `select id::text id, chapter_number as "chapterNumber", dskp_code as "dskpCode" from chapters where subject_id = $1 and education_level_id = $2 and is_active order by id`,
+        [fx.subject, fx.level],
+      )
+      const units = await db.query<{ id: string; code: string }>(
+        `select id::text id, code from curriculum_nodes where kind = 'unit' and subject_id = $1 and education_level_id = $2 order by sort_order, id`,
+        [fx.subject, fx.level],
+      )
+      const chapter = chapters.find((c) => c.id === chapterId)!
+      const allowed = unitsOfChapter(chapter, chapters, units)
+      return allowed === null || allowed.some((u) => u.id === fx.unit) ? fx.unit : allowed[0]!.id
+    }
+    /** The first SP under a unit (the tag must name an SP of its own unit). */
+    const spOf = async (unitId: string): Promise<string> =>
+      unitId === fx.unit
+        ? fx.sp
+        : one(
+            `with recursive d as (select id, kind, sort_order from curriculum_nodes where parent_id = $1 union all select n.id, n.kind, n.sort_order from curriculum_nodes n join d on n.parent_id = d.id)
+             select id::text id from d where kind = 'sp' order by sort_order, id limit 1`,
+            [unitId],
+          )
     const setBab = async (id: string, text: string, chapterId: string): Promise<void> => {
-      const put = await admin.put(`/api/questions/${id}`, mcqBody(text, { curriculumChapterId: chapterId }))
+      const unitId = await unitFor(chapterId)
+      const put = await admin.put(`/api/questions/${id}`, mcqBody(text, { curriculumChapterId: chapterId, tag: { unitId, spIds: [await spOf(unitId)], tp: 3 } }))
       expect(put.status, JSON.stringify(put.body)).toBe(200)
       await advance([id])
       expect(await babOf(id)).toBe(chapterId)
@@ -826,6 +853,10 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(b).toContain(fx.soloB)
       expect(b, 'a question of ANOTHER chapter is never drawn').not.toContain(fx.soloA)
       for (const id of b) expect(await babOf(id), id).toBe(chapterB)
+
+      // The Bab and the Tajuk DSKP must belong together (G-02), so soloB carried the unit of chapter B for the checks above. Step 6 draws Jana
+      // Kertas from the chain's own unit bucket, so soloB goes back to chapter A (which belongs with that unit) before the chain goes on.
+      await setBab(fx.soloB, SOLO_B_TEXT, chapterA)
     })
   })
 

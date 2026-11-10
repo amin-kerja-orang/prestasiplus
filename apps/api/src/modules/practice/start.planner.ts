@@ -375,7 +375,9 @@ export class PracticeStartPlanner {
     const ids = await this.ports.ramalan.ramalanQuestionIds(subjectId, req.year, req.setNo)
     if (ids === null) throw notFound()
     if (ids.length === 0) throw setNotReady()
-    const served = await this.serve(ids)
+    // T-C16 (D105): Tracking A is an SPM surface like the Databank: figure questions and whole groups are served, in the set's
+    // position order (group members contiguous, in group order; `ramalanQuestionIds` keeps the stored order, V2 `spm_set_question.position`).
+    const served = await this.serve(ids, 'databank')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, { subjectId, year: req.year, setNo: req.setNo, served })
   }

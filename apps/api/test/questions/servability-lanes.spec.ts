@@ -536,8 +536,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(slot.peek()?.value).toBe(7)
   })
 
-  // TODO(S5-T03, S5-T15): skipped while `trackingAFilter` is text-only and ungrouped; lift with the filter.
-  it.skip('D90: what could fill a set counts a stimulus group once', async () => {
+  it('D90: what could fill a set counts a stimulus group once', async () => {
     const available = (): Promise<number> => t.app.get(QuestionsRepository).eligibleUnitCount(trackingAFilter(tag.subjectId))
     const before = await available()
     const first = await approve('groupOne', 'Soalan pertama kumpulan untuk unit D90.')

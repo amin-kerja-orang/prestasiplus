@@ -114,7 +114,7 @@ describe('planner: group-ready', () => {
     expect(plan.served.map((q) => q.id)).toEqual(['s1', 's2', 's3', 's4', 's5'])
   })
 
-  it('ramalan and mission stay text-only (no drill surface); remedial and the revision drill ask with the Bab surface, so a wrong figure or group question is drilled again WITH its rajah (T-C13, D105)', async () => {
+  it('mission stays text-only (no drill surface); Tracking A asks with the SPM (databank) surface and keeps the stored order, group whole (T-C16); remedial and the revision drill ask with the Bab surface, so a wrong figure or group question is drilled again WITH its rajah (T-C13, D105)', async () => {
     const calls: (PracticeDrillActivity | undefined)[] = []
     const figure = { ...question('f1'), stemImageId: 'F' } as PracticeQuestion
     const mixed = [question('t1'), question('g1', ['g1', 'g2']), question('g2', ['g1', 'g2']), figure, question('t2')]
@@ -143,7 +143,9 @@ describe('planner: group-ready', () => {
 
     const ramalan = await p.plan('u', req({ mode: 'ramalan', subjectCode: 'ZZ', year: 2024, setNo: 1 }), now, false)
     const mission = await p.plan('u', req({ mode: 'mission', missionId: '5' }), now, false)
-    expect(calls).toEqual([undefined, undefined])
+    expect(calls).toEqual(['databank', undefined])
+    // T-C16: the whole set in position order: the group (g1, g2) contiguous and in group order, the figure question served with the rest.
+    expect(ramalan.served.map((q) => q.id)).toEqual(all)
     calls.length = 0
     const remedial = await p.plan('u', req({ mode: 'remedial', remedialTestId: '6' }), now, false)
     await new RemedialSelector(repo as never, ports).select('u', '1') // the auto revision drill and the remedial suggestions
