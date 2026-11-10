@@ -251,6 +251,18 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   questions: { source_type: 'manual' },
   // pksk_packages / pksk_accesses (BE-42): level is checked (T1/T4/ALL); an access needs a user and a package.
   pksk_packages: { level: 'T1' },
+  // paper_documents / paper_document_pages (0265): kertas is checked (2 to 4), kind is checked (paper/scheme); a page needs its document and a file row.
+  paper_documents: { kertas: 2 },
+  paper_document_pages: async (query) => {
+    const doc = await query<{ id: string }>(`insert into paper_documents (kertas, title) values (2, 'Kertas Contoh') returning id::text as id`)
+    const n = (seq += 1)
+    const file = await query<{ id: string }>(
+      `insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key)
+       values ($1, 'kertas_page', 'image/png', 1, $2, $3) returning id::text as id`,
+      [`KP${String(n).padStart(20, '0')}`, String(n).padStart(64, '0'), `kertas_page/migration-fixture-${n}.png`],
+    )
+    return { paper_document_id: (doc[0] as { id: string }).id, kind: 'paper', position: 1, file_id: (file[0] as { id: string }).id }
+  },
   pksk_accesses: async (query) => ({
     user_id: await parentUser(query),
     package_id: (await query<{ id: string }>(`insert into pksk_packages (name, level) values ('Pakej PKSK Contoh', 'T1') returning id::text as id`))[0]!.id,

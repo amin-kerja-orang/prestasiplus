@@ -15,7 +15,8 @@
 #          --verify-soft     HOOK: a failing full migrate:verify (run after questions/structured/papers) is recorded as a failed check
 #                            (exit 4) instead of stopping the run. Only while verify has no expectations for the new loaders;
 #          --keep-staging    do not drop staging_cloud (raw .cloud copy, personal data) at the end;
-#          --terbit          run `migrate:papers --apply --terbit` (publishes V2-published papers through the real gate);
+#          --terbit          after the papers apply, run `migrate:terbit --apply` (node dist/migrate-terbit.js from the migrate image, API stopped:
+#                            publishes the V2-published papers through the real gate with the audited legacy override);
 #          --files-archive keep|archive|wipe   what happens to the old api files volume before the ETL copies V2 files
 #                            (default archive: tar.gz + sha256 into the backup dir, then the volume is emptied).
 #
@@ -401,10 +402,9 @@ etl() {
 
 # one full ETL pass. PASS is 1 or 2; the as-of date is the same in both (the input hashes must match).
 etl_pass() {
-  local pass="$1" plan_file fa=() tb=()
+  local pass="$1" plan_file fa=()
   ETL_LOG="$state_dir/rebuild-$run_id-etl$pass.log"
   [ -z "$files_dir" ] || fa=("--files-dir=$files_dir")
-  [ "$terbit" = 0 ] || tb=(--terbit)
   etl "p$pass migrate:all --apply" migrate:all --apply --as-of="$asof" ${fa[@]+"${fa[@]}"}
   # QLOAD: plan (read-only), then dry-run and apply bound to that plan file (refuses when the staged data changed)
   etl "p$pass migrate:questions --plan" migrate:questions --plan --as-of="$asof" --core-as-of="$asof"
@@ -426,7 +426,9 @@ etl_pass() {
   if is_skipped papers; then pp_warn "HOOK papers skipped (--skip papers)"; else
     # --files-dir: Kertas Subjektif page images (and FILE_STORAGE_DIR, which the API config needs in production).
     etl "p$pass migrate:papers --dry-run" migrate:papers --dry-run --as-of="$asof" --core-as-of="$asof" ${fa[@]+"${fa[@]}"}
-    etl "p$pass migrate:papers --apply" migrate:papers --apply --as-of="$asof" --core-as-of="$asof" ${tb[@]+"${tb[@]}"} ${fa[@]+"${fa[@]}"}
+    etl "p$pass migrate:papers --apply" migrate:papers --apply --as-of="$asof" --core-as-of="$asof" ${fa[@]+"${fa[@]}"}
+    # Terbit pass (design 10.5/10.5a): its own command, built with the API (decorator metadata), run with node. Same ETL window, API stopped.
+    if [ "$terbit" = 1 ]; then etl "p$pass migrate:terbit --apply" migrate:terbit --apply; fi
   fi
   # MIG-09 backfill: link migrated answers to bank questions (reads archive_cloud only)
   if is_skipped link-questions; then pp_warn "HOOK link-questions skipped (--skip link-questions)"; else

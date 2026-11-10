@@ -6,9 +6,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runPapers } from '../../../src/migration/load/papers'
+import { runQuestions } from '../../../src/migration/load/questions'
+import { runVerify } from '../../../src/migration/verify'
 import { runStructured } from '../../../src/migration/load/questions/structured-index'
 import { partsFromRows } from '../../../src/modules/questions/tree'
-import { AS_OF, bootQuestions, type QuestionsHarness } from './helpers'
+import { addArchive, AS_OF, bootQuestions, type QuestionsHarness } from './helpers'
 
 let h: QuestionsHarness
 beforeAll(async () => {
@@ -166,8 +168,8 @@ describe('SPM sets, blueprints and papers', () => {
 
     const papers = await sql(`select p.title, p.status, p.surface, p.kertas, p.printed_duration_min, p.instructions, (select count(*)::int from paper_placements pl join paper_sections ps on ps.id = pl.paper_section_id where ps.paper_id = p.id) placed from papers p order by p.id`)
     const two = papers.rows.find((x) => x.title === 'Kertas Dua')
-    // kertas 3 has the loaded Kontrak -> simulasi, duration from it; one placement resolved, one dropped.
-    expect(two).toMatchObject({ status: 'draft', surface: 'simulasi', kertas: 3, printed_duration_min: 120, instructions: ['Jawab semua.'], placed: 1 })
+    // kertas 3 has the loaded Kontrak -> simulasi; V2 had no duration, so it loads untimed (0, legacy_untimed; V2 served it untimed); one placement resolved, one dropped.
+    expect(two).toMatchObject({ status: 'draft', surface: 'simulasi', kertas: 3, printed_duration_min: 0, instructions: ['Jawab semua.'], placed: 1 })
     const kanonik = papers.rows.find((x) => x.title === 'Kertas Kanonik')
     expect(kanonik).toMatchObject({ status: 'draft', surface: 'subjektif', printed_duration_min: 90 })
     expect(papers.rows.every((x) => x.status === 'draft')).toBe(true)
@@ -187,5 +189,99 @@ describe('SPM sets, blueprints and papers', () => {
     expect(r.questions.notes.counters.get('papers.group_split')).toBe(1)
     const hold = await sql(`select new_id from etl_id_map where entity = 'exam_paper_holds'`)
     expect(hold.rows.map((x) => x.new_id)).toEqual(['group_split'])
+  })
+})
+
+describe('PKSK (OC-4): body-only V2 questions become draft PKSK questions', () => {
+  it('loads them as drafts with the domain and level tags, never live, and the strict reader parses the empty choice leaf', async () => {
+    await sql(`insert into archive_cloud.pksk_questions (id, bahagian, domain, body, status, education_level_id, created_at, updated_at) values
+      (501, 'B', 'Matematik', '<p>Soalan PKSK satu.</p>', 'approved', 1, '2025-02-01', '2025-02-02'),
+      (502, 'A', 'kecerdasan   insaniah', 'Soalan PKSK dua.', 'pending', null, '2025-02-01', '2025-02-02'),
+      (503, 'B', 'Sukan & Pencapaian', 'Soalan PKSK tiga.', 'rejected', 2, '2025-02-01', '2025-02-02'),
+      (504, 'B', 'Domain tidak dikenali', 'Soalan PKSK empat.', 'approved', 1, '2025-02-01', '2025-02-02'),
+      (505, 'B', 'Sains', '   ', 'approved', 1, '2025-02-01', '2025-02-02')`)
+    const r = await both(runBank)
+    expect(r.report.recon.find((x) => x.entity === 'pksk_questions')).toMatchObject({ sourceCount: 5, eligibleCount: 5, loaded: 3, rejected: 2, status: 'ok' })
+    const rejects = await sql(`select legacy_id, reason, column_name from etl_rejects where run_id = $1::bigint and entity = 'pksk_questions' order by legacy_id`, [r.report.runId])
+    expect(rejects.rows).toEqual([
+      { legacy_id: '504', reason: 'UNKNOWN_ENUM', column_name: 'domain' },
+      { legacy_id: '505', reason: 'INVALID_VALUE', column_name: 'body' },
+    ])
+    const rows = await sql(
+      `select m.legacy_id, q.legacy_id as pair, q.live_version_no, q.is_active, v.status, v.type, v.stem_ms,
+              (select code from question_tags t where t.question_id = q.id and t.kind = 'pksk_domain') as domain,
+              (select code from question_tags t where t.question_id = q.id and t.kind = 'pksk_level') as level,
+              (select count(*)::int from question_parts p where p.question_version_id = v.id) as parts,
+              (select count(*)::int from question_parts p join part_options o on o.part_id = p.id where p.question_version_id = v.id) as options
+         from etl_id_map m join questions q on q.id = m.new_id::bigint join question_versions v on v.question_id = q.id
+        where m.entity = 'pksk_questions' order by m.legacy_id::int`,
+    )
+    expect(rows.rows.map((x) => [x.legacy_id, x.pair, x.live_version_no, x.status, x.type, x.stem_ms, x.domain, x.parts, x.options])).toEqual([
+      ['501', null, null, 'draft', 'mcq', 'Soalan PKSK satu.', 'PKSK_MATH', 1, 0],
+      ['502', null, null, 'draft', 'mcq', 'Soalan PKSK dua.', 'PKSK_INSANIAH', 1, 0],
+      ['503', null, null, 'draft', 'mcq', 'Soalan PKSK tiga.', 'PKSK_SUKAN', 1, 0],
+    ])
+    expect(rows.rows.every((x) => x.level === 'T1' || x.level === 'T4')).toBe(true)
+    // The shape of "Soalan PKSK" (PkskQuestionsService): one pksk_choice leaf, empty correct list, parsed by V3's own strict reader.
+    const qid = (await sql(`select new_id from etl_id_map where entity = 'pksk_questions' and legacy_id = '501'`)).rows[0]?.new_id as string
+    const parts = (await sql(`select p.* from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1::bigint`, [qid])).rows
+    const keys = (await sql(`select k.* from answer_keys k join question_parts p on p.id = k.part_id join question_versions v on v.id = p.question_version_id where v.question_id = $1::bigint`, [qid])).rows
+    const camel = (p: Record<string, unknown>) => ({
+      id: p.id, questionVersionId: p.question_version_id, parentPartId: p.parent_part_id, position: p.position, depth: p.depth, label: p.label, promptMs: p.prompt_ms, promptEn: null,
+      marks: p.marks, mode: p.mode, unit: null, decimals: null, sigFigs: null, blankCount: null, wordMin: null, wordMax: null, topics: null, drawingKind: null, tableGrid: null,
+      modeConfig: null, stimulusId: null, choiceGroup: null, reveal: 'after_submit', difficultyTp: null, kbat: null, unitNodeId: null, formOrigin: null, cognitiveLevel: null,
+    })
+    const tree = partsFromRows(parts.map(camel) as never, [], keys.map((k) => ({ id: k.id, partId: k.part_id, kind: k.kind, content: k.content })) as never)
+    expect(tree).toHaveLength(1)
+    expect(tree[0]).toMatchObject({ mode: 'pksk_choice', options: [], key: { kind: 'options', correct: [] } })
+
+    // Idempotent: a rerun loads nothing new.
+    const before = await h.count('questions')
+    await runBank('apply')
+    expect(await h.count('questions')).toBe(before)
+  })
+})
+
+describe('migrate:verify knows the question, structured and papers loaders', () => {
+  const verify = () => runVerify({ pool: h.pool, env: h.runEnv, source: 'cloud' })
+  const NEW = [
+    'questions', 'question_stimuli', 'stimulus_groups', 'structured_questions', 'subjective_questions', 'exam_questions', 'pksk_questions',
+    'spm_sets', 'paper_blueprints', 'exam_papers', 'paper_documents', 'paper_document_pages',
+  ]
+
+  it('accounts for every archive question and every loader row, and fails only on an unexplained difference', async () => {
+    // Two MCQs (one draft) and one that is quarantined (unknown subject) join the five subjective rows already in the archive.
+    await addArchive(h.pool, [{ id: 910 }, { id: 911, status: 'draf' }, { id: 912, subject: 99 }])
+    for (const mode of ['dry-run', 'apply'] as const) {
+      const r = await runQuestions({ ...opts, pool: h.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, coreAsOf: AS_OF, mode, batchSize: 2 })
+      expect(r.report.status).toBe('succeeded')
+    }
+    const report = await verify()
+    const rows = Object.fromEntries(report.entities.map((e) => [e.entity, e]))
+    for (const name of NEW.filter((n) => n !== 'question_files')) expect({ name, status: rows[name]?.status, note: rows[name]?.note }).toMatchObject({ name, status: 'ok' })
+    // questions: the target holds its own loaded rows plus the subjective ones (the 450,819 versus 448,804 case of the UAT run).
+    expect(rows.questions).toMatchObject({ sourceCount: 8, eligibleCount: 3, loaded: 2, rejected: 1, targetCount: 7 })
+    expect(rows.subjective_questions).toMatchObject({ loaded: 5, targetCount: null })
+    expect(rows.pksk_questions).toMatchObject({ loaded: 3, targetCount: 3 })
+    const checks = Object.fromEntries(report.checks.map((c) => [c.name, c]))
+    expect(checks['questions: V2 total = loaded + absorbed + quarantined + other loader']).toMatchObject({ status: 'ok', expected: 8, actual: 8 })
+    expect(checks['stimulus groups: groups with a stimulus and members']?.status).toBe('ok')
+    expect(checks['PKSK questions: tags and draft state']).toMatchObject({ status: 'ok', actual: 0 })
+    expect(checks['PKSK questions: tags and draft state']?.detail).toContain('3 still have no options')
+    expect(checks['rejects of the question and paper loaders (latest apply run of each)']?.status).toBe('reported')
+    expect(report.checks.filter((c) => c.status === 'mismatch' && NEW.some((n) => c.name.includes(n)))).toEqual([])
+  })
+
+  it('reports a question that disappeared after the load, and a changed archive', async () => {
+    await sql(`delete from questions where legacy_source = 'cloud' and legacy_id = '903'`)
+    const gone = (await verify()).entities.find((e) => e.entity === 'questions')
+    expect(gone?.status).toBe('mismatch')
+    expect(gone?.note).toContain('target holds 6 rows of this source, the run loaded 7 (2 of this step plus 5 of subjective_questions)')
+
+    await sql(`insert into archive_cloud.pksk_questions (id, bahagian, domain, body, status, education_level_id) values (599, 'B', 'Sains', 'Soalan baharu.', 'approved', 1)`)
+    const changed = (await verify()).entities.find((e) => e.entity === 'pksk_questions')
+    expect(changed?.status).toBe('mismatch')
+    expect(changed?.note).toContain('archive changed since the run')
+    await sql(`delete from archive_cloud.pksk_questions where id = 599`)
   })
 })

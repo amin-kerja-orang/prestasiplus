@@ -6,8 +6,8 @@
  *  - kertas 1 to 4 from `inferKertas` (V2 text, cover code, title, structure; T-B13b, design 10.4a); undecided: kertas 1, held as
  *    `kertas_unknown:<reason>` (listed, never guessed);
  *  - surface: `simulasi` when an active V3 Kontrak exists for (subject, kertas), `subjektif` when kertas is 2 to 4 and none exists, else
- *    `simulasi`; duration: V2's, else (simulasi) the Kontrak's (V3 head, or the V2-median draft Kontrak), else a 60-minute placeholder that is never Terbit-ed (V3 requires a positive
- *    duration for a simulasi paper), a subjektif paper may be untimed (0);
+ *    `simulasi`; duration: V2's; a V2 paper with none loads untimed (0, flag `legacy_untimed`, 0266: V2 served it untimed with an elapsed clock) and is
+ *    NOT held, so it can be published (V2 parity); a subjektif paper may also be untimed (0);
  *  - sections from `paper_sections` (position renumbered 1..n), placements from `exam_paper_questions` (or `exam_questions.paper_section_id`
  *    + `position` when a section has no pivot rows); a placement is resolved to the V3 question through `legacy_canonical_map` ->
  *    `etl_id_map('questions' | 'structured_questions')`, else `etl_id_map('exam_questions')`; an unresolved placement is dropped and counted;
@@ -22,8 +22,6 @@ import { rejectRow } from '../helpers'
 import type { QuestionsContext } from '../questions/context'
 import { childrenOf, lookupSlugs, readArchiveById, type ArchiveRow } from './archive-source'
 import { inferKertas, instructionsOf, intOf, referenceSheetsOf, ruleTypeOf, type KertasEvidence } from './plan'
-
-export const PLACEHOLDER_MINUTES = 60
 
 export interface PlacementPlan {
   question_id: string
@@ -260,27 +258,27 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
         const ownMinutes = intOf(row.duration_minutes, 1)
         let printed: number
         let durationMinutes: number | null = null
+        let legacyUntimed = false
         if (surface === 'subjektif') {
           const ok = ownMinutes !== null && ownMinutes <= 300
           printed = ok ? (ownMinutes as number) : 0
           durationMinutes = ok ? printed : null
           if (!ok && ownMinutes !== null) c.notes.count('papers.duration_out_of_range')
         } else if (ownMinutes !== null) printed = ownMinutes
-        else if (kontrakMinutes !== null) {
-          printed = kontrakMinutes
-          c.notes.count('papers.duration_from_kontrak')
-        } else {
-          printed = PLACEHOLDER_MINUTES
-          hold.push('duration_placeholder')
-          c.notes.count('papers.duration_placeholder')
+        else {
+          // V2 parity: a V2 paper with no duration was served untimed (elapsed clock, no countdown). It loads untimed (0) and is flagged
+          // `legacy_untimed` (0266), the only case where a Simulasi paper may have no duration; it is NOT held and may be published.
+          printed = 0
+          legacyUntimed = true
+          c.notes.count('papers.untimed_legacy')
         }
         const code = text(row.cover_code) ?? `K${kertas}`
         const creator = text(row.created_by)
         const paper = await ctx.db.query<{ id: string }>(
-          `INSERT INTO papers (kind, title, subject_id, kertas, paper_code, printed_duration_min, surface, duration_minutes, instructions, reference_sheets, status, version, created_by_id, created_at, updated_at)
-           VALUES ('pilihan', $1, $2::bigint, $3, $4, $5, $6, $7, $8::text[], $9::jsonb, 'draft', 1, $10::bigint, coalesce($11::timestamptz, now()), coalesce($12::timestamptz, now()))
+          `INSERT INTO papers (kind, title, subject_id, kertas, paper_code, printed_duration_min, legacy_untimed, surface, duration_minutes, instructions, reference_sheets, status, version, created_by_id, created_at, updated_at)
+           VALUES ('pilihan', $1, $2::bigint, $3, $4, $5, $13, $6, $7, $8::text[], $9::jsonb, 'draft', 1, $10::bigint, coalesce($11::timestamptz, now()), coalesce($12::timestamptz, now()))
            RETURNING id::text AS id`,
-          [title, subject, kertas, code, printed, surface, durationMinutes, instructionsOf(row.instructions), toJson(referenceSheetsOf(row.reference_assets)), creator === null ? null : (users.get(creator) ?? null), text(row.created_at), text(row.updated_at)],
+          [title, subject, kertas, code, printed, surface, durationMinutes, instructionsOf(row.instructions), toJson(referenceSheetsOf(row.reference_assets)), creator === null ? null : (users.get(creator) ?? null), text(row.created_at), text(row.updated_at), legacyUntimed],
         )
         const paperId = (paper.rows[0] as { id: string }).id
         const secRows = grouped.sections.map((s, i) => {

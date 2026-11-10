@@ -342,8 +342,8 @@ cmd_wipe_dump() {
 cmd_etl() {
   local c="${1:-}"; [ $# -eq 0 ] || shift
   case "$c" in
-    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:questions|migrate:structured|migrate:papers|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
-    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:questions | migrate:structured | migrate:papers | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
+    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:questions|migrate:structured|migrate:papers|migrate:terbit|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
+    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:questions | migrate:structured | migrate:papers | migrate:terbit | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
   esac
   local a apply=0 envs=(NODE_ENV=production "PP_MIGRATE_TARGET_DB=$target_db") argv=() files_host="" files_seen=0 out_given=0 i=0
   local args=("$@")
@@ -418,6 +418,10 @@ cmd_etl() {
   case "$c" in
     migrate:structured) runner=(npm exec -w @pp/api -- tsx src/migration/load/questions/structured-cli.ts) ;;
     migrate:papers) runner=(npm exec -w @pp/api -- tsx src/migration/load/papers/cli.ts) ;;
+    # migrate:terbit boots the Nest app, which needs the decorator metadata of the API build: it is the second bundle of the build
+    # (dist/migrate-terbit.js, vite + SWC) and runs with node from the apps/api folder of the migrate image, never through tsx.
+    # FILE_STORAGE_DIR is required by the API env in production; the Terbit pass writes no file, so a scratch path on the /tmp tmpfs is enough.
+    migrate:terbit) runner=(node dist/migrate-terbit.js); RUN_EXTRA+=(-w /app/apps/api); envs+=(FILE_STORAGE_DIR=/tmp/pp-terbit-files) ;;
   esac
   migrate_run "${envs[@]}" -- "${runner[@]}" ${argv[@]+"${argv[@]}"} || rc=$?
   pp_log "ETL STEP $c exit=$rc duration_s=$((SECONDS - t0)) (reports in $out_dir)"

@@ -632,7 +632,7 @@ const feedback = computed(() => {
             size="lg"
             icon="i-ph-timer"
             class="tabular"
-            :aria-label="isExam ? 'Masa berbaki' : 'Masa berlalu'"
+            :aria-label="remaining !== null ? 'Masa berbaki' : 'Masa berlalu'"
             data-testid="clock"
             >{{ clockText }}</UBadge
           >

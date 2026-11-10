@@ -11,7 +11,7 @@
  * marks and counts of the paper itself) still refuses, so such a paper stays `draft` and is listed. A new paper made in V3 never takes this
  * path: the normal Terbit still needs a Disahkan Kontrak.
  *
- * Papers held at load (`exam_paper_holds`: `group_split`, `kertas_unknown`, `duration_placeholder`) are not offered to the gate.
+ * Papers held at load (`exam_paper_holds`: `group_split`, `kertas_unknown`) are not offered to the gate.
  * The publisher is injected: `terbit-nest.ts` builds it from a Nest application context; a test can build it from a testing module.
  */
 import type pg from 'pg'

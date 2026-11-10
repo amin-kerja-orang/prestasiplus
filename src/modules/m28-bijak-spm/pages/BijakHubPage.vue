@@ -118,7 +118,7 @@ function open(p: PaperSummary): void {
       v-if="heroPaper"
       :overline="heroPaper.status === 'sedang' ? 'Sambung kertas' : 'Mula kertas'"
       :title="heroPaper.title"
-      :subtitle="`${heroPaper.subjectName} · Kertas ${heroPaper.kertas} · ${heroPaper.durationMin} minit · ${heroPaper.marks} markah`"
+      :subtitle="`${heroPaper.subjectName} · Kertas ${heroPaper.kertas} · ${heroPaper.durationMin > 0 ? `${heroPaper.durationMin} minit · ` : ''}${heroPaper.marks} markah`"
       :art="heroPaper.status === 'sedang' ? 'books' : 'rocket'"
       :cta-label="heroPaper.status === 'sedang' ? 'Sambung' : 'Mula'"
       data-testid="hero"
@@ -187,7 +187,7 @@ function open(p: PaperSummary): void {
                 <div class="flex flex-wrap items-center gap-2" data-testid="paper-chips">
                   <UBadge color="neutral" variant="subtle">Kertas {{ p.kertas }}</UBadge>
                   <UBadge color="neutral" variant="subtle">{{ p.marks }} markah</UBadge>
-                  <UBadge color="neutral" variant="subtle">{{ p.durationMin }} min</UBadge>
+                  <UBadge v-if="p.durationMin > 0" color="neutral" variant="subtle">{{ p.durationMin }} min</UBadge>
                   <UBadge
                     :color="
                       p.status === 'belum' ? 'neutral' : p.status === 'sedang' ? 'info' : 'success'

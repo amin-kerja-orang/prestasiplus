@@ -177,6 +177,8 @@ model Paper {
   levelScope         String?   @map("level_scope")
   /// The printed duration (Q-S1), stored per paper. A `subjektif` paper writes `durationMinutes`, or 0 (check, DM-23).
   printedDurationMin Int       @map("printed_duration_min")
+  /// 0266: true only for a paper migrated from a V2 `exam_papers` row with no duration (V2 served it untimed); only then may `printed_duration_min` be 0 on a Simulasi paper (`ck_papers_duration`).
+  legacyUntimed      Boolean   @default(false) @map("legacy_untimed")
   /// simulasi, subjektif (check, DM-23). Kertas Subjektif papers are `pilihan` rows with `surface = 'subjektif'`.
   surface            String    @default("simulasi")
   /// Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS, DM-23); required by the API for a subjektif paper.

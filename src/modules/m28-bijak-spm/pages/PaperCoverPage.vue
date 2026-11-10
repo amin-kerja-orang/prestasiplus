@@ -110,7 +110,7 @@ async function begin(restart: boolean): Promise<void> {
       <DsHeroCard
         :overline="`SULIT · ${cover.code}`"
         :title="cover.title"
-        :subtitle="`${cover.subjectName} · Kertas ${cover.kertas} · ${cover.durationMin} minit · ${cover.marks} markah · ${cover.questionCount} soalan`"
+        :subtitle="`${cover.subjectName} · Kertas ${cover.kertas} · ${cover.durationMin > 0 ? `${cover.durationMin} minit · ` : ''}${cover.marks} markah · ${cover.questionCount} soalan`"
         art="books"
         :cta-label="open ? 'Sambung' : 'Mula'"
         data-testid="cover-hero"

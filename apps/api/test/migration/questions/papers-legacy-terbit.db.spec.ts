@@ -35,17 +35,31 @@ beforeAll(async () => {
   await sql(`update education_levels set stage = 'upper_secondary', is_active = true where code = 'T4'`)
   await h.both()
   await sql(`insert into archive_cloud.exam_papers (id, title, subject_id, kertas, duration_minutes, status_id) values
-      (861, 'Kertas Lama Terbit', 2, '1', 90, 91), (862, 'Kertas Lama Soalan Tidak Boleh', 2, '1', 90, 91), (863, 'Kertas Lama Draf', 2, '1', 90, 92), (864, 'Kertas Lama Tanpa Kertas', 2, null, 90, 91)`)
-  await sql(`insert into archive_cloud.paper_sections (id, exam_paper_id, label, position, selection_rule_id) values (61, 861, 'Bahagian A', 1, 1), (62, 862, 'Bahagian A', 1, 1), (63, 863, 'Bahagian A', 1, 1), (64, 864, 'Bahagian A', 1, 1)`)
-  await sql(`insert into archive_cloud.exam_questions (id, exam_paper_id, status_id, position) values (7061, 861, 1, 1), (7062, 862, 1, 1), (7063, 863, 1, 1), (7064, 864, 1, 1)`)
+      (861, 'Kertas Lama Terbit', 2, '1', 90, 91), (862, 'Kertas Lama Soalan Tidak Boleh', 2, '1', 90, 91), (863, 'Kertas Lama Draf', 2, '1', 90, 92), (864, 'Kertas Lama Tanpa Kertas', 2, null, 90, 91),
+      (865, 'Kertas Lama Tanpa Tempoh', 2, '1', null, 91)`)
+  await sql(`insert into archive_cloud.paper_sections (id, exam_paper_id, label, position, selection_rule_id) values (61, 861, 'Bahagian A', 1, 1), (62, 862, 'Bahagian A', 1, 1), (63, 863, 'Bahagian A', 1, 1), (64, 864, 'Bahagian A', 1, 1), (65, 865, 'Bahagian A', 1, 1)`)
+  await sql(`insert into archive_cloud.exam_questions (id, exam_paper_id, status_id, position) values (7061, 861, 1, 1), (7062, 862, 1, 1), (7063, 863, 1, 1), (7064, 864, 1, 1), (7065, 865, 1, 1)`)
   await sql(`insert into archive_cloud.legacy_canonical_map (id, source, legacy_id, canonical_type, canonical_id) values
-      (9061, 'questions', '952', 'exam_question', 7061), (9062, 'questions', '953', 'exam_question', 7062), (9063, 'questions', '952', 'exam_question', 7063), (9064, 'questions', '952', 'exam_question', 7064)`)
-  await sql(`insert into archive_cloud.exam_paper_questions (id, exam_question_id, paper_section_id, sort_order) values (61, 7061, 61, 1), (62, 7062, 62, 1), (63, 7063, 63, 1), (64, 7064, 64, 1)`)
+      (9061, 'questions', '952', 'exam_question', 7061), (9062, 'questions', '953', 'exam_question', 7062), (9063, 'questions', '952', 'exam_question', 7063), (9064, 'questions', '952', 'exam_question', 7064), (9065, 'questions', '952', 'exam_question', 7065)`)
+  await sql(`insert into archive_cloud.exam_paper_questions (id, exam_question_id, paper_section_id, sort_order) values (61, 7061, 61, 1), (62, 7062, 62, 1), (63, 7063, 63, 1), (64, 7064, 64, 1), (65, 7065, 65, 1)`)
   const base = { pool: h.pool, env: h.runEnv, source: 'cloud' as const, asOf: AS_OF, coreAsOf: AS_OF, batchSize: 5 }
   for (const mode of ['dry-run', 'apply'] as const) expect((await runPapers({ ...base, mode })).report.status).toBe('succeeded')
 }, 600_000)
 afterAll(async () => {
   await h?.close()
+})
+
+describe('ck_papers_duration (0266): only a legacy paper may be untimed', () => {
+  const insert = (extra: string) =>
+    sql(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, surface, status, version${extra === '' ? '' : ', legacy_untimed'}) values ('pilihan', 'Ujian Tempoh', 2, 1, 0, 'simulasi', 'draft', 1${extra === '' ? '' : ', ' + extra})`)
+  it('refuses a V3-authored Simulasi paper with no duration, and allows the flagged legacy paper', async () => {
+    await expect(insert('')).rejects.toThrow(/ck_papers_duration/)
+    await expect(insert('false')).rejects.toThrow(/ck_papers_duration/)
+    await insert('true')
+    // the flag never allows a negative duration
+    await expect(sql(`update papers set printed_duration_min = -1 where title = 'Ujian Tempoh'`)).rejects.toThrow(/ck_papers_duration/)
+    await sql(`delete from papers where title = 'Ujian Tempoh'`)
+  })
 })
 
 describe('the legacy publication rule', () => {
@@ -85,7 +99,10 @@ describe('the legacy publication rule', () => {
       // V2 draft is never offered; a paper the load held (no kertas) is held and listed
       expect(byTitle.has('Kertas Lama Draf')).toBe(false)
       expect(byTitle.get('Kertas Lama Tanpa Kertas')).toMatchObject({ outcome: 'held', lines: ['kertas_unknown:no_questions'] })
-      expect(report).toMatchObject({ considered: 3, published: 1, legacy: 1, failed: 1, held: 1 })
+      // V2 parity: a paper with no duration was served untimed; it loads untimed (0, flagged) and is NOT held, so it publishes
+      expect(byTitle.get('Kertas Lama Tanpa Tempoh')).toMatchObject({ outcome: 'published', legacy: true })
+      expect(await h.q(`select printed_duration_min, legacy_untimed, surface, status from papers where title = 'Kertas Lama Tanpa Tempoh'`)).toEqual([{ printed_duration_min: 0, legacy_untimed: true, surface: 'simulasi', status: 'published' }])
+      expect(report).toMatchObject({ considered: 4, published: 2, legacy: 2, failed: 1, held: 1 })
 
       // the audit trail: the override and its reason, by the migration actor
       const audit = await h.q<{ detail: { reason?: string; count?: number } }>(`select detail from audit_events where action = 'bijak.paper.published_override' and target_id = $1`, [await idOf('Kertas Lama Terbit')])
@@ -95,7 +112,7 @@ describe('the legacy publication rule', () => {
 
       const csv = terbitCsv(report).split('\n')
       expect(csv[0]).toBe('v2_paper_id,v3_paper_id,outcome,legacy,lines')
-      expect(csv.filter((l) => l.includes(',published,yes,'))).toHaveLength(1)
+      expect(csv.filter((l) => l.includes(',published,yes,'))).toHaveLength(2)
 
       // a second pass offers nothing that is already published
       const second = await runTerbitPass(h.pool, 'cloud', async () => ({ ok: false, errors: ['unused'] }))
