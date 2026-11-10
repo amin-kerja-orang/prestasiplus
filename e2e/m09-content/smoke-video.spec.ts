@@ -49,8 +49,8 @@ async function pillCount(page: Page, label: string): Promise<number> {
 }
 
 async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText(subtitle)
+  await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText(title)
+  await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText(subtitle)
 }
 
 /** Submit and "Batal" on one row inside the form column. */
@@ -144,7 +144,7 @@ for (const [label, email] of [
       await expectHeader(
         page,
         'Video Pembelajaran',
-        'Tonton video motivasi, tutorial dan tips peperiksaan',
+        'Perpustakaan video pembelajaran anda',
       )
       await expect(page.getByTestId('video-search')).toHaveAttribute('placeholder', 'Cari video...')
       await expect(page.getByTestId('video-category-pill')).toHaveText([

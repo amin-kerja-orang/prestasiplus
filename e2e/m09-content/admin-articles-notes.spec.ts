@@ -50,8 +50,8 @@ async function noteIds(page: Page): Promise<number[]> {
 }
 
 async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
-  await expect(page.getByTestId('shell-admin-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-admin-subtitle')).toHaveText(subtitle)
+  await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText(title)
+  await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(subtitle)
 }
 
 /** "Batal" and the submit button on one row, right-aligned in the form card. */
@@ -78,7 +78,7 @@ test.describe('M09 S1 article list', MODULE, () => {
     await expectHeader(page, 'Artikel', 'Pengurusan artikel')
     if (isDesktopShell(page)) {
       await expect(
-        page.getByTestId('shell-admin-sidebar').getByRole('link', { name: 'Artikel' }),
+        page.getByTestId('pentadbiran-sidebar').getByRole('link', { name: 'Artikel' }),
       ).toBeVisible()
     }
     await expect(page.getByTestId('admin-articles-count')).toHaveText('Jumlah: 72 artikel')
@@ -402,8 +402,8 @@ test.describe('M09 S4 preview article', MODULE, () => {
     await gotoApp('/admin/articles/10')
     await expect(page.getByTestId('admin-article-card')).toBeVisible()
     await expectTabTitle(page, 'Lihat Artikel | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-admin-title')).toContainText('Teknik Pomodoro')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveText('Paparan artikel')
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toContainText('Teknik Pomodoro')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText('Paparan artikel')
     await expect(page.getByTestId('preview-author')).toHaveText('Admin Demo')
     await expect(page.getByTestId('preview-date')).toHaveText('22 Feb 2026')
     await expect(page.getByTestId('preview-views')).toHaveText('596 tontonan')
@@ -648,8 +648,8 @@ test.describe('M09 S8 preview note', MODULE, () => {
     await gotoApp('/admin/notes/1')
     await expect(page.getByTestId('admin-note-card')).toBeVisible()
     await expectTabTitle(page, 'Lihat Nota | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-admin-title')).toContainText('Sifir 1 hingga 12')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveText('Paparan nota')
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toContainText('Sifir 1 hingga 12')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText('Paparan nota')
     await expect(page.getByTestId('preview-author')).toHaveText('Admin Demo')
     await expect(page.getByTestId('preview-date')).toHaveText('06 Feb 2026')
     await expect(page.getByTestId('preview-views')).toHaveText('0 tontonan')

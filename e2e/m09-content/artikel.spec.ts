@@ -53,11 +53,11 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
   }) => {
     await gotoApp('/artikel')
     await expect(cards(page)).toHaveCount(12)
-    await expectTabTitle(page, GENERIC_TITLE)
-    await expect(page.locator('[data-layout="user"]')).toBeVisible()
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Artikel')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
-      'Tips belajar, berita pendidikan, motivasi dan panduan',
+    await expectTabTitle(page, GUEST_TITLE)
+    await expect(page.locator('[data-layout="pembelajaran"]')).toBeAttached()
+    await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Artikel')
+    await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText(
+      'Bacaan pilihan daripada guru dan pasukan PrestasiPlus',
     )
     const titles = await cardTitles(page)
     expect(titles[0]).toBe('AI Ini Apa Sebenarnya? Jom Fahami Bersama!')
@@ -203,7 +203,7 @@ test.describe('M09 S15 article list (guest)', MODULE, () => {
     await expect(cards(page)).toHaveCount(12)
     await expectTabTitle(page, GUEST_TITLE)
     await expect(page.locator('[data-layout="public"]')).toBeVisible()
-    await expect(page.locator('[data-layout="user"]')).toHaveCount(0)
+    await expect(page.locator('[data-layout="pembelajaran"]')).toHaveCount(0)
     await expect(page.getByRole('link', { name: 'Log Masuk' }).first()).toHaveAttribute(
       'href',
       '/login',
@@ -252,7 +252,7 @@ test.describe('M09 S16 article detail', MODULE, () => {
       'Teknik Pomodoro: Belajar 25 Minit, Rehat 5 Minit',
     )
     await expectTabTitle(page, GENERIC_TITLE)
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Artikel')
+    await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText('Artikel')
     await expect(page.getByTestId('artikel-breadcrumb')).toContainText('Dashboard')
     await expect(page.getByTestId('artikel-breadcrumb')).toContainText('Artikel')
     await expect(page.getByTestId('artikel-breadcrumb-current')).toHaveText(
@@ -374,7 +374,7 @@ test.describe('M09 S16 article detail (guest)', MODULE, () => {
 })
 
 test.describe('M09 S15 article list (admin)', MODULE, () => {
-  test('SRS §12 #15 the admin sees the same page in the user shell', async ({
+  test('SRS §12 #15 the admin sees the same page in the Portal Pentadbiran', async ({
     page,
     gotoApp,
     loginAs,
@@ -382,8 +382,8 @@ test.describe('M09 S15 article list (admin)', MODULE, () => {
     await loginAs('admin@demo.test')
     await gotoApp('/artikel')
     await expect(cards(page)).toHaveCount(12)
-    await expect(page.locator('[data-layout="user"]')).toBeVisible()
-    await expect(page.locator('[data-layout="admin"]')).toHaveCount(0)
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Artikel')
+    await expect(page.locator('[data-layout="pembelajaran"]')).toHaveCount(0)
+    await expect(page.locator('[data-portal="pentadbiran"]')).toBeAttached()
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Artikel')
   })
 })

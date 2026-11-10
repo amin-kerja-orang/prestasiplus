@@ -86,10 +86,12 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     await loginAs(STUDENT)
     await gotoApp('/audio-kbat')
     await expect(page.getByTestId('audio-kbat-page')).toBeVisible({ timeout: 15_000 })
-    await expectTabTitle(page, 'Audio KBAT')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Audio KBAT')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveCount(0)
-    const headerBlock = page.getByTestId('shell-user-title').locator('..')
+    await expectTabTitle(page, 'Audio KBAT | PRESTASIPLUS')
+    await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Audio KBAT')
+    await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText(
+      'Dengar soalan pemikiran aras tinggi mengikut subjek',
+    )
+    const headerBlock = page.getByTestId('pembelajaran-header').locator('h1').locator('..')
     await expect(headerBlock).not.toContainText('Dashboard')
     await expect(headerBlock).not.toContainText('Selamat datang kembali')
 
@@ -152,7 +154,7 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('SRS §12 #45 the admin sees S21 in the user shell @m09', async ({
+  test('SRS §12 #45 the admin sees S21 in the Portal Pentadbiran @m09', async ({
     page,
     gotoApp,
     loginAs,
@@ -160,9 +162,9 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/audio-kbat')
     await expect(page.getByTestId('audio-kbat-page')).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Audio KBAT')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveCount(0)
-    await expect(page.getByTestId('shell-admin-title')).toHaveCount(0)
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Audio KBAT')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('pembelajaran-header')).toHaveCount(0)
   })
 
   test('SRS §12 #71 a guest is sent to /login @m09', async ({ page, gotoApp }) => {
@@ -196,7 +198,7 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
       await expectTouchTarget(page.getByTestId('set-link'))
       await page.getByTestId('set-link').click()
       await expect(page).toHaveURL(/\/audio-kbat\/\d+$/)
-      await expectTabTitle(page, 'Audio KBAT')
+      await expectTabTitle(page, 'Audio KBAT | PRESTASIPLUS')
       await expect(page.getByRole('heading', { name: 'Halaman Tidak Dijumpai' })).toHaveCount(0)
       await expect(page.getByTestId('player-title')).toHaveText('BM T4 Ujian Mendengar Set 1')
 

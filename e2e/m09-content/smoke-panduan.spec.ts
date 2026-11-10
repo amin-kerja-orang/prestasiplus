@@ -44,7 +44,7 @@ test.describe('S26 /panduan', MODULE, () => {
     await expect(
       page.getByText('Pilih peranan anda untuk mula. Semua maklumat di hujung jari!'),
     ).toBeVisible()
-    await expect(page.getByTestId('shell-user-sidebar')).toHaveCount(0)
+    await expect(page.getByTestId('pembelajaran-sidebar')).toHaveCount(0)
 
     const home = await topBarLink(page, 'Laman Utama')
     await expect(home).toHaveAttribute('href', '/')

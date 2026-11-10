@@ -35,11 +35,11 @@ function bannerRow(page: Page, id: number) {
 }
 
 async function expectHeader(page: Page, title: string, subtitle?: string): Promise<void> {
-  await expect(page.getByTestId('shell-admin-title')).toHaveText(title)
+  await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText(title)
   if (subtitle === undefined) {
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
   } else {
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveText(subtitle)
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(subtitle)
   }
 }
 
