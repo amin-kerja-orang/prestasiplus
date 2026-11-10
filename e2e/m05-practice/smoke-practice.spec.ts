@@ -55,7 +55,9 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await tid(page, 'count-5').click()
     await tid(page, 'config-start').click()
     await expect(page).toHaveURL(/\/practice\/MATH\/quiz\?level=1&count=5$/)
-    await expect(tid(page, 'quiz-title')).toHaveText('Matematik')
+    // V2 latih-tubi/quiz.blade.php:2 (tab title "Kuiz {subject}") and :18 (subject name on the page).
+    await expectTabTitle(page, 'Kuiz Matematik | PRESTASIPLUS')
+    await expect(page.getByText('Matematik', { exact: true }).first()).toBeVisible()
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
     await expectNoHorizontalScroll(page)
   })
@@ -67,7 +69,9 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
   }) => {
     await loginAs(PELAJARMAJU)
     await gotoApp('/practice/MATH/quiz?level=1&count=5')
-    await expect(tid(page, 'quiz-title')).toHaveText('Matematik')
+    // V2 latih-tubi/quiz.blade.php:2 (tab title "Kuiz {subject}") and :18 (subject name on the page).
+    await expectTabTitle(page, 'Kuiz Matematik | PRESTASIPLUS')
+    await expect(page.getByText('Matematik', { exact: true }).first()).toBeVisible()
 
     // Option buttons are touch targets (44 px) and the question is plain text.
     await expectTouchTarget(tid(page, 'option-A'))
@@ -94,7 +98,7 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
   })
 
-  test('the trial gate sends an admin with no free questions left to /pricing', async ({
+  test('the trial gate blocks an admin with no free questions left and offers no pricing link', async ({
     page,
     loginAs,
     gotoApp,
@@ -103,7 +107,11 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await gotoApp('/practice/MATH')
     await expect(tid(page, 'config-trial')).toContainText('Baki percubaan percuma: 0 soalan lagi.')
     await tid(page, 'config-start').click()
-    await expect(page).toHaveURL(/\/pricing$/)
+    // /pricing retired (r1-canonical-map.json:6344): the redirect assertion became: start is blocked, the URL
+    // stays on the config page and no pricing/"Langgan" link is rendered.
+    await expect(page).toHaveURL(/\/practice\/MATH$/)
+    await expect(page.locator('a[href="/pricing"]')).toHaveCount(0)
+    await expect(page.getByText(/Langgan/)).toHaveCount(0)
     expect(await page.evaluate(() => document.body.innerText)).not.toContain('Memuat Soalan')
   })
 
