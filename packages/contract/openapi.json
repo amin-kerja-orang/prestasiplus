@@ -99923,6 +99923,24 @@
             "properties": {
               "auditId": {
                 "$ref": "#/components/schemas/Id"
+              },
+              "affectedPapers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title"
+                  ]
+                }
               }
             },
             "required": [
