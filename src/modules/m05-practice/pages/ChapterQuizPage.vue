@@ -6,7 +6,7 @@
  * the session through `QuizRunner` (mode `chapter`) with the Q1/Q2 labels (§8.3 PROPOSED COPY):
  *
  * - 402 → `/pricing` (the runner); header card title "Bab {n}: {chapter}" (INFERRED);
- * - shell header "Soalan by Chapter" / "{subject}", tab title "Chapter {subject} - PRESTASIPLUS" (UNVERIFIED);
+ * - shell header "Soalan by Chapter" / "{subject}", tab title "Kuiz {subject}" (V2 latih-tubi/quiz.blade.php:2; the chapter filter is QuizController@quiz ?chapter=);
  * - results "Keputusan Latihan", "Ulang Lagi" (a new session with the same parameters) and "Kembali" → S5.
  */
 import { computed, onScopeDispose, ref, watch } from 'vue'
@@ -91,7 +91,7 @@ watch(
         setRouteOutcome(404)
         return
       }
-      pageMeta.setTitle(`Chapter ${hit.subjectName} - PRESTASIPLUS`)
+      pageMeta.setTitle(`Kuiz ${hit.subjectName}`)
       pageMeta.setHeader({ title: 'Soalan by Chapter', subtitle: hit.subjectName })
       resolved.value = { key: k, ...hit }
     } catch (err) {

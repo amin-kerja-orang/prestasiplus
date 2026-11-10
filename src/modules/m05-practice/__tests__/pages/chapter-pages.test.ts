@@ -480,6 +480,7 @@ describe('Q2 ChapterQuizPage', () => {
     expect(p.confirmExit).toBe(true)
     expect(p.report).toEqual({ source: 'latihan' })
     expect(outcome.setRouteOutcome).not.toHaveBeenCalled()
+    expect(document.title).toBe('Kuiz Matematik | PRESTASIPLUS')
   })
 
   it('finds the level of a chapter that is not in the default level', async () => {
