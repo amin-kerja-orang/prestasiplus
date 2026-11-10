@@ -104,7 +104,8 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     await gotoApp('/admin/curriculum')
     await expect(page.getByTestId('curriculum-prompt')).toBeVisible()
     await expectTabTitle(page, TREE_TAB)
-    // The v2 filter panel has no card title; it holds the two labelled selects and "Tapis".
+    // V2 curriculum.blade.php: the filter card is titled "Tapis Kurikulum" (missing from the v2 restyle: red until fixed).
+    await expect(page.getByText('Tapis Kurikulum')).toBeVisible()
     await expect(page.getByTestId('curriculum-filter')).toBeVisible()
     await expect(page.getByTestId('curriculum-filter')).toContainText('Subjek')
     await expect(page.getByTestId('curriculum-filter')).toContainText('Tahap')
