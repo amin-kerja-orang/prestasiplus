@@ -23,7 +23,7 @@ const ADMIN = 'admin@demo.test'
 const LIST = '/admin/structured-questions'
 
 function rows(page: Page) {
-  return page.getByTestId('structured-row')
+  return page.getByTestId('structured-table').locator('tbody tr')
 }
 
 function pager(page: Page) {
