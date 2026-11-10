@@ -132,6 +132,11 @@ describe('#21 GET /api/amaran/schools/:id', () => {
     expect(d.levels.length).toBeGreaterThan(0)
     expect(d.levels.every((n) => Number.isInteger(n) && n >= 1 && n <= 5)).toBe(true)
     expect(d.levels).toEqual([...d.levels].sort((a, b) => a - b))
+    // FR-AS-49: only the Tingkatan that have pupils are listed (a level with no pupils has no pill).
+    const withPupils = ([1, 2, 3, 4, 5] as const).filter(
+      (n) => risk.pupilsForSchool(8078, { now, tingkatan: n }).length > 0,
+    )
+    expect(d.levels).toEqual(withPupils)
     // The list agrees with the tally, which agrees with the dataset headcount.
     expect(d.tally.total).toBe(423)
     expect(d.pupils).toHaveLength(d.tally.total)
@@ -145,27 +150,19 @@ describe('#21 GET /api/amaran/schools/:id', () => {
       )
       expect(f.levelFilter).toBe(`T${String(n)}`)
       expect(f.pupils).toHaveLength(f.tally.total)
-      // T4 and T5 are always listed (an empty one filters to 0 rows); T1-T3 only appear with pupils.
-      if (n <= 3) expect(f.pupils.length).toBeGreaterThan(0)
+      expect(f.pupils.length).toBeGreaterThan(0)
     }
-    expect(d.levels).toEqual(expect.arrayContaining([4, 5]))
   }, 600_000)
 
-  it('S4 always lists the T4 and T5 pills, also for a school with no pupils in them (900001)', async () => {
+  it('a school with no pupils in a level has no pill for it (school 900001, FR-AS-49)', async () => {
     const d = await dataAs<SchoolRiskData & { levels: number[] }>(
       runtime,
       admin.id,
       '/api/amaran/schools/900001',
     )
-    expect(d.levels).toEqual([4, 5])
-    // Every listed pill filters to a list that equals its own tally, also when that level has no pupils.
-    for (const n of d.levels) {
-      const f = await dataAs<SchoolRiskData>(
-        runtime,
-        admin.id,
-        `/api/amaran/schools/900001?tingkatan=T${String(n)}`,
-      )
-      expect(f.pupils).toHaveLength(f.tally.total)
+    for (const n of [1, 2, 3, 4, 5] as const) {
+      const has = risk.pupilsForSchool(900001, { now, tingkatan: n }).length > 0
+      expect(d.levels.includes(n), `T${String(n)}`).toBe(has)
     }
   })
 
