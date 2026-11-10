@@ -25,7 +25,12 @@ const MODULE = { tag: [moduleTag(10)] }
 
 test.use({ mockInit: { latency: 0 } })
 
-async function expectHeader(page: Page): Promise<void> {
+async function expectHeader(page: Page, admin = false): Promise<void> {
+  if (admin) {
+    // Admin Pusat has the Portal Pentadbiran frame; V2 pelajar.blade has no subheading of its own.
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Pelajar Saya')
+    return
+  }
   await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Pelajar Saya')
   // V2 guru layout default subtitle (guru/layout.blade.php:323): the greeting with the teacher name.
   await expect(page.getByTestId('pembelajaran-subtitle')).toContainText('Selamat datang, ')
@@ -40,8 +45,8 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru/pelajar')
     await expectTabTitle(page, 'Pelajar Saya | PRESTASIPLUS')
-    await expectHeader(page)
-    await expect(page.getByTestId('pelajar-count')).toHaveText('0')
+    await expectHeader(page, true)
+    await expect(page.getByTestId('pelajar-value')).toHaveText('0')
     await expect(page.getByText('Pelajar dalam kelas saya')).toBeVisible()
     const link = page.getByTestId('pelajar-create')
     await expect(link).toHaveAttribute('href', '/guru/pelajar/cipta')
@@ -51,7 +56,7 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       .toBe(isMobileWidth(page) ? 'Cipta' : 'Cipta Pelajar')
     await expect(page.locator('[data-testid="pelajar-tabs"] button')).toHaveText([
       'Pelajar Sekolah',
-      'Pelajar Saya 0',
+      'Pelajar Saya (0)',
     ])
     const empty = page.getByTestId('pelajar-empty')
     await expect(empty).toContainText('Belum ada pelajar dalam kelas anda')
@@ -65,19 +70,24 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('SRS §12 #25 admin: "Cipta Pelajar" returns to /guru/pelajar with no message @m10', async ({
+  test('SRS §12 #25 admin: "Cipta Pelajar" opens the create card on /guru/pelajar/cipta with no message @m10', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
+    // R1-GUR-41 / D-T10-1 (recorded decision): /guru/pelajar/cipta no longer redirects silently; it renders the same
+    // page with the "Cipta Pelajar" card open.
     await loginAs(ADMIN)
     await gotoApp('/guru/pelajar')
+    await expect(page.getByTestId('pelajar-create-card')).toHaveCount(0)
     await page.getByTestId('pelajar-create').click()
-    await expect(page).toHaveURL(/\/guru\/pelajar$/)
-    await expect(page.getByTestId('pelajar-count')).toHaveText('0')
+    await expect(page).toHaveURL(/\/guru\/pelajar\/cipta$/)
+    await expect(page.getByTestId('pelajar-create-card')).toBeVisible()
+    await expect(page.getByTestId('pelajar-value')).toHaveText('0')
     await expect(page.getByTestId('flash-outlet')).toHaveCount(0)
     await gotoApp('/guru/pelajar/cipta')
-    await expect(page).toHaveURL(/\/guru\/pelajar$/)
+    await expect(page).toHaveURL(/\/guru\/pelajar\/cipta$/)
+    await expect(page.getByTestId('pelajar-create-card')).toBeVisible()
   })
 
   test('SRS §12 #25 admin school tab: class select and the no-school card with "Tetapan Profil" @m10', async ({
@@ -137,7 +147,11 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       await expect(page.locator('[data-testid="pelajar-target"] option')).toHaveCount(3)
       const row = page.getByTestId('student-row').filter({ hasText: 'Pelajar Demo' }).first()
       await expect(row).toBeVisible()
-      await expect(row.getByTestId('student-add')).toBeDisabled()
+      // AC-GUR-41-7 (PRD 20 sec. 1291): "Tambah" is enabled with no class chosen; clicking it says so and adds nobody.
+      await expect(row.getByTestId('student-add')).toBeEnabled()
+      await row.getByTestId('student-add').click()
+      await expect(page.getByTestId('pelajar-target-error')).toHaveText('Sila pilih kelas dahulu.')
+      await expect(page.getByTestId('pelajar-value')).toHaveText('8')
       await page.getByTestId('pelajar-target').selectOption({ index: 2 })
       await expect(row.getByTestId('student-add')).toBeEnabled()
       await expectTouchTarget(row.getByTestId('student-add'))
@@ -178,7 +192,8 @@ test.describe('M10 S6 Pelajar Saya', MODULE, () => {
       await expect(page).toHaveURL(/\/login\?redirect=(%2F|\/)guru(%2F|\/)pelajar$/)
       await loginAs(PELAJAR)
       await gotoApp('/guru/pelajar')
-      await expect(page).not.toHaveURL(/\/guru\//)
+      // v2: a forbidden role gets the 403 page in place (no redirect).
+      await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     },
   )
 })
