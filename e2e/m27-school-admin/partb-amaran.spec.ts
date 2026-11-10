@@ -215,11 +215,17 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     await expect(page.getByTestId('am-legend-green')).toHaveText(`Hijau: ${green}`)
     await expect(page.getByTestId('am-legend-yellow')).toHaveText(`Kuning: ${yellow}`)
     await expect(page.getByTestId('am-legend-red')).toHaveText(`Merah: ${red}`)
-    for (const [key, n] of [['green', green], ['yellow', yellow], ['red', red]] as const) {
-      const seg = page.getByTestId(`am-seg-${key}`)
-      if (n === 0) await expect(seg).toHaveCount(0)
-      else await expect(seg).toHaveText(`${Math.round((n / total) * 100)}%`)
-    }
+    // v2: the bar is a `DsChart`; its readable twin is a table with one row per segment, "{Label} ({pct}%)" and the count.
+    const segments = await dist
+      .locator('table tbody tr')
+      .evaluateAll((rows) =>
+        rows.map((r) => [...r.querySelectorAll('th, td')].map((c) => (c.textContent ?? '').trim())),
+      )
+    expect(segments).toEqual([
+      ['Hijau (' + Math.round((green / total) * 100) + '%)', String(green)],
+      ['Kuning (' + Math.round((yellow / total) * 100) + '%)', String(yellow)],
+      ['Merah (' + Math.round((red / total) * 100) + '%)', String(red)],
+    ])
 
     // M18 #21 was asked for the session school, without a level
     const calls = await createMockHandle(page).requests('/api/amaran/schools/:id')
@@ -266,8 +272,9 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     await expect(list).toContainText('Senarai Pelajar Berisiko')
     await expect(list).toContainText('Disusun mengikut skor risiko tertinggi')
     await expect(page.locator('[data-testid="am-table"] th')).toHaveText(COLUMNS)
-    const rows = page.getByTestId('am-pupil-row')
-    await expect(rows).toHaveCount(total!)
+    // v2: the list is a `DsDataTable` of 25 rows per page (FR-AS-49-6); `am-pupil-row` is gone, the rows are the table body rows.
+    const rows = page.getByTestId('am-table').locator('tbody tr')
+    await expect(rows).toHaveCount(Math.min(total!, 25))
     const ranks = (await page.getByTestId('am-rank').allTextContents()).map(num)
     expect(ranks).toEqual(ranks.map((_, i) => i + 1))
     const scores = (await page.getByTestId('am-score').allTextContents()).map(num)
@@ -296,7 +303,7 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     const [t4, g, y, r] = (await tileValues(page)) as [number, number, number, number]
     expect(t4).toBeLessThanOrEqual(all!)
     expect(g + y + r).toBe(t4)
-    await expect(page.getByTestId('am-pupil-row')).toHaveCount(t4)
+    await expect(page.getByTestId('am-name')).toHaveCount(Math.min(t4, 25))
     const calls = await createMockHandle(page).requests('/api/amaran/schools/:id')
     expect(calls.at(-1)?.query).toMatchObject({ tingkatan: 'T4' })
   })
@@ -372,9 +379,10 @@ test.describe('S4 school without pupils (E2E-M27-76)', MODULE, () => {
       await expect(page.getByTestId('am-legend-green')).toHaveText('Hijau: 0')
       await expect(page.getByTestId('am-legend-yellow')).toHaveText('Kuning: 0')
       await expect(page.getByTestId('am-legend-red')).toHaveText('Merah: 0')
-      await expect(page.locator('[data-testid^="am-seg-"]')).toHaveCount(0)
+      // v2: the bar is a chart; with no pupils every segment of its table reads 0
+      await expect(page.getByTestId('am-distribution').locator('table tbody td')).toHaveText(['Hijau (0%)', '0', 'Kuning (0%)', '0', 'Merah (0%)', '0'])
       await expect(page.getByTestId('am-subjects')).toHaveCount(0)
-      await expect(page.getByTestId('am-pupil-row')).toHaveCount(0)
+      await expect(page.getByTestId('am-name')).toHaveCount(0)
       await expect(page.getByTestId('am-error')).toHaveCount(0)
       await expect(page.locator('[data-testid="am-table"] th')).toHaveText(COLUMNS)
 
@@ -394,7 +402,7 @@ test.describe('S4 responsive (§22; E2E-M27-70/71/73 at 375, 768, 1280)', MODULE
   }) => {
     await signIn(page, POPULATED)
     await open(page, gotoApp)
-    await expect(page.getByTestId('am-pupil-row').first()).toBeVisible()
+    await expect(page.getByTestId('am-table').locator('tbody tr').first()).toBeVisible()
     await expectNoHorizontalScroll(page)
 
     const width = viewportWidth(page)
@@ -441,14 +449,11 @@ test.describe('S4 responsive (§22; E2E-M27-70/71/73 at 375, 768, 1280)', MODULE
       expect(right).toBeGreaterThan(actions.x + actions.width - 4)
     }
 
-    // the risk table scrolls inside its card at 375 and 768 (min width 860), never the page
-    const scroll = await page
+    // the risk table (fixed layout, cells wrap) fits inside the viewport at every width, never scrolls the page
+    const tableRight = await page
       .getByTestId('am-table')
-      .evaluate((t) => {
-        const scroller = t.closest('.overflow-x-auto') as HTMLElement
-        return { sw: scroller.scrollWidth, cw: scroller.clientWidth }
-      })
-    if (width < 900) expect(scroll.sw).toBeGreaterThan(scroll.cw)
+      .evaluate((t) => t.getBoundingClientRect().right)
+    expect(tableRight).toBeLessThanOrEqual(width + 0.5)
     await expectNoHorizontalScroll(page)
   })
 
