@@ -117,7 +117,7 @@ async function smallText(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const root =
       document.querySelector('[data-testid=pembelajaran-main]') ??
-      document.querySelector('[data-testid=shell-user-main]') ??
+      document.querySelector('[data-testid=pentadbiran-main]') ??
       document.querySelector('[data-testid=shell-admin-main]') ??
       document.body
     const out: string[] = []
@@ -184,7 +184,7 @@ for (const c of CASES) {
         await gotoApp(path)
         const main = page
           .locator(
-            '[data-testid=pembelajaran-main], [data-testid=shell-user-main], [data-testid=shell-admin-main], body',
+            '[data-testid=pembelajaran-main], [data-testid=shell-admin-main], body',
           )
           .first()
         await expect

@@ -12,7 +12,7 @@ import { expectNoHorizontalScroll, moduleTag } from '../support'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any
 
-const main = (page: Page) => page.getByTestId('shell-user-main')
+const main = (page: Page) => page.locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]')
 
 async function text(page: Page): Promise<string> {
   await expect(main(page)).not.toBeEmpty()
@@ -418,7 +418,7 @@ test.describe('M08 G5 values (admin)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByRole('link', { name: 'Tingkatan 4' })).toBeVisible()
     await page.getByRole('link', { name: 'Tingkatan 4' }).click()
     await expect.poll(() => new URL(page.url()).searchParams.get('tingkatan')).toBe('T4')
-    await expect(page.getByTestId('shell-user-subtitle')).toContainText('— Tingkatan 4')
+    await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toContainText('— Tingkatan 4')
   })
 
   test('AC-20.3 S9 /8880: school card, profile, GPS, subject rows, pills order and first card', async ({

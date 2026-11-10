@@ -17,8 +17,8 @@ const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const header = (page: Page) => ({
-  title: page.getByTestId('shell-user-title'),
-  subtitle: page.getByTestId('shell-user-subtitle'),
+  title: page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1'),
+  subtitle: page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]'),
 })
 
 async function expectForbidden(page: Page): Promise<void> {

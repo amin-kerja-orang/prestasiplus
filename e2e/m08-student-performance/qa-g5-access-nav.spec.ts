@@ -3,7 +3,7 @@
  * 404 / 403 pages (02.1-02.5), `/analisa-item` redirects (03.1-03.3), role guards (§9, OD-R3 / OD-R4).
  */
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, isDesktopShell, moduleTag } from '../support'
@@ -12,8 +12,10 @@ const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const header = (page: Page) => ({
-  title: page.getByTestId('shell-user-title'),
-  subtitle: page.getByTestId('shell-user-subtitle'),
+  title: page.locator(
+    '[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1',
+  ),
+  subtitle: page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]'),
 })
 
 async function expectNotFound(page: Page): Promise<void> {
@@ -21,7 +23,8 @@ async function expectNotFound(page: Page): Promise<void> {
   await expectTabTitle(page, NOT_FOUND_TITLE)
   const root = page.locator('[data-page=not-found]')
   await expect(root).toContainText('404')
-  await expect(root).toContainText('🔍')
+  // v2: friend / icon chip instead of the glyph.
+  await expect(root.locator('[data-ds="error-page"][data-code="404"]')).toBeVisible()
   await expect(root).toContainText('Halaman Tidak Dijumpai')
   await expect(root).toContainText(
     'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
@@ -39,7 +42,7 @@ async function expectForbidden(page: Page): Promise<void> {
   await expect(root).toBeVisible()
   await expectTabTitle(page, FORBIDDEN_TITLE)
   await expect(root).toContainText('403')
-  await expect(root).toContainText('🚫')
+  await expect(root.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
   await expect(root).toContainText('Akses Ditolak')
   await expect(root).toContainText(
     'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.',
@@ -49,16 +52,27 @@ async function expectForbidden(page: Page): Promise<void> {
   await expectNoHorizontalScroll(page)
 }
 
-/** Hrefs of every link in the active nav surface (sidebar at 1280, the drawer opened via "Lagi" below). */
-async function navHrefs(page: Page): Promise<Map<string, string>> {
-  let root
+/** The nav surface in use: the sidebar from 1024 px, else the "Lagi" sheet (learner/teacher frame) or the menu drawer (Pentadbiran). */
+async function navRoot(page: Page): Promise<Locator> {
   if (isDesktopShell(page)) {
-    root = page.getByTestId('shell-user-sidebar')
-  } else {
-    await page.getByTestId('shell-user-bottom-nav').locator('button').last().click()
-    root = page.getByTestId('shell-user-drawer')
-    await expect(root).toBeVisible()
+    return page.locator('[data-testid=pembelajaran-sidebar], [data-testid=pentadbiran-sidebar]')
   }
+  const lagi = page.locator('[data-nav-id="tab-lagi"]')
+  if (await lagi.count()) {
+    await lagi.click()
+    const root = page.getByTestId('pembelajaran-lagi-nav')
+    await expect(root).toBeVisible()
+    return root
+  }
+  await page.getByTestId('pentadbiran-menu-button').click()
+  const root = page.getByRole('dialog')
+  await expect(root).toBeVisible()
+  return root
+}
+
+/** Hrefs of every link in the active nav surface. */
+async function navHrefs(page: Page): Promise<Map<string, string>> {
+  const root = await navRoot(page)
   const links = await root
     .locator('a[href]')
     .evaluateAll((as) =>
@@ -110,10 +124,7 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
     await loginAs('admin@demo.test')
     await gotoApp('/prestasi/sekolah')
     await expect(header(page).title).toHaveText('Dashboard Sekolah')
-    await navHrefs(page)
-    const scope = isDesktopShell(page)
-      ? page.getByTestId('shell-user-sidebar')
-      : page.getByTestId('shell-user-drawer')
+    const scope = await navRoot(page)
     await scope.locator('a[href="/ranking"]').first().click()
     await expect.poll(() => new URL(page.url()).pathname).toBe('/ranking')
   })
@@ -126,10 +137,7 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
     await loginAs('admin@demo.test')
     await gotoApp('/prestasi/sekolah')
     await expect(header(page).title).toHaveText('Dashboard Sekolah')
-    await navHrefs(page)
-    const scope = isDesktopShell(page)
-      ? page.getByTestId('shell-user-sidebar')
-      : page.getByTestId('shell-user-drawer')
+    const scope = await navRoot(page)
     await scope.locator('a[href="/analisa-item"]').first().click()
     await expect.poll(() => new URL(page.url()).pathname).toBe('/analisa-item/kelas')
     await expect(header(page).title).toHaveText('Analisa Item')
