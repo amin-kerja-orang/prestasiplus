@@ -64,13 +64,44 @@ pp_parse_db_url() {
   PP_URL_PASSWORD="$(pp_urldecode "${BASH_REMATCH[3]}")"
 }
 
-# pp_cfg KEY DEFAULT -> environment, else prod.env, else DEFAULT
+# pp_cfg KEY DEFAULT -> environment, else prod.env, else DEFAULT.
+# PP_DOMAIN is the exception: it is read from the prod.env FILE only (an inherited PP_DOMAIN in the shell must never decide which host a
+# destructive script believes it is on: the G3 deny list of rebuild-db.sh).
 pp_cfg() {
-  local key="$1" def="${2:-}" v
-  v="${!key:-}"
+  local key="$1" def="${2:-}" v=""
+  [ "$key" = PP_DOMAIN ] || v="${!key:-}"
   [ -n "$v" ] || v="$(pp_env_value "$PP_PROD_ENV" "$key")"
   [ -n "$v" ] || v="$def"
   printf '%s' "$v"
+}
+
+# pp_norm_domain TEXT -> the host name lower-cased, trimmed, without a trailing dot (a deny list must not be dodged by case or blanks)
+pp_norm_domain() {
+  local d="${1,,}"
+  d="${d#"${d%%[![:space:]]*}"}"; d="${d%"${d##*[![:space:]]}"}"
+  d="${d%.}"
+  printf '%s' "$d"
+}
+
+# pp_intake_av_problem [runtime]: prints the reason (and returns 1) when INTAKE_TEACHER_ENABLED is on in api.env while ClamAV is not live.
+# Teacher DOCX/XLSX uploads (intake-teacher.gate.ts, intake-upload.service.ts acceptOffice) are NOT virus-scanned by the API, so the flag is
+# safe only while it is off (AZ-35, backlog #78). "Live" = compose profile clamav in PP_PROFILES, CLAMAV_HOST set in api.env, and with
+# "runtime" the clamav container running. Nothing printed and return 0 when the flag is off or ClamAV is live.
+pp_intake_av_problem() {
+  local mode="${1:-}" api_env="$PP_ENV_DIR/api.env" v profs
+  v="$(pp_env_value "$api_env" INTAKE_TEACHER_ENABLED)"; v="${v,,}"
+  case "$v" in ''|false|0|no|off) return 0 ;; esac
+  profs=",$(pp_cfg PP_PROFILES ''),"
+  if [[ "$profs" != *,clamav,* ]]; then
+    printf 'INTAKE_TEACHER_ENABLED=%s in %s but the clamav compose profile is not in PP_PROFILES: teacher DOCX/XLSX uploads would not be virus-scanned (set it to false, or run ClamAV first)' "$v" "$api_env"; return 1
+  fi
+  if [ -z "$(pp_env_value "$api_env" CLAMAV_HOST)" ]; then
+    printf 'INTAKE_TEACHER_ENABLED=%s in %s but CLAMAV_HOST is not set there: uploads would not be virus-scanned' "$v" "$api_env"; return 1
+  fi
+  if [ "$mode" = runtime ] && [ -z "$(pp_compose ps -q --status running clamav 2>/dev/null || true)" ]; then
+    printf 'INTAKE_TEACHER_ENABLED=%s but the clamav container is not running: uploads are not virus-scanned' "$v"; return 1
+  fi
+  return 0
 }
 
 # pp_compose ARGS... -> docker compose with the production overlay, prod.env and the configured profiles.

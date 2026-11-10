@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseUatArgs } from '../../scripts/uat-ops/lib'
+import { exitCodeOf, parseUatArgs } from '../../scripts/uat-ops/lib'
 import { normalizeApiUrl, SPEC, supportLines, supportRowLines } from '../../scripts/uat-ops/u-op-16-support-contact'
 
 /** S4-T08 U-OP-16: the support contact check (pure; the HTTP call is the script's main). */
@@ -15,10 +15,12 @@ describe('supportLines', () => {
     expect(text).not.toContain('60123456789')
   })
 
-  it('fails an empty or missing value', () => {
-    expect(statuses(200, { data: { email: '', whatsappNumber: '+60123456789' } })).toEqual(['PASS', 'FAIL', 'PASS'])
-    expect(statuses(200, { data: { email: 'a@b.invalid', whatsappNumber: '  ' } })).toEqual(['PASS', 'PASS', 'FAIL'])
-    expect(statuses(200, { data: {} })).toEqual(['PASS', 'FAIL', 'FAIL'])
+  it('reports an empty or missing value as a pending PO item, not a failure (KP-12)', () => {
+    expect(statuses(200, { data: { email: '', whatsappNumber: '+60123456789' } })).toEqual(['PASS', 'INFO', 'PASS'])
+    expect(statuses(200, { data: { email: 'a@b.invalid', whatsappNumber: '  ' } })).toEqual(['PASS', 'PASS', 'INFO'])
+    expect(statuses(200, { data: {} })).toEqual(['PASS', 'INFO', 'INFO'])
+    expect(supportLines(200, { data: {} })[1]?.text).toContain('PENDING PO ITEM')
+    expect(exitCodeOf(supportLines(200, { data: {} }))).toBe(0)
   })
 
   it('fails a body without data and any status but 200 (404 names the missing setting)', () => {
@@ -30,10 +32,11 @@ describe('supportLines', () => {
 })
 
 describe('supportRowLines (database mode, used by the rebuild)', () => {
-  it('reports a missing row as pending PO input, never as a usage error', () => {
+  it('reports a missing row as a pending PO item (INFO, exit 0), never as a failure', () => {
     const lines = supportRowLines(undefined)
-    expect(lines.map((l) => l.status)).toEqual(['FAIL'])
-    expect(lines[0]?.text).toContain('PENDING PO INPUT')
+    expect(lines.map((l) => l.status)).toEqual(['INFO'])
+    expect(lines[0]?.text).toContain('PENDING PO ITEM')
+    expect(exitCodeOf(lines)).toBe(0)
   })
 
   it('passes a filled row without printing values; hours is optional', () => {
@@ -44,8 +47,11 @@ describe('supportRowLines (database mode, used by the rebuild)', () => {
     expect(text).not.toContain('60123456789')
   })
 
-  it('fails an empty e-mail or number', () => {
-    expect(supportRowLines({ email: '', whatsapp_number: '  ', hours: '8-5' }).map((l) => l.status)).toEqual(['PASS', 'FAIL', 'FAIL', 'INFO'])
+  it('reports an empty e-mail or number as pending, not failed', () => {
+    const lines = supportRowLines({ email: '', whatsapp_number: '  ', hours: '8-5' })
+    expect(lines.map((l) => l.status)).toEqual(['PASS', 'INFO', 'INFO', 'INFO'])
+    expect(lines[1]?.text).toContain('PENDING PO ITEM')
+    expect(exitCodeOf(lines)).toBe(0)
   })
 })
 

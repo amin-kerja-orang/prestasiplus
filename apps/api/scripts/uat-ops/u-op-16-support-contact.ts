@@ -5,15 +5,20 @@
  *   npx tsx apps/api/scripts/uat-ops/u-op-16-support-contact.ts --api-url https://host     (one public GET)
  *   DATABASE_URL=... npx tsx apps/api/scripts/uat-ops/u-op-16-support-contact.ts           (no --api-url: reads `support_config`; used by rebuild-db.sh)
  *
- * FAIL when the route answers anything but 200 (404 = the singleton row is not set yet), the body is not `{ data: { email, whatsappNumber } }`,
- * or either value is empty. The report says whether each value is present, never the values themselves.
- * Exit code 0 ok, 1 a check FAILed (an empty setting is a PO input, not a loader fault), 2 usage or environment error.
+ * FAIL when the route answers anything but 200 (404 = the singleton row is not set yet) or the body is not `{ data: { email, whatsappNumber } }`
+ * (HTTP mode); in database mode an unreadable table is exit 2. An EMPTY value (or no row yet) is NOT a failure: PO decision KP-12, the contact
+ * stays empty until Central Admin fills it in at Tetapan > Hubungi Sokongan, so it is an INFO line "PENDING PO ITEM" and the exit code stays 0
+ * (rebuild-db.sh lists it apart from the failed checks). The report says whether each value is present, never the values themselves.
+ * Exit code 0 ok or pending, 1 a check FAILed (route or body broken), 2 usage or environment error (including an unreadable table).
  */
 import { exitCodeOf, formatLine, isMain, line, openDb, parseUatArgs, UsageError, writeReport, type CheckLine, type UatArgsSpec } from './lib'
 
 export const SPEC: UatArgsSpec = { name: 'u-op-16-support-contact', allowApply: false, flags: { 'api-url': { type: 'string' } } }
 
 export const SUPPORT_PATH = '/api/config/support'
+
+/** The marker rebuild-db.sh looks for: an empty contact is a PO item, not a failed check (KP-12). */
+export const PENDING = 'PENDING PO ITEM'
 
 /** Pure: HTTP status and parsed body -> report lines. */
 export function supportLines(status: number, body: unknown): CheckLine[] {
@@ -22,7 +27,7 @@ export function supportLines(status: number, body: unknown): CheckLine[] {
   if (typeof data !== 'object' || data === null) return [line('PASS', `GET ${SUPPORT_PATH} answered 200`), line('FAIL', 'the response has no data object')]
   const field = (key: 'email' | 'whatsappNumber'): CheckLine => {
     const v = (data as Record<string, unknown>)[key]
-    return typeof v === 'string' && v.trim() !== '' ? line('PASS', `${key} is present (value not shown)`) : line('FAIL', `${key} is missing or empty`)
+    return typeof v === 'string' && v.trim() !== '' ? line('PASS', `${key} is present (value not shown)`) : line('INFO', `${PENDING}: ${key} is empty (Central Admin fills it in at Tetapan > Hubungi Sokongan)`)
   }
   return [line('PASS', `GET ${SUPPORT_PATH} answered 200`), field('email'), field('whatsappNumber')]
 }
@@ -39,15 +44,15 @@ export interface SupportRow {
 /**
  * Pure: the `support_config` row (or none) -> report lines. V2 holds no such values (its only trace is a hard-coded mailto in the Panduan view
  * and no phone, WhatsApp or hours), so the ETL cannot load them: a missing row is "PENDING PO INPUT" (the admin enters them in Tetapan, "Hubungi
- * Sokongan"), reported as a FAIL so the PO sees it in the failed-check list.
+ * Sokongan"). Reported as an INFO line "PENDING PO ITEM" (KP-12): visible to the PO, not counted as a failed check.
  */
 export function supportRowLines(row: SupportRow | undefined): CheckLine[] {
-  if (!row) return [line('FAIL', 'PENDING PO INPUT: support_config has no row; V2 holds no support e-mail, WhatsApp or hours to migrate. The admin enters them in Tetapan > Hubungi Sokongan (N-07)')]
+  if (!row) return [line('INFO', `${PENDING}: support_config has no row; V2 holds no support e-mail, WhatsApp or hours to migrate. Central Admin enters them in Tetapan > Hubungi Sokongan (N-07, KP-12)`)]
   const filled = (v: string | null): boolean => typeof v === 'string' && v.trim() !== ''
   return [
     line('PASS', 'support_config row exists (values not shown)'),
-    filled(row.email) ? line('PASS', 'email is present (value not shown)') : line('FAIL', 'PENDING PO INPUT: email is empty'),
-    filled(row.whatsapp_number) ? line('PASS', 'whatsappNumber is present (value not shown)') : line('FAIL', 'PENDING PO INPUT: whatsappNumber is empty'),
+    filled(row.email) ? line('PASS', 'email is present (value not shown)') : line('INFO', `${PENDING}: email is empty (Tetapan > Hubungi Sokongan)`),
+    filled(row.whatsapp_number) ? line('PASS', 'whatsappNumber is present (value not shown)') : line('INFO', `${PENDING}: whatsappNumber is empty (Tetapan > Hubungi Sokongan)`),
     line('INFO', filled(row.hours) ? 'hours is present (optional, value not shown)' : 'hours is not set (optional)'),
   ]
 }

@@ -397,6 +397,19 @@ cmd_etl() {
       envs+=(FILE_STORAGE_DIR=/var/lib/pretasiplus/files)
     fi
   fi
+  # migrate:verify reads the optional per-run allowlist of accepted reject reasons (bank-checks.ts acceptedRejectKeys): PP_VERIFY_ACCEPT_REJECTS
+  # (comma list of entity|reason|column) and PP_VERIFY_ACCEPT_REJECTS_FILE (a HOST file, mounted read-only at /accept-rejects.txt). Set in prod.env or
+  # the shell; the verify report lists what was waved through.
+  if [ "$c" = migrate:verify ]; then
+    local ar arf
+    ar="$(pp_cfg PP_VERIFY_ACCEPT_REJECTS '')"; [ -z "$ar" ] || envs+=("PP_VERIFY_ACCEPT_REJECTS=$ar")
+    arf="$(pp_cfg PP_VERIFY_ACCEPT_REJECTS_FILE '')"
+    if [ -n "$arf" ]; then
+      [ -f "$arf" ] || pp_die "PP_VERIFY_ACCEPT_REJECTS_FILE $arf is not a file" 2
+      pp_assert_outside_repo "$arf"
+      RUN_EXTRA+=(-v "$(readlink -f "$arf"):/accept-rejects.txt:ro"); envs+=(PP_VERIFY_ACCEPT_REJECTS_FILE=/accept-rejects.txt)
+    fi
+  fi
   # P3 (F7): the migration role pp_etl comes from etl.env in migrate_run (DB-ROLES #227), so there is no optional file here.
   # #123 records etl_runs.git_sha; the image has no .git, so the release sha is passed explicitly (F14).
   if [ "$c" != staging:profile ]; then

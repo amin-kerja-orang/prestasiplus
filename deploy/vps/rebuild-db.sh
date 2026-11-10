@@ -23,11 +23,15 @@
 # GUARDS (all must hold, nothing is changed before the last one; every check is repeated by the code that drops the database):
 #   G1 --rebuild-db on the command line.
 #   G2 PP_ALLOW_DB_REBUILD=yes in the prod.env FILE (not the process environment). Production never carries it.
-#   G3 PP_DOMAIN is not prestasiplus.cloud (hard deny list) and the database name is not postgres or a template.
+#   G3 PP_DOMAIN (read from the prod.env FILE only, an inherited PP_DOMAIN is ignored and unset; lower-cased and trimmed) is not on the deny
+#      list (prestasiplus.cloud, www., admin., prestasiplus.my, the example host, PP_REBUILD_DENY_DOMAINS in the file) and the database
+#      name is not postgres, a template, a V2/production name (prestasiplus_prod, prestasiplus_production, prestasiplus_cloud,
+#      prestasiplus_live, prestasi_plus, pios_my) or listed in PP_REBUILD_DENY_DBS (file).
 #   G4 typed confirmation of the exact database name AND the exact domain, in a terminal (a pipe is accepted only on a host
 #      that has PP_SCRATCH_HOST=yes in the prod.env file: a rehearsal machine, never UAT).
 #   G5 full deploy preflight (deploy.sh --dry-run: env files, placeholders, fail-closed seed guard, certificate, compose).
-#   G6 the dump directory is a raw pp-staging-dump/1 with a manifest; the files directory (if given) has SHA256SUMS.
+#   G6 the dump directory is a raw pp-staging-dump/1 with a manifest; an "anonymised" or "synthetic" manifest is refused (an anonymised
+#      dump gives every account the known password Demo1234); the files directory (if given) has SHA256SUMS.
 #   G7 a FRESH pre-rebuild backup exists, is not older than PP_REBUILD_BACKUP_MAX_AGE_S (600), its sha256 matches,
 #      `pg_restore --list` reads it and shows table data. Otherwise the run stops BEFORE api is stopped.
 # The ETL and the API never run at the same time: api is stopped before the database is dropped and started again only
@@ -43,13 +47,15 @@
 #
 # ROLLBACK: --restore-backup FILE (the file written by step 2, path in the log and in $PP_STATE_DIR/rebuild-backup.path):
 # verifies it again, stops api, drops and recreates the database, pg_restore, roles apply + check, restores the files
-# archive when step 4 made one, starts the PREVIOUS release (rebuild-prev.tag), health checks. Writes made after the backup
+# archive when step 4 of THE SAME RUN made one (run id sidecars; a stale archive from another run is refused before anything is dropped), starts the PREVIOUS release (rebuild-prev.tag), health checks. Writes made after the backup
 # are lost. Needs the same guards G1 to G4.
 #
 # NOTE: the deploy user is in the docker group (root-equivalent). Run from the checkout of the release commit, as that user.
 set -Eeuo pipefail
 umask 077
 export PP_SCRIPT=rebuild-db
+# G3: the domain comes from the prod.env file only; an inherited PP_DOMAIN must not reach this script, deploy.sh or docker compose.
+unset PP_DOMAIN
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
@@ -84,7 +90,7 @@ state_dir="$(pp_cfg PP_STATE_DIR /var/lib/pretasiplus-deploy)"
 backup_dir="$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)"
 out_dir="$(pp_cfg PP_MIGRATION_OUT /srv/pretasiplus/migration-out)"
 stage_image="$(pp_cfg PP_STAGE_IMAGE postgres:16-alpine)"
-domain="$(pp_cfg PP_DOMAIN '')"
+domain="$(pp_norm_domain "$(pp_env_value "$PP_PROD_ENV" PP_DOMAIN)")"
 db="$(pp_env_value "$db_env" POSTGRES_DB)"
 max_backup_age="$(pp_cfg PP_REBUILD_BACKUP_MAX_AGE_S 600)"
 
@@ -160,11 +166,21 @@ su_psql() {
 }
 su_scalar() { su_psql "$1" -At -c "$2" </dev/null; }
 
+deny_list() { # deny_list KEY: the comma list KEY from the prod.env FILE, lower-cased, one item per line (the shell environment never counts)
+  local v; v="$(pp_env_value "$PP_PROD_ENV" "$1")"; v="${v,,}"; v="${v//,/ }"
+  printf '%s\n' $v
+}
+
 assert_target_db() { # the one place that decides which database may be dropped
   [[ "$db" =~ ^[a-z][a-z0-9_]{0,40}$ ]] || pp_die "POSTGRES_DB in $db_env is not a plain lowercase name" 2
-  case "$db" in postgres|template0|template1) pp_die "refusing to touch the database '$db'" 2 ;; esac
+  case "$db" in postgres|template0|template1|prestasiplus_prod|prestasiplus_production|prestasiplus_cloud|prestasiplus_live|prestasi_plus|pios_my)
+    pp_die "refusing to touch the database '$db' (system or production name, G3)" 2 ;; esac
+  local x
+  for x in $(deny_list PP_REBUILD_DENY_DBS); do [ "$db" != "$x" ] || pp_die "refusing to touch the database '$db' (PP_REBUILD_DENY_DBS, G3)" 2; done
   [ "$(pp_env_value "$PP_PROD_ENV" PP_ALLOW_DB_REBUILD)" = yes ] || pp_die "refused: PP_ALLOW_DB_REBUILD=yes is not in $PP_PROD_ENV (G2)" 3
-  case "$domain" in prestasiplus.cloud|www.prestasiplus.cloud|app.example.my|'') pp_die "refused: PP_DOMAIN '$domain' is on the deny list or unset (G3)" 3 ;; esac
+  case "$domain" in prestasiplus.cloud|www.prestasiplus.cloud|admin.prestasiplus.cloud|prestasiplus.my|www.prestasiplus.my|app.example.my|'')
+    pp_die "refused: PP_DOMAIN '$domain' is on the deny list or unset (G3)" 3 ;; esac
+  for x in $(deny_list PP_REBUILD_DENY_DOMAINS); do [ "$domain" != "$(pp_norm_domain "$x")" ] || pp_die "refused: PP_DOMAIN '$domain' is in PP_REBUILD_DENY_DOMAINS (G3)" 3; done
 }
 
 confirm_typed() { # G4: the exact database name, then the exact domain
@@ -222,7 +238,10 @@ check_dump_dir() { # G6
   [ -f "$m" ] || pp_die "$dump_dir has no manifest.json (expected a pp-staging-dump/1 directory from dump:cloud)" 2
   grep -Eq '"format"[[:space:]]*:[[:space:]]*"pp-staging-dump/1"' "$m" || pp_die "manifest.json is not format pp-staging-dump/1" 2
   grep -Eq '"raw"[[:space:]]*:[[:space:]]*true' "$m" || pp_die "the dump is not marked raw (\"raw\": true): the rebuild loads the dump:cloud --raw output" 2
-  if grep -Eq '"(anonymised|synthetic)"[[:space:]]*:[[:space:]]*true' "$m"; then pp_die "the dump is marked anonymised or synthetic: never loaded here" 2; fi
+  # G6: any anonymised / synthetic flag that is not a plain false refuses the dump (anonymised accounts all get the known password Demo1234).
+  if grep -Eo '"(anonymised|synthetic)"[[:space:]]*:[[:space:]]*[^,}[:space:]]*' "$m" | grep -Evq ':[[:space:]]*false$'; then
+    pp_die "the dump is marked anonymised or synthetic: never loaded here (an anonymised dump gives every account the known password Demo1234)" 2
+  fi
   if grep -Eq '"large_integers"[[:space:]]*:' "$m"; then pp_die "the manifest lists large_integers: stop and ask the migration owner" 2; fi
   if find "$dump_dir" -maxdepth 1 -name '*.partial' | grep -q .; then pp_die "$dump_dir still holds .partial files: the export did not finish" 2; fi
   pp_log "dump directory ok: manifest pp-staging-dump/1, raw, no .partial files"
@@ -308,6 +327,7 @@ step_backup() {
   now="$(date +%s)"; mtime="$(stat -c %Y "$file")"; age=$((now - mtime))
   [ "$age" -le "$max_backup_age" ] || pp_die "the pre-rebuild dump is $age s old (limit $max_backup_age s)" 3
   BACKUP_FILE="$file"; BACKUP_OK=1
+  printf '%s\n' "$run_id" >"$state_dir/rebuild-backup.run"
   printf '%s\n' "$file" >"$state_dir/rebuild-backup.path"
   pp_log "G7 fresh backup verified: $file (sha256 $sha, ${age}s old). ROLLBACK DUMP = this file."
   pp_log "database before the rebuild: $(su_scalar "$db" "select (select count(*) from information_schema.tables where table_schema='public') || ' tables, ' || coalesce((select count(*) from _prisma_migrations where finished_at is not null)::text, '?') || ' migrations, users ' || coalesce((select count(*)::text from users), '-')" 2>/dev/null || echo 'n/a')"
@@ -336,6 +356,8 @@ step_files_prepare() {
       docker run --rm -v "$vol:/f:ro" --entrypoint tar "$stage_image" -C /f -czf - . >"$f.partial"
       mv "$f.partial" "$f"
       printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(basename "$f")" >"$f.sha256"
+      # the run id sidecar first, the .path file last: a restore accepts the archive only for the same run as the backup (C-2)
+      printf '%s\n' "$run_id" >"$state_dir/rebuild-files-archive.run"
       printf '%s\n' "$f" >"$state_dir/rebuild-files-archive.path"
       pp_log "old uploads archived: $f ($(stat -c %s "$f") bytes)" ;;
     wipe) pp_warn "--files-archive wipe: the old files are NOT archived" ;;
@@ -463,12 +485,34 @@ step_etl2() {
 # ---- post-ETL repairs and checks (docs/ops/r1-uat-rebuild-prep.md section 5). FAILs are recorded, they do not stop the run:
 # the failures are decisions for the PO (go / no-go) and are listed at the end; the exit status is then 4.
 CHECK_FAILS=()
+PENDING_PO=()   # open items for the PO that are NOT failed checks (KP-12: the support contact stays empty until Central Admin fills it in)
 uat_op() { # uat_op LABEL SCRIPT-FILE-OR-ALIAS ARGS...  (runs in the migrate image as the schema owner; reports go to $out_dir/uat-ops)
   local label="$1" what="$2" rc=0; shift 2
   local cmd=(npm run "$what" -w @pp/api --)
   case "$what" in *.ts) cmd=(npm exec -w @pp/api -- tsx "scripts/uat-ops/$what") ;; esac
   sub_time "$label" pp_compose run --rm --no-deps -T -v "$out_dir:/app/.evidence" migrate "${cmd[@]}" "$@" || rc=$?
   if [ "$rc" != 0 ]; then CHECK_FAILS+=("$label (exit $rc)"); pp_warn "CHECK/REPAIR FAILED: $label (exit $rc)"; fi
+  return 0
+}
+
+# support_contact_check: u-op-16 in database mode. Exit 0 with a "PENDING PO ITEM" line = open PO item (listed at the end, not a failed check).
+support_contact_check() {
+  local out rcf rc label="support-contact"
+  out="$(mktemp)"; rcf="$(mktemp)"
+  # the group always exits 0 and leaves the real exit status in the file (as etl() does): no ERR trap inside the pipeline
+  { sub_time "$label" pp_compose run --rm --no-deps -T -v "$out_dir:/app/.evidence" migrate npm run uat:support-contact -w @pp/api -- || echo "$?" >"$rcf"; } 2>&1 | tee "$out"
+  rc="$(cat "$rcf")"; rc="${rc:-0}"; rm -f "$rcf"
+  if [ "$rc" != 0 ]; then CHECK_FAILS+=("$label (exit $rc)"); pp_warn "CHECK FAILED: $label (exit $rc)"
+  elif grep -q 'PENDING PO ITEM' "$out"; then PENDING_PO+=("support contact (e-mail, WhatsApp, hours) is empty: Central Admin fills it in at Tetapan > Hubungi Sokongan (KP-12)"); pp_log "PENDING PO ITEM: $label (not a failed check)"; fi
+  rm -f "$out"
+  return 0
+}
+
+# intake_av_check: INTAKE_TEACHER_ENABLED on while ClamAV is not live is a failed check (S-3). Reads api.env and the clamav container.
+intake_av_check() {
+  local msg rc=0
+  msg="$(pp_intake_av_problem runtime)" || rc=$?
+  if [ "$rc" != 0 ]; then CHECK_FAILS+=("intake-av: $msg"); pp_warn "CHECK FAILED: intake-av: $msg"; else pp_log "intake-av: ok (teacher intake is off, or ClamAV is live)"; fi
   return 0
 }
 
@@ -495,6 +539,10 @@ case "$d" in
 esac
 ai="$(printf %s "${AI_PROVIDER:-}" | tr A-Z a-z)"
 if [ -z "$ai" ]; then ok "AI_PROVIDER unset (default mock + OCR_ENGINE=tesseract selects the real segmenter, no external call)"; else no "AI_PROVIDER=$ai is set: remove it from api.env (no external AI on UAT, D112)"; fi
+case "$(printf %s "${INTAKE_TEACHER_ENABLED:-}" | tr A-Z a-z)" in
+  ""|false) ok "INTAKE_TEACHER_ENABLED is off" ;;
+  *) if [ -n "${CLAMAV_HOST:-}" ]; then ok "INTAKE_TEACHER_ENABLED is on and CLAMAV_HOST is set (the clamav container is checked on the host)"; else no "INTAKE_TEACHER_ENABLED is on but CLAMAV_HOST is empty: teacher DOCX/XLSX uploads are not virus-scanned (S-3)"; fi ;;
+esac
 if [ -z "${AI_API_KEY:-}" ]; then ok "AI_API_KEY is empty"; else no "AI_API_KEY is set (value not shown): no external AI provider on UAT"; fi
 exit $f' || rc=$?
   if [ "$rc" != 0 ]; then CHECK_FAILS+=("intake-env (api image) (exit $rc)"); pp_warn "CHECK FAILED: intake-env (api image) (exit $rc)"; fi
@@ -540,8 +588,11 @@ step_repairs() {
   uat_op "check-levels" uat:check-levels
   uat_op "chapters-t1-t3" uat:chapters-t1-t3
   uat_op "uji-leftovers" uat:uji-leftovers
-  # support-contact reads support_config (V2 has no such values to migrate): FAIL = PENDING PO INPUT (Tetapan > Hubungi Sokongan)
-  uat_op "support-contact (PENDING PO INPUT if FAIL: V2 holds no values)" uat:support-contact
+  # support-contact reads support_config (V2 has no such values to migrate). PO decision KP-12: empty values are a PENDING PO ITEM (Central Admin
+  # fills them in at Tetapan > Hubungi Sokongan), not a failed check; a broken table or endpoint still fails (exit 1 or 2).
+  support_contact_check
+  # S-3: teacher DOCX/XLSX uploads are not virus-scanned; INTAKE_TEACHER_ENABLED must be off unless ClamAV is live (also in the G5 preflight)
+  intake_av_check
   # intake-env runs in the API image with the API's own env (the migrate image has no tessdata and no JOBS_WORKER_ENABLED)
   intake_env_check
   # Terbit check: only when --terbit ran; the old `terbit-papers` (HTTP pool preview, needs a running API and admin login) is a manual tool
@@ -601,9 +652,29 @@ step_record() {
 # ---------------------------------------------------------------------------------------------------------------
 # rollback: restore the pre-rebuild dump
 # ---------------------------------------------------------------------------------------------------------------
+# files_archive_for_restore: sets FILES_ARCHIVE to the archive this restore may unpack, or '' when none. Refuses (before anything is dropped)
+# an archive that does not belong to the same run as the restore dump: the run id sidecars and rebuild-backup.path must agree (C-2).
+FILES_ARCHIVE=""
+files_archive_for_restore() {
+  local fa fa_run bk_run bk_path
+  fa="$(cat "$state_dir/rebuild-files-archive.path" 2>/dev/null || true)"
+  FILES_ARCHIVE=""
+  [ -n "$fa" ] || return 0
+  fa_run="$(cat "$state_dir/rebuild-files-archive.run" 2>/dev/null || true)"
+  bk_run="$(cat "$state_dir/rebuild-backup.run" 2>/dev/null || true)"
+  bk_path="$(cat "$state_dir/rebuild-backup.path" 2>/dev/null || true)"
+  if [ -z "$fa_run" ] || [ -z "$bk_run" ] || [ "$fa_run" != "$bk_run" ] || [ -z "$bk_path" ] || [ "$(readlink -m "$bk_path")" != "$(readlink -m "$restore_file")" ]; then
+    pp_die "refused: the files archive $fa (run '${fa_run:-unknown}') does not belong to the same run as the restore dump $restore_file (backup run '${bk_run:-unknown}', recorded dump '${bk_path:-none}'). Nothing was changed. Restore the dump the same run wrote, or delete $state_dir/rebuild-files-archive.path to restore the database only" 3
+  fi
+  [ -s "$fa" ] || pp_die "the files archive $fa recorded for this run is missing or empty" 3
+  (cd "$(dirname "$fa")" && sha256sum -c "$(basename "$fa").sha256" >/dev/null) || pp_die "sha256 of the files archive does not match" 3
+  FILES_ARCHIVE="$fa"
+}
+
 step_restore() {
   local f="$restore_file"
   verify_dump "$f"
+  files_archive_for_restore
   BACKUP_FILE="$f"; BACKUP_OK=1
   API_STOPPED=1; pp_compose stop api
   DB_DROPPED=1
@@ -613,9 +684,8 @@ step_restore() {
   "$PP_VPS_DIR/db-roles.sh" apply
   "$PP_VPS_DIR/db-roles.sh" check
   pp_log "restored: $(su_scalar "$db" "select (select count(*) from information_schema.tables where table_schema='public') || ' tables, ' || (select count(*) from _prisma_migrations where finished_at is not null) || ' migrations, users ' || coalesce((select count(*)::text from users), '-')")"
-  local fa; fa="$(cat "$state_dir/rebuild-files-archive.path" 2>/dev/null || true)"
-  if [ -n "$fa" ] && [ -s "$fa" ]; then
-    (cd "$(dirname "$fa")" && sha256sum -c "$(basename "$fa").sha256" >/dev/null) || pp_die "sha256 of the files archive does not match" 3
+  local fa="$FILES_ARCHIVE"
+  if [ -n "$fa" ]; then
     local vol; vol="$(apifiles_volume)"
     docker run --rm -v "$vol:/f" --entrypoint sh "$stage_image" -c 'find /f -mindepth 1 -delete'
     docker run --rm -i -v "$vol:/f" --entrypoint tar "$stage_image" -C /f -xzf - <"$fa"
@@ -668,6 +738,8 @@ print_plan
 confirm_typed "REBUILD (drop, recreate and refill from the V2 dump)"
 pp_lock 0
 mkdir -p "$state_dir"
+# C-2: an archive path left by an earlier run (archive, then a later keep or wipe run) must never be unpacked by this run's restore.
+rm -f "$state_dir/rebuild-files-archive.path" "$state_dir/rebuild-files-archive.run"
 ARMED=1
 
 run_step 1 "images for tag $tag" step_images
@@ -692,6 +764,8 @@ ARMED=0   # the run is over: exit 4 below is a verdict, not a crash
 if [ ${#CHECK_FAILS[@]} -gt 0 ]; then
   pp_log "REBUILD COMPLETE WITH ${#CHECK_FAILS[@]} FAILED CHECK(S) OR REPAIR(S): the PO decides go / no-go:" >&2
   printf '  - %s\n' "${CHECK_FAILS[@]}" >&2
+  [ ${#PENDING_PO[@]} -eq 0 ] || { pp_log "PENDING PO ITEM(S), not failed checks:" >&2; printf '  - %s\n' "${PENDING_PO[@]}" >&2; }
   exit 4
 fi
+[ ${#PENDING_PO[@]} -eq 0 ] || { pp_log "PENDING PO ITEM(S), not failed checks:"; printf '  - %s\n' "${PENDING_PO[@]}"; }
 pp_log "REBUILD COMPLETE: $db rebuilt from empty and filled from $dump_dir. Rollback dump: $BACKUP_FILE"

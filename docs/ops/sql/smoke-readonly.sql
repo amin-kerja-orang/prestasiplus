@@ -289,12 +289,26 @@ rej AS (
 --    ledger, feedback and class rows of deleted users). Users and schools are excluded: X2 requires zero there.
 --  * DUPLICATE_KEY: V2 allows what a V3 unique key refuses (a second wallet of one user, a repeated article slug, a repeated e-mail).
 --  * coin_ledger INVALID_VALUE on amount: a ledger row whose sign contradicts its type is never flipped (BE-29 AC3).
+--  * The question and paper loaders' rejects that migrate:verify (apps/api/src/migration/verify/bank-checks.ts) PROVES against computed V2
+--    expectations, one (entity, reason, column) at a time: questions options / options.body / is_correct, exam_questions is_correct / options,
+--    paper_blueprints duration_minutes (V2 data defects the loader must refuse), plus the ones verify counts as judged by the text or the
+--    file (exam_questions stem, paper_document_pages path, every question_files reject). This list mirrors the keys of verify's
+--    `questionExpectations`, `examExpectations`, `blueprintExpectations` and `JUDGED_ELSEWHERE`: when verify gains a key, add it here. Any other
+--    reason or column on these entities (an unknown subject, level, status) stays UNEXPLAINED, as it does in verify. The counts themselves are
+--    checked by migrate:verify (step 12, hard mode), not here: X3 only says which reject kinds are legitimate by design. A run that accepted more
+--    through PP_VERIFY_ACCEPT_REJECTS shows them as UNEXPLAINED here on purpose (a per-run waiver is not a design rule).
+--    Both this block and verify read the LATEST succeeded apply run of each entity (rej joins recon, above), never the older runs.
 rej_explained AS (
   SELECT entity, sum(n) AS n FROM rej
   WHERE entity NOT IN ('users', 'schools')
     AND (reason = 'DUPLICATE_KEY'
          OR (reason = 'ORPHAN_PARENT' AND col IN ('user_id', 'student_id', 'parent_id', 'teacher_id', 'author_id', 'created_by', 'created_by_id', 'uploader_id'))
-         OR (entity = 'coin_ledger' AND reason = 'INVALID_VALUE' AND col = 'amount'))
+         OR (entity = 'coin_ledger' AND reason = 'INVALID_VALUE' AND col = 'amount')
+         OR (entity, reason, col) IN (
+              ('questions', 'INVALID_VALUE', 'options'), ('questions', 'INVALID_VALUE', 'options.body'), ('questions', 'INVALID_VALUE', 'is_correct'),
+              ('exam_questions', 'INVALID_VALUE', 'is_correct'), ('exam_questions', 'INVALID_VALUE', 'options'), ('exam_questions', 'INVALID_VALUE', 'stem'),
+              ('paper_blueprints', 'INVALID_VALUE', 'duration_minutes'), ('paper_document_pages', 'INVALID_VALUE', 'path'))
+         OR entity = 'question_files')
   GROUP BY entity
 ),
 shares AS (
@@ -429,10 +443,10 @@ checks AS (
   UNION ALL SELECT 'X', 'X2', 'ORPHAN_PARENT rejects on users and schools (criterion 3)',
          coalesce((SELECT sum(n) FROM rej WHERE reason = 'ORPHAN_PARENT' AND entity IN ('users', 'schools')), 0)::text, '0',
          CASE WHEN coalesce((SELECT sum(n) FROM rej WHERE reason = 'ORPHAN_PARENT' AND entity IN ('users', 'schools')), 0) = 0 THEN 'ok' ELSE 'FAIL' END
-  UNION ALL SELECT 'X', 'X3', 'entities whose UNEXPLAINED reject share is above 0.1 % (users, schools) or 0.5 % (others) (criterion 2); explained rejects are counted apart in X3a',
+  UNION ALL SELECT 'X', 'X3', 'entities whose UNEXPLAINED reject share is above 0.1 % (users, schools) or 0.5 % (others) (criterion 2); explained rejects (deleted-user orphans, unique keys, ledger sign, V2 data defects proven by migrate:verify) are counted apart in X3a',
          (SELECT count(*) FROM shares WHERE source_count > 0 AND 100.0 * unexplained / source_count > threshold)::text, '0',
          CASE WHEN (SELECT count(*) FROM shares WHERE source_count > 0 AND 100.0 * unexplained / source_count > threshold) = 0 THEN 'ok' ELSE 'FAIL' END
-  UNION ALL SELECT 'X', 'X3a', 'entities above the threshold before explaining / rejects explained by design (deleted-user orphans, V3 unique keys, ledger sign)',
+  UNION ALL SELECT 'X', 'X3a', 'entities above the threshold before explaining / rejects explained by design (deleted-user orphans, V3 unique keys, ledger sign, V2 data defects proven by migrate:verify)',
          (SELECT count(*) FROM shares WHERE source_count > 0 AND 100.0 * rejected / source_count > threshold)::text || ' / ' || (SELECT coalesce(sum(explained), 0) FROM shares)::text,
          'reported; explained one by one', 'info'
   UNION ALL SELECT 'X', 'X3b', 'unexplained rejects per entity above the threshold (entity:count; fix these in the loader)',

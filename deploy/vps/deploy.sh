@@ -126,6 +126,9 @@ preflight() {
   # REG-CLOSE: unset means OPEN; before go-live api.env must say REGISTRATION_OPEN=false (production-vps.md section 16).
   v="$(pp_env_value "$api_env" REGISTRATION_OPEN)"; [ -n "$v" ] || warn "REGISTRATION_OPEN is not set in api.env: self-registration is OPEN (set false until the go-live switch)"
 
+  # S-3: teacher DOCX/XLSX uploads are not virus-scanned by the API; INTAKE_TEACHER_ENABLED may be on only when ClamAV is live.
+  v="$(pp_intake_av_problem)" || err "$v"
+
   # Required values (mirrors loadEnv in env.schema.ts, with the stricter team policy of 32 characters).
   local ss ic pguser pgdb pgpw kind_file kind_role pws=()
   ss="$(pp_env_value "$api_env" SESSION_SECRET)"
