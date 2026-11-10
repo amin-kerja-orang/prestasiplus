@@ -64,7 +64,7 @@ async function leave(): Promise<void> {
     </p>
     <button
       type="button"
-      class="inline-flex h-8 shrink-0 items-center rounded-md bg-inverted px-3 text-caption font-semibold text-inverted hover:bg-inverted/90"
+      class="inline-flex min-h-11 shrink-0 items-center rounded-md bg-inverted px-3 text-caption font-semibold text-inverted hover:bg-inverted/90"
       data-testid="mod-pelajar-leave"
       @click="leave"
     >

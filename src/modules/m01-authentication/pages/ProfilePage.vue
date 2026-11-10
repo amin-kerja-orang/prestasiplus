@@ -139,7 +139,7 @@ onMounted(() => {
             color="warning"
             variant="solid"
             size="lg"
-            class="absolute -end-3 -bottom-2"
+            class="absolute -end-5 -bottom-3"
             aria-hidden="true"
             data-testid="profile-crown"
           />
