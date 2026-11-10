@@ -22,6 +22,10 @@ const ADMIN = 'admin@demo.test'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
+/** The page title the Pembelajaran navbar prints (h1, or `shell-title` when the page owns its h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
+
 test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
@@ -33,7 +37,7 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await loginAs(PELAJARMAJU)
     await gotoApp('/practice')
     await expectTabTitle(page, 'Latih Tubi | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi')
+    await expect(shellTitle(page)).toHaveText('Latih Tubi SPM')
     await expect(tid(page, 'practice-title')).toHaveText('Latih Tubi 🎯')
     await expect(tid(page, 'chapter-banner')).toHaveAttribute('href', '/practice/chapter')
     await expect(page.locator('[data-testid^=subject-card-]')).toHaveCount(31)
@@ -42,7 +46,7 @@ test.describe('M05 S2 / S3 / Q1 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () =
     await tid(page, 'subject-card-MATH').click()
     await expect(page).toHaveURL(/\/practice\/MATH$/)
     await expectTabTitle(page, 'Matematik - Latihan')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi')
+    await expect(shellTitle(page)).toHaveText('Latih Tubi')
     await expect(tid(page, 'config-name')).toHaveText('Matematik')
     await expect(tid(page, 'config-start')).toHaveAttribute('href', '/practice/MATH/quiz?count=10')
     await expectNoHorizontalScroll(page)
