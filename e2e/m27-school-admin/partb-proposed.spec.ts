@@ -311,7 +311,7 @@ test.describe('S2 DSKP Heatmap', MODULE, () => {
     await loginAs(ADMIN_SEKOLAH)
     await openKimiaT5(page, gotoApp)
     await expect(page.getByTestId('dh-heading')).toHaveText('Peta DSKP — Standard Pembelajaran')
-    await expect(page.getByTestId('dh-heading').locator('[class*="map-trifold"]')).toHaveCount(1)
+    await expect(page.getByTestId('dh-heading').locator('svg, [class*="map-trifold"]')).toHaveCount(1)
     await expect(page.getByTestId('dh-caption')).toHaveText('KSSM Kimia Tingkatan 5')
     expect(await textsOf(page.getByTestId('dh-legend').locator('> li'))).toEqual(LEGEND)
     await expectNoHorizontalScroll(page)
