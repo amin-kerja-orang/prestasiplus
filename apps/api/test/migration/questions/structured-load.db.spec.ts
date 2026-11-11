@@ -315,7 +315,11 @@ describe('migrate:verify knows the question, structured and papers loaders', () 
       expect(over?.detail).toContain('allowlist in force: ')
       // the old wildcard and a missing max are refused
       process.env.PP_VERIFY_ACCEPT_REJECTS = 'questions|ORPHAN_PARENT|'
-      await expect(verify()).rejects.toThrow(/entity|reason|column=maxN/)
+      // runChecks turns a check that cannot run into a `mismatch` of that check (it must not pass silently), so verify does not throw
+      const bad = (await verify()).checks.find((c) => c.name === 'loader rejects')
+      expect(bad?.status).toBe('mismatch')
+      expect(bad?.detail).toContain('the check could not run')
+      expect(bad?.detail).toContain('column=maxN')
     } finally {
       delete process.env.PP_VERIFY_ACCEPT_REJECTS
     }
@@ -431,6 +435,30 @@ describe('the picture pass at the end of migrate:structured', () => {
       expect(held?.detail).toContain('should have been released')
     } finally {
       await sql(`update question_versions set import_issues = null where question_id = $1::bigint and version_no = 1`, [victim])
+    }
+  })
+
+  it('picture rejects above the ceiling fail verify, unless the run allowlist bounds them (the allowlist is consulted first)', async () => {
+    const runId = (await sql(`select max(c.run_id)::text as id from etl_recon c where c.entity = 'question_files'`)).rows[0]?.id as string
+    await sql(
+      `insert into etl_rejects (run_id, entity, legacy_id, reason, column_name, offending)
+       select $1::bigint, 'question_files', 'ceil' || g, 'INVALID_VALUE', 'questions.image_path', 'missing' from generate_series(1, 12) g`,
+      [runId],
+    )
+    const name = 'rejects of the question and paper loaders (latest apply run of each)'
+    try {
+      const over = (await verify()).checks.find((c) => c.name === name)
+      expect(over?.status).toBe('mismatch')
+      expect(over?.detail).toContain('above the ceiling of 10')
+      // an allowlist item that covers the 13 (12 + the earlier one) is the bound: every other reject of this fixture is accepted explicitly too
+      const keys = ((await sql(`select distinct entity || '|' || reason || '|' || coalesce(column_name, '') || '=999' as k from etl_rejects order by 1`)).rows.map((r) => r.k as string)).join(',')
+      process.env.PP_VERIFY_ACCEPT_REJECTS = keys
+      const covered = (await verify()).checks.find((c) => c.name === name)
+      expect(covered?.status, JSON.stringify(covered)).toBe('ok')
+      expect(covered?.detail).not.toContain('above the ceiling')
+    } finally {
+      delete process.env.PP_VERIFY_ACCEPT_REJECTS
+      await sql(`delete from etl_rejects where entity = 'question_files' and legacy_id like 'ceil%'`)
     }
   })
 })

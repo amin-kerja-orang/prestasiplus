@@ -318,15 +318,16 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
     if (computed.has(key)) continue
     const [entity, reason, column] = key.split('|')
     const label = `${entity} ${reason}${column ? `/${column}` : ''}: ${n}`
-    if (judgedElsewhere(key) && key.startsWith('question_files|') && pictureRejects > PICTURE_REJECT_CEILING) {
+    // The run allowlist is consulted first: its =maxN is the bound for that key (the picture ceiling only applies when there is no allowlist item).
+    if ((accepted.get(key) ?? -1) >= n) {
+      counted += n
+      rest.push(`${label} (ACCEPTED by the run allowlist, max ${accepted.get(key)})`)
+    } else if (judgedElsewhere(key) && key.startsWith('question_files|') && pictureRejects > PICTURE_REJECT_CEILING) {
       unexplained += n
       rest.push(`${label} (UNEXPLAINED: ${pictureRejects} picture paths rejected, above the ceiling of ${PICTURE_REJECT_CEILING})`)
     } else if (judgedElsewhere(key)) {
       counted += n
       rest.push(`${label} (judged by the text or the file, counted as is)`)
-    } else if ((accepted.get(key) ?? -1) >= n) {
-      counted += n
-      rest.push(`${label} (ACCEPTED by the run allowlist, max ${accepted.get(key)})`)
     } else {
       unexplained += n
       rest.push(`${label} (UNEXPLAINED)`)
