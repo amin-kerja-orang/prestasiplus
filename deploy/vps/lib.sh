@@ -83,6 +83,18 @@ pp_norm_domain() {
   printf '%s' "$d"
 }
 
+# pp_expected_stage_counts: "archive_cloud:N staging_cloud:M", the table counts the RELEASE expects in the two raw-copy schemas after `slot.sh copy`.
+# Derived from the generated release DDL (apps/api/src/migration/ddl/staging_cloud.sql of this checkout, the file the migrate image's staging spec
+# renders); PP_STAGE_EXPECT is an explicit override only (it wins, also when the DDL is unreadable).
+pp_expected_stage_counts() {
+  local f="$PP_REPO/apps/api/src/migration/ddl/staging_cloud.sql" a s
+  if [ -n "$(pp_cfg PP_STAGE_EXPECT '')" ]; then pp_cfg PP_STAGE_EXPECT ''; return 0; fi
+  [ -r "$f" ] || pp_die "cannot read $f to derive the expected stage table counts (set PP_STAGE_EXPECT='archive_cloud:N staging_cloud:M')" 3
+  a="$(grep -c '^create table "archive_cloud"\.' "$f" || true)"; s="$(grep -c '^create table "staging_cloud"\.' "$f" || true)"
+  [ "${a:-0}" -gt 0 ] && [ "${s:-0}" -gt 0 ] || pp_die "no tables found in $f" 3
+  printf 'archive_cloud:%s staging_cloud:%s' "$a" "$s"
+}
+
 # pp_intake_flag_off: returns 0 when INTAKE_TEACHER_ENABLED in api.env is unset or false.
 pp_intake_flag_off() {
   local v; v="$(pp_env_value "$PP_ENV_DIR/api.env" INTAKE_TEACHER_ENABLED)"; v="${v,,}"

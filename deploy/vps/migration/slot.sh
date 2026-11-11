@@ -288,8 +288,9 @@ cmd_copy() {
   "$PP_VPS_DIR/db-roles.sh" apply   # pp_etl: SELECT on both schemas comes from default privileges, UPDATE on archive_cloud from here
   b="$(schema_tables target_psql)"
   [ "$a" = "$b" ] || pp_die "STAGE COPY FAILED: $a in $staging_db, $b in the target"
-  # Cutover plan 4.6 B5: a count other than 89/38 (staging/archive) is a STOP. PP_STAGE_EXPECT is the LEAD-approved override.
-  local want; want="$(pp_cfg PP_STAGE_EXPECT 'archive_cloud:38 staging_cloud:89')"
+  # Two checks: the copy equals the throwaway cluster (above), and both equal what the RELEASE defines (the generated DDL of this checkout, via
+  # pp_expected_stage_counts; PP_STAGE_EXPECT is an explicit override only). A count that differs from the spec is a STOP (exit 4).
+  local want; want="$(pp_expected_stage_counts)"
   [ "$b" = "$want" ] || pp_die "STAGE COPY COUNTS DIFFER: $b (expected $want): STOP and report to the half-AM operator" 4
   synthetic_loaded || rm -f "$(target_marker)"   # the target's schemas now come from a raw stage
   pp_log "STAGE COPY PASSED: $b, duration_s=$((SECONDS - t0))"
@@ -485,7 +486,9 @@ cmd_gonogo() {
     lsn="$(target_psql "select coalesce(last_archived_wal, '-') from pg_stat_archiver")"
     echo "criterion 8: PITR on, last archived WAL $lsn at $last, failed_count $failed$([ "$failed" = 0 ] || echo '  -> check the archive before go')"
   fi
-  echo "stage: $(schema_tables target_psql) in the target (expected archive_cloud:38 staging_cloud:89 while the slot runs)"
+  local want_stage src_stage; want_stage="$(pp_expected_stage_counts 2>/dev/null || echo unknown)"
+  src_stage="derived from the release DDL"; [ -z "$(pp_cfg PP_STAGE_EXPECT '')" ] || src_stage="PP_STAGE_EXPECT override"
+  echo "stage: $(schema_tables target_psql) in the target (expected $want_stage while the slot runs, $src_stage)"
   f="$(find "$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)" -maxdepth 1 -name 'pp-backup-*.dump' -printf '%T@ %f\n' 2>/dev/null | sort -rn | head -n1)"
   if [ -n "$f" ]; then age=$(( ($(date +%s) - ${f%%.*}) / 3600 )); echo "backup: newest dump ${f#* } is ${age} h old$([ "$age" -le 24 ] || echo '  -> NO-GO (older than 24 h)')"; else echo "backup: NO dump found  -> NO-GO"; fi
   pct="$(df -P "$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)" | awk 'NR == 2 { gsub("%", "", $5); print $5 }')"

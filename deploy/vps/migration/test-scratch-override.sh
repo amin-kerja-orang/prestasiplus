@@ -43,6 +43,9 @@ cat >"$w/bin/hostname" <<STUB
 [ "\${STUB_SWAP:-0}" = 1 ] && printf '%s\\n' '{"format": "pp-staging-dump/1", "raw": true}' >"$w/fx/manifest.json"
 echo scratch1
 STUB
+# the stub answers with the counts of the release DDL (what slot.sh copy now expects), not a hard-coded 38
+ddl="$here/../../../apps/api/src/migration/ddl/staging_cloud.sql"; na="$(grep -c '^create table "archive_cloud".' "$ddl")"; ns="$(grep -c '^create table "staging_cloud".' "$ddl")"
+sed -i "s/archive_cloud:38 staging_cloud:89/archive_cloud:$na staging_cloud:$ns/; s/archive_cloud:38 staging_cloud:88/archive_cloud:$na staging_cloud:$((ns - 1))/" "$w/bin/docker"
 chmod +x "$w/bin/docker" "$w/bin/hostname"
 pass=0; fail=0
 manifest() { printf '%s\n' "$1" >"$w/fx/manifest.json"; }
@@ -170,6 +173,7 @@ EXTRA_ENV="STUB_TARGET=short" run 1 'STAGE COPY FAILED' -notty copy
 check tmarker 'a raw copy that fails after the drop keeps the target marker'
 EXTRA_ENV="STUB_TARGET=ok" run 0 'STAGE COPY PASSED' -notty copy
 check '! tmarker' 'a raw copy that passes clears the target marker'
+prod "PP_STAGE_EXPECT=archive_cloud:1 staging_cloud:1"; EXTRA_ENV="STUB_TARGET=ok" run 4 'STAGE COPY COUNTS DIFFER' -notty copy   # an explicit override wins, and a copy that differs from it is a STOP
 rm -f "$w/stage/SYNTHETIC-IN-TARGET"
 
 echo "passed $pass, failed $fail"

@@ -231,14 +231,7 @@ apifiles_volume() { # the api uploads volume of this compose project, exactly on
 today_myt() { TZ=Asia/Kuala_Lumpur date +%F; }
 
 # stage counts the release expects after `slot.sh copy` (tables of each schema in the generated DDL; PP_STAGE_EXPECT overrides)
-expected_stage_counts() {
-  local f="$PP_REPO/apps/api/src/migration/ddl/staging_cloud.sql" a s
-  if [ -n "$(pp_cfg PP_STAGE_EXPECT '')" ]; then pp_cfg PP_STAGE_EXPECT ''; return 0; fi
-  [ -r "$f" ] || pp_die "cannot read $f to derive the expected stage table counts (set PP_STAGE_EXPECT='archive_cloud:N staging_cloud:M')" 3
-  a="$(grep -c '^create table "archive_cloud"\.' "$f" || true)"; s="$(grep -c '^create table "staging_cloud"\.' "$f" || true)"
-  [ "${a:-0}" -gt 0 ] && [ "${s:-0}" -gt 0 ] || pp_die "no tables found in $f" 3
-  printf 'archive_cloud:%s staging_cloud:%s' "$a" "$s"
-}
+expected_stage_counts() { pp_expected_stage_counts; }
 
 # verify_dump FILE: G7 on any dump file (sha256 sidecar, table of contents, table data)
 verify_dump() {

@@ -382,6 +382,26 @@ rp 1 'RAW CHECK OVERDUE: 3 copy'
 rm -rf "$w/backup/staged-clone"; rp 0 'RAW CHECK OK'
 mkprod
 
+
+echo "-- expected stage table counts come from the release DDL (pp_expected_stage_counts), PP_STAGE_EXPECT is an override only"
+ec() { # ec EXPECTED_RC TEXT: pp_expected_stage_counts in the fixture checkout $w/repo
+  local want="$1" text="$2" out rc=0
+  out="$(env PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash -c ". '$w/repo/deploy/vps/lib.sh'; pp_expected_stage_counts" 2>&1)" || rc=$?
+  if [ "$rc" = "$want" ] && [[ "$out" == *"$text"* ]]; then ok "stage counts rc $rc: $text"; else bad "stage counts want rc $want + '$text', got rc $rc: $out"; fi
+}
+mkprod; sed -i '/^PP_STAGE_EXPECT=/d' "$w/env/prod.env"
+ec 3 'cannot read'
+mkdir -p "$w/repo/apps/api/src/migration/ddl"
+printf 'create table "archive_cloud"."a1" (id int);\ncreate table "archive_cloud"."a2" (id int);\ncreate table "staging_cloud"."s1" (id int);\ncreate table "staging_cloud"."s2" (id int);\ncreate table "staging_cloud"."s3" (id int);\n' >"$w/repo/apps/api/src/migration/ddl/staging_cloud.sql"
+ec 0 'archive_cloud:2 staging_cloud:3'
+mkprod "PP_STAGE_EXPECT=archive_cloud:9 staging_cloud:9"; ec 0 'archive_cloud:9 staging_cloud:9'
+rm -rf "$w/repo/apps"; mkprod "PP_STAGE_EXPECT=archive_cloud:9 staging_cloud:9"; ec 0 'archive_cloud:9 staging_cloud:9'   # the override also works with no DDL
+printf 'nothing\n' >/dev/null; mkdir -p "$w/repo/apps/api/src/migration/ddl"; : >"$w/repo/apps/api/src/migration/ddl/staging_cloud.sql"; mkprod; sed -i '/^PP_STAGE_EXPECT=/d' "$w/env/prod.env"; ec 3 'no tables found'
+real="$vps/../../apps/api/src/migration/ddl/staging_cloud.sql"
+ra="$(grep -c '^create table "archive_cloud"\.' "$real")"; rs="$(grep -c '^create table "staging_cloud"\.' "$real")"
+out="$(env PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash -c ". '$vps/lib.sh'; pp_expected_stage_counts" 2>&1)"
+if [ "$out" = "archive_cloud:$ra staging_cloud:$rs" ] && [ "$ra" -gt 0 ]; then ok "the real release DDL gives $out"; else bad "real DDL counts: $out"; fi
+mkprod
 echo
 echo "passed $pass, failed $fail"
 [ "$fail" = 0 ]

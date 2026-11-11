@@ -99,8 +99,8 @@ The rehearsal "stage" pattern, with production rules:
 - **Copy.** The two schemas go from the throwaway cluster into the target with `pg_dump -Fc -n staging_cloud -n
   archive_cloud | pg_restore`, after the old copies in the target are dropped. The pipe stays on this host
   (container to container), so no network transfer is involved. The table counts must be equal. The cutover plan
-  expects 89 tables in `staging_cloud` and 38 in `archive_cloud`; any other number is a STOP (exit 4,
-  `STAGE COPY COUNTS DIFFER`), unless the LEAD approved another pair in `PP_STAGE_EXPECT`.
+  expects the table counts of the release DDL (`apps/api/src/migration/ddl/staging_cloud.sql` of the checkout: today 89 in `staging_cloud`, 45 in `archive_cloud`; the cutover plan listed 38 archive tables before the schema grew); the copy must equal the throwaway cluster AND these counts, any other number is a STOP (exit 4,
+  `STAGE COPY COUNTS DIFFER`). `PP_STAGE_EXPECT` is an explicit override only (the LEAD approves it). `gonogo` prints the derived expectation.
 - **Roles (P3, DB-ROLES #227).** The drop, the restore and every read of the target in `slot.sh` run as the stage-only
   role `pp_stager`, over the db container's local socket (no password). `copy` runs `deploy/vps/db-roles.sh apply`
   before the drop (an older copy made by another role becomes `pp_stager`'s) and after the restore (`pp_etl` gets
