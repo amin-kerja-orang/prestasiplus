@@ -221,7 +221,7 @@ describe('S1 PrestasiSekolahPage', () => {
       ['subjek', '27'],
       ['sesi', '32122'],
       ['soalan', '478,499'],
-      ['ketepatan', '80%'],
+      ['ketepatan', '79.8%'],
     ]
     for (const [id, value] of expected) {
       expect(t(w, `stat-${id}`).find('.tabular').text()).toBe(value)
