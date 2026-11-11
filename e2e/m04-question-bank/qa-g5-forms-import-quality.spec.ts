@@ -149,7 +149,8 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await gotoApp('/admin/questions/import-history')
     await expect(page.getByText('Sejarah Import').first()).toBeVisible()
-    await expect(page.locator('main button')).toHaveCount(0)
+    // The pager (UPagination: Halaman ...) is the only set of buttons; no row action buttons exist.
+    await expect(page.locator('main button:not([aria-label^="Halaman"])')).toHaveCount(0)
     await byId(page, 'history-back').click()
     await expect(page).toHaveURL(/\/admin\/questions\/import$/)
   })
