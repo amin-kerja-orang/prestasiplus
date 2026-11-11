@@ -221,6 +221,14 @@ describe('DsRowActions', () => {
     await buttons[0]!.trigger('click')
     expect(onEdit).toHaveBeenCalledTimes(1)
   })
+  it('C-44: a text-only inline action is 44px below lg and 36px from lg (not only on coarse pointers)', async () => {
+    const w = mount(DsRowActions, { props: { inline: 1, actions: [{ label: 'Lihat' }] } })
+    await wait()
+    const cls = w.findAll('button')[0]!.classes()
+    expect(cls).toContain('min-h-11')
+    expect(cls).toContain('lg:min-h-9')
+    expect(cls).not.toContain('min-h-9')
+  })
   it('an action with confirm runs only after the dialog is confirmed', async () => {
     const onDelete = vi.fn()
     const host = mount(DsConfirmHost, { attachTo: document.body })
