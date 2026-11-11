@@ -1,19 +1,24 @@
 /**
  * M12 S1 `/admin/kirkpatrick`, S2 `.../reaction`, S3 `.../learning`, the `/guru/kirkpatrick` twins and the
- * `/admin-sekolah/kirkpatrick` alias at 375 / 768 / 1280 (M12-T2; SRS M12 §12: E2E-M12-03, 04, 07, 08, 09 (S1-S3
+ * `/admin-sekolah/kirkpatrick` mount at 375 / 768 / 1280 (M12-T2; SRS M12 §12: E2E-M12-03, 04, 07, 08, 09 (S1-S3
  * part), 13, 16-25, 27-30, 60 (S1-S3 part), 61, 65 (S1 part)). Accounts: admin 1 (`admin@demo.test`), guru 5
  * (`guru@demo.test`), school administrator 8 (`adminsekolah@demo.test`).
  *
- * Teacher, alias and "link prefix follows the mount" steps are INFERRED / PROPOSED (SRS §9, build-plan v1.12
- * R.1.3), so those tests are `@provisional`. E2E-M12-26 (feedback via S10) belongs to M12-T5.
+ * T-C11 rewrite to the Pentadbiran / Pembelajaran shells: Admin Pusat is in Pentadbiran (`pentadbiran-*`), the
+ * teacher and the school administrator in Pembelajaran (`pembelajaran-*`); the section tabs belong to the shell;
+ * the tab title is "{Page} | PRESTASIPLUS"; accuracy is a whole number (XS-5: r1-development-plan.md:1378, 1535);
+ * counts carry thousands separators; DS filter bar / data table / stat tiles replaced the kirk-* DOM.
+ *
+ * Figures are the observed anchors of SRS M12 §6.7 (DATA-M12-06) and the M12 mock repository (src/modules/
+ * m12-kirkpatrick/mock/repository, constants in mock/data/constants.ts:15-48); accuracies are those anchors
+ * rounded half away from zero (82.8 -> 83%).
  */
 
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import {
   expectNoHorizontalScroll,
-  expectTabTitle,
   expectTouchTarget,
   isDesktopShell,
   isMobileWidth,
@@ -21,6 +26,20 @@ import {
   provisional,
   viewportWidth,
 } from '../support'
+import {
+  TEXT,
+  applyFilters,
+  columns,
+  dsRows,
+  expectErrorPage,
+  expectHeader,
+  expectStat,
+  hrefs,
+  isWide,
+  openFilters,
+  pagerSummary,
+  showAllRows,
+} from './kirk-helpers'
 
 const ADMIN = 'admin@demo.test'
 const GURU = 'guru@demo.test'
@@ -32,53 +51,30 @@ test.use({ mockInit: { latency: 0 } })
 const S1 = '/admin/kirkpatrick'
 const S2 = '/admin/kirkpatrick/reaction'
 const S3 = '/admin/kirkpatrick/learning'
+const ALIAS = '/admin-sekolah/kirkpatrick'
 
 const TITLES = {
-  s1: [
-    'Kirkpatrick',
-    'Kirkpatrick',
-    'Model penilaian Kirkpatrick — 4 tahap keberkesanan',
-  ],
-  // /guru mount: the page is headed "Kirkpatrick Evaluation" (route overview.ts).
-  s1Guru: [
-    'Kirkpatrick',
-    'Kirkpatrick Evaluation',
-    'Model penilaian Kirkpatrick — 4 tahap keberkesanan',
-  ],
-  s2: [
-    'T1: Reaksi',
-    'T1: Reaksi',
-    'Kirkpatrick Tahap 1 — Kepuasan pengguna',
-  ],
-  s3: [
-    'T2: Pembelajaran',
-    'T2: Pembelajaran',
-    'Kirkpatrick Tahap 2 — Peningkatan kemahiran',
-  ],
+  s1: ['Kirkpatrick', 'Model penilaian Kirkpatrick — 4 tahap keberkesanan'],
+  // /guru mount: the page is headed "Kirkpatrick Evaluation" (V2 guru view, route overview.ts).
+  s1Guru: ['Kirkpatrick Evaluation', 'Model penilaian Kirkpatrick — 4 tahap keberkesanan'],
+  s2: ['T1: Reaksi', 'Kirkpatrick Tahap 1 — Kepuasan pengguna'],
+  s3: ['T2: Pembelajaran', 'Kirkpatrick Tahap 2 — Peningkatan kemahiran'],
 } as const
 
-const TEXT = { useInnerText: true } as const
-
-async function header(page: Page, [tab, title, subtitle]: readonly [string, string, string]) {
-  await expectTabTitle(page, tab)
-  await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText(title)
-  await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(subtitle)
-}
-
-/** The distinct left edges of `items` (columns of a grid). */
-async function columns(items: Locator): Promise<number> {
-  const xs = await items.evaluateAll((els) =>
-    els.map((e) => Math.round(e.getBoundingClientRect().x)),
-  )
-  return new Set(xs).size
-}
+/** Labels of the section tabs the shell draws (src/shells/pentadbiran/menu.ts, V2 Kirkpatrick tab list + Rantaian Impak). */
+const SECTION_TABS = [
+  'Overview',
+  'T1: Reaksi',
+  'T2: Pembelajaran',
+  'T3: Tingkah Laku',
+  'T4: Hasil',
+  'Rantaian Impak',
+  'Intervensi',
+] as const
 
 async function registeredCount(page: Page): Promise<number> {
-  const text = await page
-    .getByTestId('kirk-kpi-registered')
-    .getByTestId('kirk-stat-value')
-    .innerText()
-  return Number(text.replace(/,/g, ''))
+  const text = await page.getByTestId('kirk-kpi-registered').innerText()
+  return Number(/^\s*([\d,]+)/.exec(text)![1]!.replace(/,/g, ''))
 }
 
 const level = (page: Page, id: string) => page.getByTestId(`kirk-level-${id}`)
@@ -96,14 +92,21 @@ async function expectLevels(
 }
 
 const S1_PLATFORM = {
-  t4: ['4.30', 'GPS Sekolah · 4378 rekod headcount'],
-  t3: ['946/4158', 'Pelajar aktif · 20991 sesi · 82.8% ketepatan'],
-  t2: ['82.8%', 'Ketepatan · 306,133 soalan dijawab'],
+  t4: ['4.30', 'GPS Sekolah · 4,378 rekod headcount'],
+  t3: ['946/4,158', 'Pelajar aktif · 20,991 sesi · 83% ketepatan'],
+  t2: ['83%', 'Ketepatan · 306,133 soalan dijawab'],
+  t1: ['4.6/5', 'Kepuasan purata · 336 respon'],
+} as const
+
+const S1_8080 = {
+  t4: ['4.00', 'GPS Sekolah · 4,378 rekod headcount'],
+  t3: ['53/184', 'Pelajar aktif · 1,002 sesi · 76% ketepatan'],
+  t2: ['76%', 'Ketepatan · 15,007 soalan dijawab'],
   t1: ['4.6/5', 'Kepuasan purata · 336 respon'],
 } as const
 
 test.describe('M12 S1-S3: admin', MODULE, () => {
-  test('E2E-M12-04/07 header, tab title and admin shell of S1, S2, S3 @m12', async ({
+  test('E2E-M12-04/07 header, tab title and Pentadbiran shell of S1, S2, S3 @m12', async ({
     page,
     gotoApp,
     loginAs,
@@ -115,57 +118,60 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       [S3, TITLES.s3],
     ] as const) {
       await gotoApp(path)
-      await header(page, titles)
+      await expectHeader(page, 'pentadbiran', titles)
       await expect(page.getByTestId('pentadbiran-header')).toBeVisible()
       if (isDesktopShell(page)) await expect(page.getByTestId('pentadbiran-sidebar')).toBeVisible()
+      else await expect(page.getByTestId('pentadbiran-menu-button')).toBeVisible()
       await expectNoHorizontalScroll(page)
     }
   })
 
-  test('E2E-M12-03 tab strip on S2 and S3 (6 tabs, current highlighted, unfiltered links), none on S1 @m12', async ({
+  test('E2E-M12-03 section tabs of the shell: 7 links, current highlighted, unfiltered hrefs @m12', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
     await loginAs(ADMIN)
-    await gotoApp(S1)
-    await expect(page.getByTestId('kirk-overview-page')).toBeVisible()
-    await expect(page.getByTestId('kirk-tabs')).toHaveCount(0)
-
     for (const [path, current] of [
-      [`${S2}?school_id=8080`, 'reaction'],
-      [`${S3}?school_id=8080`, 'learning'],
+      [S1, 'Overview'],
+      [`${S2}?school_id=8080`, 'T1: Reaksi'],
+      [`${S3}?school_id=8080`, 'T2: Pembelajaran'],
     ] as const) {
       await gotoApp(path)
-      const tabs = page.getByTestId('kirk-tabs').locator('a')
-      await expect(tabs).toHaveText(
-        [
-          'Overview',
-          'Tahap 1: Reaksi',
-          'Tahap 2: Pembelajaran',
-          'Tahap 3: Tingkah Laku',
-          'Tahap 4: Hasil',
-          'Intervensi',
-        ],
-        TEXT,
-      )
-      await expect(tabs).toHaveCount(6)
-      await expect(
-        tabs.evaluateAll((els) => els.map((e) => e.getAttribute('href'))),
-      ).resolves.toEqual([
+      const strip = page.getByTestId('pentadbiran-section-tabs')
+      const tabs = strip.locator('a')
+      await expect(tabs).toHaveText([...SECTION_TABS], TEXT)
+      expect(await hrefs(tabs)).toEqual([
         '/admin/kirkpatrick',
         '/admin/kirkpatrick/reaction',
         '/admin/kirkpatrick/learning',
         '/admin/kirkpatrick/behavior',
         '/admin/kirkpatrick/results',
+        '/admin/kirkpatrick/chain',
         '/admin/kirkpatrick/interventions',
       ])
-      const active = page.getByTestId(`kirk-tab-${current}`)
-      await expect(active).toHaveAttribute('data-active', 'true')
-      await expect(active).toHaveClass(/bg-indigo-600/)
-      await expect(page.locator('[data-testid="kirk-tabs"] [data-active="true"]')).toHaveCount(1)
-      await expectTouchTarget(active)
+      const active = strip.locator('a[data-active="true"]')
+      await expect(active).toHaveCount(1)
+      await expect(active).toHaveText(current, TEXT)
+      await expect(active).toHaveAttribute('aria-current', 'page')
+      if (!isDesktopShell(page)) await expectTouchTarget(active)
       await expectNoHorizontalScroll(page)
+    }
+  })
+
+  test('E2E-M12-03b one tab strip only: the page does not draw a second one under the shell strip @m12', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    // V2 has one tab bar per Kirkpatrick page (Filament KirkpatrickReaction.php:43-49). The shell strip
+    // (PentadbiranLayout.vue:136-144) and the page strip (KirkpatrickTabs.vue, used by KirkpatrickReactionPage.vue:174)
+    // are both drawn on S2-S5 and S7 -> two navigation bars with different labels ("T1: Reaksi" / "Tahap 1: Reaksi").
+    await loginAs(ADMIN)
+    for (const path of [S2, S3]) {
+      await gotoApp(path)
+      await expect(page.getByTestId('pentadbiran-section-tabs')).toBeVisible()
+      await expect(page.getByTestId('kirk-tabs')).toHaveCount(0)
     }
   })
 
@@ -176,6 +182,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S1)
+    await openFilters(page)
     await expect(page.locator('[data-testid="kirk-filter-school"] option')).toHaveCount(58)
     await expect(page.locator('[data-testid="kirk-filter-state"] option')).toHaveCount(11)
     await expect(page.locator('[data-testid="kirk-filter-school"] option').first()).toHaveText(
@@ -194,26 +201,34 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       'Selangor',
       'Terengganu',
     ])
-    await expect(page.getByTestId('kirk-filter-apply')).toHaveText('Tapis')
-    await expect(page.getByTestId('kirk-filter-reset')).toHaveCount(0)
+    if (isWide(page)) {
+      await expect(page.getByRole('button', { name: 'Tapis', exact: true })).toBeVisible()
+    } else {
+      await expect(
+        page.locator('[data-ds="filter-sheet"]').getByRole('button', { name: 'Guna' }),
+      ).toBeVisible()
+    }
+    await expect(page.getByRole('button', { name: 'Reset', exact: true })).toHaveCount(0)
 
     const names = await page
       .locator('[data-testid="kirk-filter-school"] option:not([value=""])')
       .allTextContents()
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'ms')))
 
-    const card = await page.getByTestId('kirk-filter').boundingBox()
-    for (const id of ['kirk-filter-school', 'kirk-filter-state']) {
-      const select = page.getByTestId(id)
-      // DV-M12-07: 44 px below lg, the live 36 px from lg.
-      await expectTouchTarget(select, isDesktopShell(page) ? 36 : 44)
+    const card = await page
+      .locator(isWide(page) ? '[data-testid="kirk-filter"]' : '[data-ds="filter-sheet"]')
+      .boundingBox()
+    for (const name of ['Sekolah', 'Negeri']) {
+      const select = page.getByRole('combobox', { name, exact: true })
+      if (!isDesktopShell(page)) await expectTouchTarget(select)
+      else await expect(select).toBeVisible()
       const box = await select.boundingBox()
       expect(box!.x + box!.width).toBeLessThanOrEqual(card!.x + card!.width + 1)
     }
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M12-17 S1 school 8080: Tapis, URL, Reset and the scoped values @m12', async ({
+  test('E2E-M12-17 S1 school 8080: Tapis, URL, chip, Reset and the scoped values @m12', async ({
     page,
     gotoApp,
     loginAs,
@@ -221,21 +236,17 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(S1)
     await expect(levelValue(page, 't4')).toHaveText('4.30', TEXT)
+    await openFilters(page)
     await page.getByTestId('kirk-filter-school').selectOption('8080')
-    await page.getByTestId('kirk-filter-apply').click()
+    await applyFilters(page)
     await expect(page).toHaveURL(/\/admin\/kirkpatrick\?school_id=8080&state=$/)
-    await expect(page.getByTestId('kirk-filter-school')).toHaveValue('8080')
-    await expectLevels(page, {
-      t4: ['4.00', 'GPS Sekolah · 4378 rekod headcount'],
-      t3: ['53/184', 'Pelajar aktif · 1002 sesi · 75.6% ketepatan'],
-      t2: ['75.6%', 'Ketepatan · 15,007 soalan dijawab'],
-      t1: ['4.6/5', 'Kepuasan purata · 336 respon'],
-    })
+    await expectLevels(page, S1_8080)
     const kpis = page.getByTestId('kirk-kpis')
-    await expect(kpis).toContainText('184', TEXT)
-    await expect(kpis).toContainText('15,007', TEXT)
-    await expect(kpis).toContainText('34/34', TEXT)
-    await expect(kpis).toContainText('75.6%', TEXT)
+    await expectStat(page.getByTestId('kirk-kpi-registered'), '184', 'Pelajar Berdaftar')
+    await expectStat(page.getByTestId('kirk-kpi-answers'), '15,007', 'Soalan Dijawab')
+    await expectStat(page.getByTestId('kirk-kpi-teachers'), '34/34', 'Guru Aktif')
+    await expectStat(page.getByTestId('kirk-kpi-accuracy'), '76%', 'Ketepatan Keseluruhan')
+    await expect(kpis).toBeVisible()
     await expect(page.getByTestId('kirk-band-count')).toHaveText(['36', '8', '9', '0', '131'])
     await expect(page.getByTestId('kirk-band-pct')).toHaveText([
       '19.6%',
@@ -246,11 +257,12 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     ])
     await expectNoHorizontalScroll(page)
 
-    await expect(page.getByTestId('kirk-filter-reset')).toHaveAttribute('href', S1)
-    await page.getByTestId('kirk-filter-reset').click()
+    // The applied school is a removable chip with a Reset link; Reset goes back to the unfiltered page.
+    await expect(page.locator('[data-ds="filter-bar"]')).toContainText('Sekolah:')
+    await page.getByRole('button', { name: 'Reset', exact: true }).click()
     await expect(page).toHaveURL(/\/admin\/kirkpatrick$/)
     await expect(levelValue(page, 't4')).toHaveText('4.30', TEXT)
-    await expect(page.getByTestId('kirk-filter-reset')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Reset', exact: true })).toHaveCount(0)
   })
 
   test('E2E-M12-18 S1 ?state=Kelantan: zero values, GPS stays 4.30 @m12', async ({
@@ -261,7 +273,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(`${S1}?state=Kelantan`)
     await expectLevels(page, {
-      t4: ['4.30', 'GPS Sekolah · 4378 rekod headcount'],
+      t4: ['4.30', 'GPS Sekolah · 4,378 rekod headcount'],
       t3: ['0/0', 'Pelajar aktif · 0 sesi · 0% ketepatan'],
       t2: ['0%', 'Ketepatan · 0 soalan dijawab'],
       t1: ['4.6/5', 'Kepuasan purata · 336 respon'],
@@ -273,7 +285,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await expect(page.getByTestId('kirk-summary')).toContainText(
       'Data tidak mencukupi untuk perbandingan.',
     )
-    await expect(page.getByTestId('kirk-kpis')).toContainText('0/0', TEXT)
+    await expect(page.getByTestId('kirk-kpi-teachers')).toContainText('0/0')
     await expect(page.getByTestId('kirk-band-count')).toHaveText(['0', '0', '0', '0', '0'])
     await expect(page.getByTestId('kirk-band-pct')).toHaveText(['0%', '0%', '0%', '0%', '0%'])
     await expectNoHorizontalScroll(page)
@@ -287,13 +299,14 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(S1)
     await expectLevels(page, S1_PLATFORM)
-    const cards = page.getByTestId('kirk-levels').locator('a')
+    const cards = page.getByTestId('kirk-levels').locator('> a')
     await expect(cards).toHaveCount(4)
-    expect(await cards.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual([
-      '/admin/kirkpatrick/results',
-      '/admin/kirkpatrick/behavior',
-      '/admin/kirkpatrick/learning',
+    // T1 to T4, the order of the Evaluation Flow (recorded layout decision, TRACKER 2026-10-30 item 2).
+    expect(await hrefs(cards)).toEqual([
       '/admin/kirkpatrick/reaction',
+      '/admin/kirkpatrick/learning',
+      '/admin/kirkpatrick/behavior',
+      '/admin/kirkpatrick/results',
     ])
     await expect(cards).toContainText([
       'Lihat detail',
@@ -320,8 +333,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await expect(page.getByTestId('kirk-flow')).toContainText(
       'Klik mana-mana tahap untuk lihat detail',
     )
-    const links = group.locator('a')
-    expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual([
+    expect(await hrefs(group.locator('a'))).toEqual([
       '/admin/kirkpatrick/reaction',
       '/admin/kirkpatrick/learning',
       '/admin/kirkpatrick/behavior',
@@ -329,7 +341,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     ])
     await expect(group.getByTestId('kirk-flow-pill')).toHaveText([
       '4.6/5',
-      '82.8% ketepatan',
+      '83% ketepatan',
       '946 pelajar aktif',
       'GPS 4.30',
     ])
@@ -342,14 +354,14 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await gotoApp(`${S1}?school_id=8080`)
     await expect(group.getByTestId('kirk-flow-pill')).toHaveText([
       '4.6/5',
-      '75.6% ketepatan',
+      '76% ketepatan',
       '53 pelajar aktif',
       'GPS 4.00',
     ])
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M12-22 S1 comparison default: subtitle, ranges, values, green deltas, Ringkasan, stacking @m12', async ({
+  test('E2E-M12-22 S1 comparison default: subtitle, ranges, values, green deltas @m12', async ({
     page,
     gotoApp,
     loginAs,
@@ -367,33 +379,56 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     const after = page.getByTestId('kirk-panel-after')
     await expect(before).toContainText('SEBELUM')
     await expect(after).toContainText('SELEPAS')
-    await expect(before.getByTestId('kirk-panel-value')).toHaveText(['2', '33.3%', '3', '0'])
+    await expect(before.getByTestId('kirk-panel-value')).toHaveText(['2', '33%', '3', '0'])
     await expect(after.getByTestId('kirk-panel-value')).toHaveText(['58', '87%', '13,968', '28'])
     await expect(before).toContainText('Pelajar Aktif')
     await expect(before).toContainText('Jumlah Jawapan')
     await expect(page.getByTestId('kirk-delta-value')).toHaveText([
       '+56',
-      '+53.7%',
-      '+13965',
+      '+54%',
+      '+13,965',
       '+28',
     ])
     for (const k of ['active', 'accuracy', 'answers', 'champions']) {
       await expect(page.getByTestId(`kirk-delta-${k}`)).toHaveAttribute('data-tone', 'up')
     }
-    await expect(page.getByTestId('kirk-summary')).toHaveText(
-      'Ringkasan: Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. Jumlah jawapan meningkat 465500%. 28 pelajar naik ke tahap Champion.',
-      TEXT,
-    )
-    const b = await before.boundingBox()
-    const a = await after.boundingBox()
-    if (viewportWidth(page) >= 768) {
-      // md and up: side by side; below md: stacked.
-      expect(Math.abs(a!.y - b!.y)).toBeLessThan(2)
-    } else {
-      expect(a!.y).toBeGreaterThan(b!.y + b!.height - 2)
+    if (isMobileWidth(page)) {
       expect(await columns(page.getByTestId('kirk-deltas').locator('> div'))).toBe(2)
     }
     await expectNoHorizontalScroll(page)
+  })
+
+  test('E2E-M12-22b S1 comparison Ringkasan sentence follows V2 @m12', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    // V2 admin/kirkpatrick/overview.blade.php:240-246. The app prints the API sentences (OverviewComparison.vue:summary,
+    // sentences from the M12 mock repository): "Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. ...".
+    await loginAs(ADMIN)
+    await gotoApp(S1)
+    await expect(page.getByTestId('kirk-summary')).toHaveText(
+      'Ringkasan: 56 pelajar baru mula aktif berbanding Januari. Ketepatan jawapan meningkat 53.7%. Jumlah jawapan bertambah 13,965. 28 pelajar naik ke tahap Champion.',
+      TEXT,
+    )
+  })
+
+  test('E2E-M12-22c S1 comparison panels sit side by side above 768 and stack at 768 and below (V2) @m12', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    // V2 overview.blade.php:95-101: .kp-ba is two columns, one column at max-width 768. The app stacks them at every
+    // width (OverviewComparison.vue: panels are flex-col siblings).
+    await loginAs(ADMIN)
+    await gotoApp(S1)
+    const b = await page.getByTestId('kirk-panel-before').boundingBox()
+    const a = await page.getByTestId('kirk-panel-after').boundingBox()
+    if (viewportWidth(page) > 768) {
+      expect(Math.abs(a!.y - b!.y)).toBeLessThan(2)
+    } else {
+      expect(a!.y).toBeGreaterThan(b!.y + b!.height - 2)
+    }
   })
 
   test('E2E-M12-23 S1 comparison with ?school_id=8080 (red deltas, Penurunan) @m12', async ({
@@ -412,7 +447,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     ])
     await expect(page.getByTestId('kirk-panel-before').getByTestId('kirk-panel-value')).toHaveText([
       '12',
-      '71.6%',
+      '72%',
       '511',
       '3',
     ])
@@ -422,7 +457,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       '60',
       '1',
     ])
-    await expect(page.getByTestId('kirk-delta-value')).toHaveText(['-11', '-16.6%', '-451', '-2'])
+    await expect(page.getByTestId('kirk-delta-value')).toHaveText(['-11', '-17%', '-451', '-2'])
     await expect(page.getByTestId('kirk-delta-active')).toHaveAttribute('data-tone', 'down')
     await expect(page.getByTestId('kirk-summary')).toContainText(
       'Penurunan 16.6% dalam ketepatan jawapan. 11 pelajar kurang aktif berbanding sebelumnya.',
@@ -430,7 +465,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     )
   })
 
-  test('E2E-M12-24 S1 KPI links, engagement tiles (3212 / 77.2%, sum 4,158) and the info card @m12', async ({
+  test('E2E-M12-24 S1 KPI links, engagement tiles (3,212 / 77.2%, sum 4,158) and the info card @m12', async ({
     page,
     gotoApp,
     loginAs,
@@ -438,29 +473,18 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(S1)
     const kpis = page.getByTestId('kirk-kpis')
-    await expect(kpis.locator('[data-testid="kirk-stat-label"]')).toHaveText([
-      'Pelajar Berdaftar (T4/T5)',
-      'Soalan Dijawab',
-      'Guru Aktif',
-      'Ketepatan Keseluruhan',
-    ])
-    await expect(kpis.locator('[data-testid="kirk-stat-value"]')).toHaveText([
-      '4,158',
-      '306,133',
-      '277',
-      '82.8%',
-    ])
-    await expect(kpis.getByTestId('kirk-stat-suffix')).toHaveText('/522')
-    expect(
-      await kpis.locator('a').evaluateAll((els) => els.map((e) => e.getAttribute('href'))),
-    ).toEqual([
+    await expectStat(page.getByTestId('kirk-kpi-registered'), '4,158', 'Pelajar Berdaftar')
+    await expectStat(page.getByTestId('kirk-kpi-answers'), '306,133', 'Soalan Dijawab')
+    await expectStat(page.getByTestId('kirk-kpi-teachers'), '277/522', 'Guru Aktif')
+    await expectStat(page.getByTestId('kirk-kpi-accuracy'), '83%', 'Ketepatan Keseluruhan')
+    expect(await hrefs(kpis.locator('a'))).toEqual([
       '/admin/monitoring',
       '/admin/kirkpatrick/learning',
       '/admin/monitoring',
       '/admin/kirkpatrick/learning',
     ])
     const counts = page.getByTestId('kirk-band-count')
-    await expect(counts).toHaveText(['513', '259', '169', '5', '3212'])
+    await expect(counts).toHaveText(['513', '259', '169', '5', '3,212'])
     await expect(page.getByTestId('kirk-band-pct')).toHaveText([
       '12.3%',
       '6.2%',
@@ -468,15 +492,22 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       '0.1%',
       '77.2%',
     ])
-    const sum = (await counts.allTextContents()).reduce((s, v) => s + Number(v), 0)
+    const sum = (await counts.allTextContents()).reduce((s, v) => s + Number(v.replace(/,/g, '')), 0)
     expect(sum).toBe(4158)
     await expect(page.getByTestId('kirk-bands')).toContainText('Taburan Engagement Pelajar')
     const tiles = page.getByTestId('kirk-bands').locator('a')
-    expect(await tiles.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(
-      Array(5).fill('/admin/kirkpatrick/behavior'),
-    )
-    expect(await columns(tiles)).toBe(5)
+    expect(await hrefs(tiles)).toEqual(Array(5).fill('/admin/kirkpatrick/behavior'))
+    // 5 across from sm (640), 2 below with the last tile spanning both (OverviewBands.vue).
+    expect(await columns(tiles)).toBe(viewportWidth(page) >= 640 ? 5 : 2)
+
+    // The info card is collapsed behind "Tentang Model Kirkpatrick" (recorded layout decision, TRACKER 2026-10-30).
     const info = page.getByTestId('kirk-info')
+    const toggle = page.getByTestId('kirk-info-toggle')
+    await expect(info).toBeHidden()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(info).toBeVisible()
     await expect(info).toContainText('Model Kirkpatrick — 4 Tahap Penilaian Keberkesanan')
     await expect(info).toContainText(
       'Dashboard ini mengukur keberkesanan platform PrestasiPlus berdasarkan model Kirkpatrick (1959).',
@@ -490,66 +521,43 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     loginAs,
   }) => {
     await loginAs(ADMIN)
+    const cards = async () => {
+      await expectStat(page.getByTestId('kirk-nps-student'), '8.4/10', 'NPS Pelajar')
+      await expectStat(page.getByTestId('kirk-nps-teacher'), '6.5/10', 'NPS Guru')
+      await expectStat(page.getByTestId('kirk-nps-admin'), '9.6/10', 'NPS Admin')
+      await expect(page.getByTestId('kirk-satisfaction')).toContainText('Kepuasan Purata')
+      await expect(page.getByTestId('kirk-satisfaction')).toContainText('4.6/5')
+    }
     await gotoApp(S2)
-    await expect(page.locator('[data-testid="kirk-stat-label"]')).toHaveText([
-      'NPS Pelajar',
-      'NPS Guru',
-      'NPS Admin',
-      'Kepuasan Purata',
-    ])
-    await expect(page.locator('[data-testid="kirk-stat-value"]')).toHaveText([
-      '8.4/10',
-      '6.5/10',
-      '9.6/10',
-      '4.6/5',
-    ])
+    await cards()
     await expect(page.getByTestId('kirk-filter')).toHaveCount(0)
-    await expect(page.getByTestId('kirk-reaction-page')).not.toContainText('respon')
 
     // 2 x 2 below lg, 4 in a row from lg.
-    const cards = page.getByTestId('kirk-reaction-cards').locator('> *')
-    expect(await columns(cards)).toBe(isDesktopShell(page) ? 4 : 2)
+    expect(await columns(page.getByTestId('kirk-reaction-cards').locator('> *'))).toBe(
+      isDesktopShell(page) ? 4 : 2,
+    )
     await expectNoHorizontalScroll(page)
 
     await gotoApp(`${S2}?school_id=8080`)
-    await expect(page.locator('[data-testid="kirk-stat-value"]')).toHaveText([
-      '8.4/10',
-      '6.5/10',
-      '9.6/10',
-      '4.6/5',
-    ])
+    await cards()
     await gotoApp(`${S1}?state=Kelantan`)
     await expect(levelValue(page, 't1')).toHaveText('4.6/5', TEXT)
     await expect(levelCaption(page, 't1')).toHaveText('Kepuasan purata · 336 respon', TEXT)
   })
 
-  test('E2E-M12-27 S3 KPI cards, Learning Gain card and 2 / 3 / 6 columns @m12', async ({
+  test('E2E-M12-27 S3 KPI cards, Learning Gain card and 2 / 3 / 3 columns @m12', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S3)
-    await expect(page.locator('[data-testid="kirk-stat-label"]')).toHaveText([
-      'Soalan Dijawab',
-      'Ketepatan',
-      'Skor Purata',
-      'Sesi Selesai',
-      'Kadar Penyelesaian',
-      'Learning Gain',
-    ])
-    await expect(page.locator('[data-testid="kirk-stat-value"]')).toHaveText([
-      '306,133',
-      '82.8%',
-      '80.3%',
-      '20991',
-      '100%',
-      '-',
-    ])
-    await expect(page.getByTestId('kirk-kpi-sessions').getByTestId('kirk-stat-suffix')).toHaveText(
-      '/20991',
-    )
-    await expect(page.getByTestId('kirk-kpi-gain')).toContainText('Perlu pre/post test')
+    await expectStat(page.getByTestId('kirk-kpi-answers'), '306,133', 'Soalan Dijawab')
+    await expectStat(page.getByTestId('kirk-kpi-accuracy'), '83%', 'Ketepatan')
+    await expectStat(page.getByTestId('kirk-kpi-score'), '80.3%', 'Skor Purata')
+    await expectStat(page.getByTestId('kirk-kpi-sessions'), '20,991/20,991', 'Sesi Selesai')
+    await expectStat(page.getByTestId('kirk-kpi-completion'), '100%', 'Kadar Penyelesaian')
+    await expectStat(page.getByTestId('kirk-kpi-gain'), '-', 'Learning Gain', 'Perlu pre/post test')
     const gain = page.getByTestId('kirk-gain-card')
     await expect(gain).toContainText('Pre-Test / Post-Test belum dimulakan')
     await expect(gain).toContainText(
@@ -561,7 +569,8 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     )
     const w = viewportWidth(page)
     const kpis = page.getByTestId('kirk-learning-kpis').locator('> *')
-    expect(await columns(kpis)).toBe(w >= 1024 ? 6 : w >= 640 ? 3 : 2)
+    // DS tile layout (src/ds/tile-layout.ts:70-79): 6 tiles, at most 3 per row, 2 below md (768).
+    expect(await columns(kpis)).toBe(w >= 768 ? 3 : 2)
     await expectNoHorizontalScroll(page)
   })
 
@@ -572,18 +581,12 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(`${S3}?school_id=8080`)
-    await expect(page.locator('[data-testid="kirk-stat-value"]')).toHaveText([
-      '15,007',
-      '75.6%',
-      '73.3%',
-      '1002',
-      '100%',
-      '-',
-    ])
-    await expect(page.getByTestId('kirk-kpi-sessions').getByTestId('kirk-stat-suffix')).toHaveText(
-      '/1002',
-    )
-    await expect(page.locator('form')).toHaveCount(0)
+    await expectStat(page.getByTestId('kirk-kpi-answers'), '15,007', 'Soalan Dijawab')
+    await expectStat(page.getByTestId('kirk-kpi-accuracy'), '76%', 'Ketepatan')
+    await expectStat(page.getByTestId('kirk-kpi-score'), '73.3%', 'Skor Purata')
+    await expectStat(page.getByTestId('kirk-kpi-sessions'), '1,002/1,002', 'Sesi Selesai')
+    await expectStat(page.getByTestId('kirk-kpi-completion'), '100%', 'Kadar Penyelesaian')
+    await expect(page.getByTestId('kirk-learning-page').locator('form')).toHaveCount(0)
     const rows = page.getByTestId('kirk-subject-row')
     await expect(rows).toHaveCount(24)
     await expect(
@@ -595,9 +598,9 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await expect(
       page.locator('[data-testid="kirk-subject-row"][data-status="Beginning"]'),
     ).toHaveCount(3)
-    // Tie order: exact accuracy descending, then name A-Z (the three 100.0% rows of school 8080).
+    // Tie order: exact accuracy descending, then name A-Z (the three 100% rows of school 8080).
     await expect(rows.nth(0)).toContainText('Bahasa Cina')
-    await expect(rows.nth(0)).toContainText('100.0%')
+    await expect(rows.nth(0)).toContainText('100%')
     await expect(rows.nth(0)).toContainText('10 soalan')
     await expect(rows.nth(1)).toContainText('Reka Bentuk & Teknologi')
     await expect(rows.nth(2)).toContainText('Sains Komputer')
@@ -605,19 +608,18 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       parseFloat(v),
     )
     expect(pcts).toEqual([...pcts].sort((a, b) => b - a))
-    await expect(rows.filter({ hasText: 'Bahasa Cina' })).toContainText('100.0%')
-    await expect(rows.filter({ hasText: 'Bahasa Cina' })).toContainText('10 soalan')
     const row = (name: string) => rows.filter({ hasText: name })
-    await expect(row('Bahasa Arab')).toContainText('45.0%')
+    await expect(row('Bahasa Arab')).toContainText('45%')
     await expect(row('Bahasa Arab')).toContainText('Beginning')
     await expect(row('Bahasa Arab')).toContainText('20 soalan')
-    await expect(row('Matematik Tambahan')).toContainText('40.0%')
-    await expect(row('Biologi')).toContainText('33.3%')
+    await expect(row('Matematik Tambahan')).toContainText('40%')
+    await expect(row('Biologi')).toContainText('33%')
     await expect(row('Biologi')).toContainText('30 soalan')
-    await expect(row('Biologi').getByTestId('kirk-subject-bar')).toHaveClass(/bg-red-500/)
-    await expect(page.getByTestId('kirk-school-row')).toHaveCount(1)
-    await expect(page.getByTestId('kirk-school-row')).toContainText('184')
-    await expect(page.getByTestId('kirk-school-row')).toContainText('15,007')
+    // Beginning = the error colour of the bar (UProgress colour "error").
+    await expect(row('Biologi').getByTestId('kirk-subject-bar').locator('[class*="bg-error"]')).not.toHaveCount(0)
+    await expect(dsRows(page.getByTestId('kirk-schools'))).toHaveCount(1)
+    await expect(dsRows(page.getByTestId('kirk-schools'))).toContainText('184')
+    await expect(dsRows(page.getByTestId('kirk-schools'))).toContainText('15,007')
     await expectNoHorizontalScroll(page)
   })
 
@@ -641,23 +643,23 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     )
     expect(pct).toEqual([...pct].sort((a, b) => b - a))
     const counts = (await page.getByTestId('kirk-subject-count').allTextContents()).map((t) =>
-      parseInt(t, 10),
+      parseInt(t.replace(/,/g, ''), 10),
     )
     expect(counts.reduce((s, n) => s + n, 0)).toBe(306133)
     const row = (name: string) => rows.filter({ hasText: name })
     await expect(rows.first()).toContainText('Pendidikan Muzik')
-    await expect(rows.first()).toContainText('100.0%')
+    await expect(rows.first()).toContainText('100%')
     await expect(rows.first()).toContainText('20 soalan')
-    await expect(row('Reka Bentuk & Teknologi')).toContainText('99.3%')
+    await expect(row('Reka Bentuk & Teknologi')).toContainText('99%')
     await expect(row('Reka Bentuk & Teknologi')).toContainText('461 soalan')
-    await expect(row('Ekonomi')).toContainText('79.1%')
+    await expect(row('Ekonomi')).toContainText('79%')
     await expect(row('Ekonomi')).toContainText('Developing')
-    await expect(row('Ekonomi')).toContainText('2333 soalan')
-    await expect(row('Sejarah')).toContainText('76.3%')
-    await expect(row('Sejarah')).toContainText('57695 soalan')
+    await expect(row('Ekonomi')).toContainText('2,333 soalan')
+    await expect(row('Sejarah')).toContainText('76%')
+    await expect(row('Sejarah')).toContainText('57,695 soalan')
     await expect(rows.last()).toContainText('Fizik')
-    await expect(rows.last()).toContainText('63.9%')
-    await expect(rows.last()).toContainText('5291 soalan')
+    await expect(rows.last()).toContainText('64%')
+    await expect(rows.last()).toContainText('5,291 soalan')
 
     // DV-M12-05: no tooltip, default cursor, nothing happens.
     const first = rows.first()
@@ -677,42 +679,47 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(S3)
     const table = page.getByTestId('kirk-schools')
-    await expect(table.locator('th')).toHaveText([
-      '#',
-      'Sekolah',
-      'Pelajar',
-      'Soalan',
-      'Ketepatan',
-      'Skor Purata',
-      'Subjek',
-    ])
-    const rows = page.getByTestId('kirk-school-row')
-    await expect(rows).toHaveCount(33)
-    const hrefs = await page
-      .getByTestId('kirk-school-link')
-      .evaluateAll((els) => els.map((e) => e.getAttribute('href')))
-    expect(hrefs[0]).toBe('/admin/monitoring/sekolah/8880')
-    for (const id of [8106, 8107, 8098, 8228, 940]) {
-      expect(hrefs).toContain(`/admin/monitoring/sekolah/${String(id)}`)
+    if (isWide(page)) {
+      await expect(table.locator('th')).toHaveText([
+        '#',
+        'Sekolah',
+        'Pelajar',
+        'Soalan',
+        'Ketepatan',
+        'Skor Purata',
+        'Subjek',
+      ])
     }
-    const acc = page.getByTestId('kirk-school-accuracy')
-    await expect(page.locator('[data-testid="kirk-school-accuracy"].text-green-600')).toHaveCount(
-      16,
-    )
-    await expect(page.locator('[data-testid="kirk-school-accuracy"].text-amber-600')).toHaveCount(7)
-    await expect(page.locator('[data-testid="kirk-school-accuracy"].text-red-600')).toHaveCount(10)
-    await expect(acc).toHaveCount(33)
+    // 20 rows per page (LearningSchools.vue PAGE_SIZES): the pager holds the 33 schools.
+    await expect(dsRows(table)).toHaveCount(20)
+    await expect(pagerSummary(table)).toContainText('daripada 33 hasil')
+    await showAllRows(page, table)
+    const rows = dsRows(table)
+    await expect(rows).toHaveCount(33)
+    const links = await hrefs(page.getByTestId('kirk-school-link'))
+    expect(links[0]).toBe('/admin/monitoring/sekolah/8880')
+    for (const id of [8106, 8107, 8098, 8228, 940]) {
+      expect(links).toContain(`/admin/monitoring/sekolah/${String(id)}`)
+    }
+    await expect(page.locator('[data-testid="kirk-school-accuracy"].text-success')).toHaveCount(16)
+    await expect(page.locator('[data-testid="kirk-school-accuracy"].text-warning')).toHaveCount(7)
+    await expect(page.locator('[data-testid="kirk-school-accuracy"].text-error')).toHaveCount(10)
+    await expect(page.getByTestId('kirk-school-accuracy')).toHaveCount(33)
     const r8080 = rows.filter({ has: page.locator('a[href$="/sekolah/8080"]') })
-    await expect(r8080).toHaveText(/184\s*15,007\s*75\.6%\s*73\.3%\s*3/)
+    // 184 pupils, 15,007 answers, 76%, 73.3%, 3 subjects.
+    await expect(r8080).toHaveText(
+      isWide(page)
+        ? /184\s*15,007\s*76%\s*73\.3%\s*3/
+        : /Pelajar\s*184\s*Soalan\s*15,007\s*Ketepatan\s*76%\s*Skor Purata\s*73\.3%\s*Subjek\s*3/,
+    )
     // School 940 has one session without answers: 0 / 0% / 0% and Subjek 1.
     const r940 = rows.filter({ has: page.locator('a[href$="/sekolah/940"]') })
-    await expect(r940).toHaveText(/0\s*0%\s*0%\s*1$/)
+    await expect(r940).toHaveText(
+      isWide(page)
+        ? /0\s*0%\s*0%\s*1$/
+        : /Pelajar\s*\d+\s*Soalan\s*0\s*Ketepatan\s*0%\s*Skor Purata\s*0%\s*Subjek\s*1$/,
+    )
     // The table scrolls inside its card, never the page.
-    const scroller = page.getByTestId('kirk-schools-scroller')
-    await expect(scroller).toHaveCSS('overflow-x', 'auto')
-    if (isMobileWidth(page)) {
-      expect(await scroller.evaluate((e) => e.scrollWidth > e.clientWidth)).toBe(true)
-    }
     await expectNoHorizontalScroll(page)
   })
 
@@ -753,40 +760,37 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
+    // The admin is always in Pentadbiran, whatever the mount (userShellFor / adminShellFor, layouts.ts:37-49).
     await loginAs(ADMIN)
     await gotoApp('/guru/kirkpatrick')
-    await header(page, TITLES.s1Guru)
+    await expectHeader(page, 'pentadbiran', TITLES.s1Guru)
     await expectLevels(page, S1_PLATFORM)
-    await expect(page.getByTestId('kirk-level-t2')).toHaveAttribute(
-      'href',
-      '/guru/kirkpatrick/learning',
-    )
+    await expect(level(page, 't2')).toHaveAttribute('href', '/guru/kirkpatrick/learning')
     await gotoApp('/guru/kirkpatrick/learning')
-    await header(page, TITLES.s3)
-    await expect(page.getByTestId('kirk-tab-learning')).toHaveAttribute('data-active', 'true')
-    await expect(page.getByTestId('kirk-tab-reaction')).toHaveAttribute(
+    await expectHeader(page, 'pentadbiran', TITLES.s3)
+    const strip = page.getByTestId('pentadbiran-section-tabs')
+    await expect(strip.locator('a[data-active="true"]')).toHaveText('T2: Pembelajaran', TEXT)
+    await expect(strip.getByRole('link', { name: 'T1: Reaksi' })).toHaveAttribute(
       'href',
       '/guru/kirkpatrick/reaction',
     )
     await expect(page.getByTestId('kirk-subject-row')).toHaveCount(26)
     await gotoApp('/guru/kirkpatrick/reaction')
-    await header(page, TITLES.s2)
-    await expect(page.locator('[data-testid="kirk-stat-value"]')).toHaveText([
-      '8.4/10',
-      '6.5/10',
-      '9.6/10',
-      '4.6/5',
-    ])
+    await expectHeader(page, 'pentadbiran', TITLES.s2)
+    await expectStat(page.getByTestId('kirk-nps-student'), '8.4/10', 'NPS Pelajar')
+    await expectStat(page.getByTestId('kirk-nps-teacher'), '6.5/10', 'NPS Guru')
+    await expectStat(page.getByTestId('kirk-nps-admin'), '9.6/10', 'NPS Admin')
+    await expect(page.getByTestId('kirk-satisfaction')).toContainText('4.6/5')
     if (isDesktopShell(page)) {
-      // FR-M12-04 / DV-M12-12: the item of the current view is active in the sidebar on the twin too.
-      await expect(page.getByTestId('pentadbiran-sidebar').locator('a[aria-current="page"]')).toContainText(
-        'T1: Reaksi',
-      )
+      // FR-M12-04 / DV-M12-12: the Kirkpatrick row of the current view is active in the sidebar on the twin too.
+      await expect(
+        page.getByTestId('pentadbiran-sidebar').locator('a[aria-current="page"]'),
+      ).toContainText('Kirkpatrick')
     }
   })
 
   test('E2E-M12-09 guest is sent to /login from S1, S2, S3 @m12', async ({ page, gotoApp }) => {
-    for (const path of [S1, S2, S3, '/guru/kirkpatrick', '/admin-sekolah/kirkpatrick']) {
+    for (const path of [S1, S2, S3, '/guru/kirkpatrick', ALIAS]) {
       await gotoApp(path)
       await expect(page).toHaveURL(/\/login/)
     }
@@ -800,7 +804,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     await loginAs(ADMIN)
     await page.setViewportSize({ width: 320, height: 700 })
     for (const [path, ready] of [
-      [S1, 'kirk-info'],
+      [S1, 'kirk-bands'],
       [S2, 'kirk-reaction-cards'],
       [S3, 'kirk-schools'],
       [`${S3}?school_id=8080`, 'kirk-schools'],
@@ -817,11 +821,10 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
         rows.filter((r) => r.scrollWidth > r.clientWidth + 1).map((r) => r.textContent),
       )
     expect(overflowing).toEqual([])
-    // The label of a full bar (100.0%) lies inside the bar and the page viewport.
+    // The label of a full bar (100%) sits right of the bar, inside the page viewport and not on top of the bar.
     const label = await page.getByTestId('kirk-subject-pct').first().boundingBox()
     const bar = await page.getByTestId('kirk-subject-bar').first().boundingBox()
-    expect(label!.x).toBeGreaterThanOrEqual(bar!.x - 1)
-    expect(label!.x + label!.width).toBeLessThanOrEqual(bar!.x + bar!.width + 1)
+    expect(label!.x).toBeGreaterThanOrEqual(bar!.x + bar!.width - 1)
     expect(label!.x + label!.width).toBeLessThanOrEqual(320)
   })
 
@@ -832,10 +835,10 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     for (const [path, ready] of [
-      [S1, 'kirk-info'],
+      [S1, 'kirk-bands'],
       [S2, 'kirk-reaction-cards'],
       [S3, 'kirk-schools'],
-      [`${S1}?school_id=8080`, 'kirk-info'],
+      [`${S1}?school_id=8080`, 'kirk-bands'],
       [`${S3}?school_id=8080`, 'kirk-schools'],
     ] as const) {
       await gotoApp(path)
@@ -843,12 +846,20 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
       await expectNoHorizontalScroll(page)
     }
     await gotoApp(S1)
-    await expect(page.getByTestId('kirk-info')).toBeVisible()
-    await expectTouchTarget(page.getByTestId('kirk-filter-apply'))
-    // DV-M12-07: selects are 44 px below lg and the live 36 px from lg.
-    const selectMin = isDesktopShell(page) ? 36 : 44
-    await expectTouchTarget(page.getByTestId('kirk-filter-school'), selectMin)
-    await expectTouchTarget(page.getByTestId('kirk-filter-state'), selectMin)
+    await expect(page.getByTestId('kirk-bands')).toBeVisible()
+    if (!isDesktopShell(page)) {
+      // Touch projects: the filter button (below 768) or "Tapis" and both selects are >= 44 px.
+      if (isWide(page)) {
+        await expectTouchTarget(page.getByRole('button', { name: 'Tapis', exact: true }))
+        await expectTouchTarget(page.getByRole('combobox', { name: 'Sekolah', exact: true }))
+        await expectTouchTarget(page.getByRole('combobox', { name: 'Negeri', exact: true }))
+      } else {
+        await expectTouchTarget(page.locator('[data-ds="filter-open"]'))
+        await openFilters(page)
+        await expectTouchTarget(page.getByRole('combobox', { name: 'Sekolah', exact: true }))
+        await expectTouchTarget(page.getByRole('combobox', { name: 'Negeri', exact: true }))
+      }
+    }
   })
 })
 
@@ -859,75 +870,75 @@ test.describe('M12 S1-S3: guru (provisional, SRS §9 Q-M12-1)', MODULE, () => {
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
       await gotoApp('/guru/kirkpatrick')
-      await header(page, TITLES.s1Guru)
-      await expect(page.getByTestId('pentadbiran-header')).toBeVisible()
+      await expectHeader(page, 'pembelajaran', TITLES.s1Guru)
+      await expect(page.getByTestId('pentadbiran-header')).toHaveCount(0)
       await expectLevels(page, S1_PLATFORM)
-      await expect(page.getByTestId('kirk-level-t3')).toHaveAttribute(
-        'href',
-        '/guru/kirkpatrick/behavior',
-      )
-      await expect(page.getByTestId('kirk-kpi-registered')).toHaveAttribute(
+      await expect(level(page, 't3')).toHaveAttribute('href', '/guru/kirkpatrick/behavior')
+      await expect(page.getByTestId('kirk-kpi-registered').getByRole('link')).toHaveAttribute(
         'href',
         '/guru/monitoring',
       )
       await expectNoHorizontalScroll(page)
 
       await gotoApp('/guru/kirkpatrick/reaction')
-      await header(page, TITLES.s2)
-      await expect(page.locator('[data-testid="kirk-stat-value"]')).toHaveText([
-        '8.4/10',
-        '6.5/10',
-        '9.6/10',
-        '4.6/5',
-      ])
-      await page.getByTestId('kirk-tab-learning').click()
+      await expectHeader(page, 'pembelajaran', TITLES.s2)
+      await expectStat(page.getByTestId('kirk-nps-student'), '8.4/10', 'NPS Pelajar')
+      await expectStat(page.getByTestId('kirk-nps-teacher'), '6.5/10', 'NPS Guru')
+      await expectStat(page.getByTestId('kirk-nps-admin'), '9.6/10', 'NPS Admin')
+      await expect(page.getByTestId('kirk-satisfaction')).toContainText('4.6/5')
+      await page
+        .getByTestId('pembelajaran-section-tabs')
+        .getByRole('link', { name: 'T2: Pembelajaran' })
+        .click()
       await expect(page).toHaveURL(/\/guru\/kirkpatrick\/learning$/)
-      await header(page, TITLES.s3)
+      await expectHeader(page, 'pembelajaran', TITLES.s3)
       await expect(page.getByTestId('kirk-subject-row')).toHaveCount(26)
-      await expect(page.getByTestId('kirk-school-row')).toHaveCount(33)
+      await expect(pagerSummary(page.getByTestId('kirk-schools'))).toContainText('daripada 33 hasil')
       await expectNoHorizontalScroll(page)
     },
   )
 
   test(
-    'guru on the /admin/kirkpatrick target (guru scenario step) goes to the landing page @m12',
+    'guru on the /admin/kirkpatrick target (guru scenario step) gets the in-place 403 page @m12',
     provisional('SRS §9: the non-admin rule on /admin/* is INFERRED', [moduleTag(12)]),
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
       await gotoApp(S1)
-      await expect(page).not.toHaveURL(/\/admin\/kirkpatrick/)
+      await expectErrorPage(page, '403')
+      await expect(page).toHaveURL(/\/admin\/kirkpatrick$/)
       await expect(page.getByTestId('kirk-overview-page')).toHaveCount(0)
     },
   )
 })
 
 test.describe(
-  'M12 S1 alias /admin-sekolah/kirkpatrick: school administrator 8 (provisional)',
+  'M12 S1 mount /admin-sekolah/kirkpatrick: school administrator 8 (provisional)',
   MODULE,
   () => {
-    const ALIAS = '/admin-sekolah/kirkpatrick'
-
     test(
-      'alias renders S1 in the user shell with the own school only and no dead detail links @m12',
+      'the mount renders S1 in Pembelajaran with the own school only and links under its own prefix @m12',
       provisional('build-plan v1.12 R.1.3 / G4 F6: the alias and its scope are INFERRED', [
         moduleTag(12),
       ]),
       async ({ page, gotoApp, loginAs }) => {
         await loginAs(SCHOOL_ADMIN)
         await gotoApp(ALIAS)
-        await expectTabTitle(page, TITLES.s1[0])
-        await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText(TITLES.s1[1])
-        await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText(TITLES.s1[2])
+        await expectHeader(page, 'pembelajaran', TITLES.s1)
         await expect(page.getByTestId('kirk-overview-page')).toBeVisible()
         await expect(page.getByTestId('pentadbiran-header')).toHaveCount(0)
 
-        // Data forced to the own school: account 8 belongs to SMK DEMO (900001, a fixture school). Its population
-        // counts (T4/T5, teachers) show; active students and sessions stay 0 (no M05 sessions for the fixture).
-        await expect(page.locator('[data-testid="kirk-filter-school"] option')).toHaveCount(2)
+        // Data forced to the own school (FR-AS-11-2): account 8 belongs to SMK DEMO (900001, src/mock/core-data/
+        // accounts.ts:27,169), shown as a locked label; no school / state selects.
+        await expect(page.getByTestId('kirk-school-label')).toContainText('SMK DEMO')
+        await expect(page.getByTestId('kirk-filter-school')).toHaveCount(0)
         const registered = await registeredCount(page)
         expect(registered).toBeGreaterThan(0)
         expect(registered).toBeLessThan(4158)
-        await expect(levelValue(page, 't3')).toHaveText(`0/${String(registered)}`, TEXT)
+        // Active students and sessions stay 0 (no M05 sessions for the fixture school).
+        await expect(levelValue(page, 't3')).toHaveText(
+          `0/${registered.toLocaleString('en-US')}`,
+          TEXT,
+        )
         await expect(levelCaption(page, 't3')).toHaveText(
           'Pelajar aktif · 0 sesi · 0% ketepatan',
           TEXT,
@@ -937,23 +948,24 @@ test.describe(
           'Tiada Data vs Tiada Data',
         )
         await expect(levelValue(page, 't1')).toHaveText('4.6/5', TEXT)
-        await expect(page.getByTestId('kirk-comparison-subtitle')).toBeVisible()
         await expect(page.getByTestId('kirk-band-count')).toHaveCount(5)
 
-        // S2/S3 answer 403 for this role: nothing links to them, and none of the level pages exist on the alias.
-        const hrefs = await page
-          .getByTestId('kirk-overview-page')
-          .locator('a')
-          .evaluateAll((els) => els.map((e) => e.getAttribute('href') ?? ''))
-        expect(hrefs.filter((h) => h.startsWith(ALIAS))).toEqual([])
-        expect(hrefs.filter((h) => h.startsWith('/admin/'))).toEqual([])
-        await expect(page.getByTestId('kirk-overview-page')).not.toContainText('Lihat detail')
+        // All seven screens exist under the mount (FR-AS-11-1): every detail link stays on it, none on /admin/.
+        const links = await hrefs(page.getByTestId('kirk-overview-page').locator('a'))
+        expect(links.filter((h) => (h ?? '').startsWith('/admin/'))).toEqual([])
+        expect(links.filter((h) => (h ?? '').startsWith(ALIAS)).length).toBeGreaterThan(0)
+        expect(await hrefs(page.getByTestId('kirk-levels').locator('> a'))).toEqual([
+          `${ALIAS}/reaction`,
+          `${ALIAS}/learning`,
+          `${ALIAS}/behavior`,
+          `${ALIAS}/results`,
+        ])
         await expectNoHorizontalScroll(page)
       },
     )
 
     test(
-      'alias filter keeps the own school when a platform school is requested @m12',
+      'the mount keeps the own school when a platform school is requested @m12',
       provisional('G4 F6: the scope forcing is INFERRED', [moduleTag(12)]),
       async ({ page, gotoApp, loginAs }) => {
         await loginAs(SCHOOL_ADMIN)
@@ -963,33 +975,40 @@ test.describe(
         // The handler ignores the requested school (8080 has 184 students): still the own school.
         expect(await registeredCount(page)).toBe(own)
         expect(own).not.toBe(184)
-        await expect(levelValue(page, 't3')).toHaveText(`0/${String(own)}`, TEXT)
+        await expect(levelValue(page, 't3')).toHaveText(`0/${own.toLocaleString('en-US')}`, TEXT)
         await expectNoHorizontalScroll(page)
       },
     )
 
     test(
-      'alias: S2 and S3 paths are not routes for the school administrator @m12',
-      provisional('the alias is S1 only', [moduleTag(12)]),
+      'S2 and S3 exist under the mount for the school administrator; the /admin paths are 403 @m12',
+      provisional('FR-AS-11-1: the school administrator reaches all seven screens', [moduleTag(12)]),
       async ({ page, gotoApp, loginAs }) => {
         await loginAs(SCHOOL_ADMIN)
-        for (const path of [`${ALIAS}/reaction`, `${ALIAS}/learning`, S1, S2, S3]) {
+        await gotoApp(`${ALIAS}/reaction`)
+        await expect(page.getByTestId('kirk-reaction-page')).toBeVisible()
+        await expectHeader(page, 'pembelajaran', TITLES.s2)
+        await gotoApp(`${ALIAS}/learning`)
+        await expect(page.getByTestId('kirk-learning-page')).toBeVisible()
+        await expectHeader(page, 'pembelajaran', TITLES.s3)
+        for (const path of [S1, S2, S3]) {
           await gotoApp(path)
-          await expect(page.getByTestId('kirk-reaction-page')).toHaveCount(0)
-          await expect(page.getByTestId('kirk-learning-page')).toHaveCount(0)
+          await expectErrorPage(page, '403')
+          await expect(page).toHaveURL(new RegExp(`${path}$`))
           await expect(page.getByTestId('kirk-overview-page')).toHaveCount(0)
         }
       },
     )
 
     test(
-      'alias is refused for the admin (landing redirect) @m12',
-      provisional('INFERRED role guard of the alias', [moduleTag(12)]),
+      'the mount is refused for the admin (in-place 403) @m12',
+      provisional('INFERRED role guard of the mount', [moduleTag(12)]),
       async ({ page, gotoApp, loginAs }) => {
         await loginAs(ADMIN)
         await gotoApp(ALIAS)
+        await expectErrorPage(page, '403')
+        await expect(page).toHaveURL(/\/admin-sekolah\/kirkpatrick$/)
         await expect(page.getByTestId('kirk-overview-page')).toHaveCount(0)
-        await expect(page).not.toHaveURL(/admin-sekolah\/kirkpatrick/)
       },
     )
   },
