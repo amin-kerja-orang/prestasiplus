@@ -1,5 +1,6 @@
 /**
- * An EMPTY prompt that the stored part already has is carried over, not refused (K10, the migrated V2 bank).
+ * An EMPTY prompt is accepted, not refused: one the stored part already has is carried over (K10, the migrated V2 bank), and a new part may
+ * leave it empty too (V2 `parts.*.prompt_text` is nullable; the pre-fix write contract answered a raw "Too small" 422 on an MCQ with no instruction).
  *
  * The write contract demands `prompt.ms` min 1 on every part an update sends that differs from the stored one. A question that V2 gave
  * only a stem (an MCQ has no separate instruction) is stored with the text once, in the stem, and an EMPTY leaf prompt (the loader and the
@@ -30,7 +31,9 @@ export function maskCarriedPrompts<T extends PartLike>(
     list.map((p, i) => {
       const old = before?.[i]
       const here = `${path}/${String(i)}`
-      const keep = old !== undefined && old.label === p.label && emptyPrompt(old) && emptyPrompt(p)
+      // V2 stores the instruction of a sub-bahagian as nullable (StoreStudioQuestionRequest: parts.*.prompt_text): an empty one is valid for
+      // a new part too, not only a carried one. The stem (or another part) holds the text; the submit gate still needs some text somewhere.
+      const keep = emptyPrompt(p)
       if (keep) carried.add(here)
       const children = Array.isArray(p.children) ? walk(p.children as readonly T[], old?.children, here) : undefined
       return { ...p, ...(keep ? { prompt: { ...p.prompt, ms: '-' } } : {}), ...(children === undefined ? {} : { children }) }

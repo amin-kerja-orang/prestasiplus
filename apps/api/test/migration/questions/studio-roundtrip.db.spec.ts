@@ -738,6 +738,29 @@ describe('structured and subjective (essay) questions', () => {
     const diff = shapeDiff(migrated.parts, twin.parts)
     expect(diff.onlyA, 'fields the migrated structured question has that a V3-made one does not').toEqual([])
   })
+
+  it('K10: PUT /api/questions/:id takes the migrated structured and essay part tree VERBATIM (the locked Studio save), keeps tag.tp, and the gate does not refuse the difficulty', async () => {
+    const ids = [...['1', '2', '3', '4'].map((k) => structuredIds[k] as string), q(901), q(902)]
+    for (const id of ids) {
+      const before = await get(id)
+      const body: Wire = {
+        subjectId: before.subjectId,
+        educationLevelId: before.educationLevelId,
+        difficultyLevel: before.difficultyLevel,
+        questionType: 'essay',
+        questionText: before.questionText,
+        parts: before.parts,
+        tag: { unitId: before.tag?.unitId ?? null, spIds: before.tag?.spIds ?? [], tp: before.tag?.tp ?? null },
+      }
+      const res = await admin.put(`/api/questions/${id}`, body)
+      expect(res.status, `PUT ${id} ${said(res)}`).toBe(200)
+      const after = await get(id)
+      expect(after.parts, `parts of ${id} are stored as sent`).toEqual(before.parts)
+      expect(after.tag?.tp ?? null, `tp of ${id} is kept`).toEqual(before.tag?.tp ?? null)
+      const refused = await admin.get(`/api/questions/${id}/gate-check?gate=submit`)
+      expect(JSON.stringify(refused.body), `gate of ${id}`).not.toContain('Sila pilih tahap kesukaran')
+    }
+  })
 })
 
 describe('what the pupil gets: a Latih Tubi session over the Studio-approved migrated questions', () => {

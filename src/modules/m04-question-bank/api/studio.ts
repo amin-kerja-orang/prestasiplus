@@ -18,7 +18,7 @@ import type {
 
 import { api, isHttpMode, uploadQuestionImage, type ListResult } from '@/api'
 
-import { editAsDraftBody, hydrate, type WireQuestion } from '../lib/studio/draft'
+import { editAsDraftBody, type WireQuestion } from '../lib/studio/draft'
 import type { WireStimulus } from '../lib/studio/stimulus'
 
 export type { StudioDskp }
@@ -279,8 +279,6 @@ export class EditAsDraftRefused extends Error {
  */
 export async function editAsDraft(id: string): Promise<string> {
   const q = await fetchStudioQuestion(id)
-  const h = hydrate(q)
-  if (h.unsupported.length > 0) throw new EditAsDraftRefused(h.unsupported)
   const res = await updateStudioQuestion(id, editAsDraftBody(q))
   return res.data.id
 }

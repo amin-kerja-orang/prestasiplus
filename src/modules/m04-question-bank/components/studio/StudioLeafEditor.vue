@@ -51,7 +51,7 @@ const err = (k: string): string | undefined => props.errors?.[k]
         </DsFormField>
       </DsGrid>
 
-      <DsFormField v-slot="{ id }" native label="Arahan sub-bahagian" :for="`${testid}-prompt`" required :error="err('prompt')">
+      <DsFormField v-slot="{ id }" native label="Arahan sub-bahagian" :for="`${testid}-prompt`" :error="err('prompt')">
         <StudioRichTextField :id="id" v-model="leaf.prompt" :rows="3" :disabled="disabled" :testid="`${testid}-prompt`" />
       </DsFormField>
 

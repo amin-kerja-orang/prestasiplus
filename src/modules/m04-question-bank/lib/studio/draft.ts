@@ -52,7 +52,7 @@ export interface StudioDraft {
    * A migrated question whose parts the Studio cannot hold (rubric points, marks scheme, nesting): its own parts and TP go back
    * verbatim on save, so the other fields stay editable and savable without losing the scheme (K10). The scheme is edited in Subjektif.
    */
-  lockedParts?: { parts: unknown[]; tp: number | null }
+  lockedParts?: { parts: unknown[]; tp: unknown }
   subjectId: string
   educationLevelId: string
   kertas: Kertas
@@ -204,7 +204,6 @@ export function draftGaps(d: StudioDraft, levelName = '', facts: GapFacts = {}):
   d.leaves.forEach((l, i) => {
     const leaf = { step: 4 as const, field: `studio-leaf-${String(i)}`, path: `parts.${l.label}` }
     const name = leafName(l.label)
-    if (l.prompt.trim() === '') gaps.push({ ...leaf, message: `${name} belum ada arahan.` })
     if (l.mode === 'mcq') {
       if (l.options.some((o) => o.text.trim() === '' && o.imageToken === null)) gaps.push({ ...leaf, message: `${name} ada pilihan kosong.` })
       if (!l.options.some((o) => o.label === l.correct)) gaps.push({ ...leaf, message: `${name} mempunyai 0 pilihan betul — mesti tepat 1.` })
@@ -487,6 +486,16 @@ export function editAsDraftBody(q: WireQuestion): Json {
   }
 }
 
+/**
+ * The TP a locked save sends back: the stored value, never null for a value that is stored. A numeric string (a V2 row) is sent as the number;
+ * any other stored value is sent as it is, so the server keeps it. Only a TP that is really absent is null.
+ */
+export function lockedTpOf(raw: unknown): unknown {
+  if (raw === undefined || raw === null) return null
+  if (typeof raw === 'string' && /^\d+$/.test(raw.trim())) return Number(raw.trim())
+  return raw
+}
+
 /** Builds the form state from the admin read. A question the editor cannot hold faithfully is read-only (`unsupported`). */
 export function hydrate(q: WireQuestion): Hydrated {
   const unsupported: string[] = []
@@ -551,7 +560,7 @@ export function hydrate(q: WireQuestion): Hydrated {
     explanationEn: q.explanationEn ?? null,
     scriptType: q.scriptType ?? 'rumi',
     ...(leafTp === null && storedTp !== null ? { inheritedTp: storedTp } : {}),
-    ...(unsupported.length > 0 ? { lockedParts: { parts: q.parts ?? [], tp: storedTp } } : {}),
+    ...(unsupported.length > 0 ? { lockedParts: { parts: q.parts ?? [], tp: lockedTpOf(q.tag?.tp) } } : {}),
   }
   return { draft, unsupported }
 }

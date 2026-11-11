@@ -9,6 +9,7 @@ import {
   draftTpNote,
   editAsDraftBody,
   hydrate,
+  lockedTpOf,
   MAX_OPTIONS,
   MIN_OPTIONS,
   removeOption,
@@ -359,5 +360,25 @@ describe('Studio draft', () => {
       expect(issueField('parts.1.1.cognitiveLevel', [{ label: '1' }, { label: '1.1' }])).toBe('studio-leaf-1')
       expect(issueField('parts.1.cognitiveLevel', [{ label: 'b' }, { label: '1' }])).toBe('studio-leaf-1')
     })
+  })
+})
+
+describe('a locked save never clears a stored TP (K10)', () => {
+  const essay = { label: 'a', prompt: { ms: 'Terangkan.' }, mode: 'essay', marks: 10, key: { kind: 'points', marks: 10, points: ['isi'] } }
+  const readTag = (tp: unknown) =>
+    hydrate({ subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Terangkan proses fotosintesis.', questionImage: null, curriculumChapterId: null, parts: [essay], tag: { unitId: null, spIds: [], tp } } as never)
+
+  it.each([
+    [4, 4],
+    ['4', 4],
+    ['tp4', 'tp4'],
+    [null, null],
+    [undefined, null],
+  ])('stored tp %j is sent as %j', (stored, sent) => {
+    expect(lockedTpOf(stored)).toBe(sent)
+    const h = readTag(stored)
+    expect(h.unsupported.length).toBeGreaterThan(0)
+    expect((toRequestBody(h.draft) as { tag: { tp: unknown }; parts: unknown }).tag.tp).toBe(sent)
+    expect((toRequestBody(h.draft) as { parts: unknown }).parts).toEqual([essay])
   })
 })

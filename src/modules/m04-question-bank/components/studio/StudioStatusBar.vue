@@ -185,7 +185,7 @@ async function run(action: StatusAction): Promise<void> {
         :variant="b.primary ? 'solid' : 'soft'"
         class="min-h-11"
         :loading="busy === b.action"
-        :disabled="busy !== null || (b.action !== 'archived' && waitForSave) || (b.action === 'edit-as-draft' && unsupported) || groupTitle(b.action) !== undefined"
+        :disabled="busy !== null || (b.action !== 'archived' && waitForSave) || groupTitle(b.action) !== undefined"
         :title="groupTitle(b.action)"
         :data-testid="`studio-action-${b.action}`"
         @click="run(b.action)"

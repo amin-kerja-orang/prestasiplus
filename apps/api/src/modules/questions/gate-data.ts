@@ -3,6 +3,7 @@ import type { QuestionPart } from '@pp/contract'
 import { stimulusReferenceOf } from '../intake/workflow/figure-links'
 import type { FlagPart } from './effective-leaf'
 import { leavesOf } from './grading'
+import { difficultyLevelOf } from './projection'
 import type { GateFacts, QuestionVersionRecord } from './types'
 import type { QuestionGateData } from './workflow/ports'
 
@@ -91,7 +92,8 @@ export function gateDataOf(
     lastEditedByAi: facts.lastEditedByAi,
     paperCode: v.paperCode ?? null,
     spmBound,
-    difficultyLevel: v.difficultyLevel,
+    // DM-47 read rule (typed level, else least(5, TP), else 3): the gate judges the level the Studio shows.
+    difficultyLevel: difficultyLevelOf(v),
     stem: v.stemMs,
     hasDskpNodes: facts.hasDskpNodes,
     hasChapters: facts.hasChapters,
