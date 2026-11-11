@@ -67,6 +67,14 @@ export interface LeafDraft {
   accepted: string
   numeric: { value: string; tolerance: string; unit: string }
   essay: EssayDraft
+  /** The branch part this leaf is a child of (a migrated (a)(i)): the branch is kept as stored and written back around its children. */
+  group?: BranchRef
+}
+
+/** A branch part as it was stored (its own prompt, label, marks and order, and its children); a save writes the edited children into it. */
+export interface BranchRef {
+  id: string
+  raw: Record<string, unknown>
 }
 
 export type Kertas = '' | '1' | '2' | '3' | '4'
@@ -381,6 +389,27 @@ const storedPointText = (l: LeafDraft, id: string): string => {
 export const emptiedPoints = (l: LeafDraft): number[] =>
   l.essay.points.flatMap((pt, i) => (pt.id !== '' && pt.text.trim() === '' && storedPointText(l, pt.id) !== '' ? [i] : []))
 
+/** The part tree of a draft: top-level leaves as they are, and the children of a branch written back into the stored branch. */
+function partsOf(leaves: readonly LeafDraft[]): Json[] {
+  const out: Json[] = []
+  const open = new Map<string, Json[]>()
+  for (const l of leaves) {
+    const part = leafToPart(l)
+    if (l.group === undefined) {
+      out.push(part)
+      continue
+    }
+    const children = open.get(l.group.id)
+    if (children !== undefined) children.push(part)
+    else {
+      const fresh = [part]
+      open.set(l.group.id, fresh)
+      out.push({ ...l.group.raw, children: fresh })
+    }
+  }
+  return out
+}
+
 const POINT_LABEL_MAX = 120
 const shorten = (v: string): string => ([...v].length <= POINT_LABEL_MAX ? v : [...v].slice(0, POINT_LABEL_MAX).join('').trimEnd())
 const msOf = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'object' && v !== null && typeof (v as { ms?: unknown }).ms === 'string' ? (v as { ms: string }).ms : '')
@@ -468,7 +497,7 @@ export function toRequestBody(d: StudioDraft, opts: { sendScript?: boolean } = {
     difficultyLevel: d.difficulty,
     questionType: 'essay',
     questionText: d.stem.trim(),
-    parts: d.lockedParts === undefined ? d.leaves.map(leafToPart) : d.lockedParts.parts,
+    parts: d.lockedParts === undefined ? partsOf(d.leaves) : d.lockedParts.parts,
     tag: { unitId: d.unitId, spIds: d.spIds, tp: d.lockedParts === undefined ? draftTp(d) : d.lockedParts.tp },
     curriculumChapterId: d.chapterId === '' ? null : d.chapterId,
     kertas: d.kertas === '' ? null : d.kertas,
@@ -619,16 +648,11 @@ export function lockedTpOf(raw: unknown): unknown {
 export function hydrate(q: WireQuestion): Hydrated {
   const unsupported: string[] = []
   const leaves: LeafDraft[] = []
-  for (const raw of q.parts ?? []) {
-    const p = raw as WirePart
-    if (Array.isArray(p.children)) {
-      unsupported.push(`Bahagian (${p.label}) mempunyai sub-bahagian bersarang.`)
-      continue
-    }
+  const take = (p: WirePart, group?: BranchRef): void => {
     const lost = lossOf(p)
     if (lost.length > 0) {
       unsupported.push(`Bahagian (${p.label}) mempunyai tetapan khas yang belum boleh disunting di Studio.`)
-      continue
+      return
     }
     const leaf = blankLeaf(p.label)
     leaf.prompt = p.prompt.ms
@@ -660,9 +684,27 @@ export function hydrate(q: WireQuestion): Hydrated {
       }
     } else {
       unsupported.push(`Bahagian (${p.label}) berjenis jawapan yang belum boleh disunting di Studio.`)
+      return
+    }
+    if (group !== undefined) leaf.group = group
+    leaves.push(leaf)
+  }
+  // A branch part (a) with leaf children (i), (ii) opens as a group: its children edit like any leaf, the branch itself is kept as stored.
+  let branchSeq = 0
+  for (const raw of q.parts ?? []) {
+    const p = raw as WirePart
+    if (!Array.isArray(p.children)) {
+      take(p)
       continue
     }
-    leaves.push(leaf)
+    const kids = p.children as WirePart[]
+    if (kids.length === 0 || kids.some((k) => Array.isArray(k.children))) {
+      unsupported.push(`Bahagian (${p.label}) mempunyai sub-bahagian bersarang.`)
+      continue
+    }
+    branchSeq += 1
+    const ref: BranchRef = { id: `b${String(branchSeq)}`, raw: JSON.parse(JSON.stringify(p)) as Record<string, unknown> }
+    for (const k of kids) take(k, ref)
   }
   // A save writes the question TP as the highest leaf TP. Parts without any TP inherit the stored question TP (kept as `inheritedTp`);
   // a stored TP that the parts' own TPs do not give would be reset, so that stays refused.

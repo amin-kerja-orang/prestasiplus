@@ -304,14 +304,18 @@ beforeAll(async () => {
     (1, 1, 1, 'diluluskan', 'Sebuah kilang membuang sisa ke sungai berdekatan.', 'menganalisis', 6, '2025-01-01', '2025-01-01'),
     (2, 1, 1, 'diarkib', 'Soalan struktur lama tentang pencemaran.', null, 2, '2025-01-01', '2025-01-01'),
     (3, 1, 1, 'draf', 'Soalan struktur draf tentang kitaran air.', null, 2, '2025-01-01', '2025-01-01'),
-    (4, 1, 1, 'menunggu', 'Soalan struktur menunggu semakan tentang ekosistem.', null, 1, '2025-01-01', '2025-01-01')`)
+    (4, 1, 1, 'menunggu', 'Soalan struktur menunggu semakan tentang ekosistem.', null, 1, '2025-01-01', '2025-01-01'),
+    (5, 1, 1, 'diluluskan', 'Soalan struktur bersarang tentang rajah litar.', null, 6, '2025-01-01', '2025-01-01')`)
   await pool.query(`insert into archive_cloud.structured_sub_questions (id, structured_question_id, number, body, marks, scheme) values
     (11, 1, '(a)', 'Namakan satu bahan pencemar.', 1, 'Mana-mana satu bahan pencemar yang munasabah.'),
     (12, 1, '(b)', 'Huraikan kesan terhadap hidupan sungai.', 3, 'Skema kesan terhadap hidupan.'),
     (13, 1, '(c)', 'Cadangkan dua langkah mengawal pencemaran.', 2, 'Langkah kawalan.'),
     (21, 2, '(a)', 'Nyatakan punca pencemaran.', 2, 'Punca pencemaran.'),
     (31, 3, '(a)', 'Namakan satu proses dalam kitaran air.', 2, 'Sejatan atau kondensasi.'),
-    (41, 4, '(a)', 'Namakan satu pengeluar dalam ekosistem.', 1, 'Tumbuhan hijau.')`)
+    (41, 4, '(a)', 'Namakan satu pengeluar dalam ekosistem.', 1, 'Tumbuhan hijau.'),
+    (51, 5, '(a)(i)', 'Namakan komponen X.', 2, 'Perintang.'),
+    (52, 5, '(a)(ii)', 'Nyatakan fungsi komponen X.', 3, 'Mengehadkan arus.'),
+    (53, 5, '(b)', 'Apakah unit rintangan?', 1, 'Ohm.')`)
   await pool.query(`insert into archive_cloud.structured_rubric_points (id, structured_sub_question_id, code, text, marks, position) values
     (1, 12, 'A1', 'Hidupan air mati kerana kekurangan oksigen terlarut', 1, 0),
     (2, 12, 'A2', $1, 2, 1),
@@ -809,6 +813,38 @@ describe('structured and subjective (essay) questions', () => {
       expect(changed, `columns of ${id} that a no-change save changed`).toEqual([])
       expect((await get(id)).parts, `parts of ${id}`).toEqual(before.parts)
     }
+  })
+
+  it('K10: a nested structured question ((a)(i), (a)(ii)) takes an edit of ONE child over PUT; the edit persists and the branch, the other child and the rest are unchanged', async () => {
+    const id = structuredIds['5'] as string
+    const before = await get(id)
+    const branch = (before.parts as Wire[])[0] as Wire
+    expect(Array.isArray(branch.children), 'the loader nests (a)(i) under the branch (a)').toBe(true)
+    const parts = JSON.parse(JSON.stringify(before.parts)) as Wire[]
+    const kid = (parts[0] as Wire).children[1] as Wire
+    kid.marks += 1
+    kid.key.marks = kid.marks
+    const lastPoint = kid.key.points[kid.key.points.length - 1] as Wire
+    lastPoint.marks += 1
+    lastPoint.text = { ...(lastPoint.text ?? {}), ms: `${String(lastPoint.text?.ms ?? lastPoint.label)} (disunting)` }
+    lastPoint.label = String(lastPoint.text.ms).slice(0, 120)
+    const res = await admin.put(`/api/questions/${id}`, {
+      subjectId: before.subjectId,
+      educationLevelId: before.educationLevelId,
+      difficultyLevel: before.difficultyLevel,
+      questionType: 'essay',
+      questionText: before.questionText,
+      parts,
+      tag: { unitId: before.tag?.unitId ?? null, spIds: before.tag?.spIds ?? [], tp: before.tag?.tp ?? null },
+    })
+    expect(res.status, `PUT ${id} ${said(res)}`).toBe(200)
+    const after = await get(id)
+    expect(after.parts, 'the edit persists').toEqual(parts)
+    const a = after.parts as Wire[]
+    const b = before.parts as Wire[]
+    expect(JSON.stringify({ ...a[0], children: undefined }), 'the branch is unchanged').toBe(JSON.stringify({ ...b[0], children: undefined }))
+    expect(JSON.stringify((a[0] as Wire).children[0]), 'the other child is unchanged').toBe(JSON.stringify((b[0] as Wire).children[0]))
+    expect(JSON.stringify(a.slice(1)), 'the other parts are unchanged').toBe(JSON.stringify(b.slice(1)))
   })
 
   it('K10: editing the marks, a point and the text of a migrated structured question and of an essay saves, persists, passes the gate, is approved and shows to the pupil (untouched fields identical, KP-14)', async () => {

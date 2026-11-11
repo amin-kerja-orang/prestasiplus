@@ -4,7 +4,7 @@
  * the answer editor of its mode, and the DSKP tags of THIS leaf: `TP` and `Aras pemikiran` (ADR-0031, R1-F03b). The four
  * KBAT levels show a `KBAT` badge. A thin host: the answer editor of each mode is its own `*LeafForm.vue`.
  */
-import { DsBadge, DsCluster, DsFormField, DsGrid, DsNativeSelect, DsStack, DsSurface } from '@/ds'
+import { DsBadge, DsCluster, DsFormField, DsGrid, DsNativeSelect, DsStack, DsSurface, DsText } from '@/ds'
 
 import {
   isSchemeMode,
@@ -39,6 +39,9 @@ const err = (k: string): string | undefined => props.errors?.[k]
 <template>
   <DsSurface level="soft" padding="md" shadow="none" :data-testid="testid">
     <DsStack gap="md">
+      <DsText v-if="leaf.group !== undefined" variant="caption" tone="muted" :data-testid="`${testid}-branch`">
+        Sub-bahagian bagi bahagian ({{ String(leaf.group.raw.label ?? '') }}); bahagian induk kekal seperti tersimpan.
+      </DsText>
       <DsGrid :cols="{ base: 1, sm: 3 }" gap="md">
         <DsFormField v-slot="{ id }" native label="Label" :for="`${testid}-label`" required>
           <UInput :id="id" v-model="leaf.label" maxlength="10" placeholder="a" :disabled="disabled" :data-testid="`${testid}-label`" />

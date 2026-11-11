@@ -139,7 +139,7 @@ describe('Studio draft', () => {
     expect(draftGaps(draft)).toEqual([])
   })
 
-  it('refuses to edit a question with a mode or a nesting it cannot hold (no silent data loss)', () => {
+  it('refuses to edit a question with a mode or a child it cannot hold (no silent data loss)', () => {
     const res = hydrate({
       subjectId: '3',
       educationLevelId: '7',
@@ -154,7 +154,7 @@ describe('Studio draft', () => {
     })
     expect(res.unsupported).toHaveLength(2)
     expect(res.unsupported[0]).toContain('(a)')
-    expect(res.unsupported[1]).toContain('(b)')
+    expect(res.unsupported[1]).toContain('(i)')
   })
 
   it('keeps 3 to 8 options, closes the letters up and keeps the right answer', () => {
@@ -473,5 +473,50 @@ describe('migrated V2 structured and essay parts open and save in the Studio (K1
     const odd = hydrate(wireOf([{ ...structured[0]!, key: { ...structured[0]!.key, groups: [{ id: 'g', anyN: 1, pointIds: ['p1'] }] } }]))
     expect(odd.unsupported).toHaveLength(1)
     expect(odd.unsupported[0]).not.toMatch(/key\.|groups|points/)
+  })
+})
+
+describe('nested sub-parts (a)(i) open as a group (K10)', () => {
+  const kid = (label: string, marks: number, text: string) => ({ label, prompt: { ms: `Soalan ${label}` }, marks, mode: 'working', key: { kind: 'points', marks, points: [{ id: 'p1', code: 'P', label: text, marks, text: { ms: text } }] } })
+  const nested = [
+    { label: '(a)', prompt: { ms: 'Berdasarkan rajah:' }, marks: 5, children: [kid('(i)', 2, 'x = 4'), kid('(ii)', 3, 'y = 9')] },
+    kid('(b)', 1, 'z'),
+  ]
+  const wire = (parts: unknown[]) =>
+    ({ subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan berstruktur bersarang tentang rajah.', questionImage: null, curriculumChapterId: null, parts, tag: { unitId: null, spIds: [], tp: 3 } }) as never
+  const out = (d: StudioDraft) => (toRequestBody(d) as { parts: unknown[] }).parts
+
+  it('loads with no whole-question lock, the children as editable leaves', () => {
+    const h = hydrate(wire(nested))
+    expect(h.unsupported).toEqual([])
+    expect(h.draft.lockedParts).toBeUndefined()
+    expect(h.draft.leaves.map((l) => [l.label, l.mode, l.group?.id])).toEqual([['(i)', 'working', 'b1'], ['(ii)', 'working', 'b1'], ['(b)', 'working', undefined]])
+  })
+
+  it('an untouched nested tree is written back byte-identical (the branch as stored)', () => {
+    const h = hydrate(wire(nested))
+    expect(JSON.stringify(out(h.draft))).toBe(JSON.stringify(nested))
+  })
+
+  it('editing a child changes only that child; the branch and the other child stay as stored', () => {
+    const h = hydrate(wire(nested))
+    const ii = h.draft.leaves[1]!
+    ii.marks = 4
+    ii.essay.points[0]!.marks = 4
+    ii.essay.points[0]!.text = 'y = 10'
+    const parts = out(h.draft) as { label: string; prompt: unknown; marks: number; children: { label: string; marks: number }[] }[]
+    const before = JSON.parse(JSON.stringify(nested)) as typeof parts
+    expect(JSON.stringify({ ...parts[0], children: undefined })).toBe(JSON.stringify({ ...before[0], children: undefined }))
+    expect(JSON.stringify(parts[0]!.children[0])).toBe(JSON.stringify(before[0]!.children[0]))
+    expect(parts[0]!.children[1]).toMatchObject({ label: '(ii)', marks: 4, key: { marks: 4, points: [{ id: 'p1', marks: 4, label: 'y = 10', text: { ms: 'y = 10' } }] } })
+    expect(JSON.stringify(parts[1])).toBe(JSON.stringify(before[1]))
+  })
+
+  it('a child the form cannot hold locks the question with plain BM; a third level stays nested-unsupported', () => {
+    const odd = hydrate(wire([{ ...nested[0], children: [{ ...kid('(i)', 2, 'x'), key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'P', label: 'x', marks: 2 }], bonus: { ifAllCorrect: true, marks: 1, label: 'b' } } }] }]))
+    expect(odd.unsupported).toHaveLength(1)
+    expect(odd.unsupported[0]).not.toMatch(/key\.|bonus/)
+    const deep = hydrate(wire([{ ...nested[0], children: [{ label: '(i)', prompt: { ms: 'x' }, children: [kid('(1)', 1, 'q')] }] }]))
+    expect(deep.unsupported[0]).toContain('bersarang')
   })
 })
