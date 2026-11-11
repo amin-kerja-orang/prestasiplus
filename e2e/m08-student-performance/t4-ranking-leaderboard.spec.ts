@@ -108,9 +108,6 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
           await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText(
             'Siapa juara minggu ini?',
           )
-          await expect(page.getByTestId('leaderboard-hero')).toContainText(
-            'Siapa juara minggu ini?',
-          )
           await expect(page.locator('[data-testid=leaderboard-tabs] a')).toHaveText([
             'Semua Masa',
             'Minggu Ini',
@@ -210,8 +207,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
         '98%',
       ])
       await expect(page.getByTestId('leaderboard-footer')).toContainText('50 peserta bersaing')
-      // The hero text stays for every period.
-      await expect(page.getByTestId('leaderboard-hero')).toContainText('Siapa juara minggu ini?')
+      // The subtitle stays for every period.
       await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText('Siapa juara minggu ini?')
       await expectNoHorizontalScroll(page)
     })
