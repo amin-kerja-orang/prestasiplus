@@ -361,9 +361,14 @@ slot 0 'image tag 0123456789ab' etl migrate:questions --plan
 if grep -qx 'PP_IMAGE_TAG=0123456789ab' "$DOCKER_LOG"; then ok 'no PP_IMAGE_TAG: current.tag is exported to the compose run'; else bad 'compose run did not get the current.tag' "$DOCKER_LOG"; fi
 EXTRA_ENV="PP_IMAGE_TAG=0123456789ab" slot 0 'image tag 0123456789ab' etl migrate:questions --plan
 if grep -qx 'PP_IMAGE_TAG=0123456789ab' "$DOCKER_LOG"; then ok 'an explicit matching PP_IMAGE_TAG is honoured'; else bad 'explicit tag lost' "$DOCKER_LOG"; fi
-EXTRA_ENV="PP_IMAGE_TAG=aaaaaaaaaaaa" slot 2 'is not the release 0123456789ab' etl migrate:questions --plan
-if grep -q '^PP_IMAGE_TAG=' "$DOCKER_LOG"; then bad 'a mismatching explicit tag still ran the container' "$DOCKER_LOG"; else ok 'a mismatching explicit tag starts nothing'; fi
-printf 'aaaaaaaaaaaa\n' >"$w/state/current.tag"; slot 2 'is not the release 0123456789ab' etl migrate:core --dry-run --as-of=2026-11-10
+EXTRA_ENV="PP_IMAGE_TAG=rebuild1" slot 0 'differs from the release sha 0123456789ab' etl migrate:questions --plan   # a custom deploy/rebuild --tag is accepted (warning only)
+if grep -qx 'PP_IMAGE_TAG=rebuild1' "$DOCKER_LOG"; then ok 'a custom explicit tag runs with a warning'; else bad 'custom tag did not run' "$DOCKER_LOG"; fi
+printf 'rebuild1\n' >"$w/state/current.tag"; slot 0 'image tag rebuild1' etl migrate:core --dry-run --as-of=2026-11-10   # current.tag is authoritative
+if grep -qx 'PP_IMAGE_TAG=rebuild1' "$DOCKER_LOG"; then ok 'a custom current.tag runs with a warning'; else bad 'custom current.tag did not run' "$DOCKER_LOG"; fi
+EXTRA_ENV="PP_IMAGE_TAG=prod" slot 2 'is a compose default' etl migrate:questions --plan
+if grep -q '^PP_IMAGE_TAG=' "$DOCKER_LOG"; then bad 'PP_IMAGE_TAG=prod still ran the container' "$DOCKER_LOG"; else ok 'PP_IMAGE_TAG=prod starts nothing'; fi
+printf 'prod\n' >"$w/state/current.tag"; slot 2 'is a compose default' etl migrate:questions --plan
+printf 'latest\n' >"$w/state/current.tag"; slot 2 'is a compose default' etl migrate:questions --plan
 rm -f "$w/state/current.tag"; slot 2 'current.tag is missing or empty' etl migrate:questions --plan
 : >"$w/state/current.tag"; slot 2 'current.tag is missing or empty' etl migrate:questions --plan
 printf '%s\n' "${SHA:0:12}" >"$w/state/current.tag"

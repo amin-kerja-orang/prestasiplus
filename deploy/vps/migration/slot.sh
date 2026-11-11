@@ -110,8 +110,9 @@ apifiles_volume_names() {
 RUN_EXTRA=()   # extra `compose run` arguments of the current command (mounts), set by cmd_etl
 # pin_migrate_image: compose.prod.yaml tags the migrate image ${PP_IMAGE_TAG:-prod}; deploy.sh, rollback.sh and rebuild-db.sh export the
 # release tag, a standalone slot.sh does not, and `:prod` can be a stale build. So the tag is pinned here, before any `compose run migrate`:
-# an exported PP_IMAGE_TAG is honoured, else the release record $PP_STATE_DIR/current.tag; it must be the first 12 characters of the
-# release sha (when that is known), and the image must exist locally. Sets image_tag; exit 2 on any mismatch.
+# an exported PP_IMAGE_TAG is honoured, else $PP_STATE_DIR/current.tag, which is the image deploy.sh / rebuild-db.sh actually started and so
+# authoritative (a custom --tag is legitimate). Refused (exit 2): no tag, a bad format, a compose default (prod, local, latest), an image that
+# is not on this host. A tag that differs from the first 12 characters of the release sha is only a WARNING. Sets image_tag.
 image_tag=""
 pin_migrate_image() {
   local tag="${PP_IMAGE_TAG:-}" st sha img
@@ -119,11 +120,12 @@ pin_migrate_image() {
   if [ -z "$tag" ] && [ -r "$st/current.tag" ]; then tag="$(head -n1 "$st/current.tag" | tr -d '[:space:]')"; fi
   [ -n "$tag" ] || pp_die "PP_IMAGE_TAG is not set and $st/current.tag is missing or empty: the migrate image must be the release, not ':prod' (deploy first, or export PP_IMAGE_TAG=<first 12 characters of the release sha>)" 2
   [[ "$tag" =~ ^[A-Za-z0-9_.-]{1,64}$ ]] || pp_die "bad image tag: $tag" 2
+  case "$tag" in prod|local|latest) pp_die "image tag '$tag' is a compose default, not a release: the migrate image must be the release image (deploy first, or export PP_IMAGE_TAG=<the tag deploy.sh started>)" 2 ;; esac
   sha="$(pp_cfg PP_RELEASE_SHA "$(git -C "$PP_REPO" rev-parse HEAD 2>/dev/null || true)")"
   if [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
-    [ "$tag" = "${sha:0:12}" ] || pp_die "image tag $tag is not the release ${sha:0:12} (PP_RELEASE_SHA / git HEAD): a release and image mismatch never runs. Deploy the release, or fix PP_IMAGE_TAG / current.tag" 2
+    [ "$tag" = "${sha:0:12}" ] || pp_warn "image tag $tag differs from the release sha ${sha:0:12} (PP_RELEASE_SHA / git HEAD): running the image tagged $tag (a custom deploy --tag is fine; check it is the intended build)"
   else
-    pp_warn "no 40-character release sha known: the image tag $tag is not checked against it"
+    pp_warn "no 40-character release sha known: the image tag $tag is not compared with it"
   fi
   img="$(pp_cfg PP_IMAGE_PREFIX '')pretasiplus-api-migrate:$tag"
   docker image inspect "$img" >/dev/null 2>&1 || pp_die "image $img is not on this server (pruned or never built): build the release image first (deploy.sh --tag $tag)" 2
