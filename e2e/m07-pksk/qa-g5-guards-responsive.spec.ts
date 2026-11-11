@@ -23,6 +23,8 @@ import {
 const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const MODULE = { tag: [moduleTag(7)] }
 const LIST = '/admin/pksk/questions'
+/** A non-PKSK M04 question id (also used by e2e/m04-question-bank). */
+const M04_QUESTION_ID = 564159
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
 test.describe.configure({ timeout: 360_000 })
@@ -211,11 +213,8 @@ test.describe('QA-G5 M07 unknown ids are the 404 page', MODULE, () => {
     loginAs,
   }) => {
     await loginAs('admin@demo.test')
-    // An existing M04 (non-PKSK) question id, read from the M04 list.
-    await gotoApp('/admin/questions')
-    await expect(page.getByTestId('question-row').first()).toBeVisible()
-    const m04Id = Number(await page.getByTestId('question-row').first().getAttribute('data-question-id'))
-    expect(m04Id, 'an M04 question exists to use as a non-PKSK id').toBeGreaterThan(0)
+    // An existing M04 (non-PKSK) question id (the M04 list is the Studio, server-only in the mock, so the id is fixed).
+    const m04Id = M04_QUESTION_ID
     for (const path of [
       `/admin/pksk/questions/${String(m04Id)}/edit`, // SEC-M07-12: non-PKSK id
       '/admin/pksk/questions/99999999/edit',
@@ -240,13 +239,12 @@ test.describe('QA-G5 M07 unknown ids are the 404 page', MODULE, () => {
     loginAs,
   }) => {
     await loginAs('admin@demo.test')
-    await gotoApp('/admin/questions')
-    await expect(page.getByTestId('question-row').first()).toBeVisible()
-    const id = Number(await page.getByTestId('question-row').first().getAttribute('data-question-id'))
+    const id = M04_QUESTION_ID
     await gotoApp(`/admin/pksk/questions/${String(id)}/edit`)
     await expectNotFound(page, 'PKSK edit of an M04 id')
+    // The M04 question page is the Studio: the placeholder in the mock (the by-id read is an http test).
     await gotoApp(`/admin/questions/${String(id)}`)
-    await expect(page.getByTestId('question-text')).toBeVisible()
+    await expect(page.getByTestId('studio-unavailable')).toBeVisible()
     // A PKSK id in the M04 edit URL must not be treated as an M04 question to change either.
     await gotoApp(`${LIST}?search=`)
     await expect(tid(page, 'pksk-questions-table')).toBeVisible()
@@ -270,7 +268,6 @@ test.describe('QA-G5 M07 heading legibility on dark heroes', MODULE, () => {
     ['S1 hub banner', '/pksk', 'pksk-banner', 'pksk-hub'],
     ['S2 T1 readiness hero', '/pksk/level/T1', 'readiness', 'pksk-dashboard'],
     ['S2 T4 readiness hero', '/pksk/level/T4', 'readiness', 'pksk-dashboard'],
-    ['S1 level cards', '/pksk', 'level-section', 'pksk-hub'],
   ]
   for (const [name, path, root, ready] of HEROES) {
     test(`AC-01.2 / 03.2 ${name}: every text in a gradient hero has contrast >= 3:1 with every stop`, async ({
@@ -316,6 +313,7 @@ test.describe('QA-G5 M07 heading legibility on dark heroes', MODULE, () => {
         return out
       })
       // Hub level-section must have gradient tiles / buttons; the banner and hero must have text.
+      // Hub banner and heroes must have text on a gradient.
       expect(found.length, `${name}: gradient text nodes found`).toBeGreaterThan(0)
       const bad: string[] = []
       for (const t of found) {
@@ -329,6 +327,66 @@ test.describe('QA-G5 M07 heading legibility on dark heroes', MODULE, () => {
       expect(bad, `${name} low-contrast text`).toEqual([])
     })
   }
+})
+
+test.describe('QA-G5 M07 level cards legibility', MODULE, () => {
+  // The level cards are plain DS cards (no gradient): every text keeps WCAG AA contrast (>= 4.5:1) with the
+  // computed background of its nearest non-transparent ancestor.
+  test('AC-01.2 S1 level cards: every text has contrast >= 4.5:1 with its actual background', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/pksk')
+    await expect(tid(page, 'pksk-hub')).toBeVisible()
+    await expect(tid(page, 'level-section')).toBeVisible()
+    const found = await tid(page, 'level-section').evaluate((rootEl) => {
+      // Normalise any CSS colour (rgb, oklch, color-mix ...) to sRGB through a 1x1 canvas.
+      const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!
+      ctx.canvas.width = 1
+      ctx.canvas.height = 1
+      const rgba = (s: string): [number, number, number, number] => {
+        ctx.clearRect(0, 0, 1, 1)
+        ctx.fillStyle = '#000'
+        ctx.fillStyle = s
+        ctx.fillRect(0, 0, 1, 1)
+        const d = ctx.getImageData(0, 0, 1, 1).data
+        return [d[0] ?? 0, d[1] ?? 0, d[2] ?? 0, (d[3] ?? 255) / 255]
+      }
+      const out: Array<{ text: string; color: [number, number, number]; bg: [number, number, number] }> = []
+      const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT)
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const text = (n.textContent ?? '').trim()
+        const el = n.parentElement
+        if (!text || !el) continue
+        const r = el.getBoundingClientRect()
+        if (r.width === 0 || r.height === 0) continue
+        let anc: HTMLElement | null = el
+        let bg: [number, number, number] = [255, 255, 255]
+        while (anc) {
+          const c = rgba(getComputedStyle(anc).backgroundColor)
+          if (c[3] > 0.5) {
+            bg = [c[0], c[1], c[2]]
+            break
+          }
+          anc = anc.parentElement
+        }
+        const t = rgba(getComputedStyle(el).color)
+        out.push({ text: text.slice(0, 40), color: [t[0], t[1], t[2]], bg })
+      }
+      return out
+    })
+    expect(found.length, 'level-card text nodes found').toBeGreaterThan(0)
+    const bad: string[] = []
+    for (const t of found) {
+      const lt = luminanceOf(t.color)
+      const lb = luminanceOf(t.bg)
+      const ratio = (Math.max(lt, lb) + 0.05) / (Math.min(lt, lb) + 0.05)
+      if (ratio < 4.5) bad.push(`"${t.text}" rgb(${t.color.join(',')}) on rgb(${t.bg.join(',')}) = ${ratio.toFixed(2)}`)
+    }
+    expect(bad, 'low-contrast level-card text').toEqual([])
+  })
 })
 
 // --- responsive sweep --------------------------------------------------------------------------
