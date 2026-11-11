@@ -24,11 +24,13 @@ describe('public CSV helpers', () => {
   it('IMPORT_TEMPLATE_CSV parses to the header and two sample rows', () => {
     const records = parseCsv(IMPORT_TEMPLATE_CSV)
     expect(records).toHaveLength(3)
-    expect(records[0]?.cells[0]).toBe('question_text')
+    expect(records[0]?.cells[0]).toBe('body')
   })
 
   it('planImport without options: no defaults, M03 lookups', () => {
-    const plan = planImport(IMPORT_TEMPLATE_CSV)
+    // V2 template: subject and level come from the dialog defaults only
+    expect(planImport(IMPORT_TEMPLATE_CSV).rows).toHaveLength(0)
+    const plan = planImport(IMPORT_TEMPLATE_CSV, { subjectId: 3, educationLevelId: 11, difficultyLevel: null })
     expect(plan.missingColumns).toEqual([])
     expect(plan.rows).toHaveLength(2)
     const text = 'question_text,option_a,option_b,correct_answer\nSoalan contoh yang sah?,a,b,A'

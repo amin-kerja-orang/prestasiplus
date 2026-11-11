@@ -317,20 +317,16 @@ describe('#11 template (FR-M04-57, E2E-M04-32)', () => {
     expect(r.headers['content-disposition']).toContain('template-import-soalan.csv')
     const text = await r.body.text()
     const lines = text.split('\r\n').filter((l) => l !== '')
-    expect(lines[0]).toBe(
-      'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation,kertas',
-    )
+    expect(lines[0]).toBe('body,option_a,option_b,option_c,option_d,correct,difficulty')
     expect(lines).toHaveLength(3)
-    expect(lines[1]).toBe(
-      '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,7,1,1,"Kuala Lumpur ialah ibu negara.",',
-    )
-    expect(lines[2]).toBe('"2 + 3 = ?",4,5,6,7,B,3,10,1,1,,')
+    expect(lines[1]).toBe('"Berapakah hasil tambah dua dan tiga?",4,5,6,7,B,2')
+    expect(lines[2]).toBe('"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,3')
   })
 
   it('the template imports cleanly', async () => {
     dirty = true
     const t = await call<Blob>('GET', '/api/question-imports/template', ADMIN)
-    const r = await upload(await t.body.text(), {}, 'template-import-soalan.csv')
+    const r = await upload(await t.body.text(), { defaultSubjectId: 3, defaultEducationLevelId: 11 }, 'template-import-soalan.csv')
     expect(runOf(r)).toMatchObject({ importedCount: 2, failedCount: 0 })
   })
 })

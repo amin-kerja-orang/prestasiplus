@@ -7,6 +7,7 @@ import {
   QUESTION_IMPORT_MAX_ROWS,
   QUESTION_IMPORT_MESSAGES,
   QUESTION_IMPORT_REQUIRED_COLUMNS,
+  QUESTION_IMPORT_V2_DEFAULT_DIFFICULTY,
   QUESTION_IMPORT_ROW_MESSAGES as MSG,
   QUESTION_KBAT_LEVELS,
   MCQ_MULTI_COUNT_MESSAGE,
@@ -190,7 +191,7 @@ export interface ImportPlan {
   /** "Kolum {nama} tidak dikenali dan diabaikan." per unknown header cell (new header only). */
   warnings: string[]
   /** Which header the file uses. */
-  format: 'legacy' | 'codes'
+  format: 'legacy' | 'codes' | 'v2'
 }
 
 const toInt = (value: string): number | null => (/^\d{1,9}$/.test(value) ? Number(value) : null)
@@ -213,6 +214,18 @@ export function isLegacyHeader(header: CsvRecord | undefined): boolean {
   return names[0] === 'question_text' || (names.includes('question_text') && !names.includes('question_key'))
 }
 
+/**
+ * V2 positional file (Pariti M04): the first row is neither the Q-11 code header (`question_key`) nor the legacy one (`question_text`), so it is
+ * skipped whatever it says and the columns are read by position.
+ */
+export function isV2Header(header: CsvRecord | undefined): boolean {
+  if (header === undefined || isLegacyHeader(header)) return false
+  return !header.cells.some((c) => c.trim().toLowerCase() === 'question_key')
+}
+
+/** The Q-11 code header: a header row that is neither legacy nor V2 positional. */
+export const isCodeHeader = (header: CsvRecord | undefined): boolean => header !== undefined && !isLegacyHeader(header) && !isV2Header(header)
+
 export function planImport(
   text: string | CsvRecord[],
   lookups: ImportLookups,
@@ -229,12 +242,17 @@ export function planImport(
     const key = name.trim().toLowerCase()
     if (!index.has(key)) index.set(key, i)
   })
-  const legacy = isLegacyHeader(header)
-  plan.format = legacy ? 'legacy' : 'codes'
+  const v2 = isV2Header(header)
+  const legacy = !v2 && isLegacyHeader(header)
+  plan.format = v2 ? 'v2' : legacy ? 'legacy' : 'codes'
   // The row cap comes first: an oversized file gets the 422 row-cap error whatever its columns.
   if (data.length > QUESTION_IMPORT_MAX_ROWS) {
     plan.rowLimitExceeded = true
     plan.dataRows = data.length
+    return plan
+  }
+  if (v2) {
+    planV2Rows(data, lookups, defaults, plan)
     return plan
   }
   plan.missingColumns = (legacy ? QUESTION_IMPORT_REQUIRED_COLUMNS : QUESTION_IMPORT_CODE_REQUIRED_COLUMNS).filter((c) => !index.has(c))
@@ -327,6 +345,78 @@ export function planImport(
     })
   }
   return plan
+}
+
+// --- the V2 positional layout ---------------------------------------------------------------------
+
+/**
+ * V2 rows (import.blade.php:106-118): 0 body, 1-4 option_a..d, 5 correct, 6 difficulty (cell, else 3), 7 optional kertas. Subject and level come
+ * from the dialog defaults only (no default = the usual subject / level row failure). The V3 row checks stay (no silent skipping like V2).
+ */
+function planV2Rows(data: CsvRecord[], lookups: ImportLookups, defaults: ImportDefaults, plan: ImportPlan): void {
+  for (const rec of data) {
+    plan.dataRows++
+    const cell = (i: number): string => rec.cells[i] ?? ''
+    const fail = (message: string) => {
+      plan.failures.push({ row: rec.line, message })
+      plan.failedQuestions++
+    }
+    const stemMs = cell(0)
+    const a = cell(1)
+    const b = cell(2)
+    const answer = cell(5)
+    if (stemMs === '' || a === '' || b === '' || answer === '') {
+      fail(MSG.incomplete)
+      continue
+    }
+    const letter = answer.toUpperCase()
+    if (!/^[A-D]$/.test(letter)) {
+      fail(MSG.answer)
+      continue
+    }
+    const texts = [a, b, cell(3), cell(4)]
+    if ((texts[letter.charCodeAt(0) - 65] as string) === '') {
+      fail(MSG.answerEmptyOption)
+      continue
+    }
+    const subjectId = defaults.subjectId
+    if (subjectId === null || !lookups.subjectIds.has(subjectId)) {
+      fail(MSG.subject)
+      continue
+    }
+    const levelId = defaults.educationLevelId
+    if (levelId === null || !lookups.levelIds.has(levelId)) {
+      fail(MSG.level)
+      continue
+    }
+    const diffCell = cell(6)
+    const difficulty = diffCell === '' ? QUESTION_IMPORT_V2_DEFAULT_DIFFICULTY : toInt(diffCell)
+    if (difficulty === null || difficulty > 5) {
+      fail(MSG.difficulty)
+      continue
+    }
+    const kertasCell = cell(7)
+    if (kertasCell !== '' && !KERTAS_VALUES.has(kertasCell)) {
+      fail(MSG.kertas)
+      continue
+    }
+    plan.rows.push({
+      line: rec.line,
+      input: {
+        stemMs,
+        options: texts.flatMap((t, i) => (t === '' ? [] : [{ label: String.fromCharCode(65 + i), text: t }])),
+        correctLabel: letter,
+        subjectId,
+        educationLevelId: levelId,
+        difficultyLevel: difficulty === 0 ? QUESTION_IMPORT_V2_DEFAULT_DIFFICULTY : difficulty,
+        explanation: null,
+        sourceType: 'excel',
+        sourceSet: null,
+        marks: 1,
+        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' | '4' }),
+      },
+    })
+  }
 }
 
 // --- the new (code) header ---------------------------------------------------------------------

@@ -8,7 +8,9 @@ import { describe, expect, it } from 'vitest'
 import {
   IMPORT_HEADER,
   IMPORT_TEMPLATE_CSV,
+  IMPORT_V2_HEADER,
   MSG_ANSWER,
+  MSG_KERTAS,
   MSG_ANSWER_EMPTY_OPTION,
   MSG_DIFFICULTY,
   MSG_INCOMPLETE,
@@ -207,20 +209,86 @@ describe('planImport (BR-M04-10)', () => {
     expect(headerOnly.dataRows).toBe(0)
   })
 
-  it('the download template imports its own two sample rows', () => {
+  it('the download template (V2 header) imports its own two sample rows with the dialog defaults', () => {
     const p = planImport(
       IMPORT_TEMPLATE_CSV,
-      { subjectId: null, educationLevelId: null, difficultyLevel: null },
+      { subjectId: 1, educationLevelId: 4, difficultyLevel: null },
       lookups,
     )
-    expect(IMPORT_TEMPLATE_CSV.split('\r\n')[0]).toBe(HEADER)
+    expect(IMPORT_TEMPLATE_CSV.split('\r\n')[0]).toBe(
+      'body,option_a,option_b,option_c,option_d,correct,difficulty',
+    )
     expect(p.dataRows).toBe(2)
     expect(p.failures).toEqual([])
     expect(p.rows[1]?.input).toMatchObject({
-      questionText: '2 + 3 = ?',
-      correctAnswer: 1,
+      questionText: 'Apakah ibu negara Malaysia?',
+      correctAnswer: 0,
       explanation: null,
+      difficultyLevel: 3,
     })
+  })
+})
+
+describe('planImport: V2 positional layout (Pariti M04, V2 import.blade.php:106-118)', () => {
+  const V2 = IMPORT_V2_HEADER.join(',')
+  const dlg: ImportDefaults = { subjectId: 1, educationLevelId: 4, difficultyLevel: null }
+  const v2 = (text: string, defaults = dlg) => planImport(text, defaults, lookups)
+
+  it('reads by position, with or without a trailing kertas column', () => {
+    const without = v2(`${V2}
+"Soalan satu?",A1,B1,C1,D1,B,2`)
+    expect(without.failures).toEqual([])
+    expect(without.rows[0]?.input).toMatchObject({
+      questionText: 'Soalan satu?',
+      options: ['A1', 'B1', 'C1', 'D1'],
+      correctAnswer: 1,
+      subjectId: 1,
+      educationLevelId: 4,
+      difficultyLevel: 2,
+    })
+    const withK = v2(`${V2},kertas
+Soalan satu?,A,B,C,D,A,2,1
+Soalan dua?,A,B,C,D,A,2,
+Soalan tiga?,A,B,C,D,A,2,9`)
+    expect(withK.rows).toHaveLength(2)
+    expect(withK.failures).toEqual([{ row: 4, message: MSG_KERTAS }])
+  })
+
+  it('difficulty is the cell, else 3 (missing, empty or 0), whatever the dialog difficulty says', () => {
+    const p = v2(
+      `${V2}
+S1 soalan,A,B,,,A
+S2 soalan,A,B,,,A,
+S3 soalan,A,B,,,A,0
+S4 soalan,A,B,,,A,4
+S5 soalan,A,B,,,A,6`,
+      { ...dlg, difficultyLevel: 5 },
+    )
+    expect(p.rows.map((r) => r.input.difficultyLevel)).toEqual([3, 3, 3, 4])
+    expect(p.failures).toEqual([{ row: 6, message: MSG_DIFFICULTY }])
+  })
+
+  it('skips row 1 whatever it says (an arbitrary header name)', () => {
+    const p = v2(`Soalan,Pilihan 1,Pilihan 2,Pilihan 3,Pilihan 4,Jawapan,Aras
+Soalan satu?,A,B,C,D,C,3`)
+    expect(p.missingColumns).toEqual([])
+    expect(p.dataRows).toBe(1)
+    expect(p.rows).toHaveLength(1)
+  })
+
+  it('keeps the row checks; no dialog subject or level fails the rows', () => {
+    const p = v2(`${V2}
+,A,B,C,D,A,3
+S,A,,C,D,A,3
+S,A,B,C,D,E,3
+S,A,B,,,C,3
+S,A,B,C,D,A,3`)
+    expect(p.failures.map((f) => f.message)).toEqual([MSG_INCOMPLETE, MSG_INCOMPLETE, MSG_ANSWER, MSG_ANSWER_EMPTY_OPTION])
+    expect(p.rows).toHaveLength(1)
+    expect(v2(`${V2}
+S,A,B,C,D,A,3`, NO_DEFAULTS).failures).toEqual([{ row: 2, message: MSG_SUBJECT }])
+    expect(v2(`${V2}
+S,A,B,C,D,A,3`, { ...dlg, educationLevelId: null }).failures).toEqual([{ row: 2, message: MSG_LEVEL }])
   })
 })
 

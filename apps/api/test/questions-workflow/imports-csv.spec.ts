@@ -605,3 +605,55 @@ describe('imports: true_false and mcq_multi rows of the new header (S1-T05 part 
     expect(mcq?.questionType).toBeUndefined()
   })
 })
+
+describe('imports: V2 positional layout (Pariti M04, V2 import.blade.php:106-118)', () => {
+  const V2 = 'body,option_a,option_b,option_c,option_d,correct,difficulty'
+  const dlg = { subjectId: '1', educationLevelId: '4', difficultyLevel: null }
+
+  it('reads by position, subject and level from the dialog defaults; the template is accepted as is', () => {
+    const p = planImport(`${V2}\n"Soalan satu?",A1,B1,C1,D1,B,2\nSoalan dua?,A2,B2,,,a,5`, lookups, dlg)
+    expect(p.format).toBe('v2')
+    expect(p.missingColumns).toEqual([])
+    expect(p.failures).toEqual([])
+    expect(p.rows).toHaveLength(2)
+    expect(p.rows[0]?.input).toMatchObject({ stemMs: 'Soalan satu?', correctLabel: 'B', subjectId: '1', educationLevelId: '4', difficultyLevel: 2 })
+    expect(p.rows[1]?.input.options).toEqual([{ label: 'A', text: 'A2' }, { label: 'B', text: 'B2' }])
+    expect(p.rows[1]?.input.correctLabel).toBe('A')
+    expect(planImport(QUESTION_IMPORT_TEMPLATE_CSV, lookups, dlg).rows).toHaveLength(2)
+  })
+
+  it('accepts an optional trailing kertas column, with or without it', () => {
+    const withK = planImport(`${V2},kertas\nSoalan satu?,A,B,C,D,A,2,1\nSoalan dua?,A,B,C,D,B,2,\nSoalan tiga?,A,B,C,D,C,2,9`, lookups, dlg)
+    expect(withK.rows.map((r) => r.input.kertas)).toEqual(['1', undefined])
+    expect(withK.failures).toEqual([{ row: 4, message: MSG.kertas }])
+    const without = planImport(`${V2}\nSoalan satu?,A,B,C,D,A,2`, lookups, dlg)
+    expect(without.rows).toHaveLength(1)
+    expect(without.rows[0]?.input.kertas).toBeUndefined()
+  })
+
+  it('difficulty is the cell, else 3 (missing, empty or 0), whatever the dialog difficulty says', () => {
+    const p = planImport(`${V2}\nS1 soalan,A,B,,,A\nS2 soalan,A,B,,,A,\nS3 soalan,A,B,,,A,0\nS4 soalan,A,B,,,A,4\nS5 soalan,A,B,,,A,6`, lookups, { ...dlg, difficultyLevel: 5 })
+    expect(p.rows.map((r) => r.input.difficultyLevel)).toEqual([3, 3, 3, 4])
+    expect(p.failures).toEqual([{ row: 6, message: MSG.difficulty }])
+  })
+
+  it('row 1 is skipped whatever it says (an arbitrary header name)', () => {
+    const p = planImport('Soalan,Pilihan 1,Pilihan 2,Pilihan 3,Pilihan 4,Jawapan,Aras\nSoalan satu?,A,B,C,D,C,3', lookups, dlg)
+    expect(p.format).toBe('v2')
+    expect(p.dataRows).toBe(1)
+    expect(p.rows).toHaveLength(1)
+  })
+
+  it('keeps the V3 row checks and fails every row when the dialog gives no subject or level', () => {
+    const p = planImport(`${V2}\n,A,B,C,D,A,3\nS,A,,C,D,A,3\nS,A,B,C,D,E,3\nS,A,B,,,C,3\nS,A,B,C,D,A,3`, lookups, dlg)
+    expect(p.failures.map((f) => f.message)).toEqual([MSG.incomplete, MSG.incomplete, MSG.answer, MSG.answerEmptyOption])
+    expect(p.rows).toHaveLength(1)
+    expect(planImport(`${V2}\nS,A,B,C,D,A,3`, lookups).failures).toEqual([{ row: 2, message: MSG.subject }])
+    expect(planImport(`${V2}\nS,A,B,C,D,A,3`, lookups, { ...dlg, educationLevelId: null }).failures).toEqual([{ row: 2, message: MSG.level }])
+  })
+
+  it('the Q-11 and legacy headers are still detected', () => {
+    expect(planImport(`${HEADER}\nS,A,B,C,D,A,1,4,1,1,`, lookups).format).toBe('legacy')
+    expect(planImport('question_key,type,prompt_ms\nK1,mcq,x', lookups).format).toBe('codes')
+  })
+})

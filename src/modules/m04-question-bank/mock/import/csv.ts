@@ -43,11 +43,19 @@ export const IMPORT_REQUIRED_COLUMNS = [
   'correct_answer',
 ] as const
 
-/** FR-M04-57 / §6.12: the template file (header + 2 sample rows). */
+/**
+ * V2 positional layout (Pariti M04, 2026-11-11; V2 import.blade.php:106-118): the template header. A file whose first row is not a named
+ * `question_text` header is read by position (0 body, 1-4 options, 5 correct, 6 difficulty, optional 7 kertas); row 1 is skipped.
+ */
+export const IMPORT_V2_HEADER = ['body', 'option_a', 'option_b', 'option_c', 'option_d', 'correct', 'difficulty'] as const
+/** V2 `(int) ($row[6] ?? 3) ?: 3`: a missing, empty or 0 difficulty cell is 3. */
+export const IMPORT_V2_DEFAULT_DIFFICULTY = 3
+
+/** FR-M04-57 / §6.12: the template file (V2 header + 2 sample rows; the optional kertas is accepted on import only). */
 export const IMPORT_TEMPLATE_CSV = [
-  IMPORT_HEADER.join(','),
-  '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,7,1,1,"Kuala Lumpur ialah ibu negara.",',
-  '"2 + 3 = ?",4,5,6,7,B,3,10,1,1,,',
+  IMPORT_V2_HEADER.join(','),
+  '"Berapakah hasil tambah dua dan tiga?",4,5,6,7,B,2',
+  '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,3',
   '',
 ].join('\r\n')
 
@@ -58,6 +66,7 @@ export const MSG_SUBJECT = 'Subjek tidak sah.'
 export const MSG_LEVEL = 'Tahap pendidikan tidak sah.'
 export const MSG_DIFFICULTY = 'Tahap kesukaran mesti 1 hingga 5.'
 export const MSG_MARKS = 'Markah mesti nombor bulat sekurang-kurangnya 1.'
+export const MSG_KERTAS = 'Kertas tidak sah.'
 
 export interface CsvRecord {
   /** 1-based line of the file where the record starts. */
@@ -188,6 +197,11 @@ export function planImport(
     const key = name.trim().toLowerCase()
     if (!index.has(key)) index.set(key, i)
   })
+  // A named `question_text` header (or a Q-11 `question_key` one) keeps the named path; any other first row is the V2 positional layout.
+  if (!index.has('question_text') && !index.has('question_key')) {
+    planV2(data, defaults, lookups, plan)
+    return plan
+  }
   plan.missingColumns = IMPORT_REQUIRED_COLUMNS.filter((c) => !index.has(c))
   if (plan.missingColumns.length > 0) return plan
 
@@ -260,4 +274,67 @@ export function planImport(
     })
   }
   return plan
+}
+
+/** V2 rows: subject and level from the dialog defaults only (none = the usual failure); the named-path row checks stay. */
+function planV2(data: CsvRecord[], defaults: ImportDefaults, lookups: ImportLookups, plan: ImportPlan): void {
+  for (const rec of data) {
+    plan.dataRows++
+    const cell = (i: number): string => rec.cells[i] ?? ''
+    const fail = (message: string) => plan.failures.push({ row: rec.line, message })
+    const questionText = cell(0)
+    const a = cell(1)
+    const b = cell(2)
+    const answer = cell(5)
+    if (questionText === '' || a === '' || b === '' || answer === '') {
+      fail(MSG_INCOMPLETE)
+      continue
+    }
+    const letter = answer.toUpperCase()
+    if (!/^[A-D]$/.test(letter)) {
+      fail(MSG_ANSWER)
+      continue
+    }
+    const options = [a, b, cell(3), cell(4)]
+    const correctAnswer = letter.charCodeAt(0) - 65
+    if ((options[correctAnswer] as string) === '') {
+      fail(MSG_ANSWER_EMPTY_OPTION)
+      continue
+    }
+    const subjectId = defaults.subjectId
+    if (subjectId === null || !lookups.subjectExists(subjectId)) {
+      fail(MSG_SUBJECT)
+      continue
+    }
+    const levelId = defaults.educationLevelId
+    if (levelId === null || !lookups.levelExists(levelId)) {
+      fail(MSG_LEVEL)
+      continue
+    }
+    const difficultyCell = cell(6)
+    const parsed = difficultyCell === '' ? IMPORT_V2_DEFAULT_DIFFICULTY : toInt(difficultyCell)
+    if (parsed === null || parsed > 5) {
+      fail(MSG_DIFFICULTY)
+      continue
+    }
+    const kertas = cell(7)
+    if (kertas !== '' && !['1', '2', '3', '4'].includes(kertas)) {
+      fail(MSG_KERTAS)
+      continue
+    }
+    plan.rows.push({
+      line: rec.line,
+      input: {
+        subjectId,
+        educationLevelId: levelId,
+        difficultyLevel: parsed === 0 ? IMPORT_V2_DEFAULT_DIFFICULTY : parsed,
+        questionType: 'mcq',
+        questionText,
+        options,
+        correctAnswer,
+        explanation: null,
+        pointsValue: 1,
+      },
+    })
+  }
 }

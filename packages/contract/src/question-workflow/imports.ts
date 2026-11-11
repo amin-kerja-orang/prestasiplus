@@ -188,7 +188,7 @@ export const QUESTION_IMPORT_REQUIRED_COLUMNS = ['question_text', 'option_a', 'o
 const templateCell = (v: string): string => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
 const templateRow = (values: Record<string, string>): string => QUESTION_IMPORT_CODE_HEADER.map((c) => templateCell(values[c] ?? '')).join(',')
 const TEMPLATE_DSKP = { subject_code: 'MATH', tingkatan: '4', kertas: '1', unit_code: '4.0', sp_kod: '4.1.1', tp: '3', aras: 'mengaplikasi', bab_kod: '4', topik_kod: '1', difficulty: '3', marks: '1', type: 'mcq' }
-export const QUESTION_IMPORT_TEMPLATE_CSV = [
+export const QUESTION_IMPORT_CODE_TEMPLATE_CSV = [
   QUESTION_IMPORT_CODE_HEADER.join(','),
   templateRow({ ...TEMPLATE_DSKP, question_key: 'S1', number_label: '1', prompt_ms: 'Berapakah hasil tambah dua dan tiga?', option_a: '4', option_b: '5', option_c: '6', option_d: '7', correct: 'B' }),
   templateRow({
@@ -208,6 +208,21 @@ export const QUESTION_IMPORT_TEMPLATE_CSV = [
     correct: 'B',
   }),
   templateRow({ ...TEMPLATE_DSKP, question_key: 'K2', number_label: '3', group_key: 'KUMPULAN1', group_order: '2', prompt_ms: 'Apakah yang dibeli oleh penduduk kampung?', option_a: 'Pakaian', option_b: 'Kasut', option_c: 'Sayur dan buah', option_d: 'Buku', correct: 'C' }),
+  '',
+].join('\r\n')
+
+/**
+ * V2 positional layout (Pariti M04, 2026-11-11; V2 import.blade.php:106-118): the downloadable template and the format card. Row 1 is skipped on
+ * upload whatever it says; columns are read by position (body, option_a..d, correct, difficulty, optional kertas at the end). Subject and level
+ * come from the dialog defaults. The Q-11 code header (`QUESTION_IMPORT_CODE_TEMPLATE_CSV`) and the legacy header are still accepted on upload.
+ */
+export const QUESTION_IMPORT_V2_HEADER = ['body', 'option_a', 'option_b', 'option_c', 'option_d', 'correct', 'difficulty'] as const
+/** Difficulty of a V2 row whose difficulty cell is missing, empty or 0 (V2 `(int) ($row[6] ?? 3) ?: 3`). */
+export const QUESTION_IMPORT_V2_DEFAULT_DIFFICULTY = 3
+export const QUESTION_IMPORT_TEMPLATE_CSV = [
+  QUESTION_IMPORT_V2_HEADER.join(','),
+  '"Berapakah hasil tambah dua dan tiga?",4,5,6,7,B,2',
+  '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,3',
   '',
 ].join('\r\n')
 

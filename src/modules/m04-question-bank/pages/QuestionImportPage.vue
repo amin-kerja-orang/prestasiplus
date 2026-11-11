@@ -92,38 +92,20 @@ async function submit(): Promise<void> {
   }
 }
 
-/** The `Format CSV` card: the Q-11 columns S1-T05 reads today (MCQ). The group and stimulus columns join with S1-T05 part 2. */
+/** The Format CSV card (Pariti M04): the V2 positional columns, V2 import.blade.php:106-118 copy; the trailing kertas line is the V3 addition. */
 const FORMAT_GROUPS: { title: string; rows: { columns: string[]; note?: string }[] }[] = [
   {
-    title: 'Kolum diperlukan:',
+    title: 'Kolum mengikut kedudukan (baris pertama = header, dilangkau):',
     rows: [
-      { columns: ['question_key'], note: 'Kunci soalan' },
-      { columns: ['type'], note: 'Jenis soalan' },
-      { columns: ['prompt_ms'], note: 'Teks soalan' },
-      { columns: ['option_a', 'option_b', 'option_c'], note: 'Pilihan (sekurang-kurangnya 3)' },
-      { columns: ['correct'], note: 'Jawapan betul' },
-      { columns: ['marks'], note: 'Markah' },
-      { columns: ['subject_code', 'tingkatan'], note: 'Kod subjek dan Tingkatan (atau guna Tetapan Lalai)' },
-    ],
-  },
-  {
-    title: 'Kolum DSKP (untuk diterbitkan):',
-    rows: [
-      { columns: ['unit_code', 'sp_kod'], note: 'Unit dan 1 hingga 3 SP (dipisah dengan ;)' },
-      { columns: ['tp', 'aras'], note: 'TP dan aras pemikiran' },
-      { columns: ['bab_kod'], note: 'Bab' },
-    ],
-  },
-  {
-    title: 'Kolum opsional:',
-    rows: [
-      { columns: ['option_d', 'option_e', 'option_f', 'option_g', 'option_h'] },
-      { columns: ['difficulty'], note: 'Kesukaran (1-5)' },
-      { columns: ['kertas'], note: 'Kertas (1, 2, 3 atau 4)' },
-      { columns: ['explanation', 'kbat', 'topik_kod', 'number_label', 'bahasa', 'jenis_tulisan'] },
+      { columns: ['1. body'], note: 'Teks soalan' },
+      { columns: ['2-5. option_a … option_d'], note: 'Pilihan (kosongkan yang tiada)' },
+      { columns: ['6. correct'], note: 'Jawapan (A/B/C/D)' },
+      { columns: ['7. difficulty'], note: 'Kesukaran 1-5 (opsional, lalai 3)' },
+      { columns: ['8. kertas'], note: 'Kertas 1, 2, 3 atau 4 (opsional, di hujung)' },
     ],
   },
 ]
+const FORMAT_FOOTNOTE = 'Subjek dan tahap dipilih dalam dialog import, bukan dalam fail CSV.'
 
 /** The new header's messages already start with `Baris {n}: ` (Q-11); a legacy message may not. */
 function failureLine(f: QuestionImportResponse['data']['failures'][number]): string {
@@ -372,6 +354,7 @@ async function downloadTemplate(): Promise<void> {
               </li>
             </ul>
           </template>
+          <p class="text-body text-muted">{{ FORMAT_FOOTNOTE }}</p>
         </DsPanel>
 
         <DsPanel title="Tips" icon="i-ph-lightbulb" data-testid="import-tips-card">

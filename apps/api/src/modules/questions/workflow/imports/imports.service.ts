@@ -65,7 +65,7 @@ import {
   type ImportLookups,
   imageKeyOf,
   isHttpsUrl,
-  isLegacyHeader,
+  isCodeHeader,
   numberKey,
   parseCsv,
   planImport,
@@ -211,7 +211,7 @@ export class QuestionImportsService {
    */
   private async fetchImages(records: CsvRecord[], images: { status: Map<string, 'ok' | 'bad'>; bytes: Map<string, Buffer> }): Promise<void> {
     const [header, ...data] = records
-    if (!header || isLegacyHeader(header)) return
+    if (!header || !isCodeHeader(header)) return
     const at = ['stimulus_image', 'stimulus2_image', 'stimulus3_image'].map((c) => header.cells.findIndex((n) => n.trim().toLowerCase() === c)).filter((i) => i >= 0)
     const urls = new Set<string>()
     for (const rec of data) for (const i of at) {
@@ -311,7 +311,7 @@ export class QuestionImportsService {
    */
   private async withCodes(lookups: ImportLookups, records: CsvRecord[], defaults: ImportDefaults, images?: ReadonlyMap<string, 'ok' | 'bad'>): Promise<ImportLookups> {
     const [header, ...data] = records
-    if (!header || isLegacyHeader(header) || data.length > QUESTION_IMPORT_MAX_ROWS) return lookups
+    if (!header || !isCodeHeader(header) || data.length > QUESTION_IMPORT_MAX_ROWS) return lookups
     const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels()])
     const subjectsByCode = new Map(subjects.map((s) => [s.code.toUpperCase(), s.id.toString()]))
     const levelsByCode = new Map(levels.map((l) => [l.code.toUpperCase(), l.id.toString()]))

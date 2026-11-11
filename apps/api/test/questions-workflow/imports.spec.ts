@@ -9,6 +9,7 @@ import {
   QUESTION_IMPORT_MESSAGES,
   QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
   QUESTION_IMPORT_TEMPLATE_CSV,
+  QUESTION_IMPORT_CODE_TEMPLATE_CSV,
   QUESTION_IMPORT_TEMPLATE_FILENAME,
   QuestionImportCreatedSchema,
   QuestionImportGuruResultSchema,
@@ -64,7 +65,7 @@ describe('question imports (BE-10 AC 5, 9)', () => {
   })
 
   describe('templates', () => {
-    it('admin template: file name, content type, CRLF bytes equal to the mock template, header equals the code header of Q-11', async () => {
+    it('admin template: file name, content type, CRLF bytes equal to the mock template, header is the V2 positional header (Pariti M04)', async () => {
       const res = await c.admin.get('/api/question-imports/template')
       expect(res.status).toBe(200)
       expect(res.headers['content-type']).toContain(QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE)
@@ -72,7 +73,7 @@ describe('question imports (BE-10 AC 5, 9)', () => {
       expect(res.headers['cache-control']).toBe('no-store')
       const text = res.text
       expect(text).toBe(QUESTION_IMPORT_TEMPLATE_CSV)
-      expect(text.split('\r\n')[0]).toBe(QUESTION_IMPORT_CODE_HEADER.join(','))
+      expect(text.split('\r\n')[0]).toBe('body,option_a,option_b,option_c,option_d,correct,difficulty')
       expect(text.endsWith('\r\n')).toBe(true)
     })
 
@@ -1072,9 +1073,8 @@ describe('S1-T05 part 3: stimulus images from the ZIP and the template (real ban
     expect(await count(t.db, 'select count(*) as n from questions')).toBe(questions)
   })
 
-  it('[CI] the template has the code header, one MCQ and one group, and imports once its codes are replaced by real ones', async () => {
-    const res = await c.admin.get('/api/question-imports/template')
-    const records = parseCsv(res.text)
+  it('[CI] the Q-11 code sample (still accepted on upload) has the code header, one MCQ and one group, and imports once its codes are replaced by real ones', async () => {
+    const records = parseCsv(QUESTION_IMPORT_CODE_TEMPLATE_CSV)
     expect(records[0]?.cells).toEqual([...QUESTION_IMPORT_CODE_HEADER])
     expect(records).toHaveLength(4)
     const col = (name: string) => QUESTION_IMPORT_CODE_HEADER.indexOf(name as (typeof QUESTION_IMPORT_CODE_HEADER)[number])
