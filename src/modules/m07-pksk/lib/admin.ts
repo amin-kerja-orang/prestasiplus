@@ -25,9 +25,9 @@ export const COPY = {
   confirmBulkDelete: 'Padam soalan terpilih?',
   confirmDelete: 'Padam soalan ini?',
   confirmRevoke: 'Tarik balik akses?',
-  questionsEmpty: 'Tiada soalan PKSK lagi',
+  questionsEmpty: 'Tiada soalan PKSK dijumpai.',
   questionsEmptyLink: 'Tambah soalan pertama',
-  accessEmpty: 'Tiada rekod akses',
+  accessEmpty: 'Tiada akses PKSK direkodkan.',
   /** The row delete answers 204 with no body, so the flash text lives here (SRS §8.2). */
   questionDeleted: 'Soalan PKSK berjaya dipadam.',
   /** INFERRED: no live load-failure copy; the generic M01 / M08 text is reused. */

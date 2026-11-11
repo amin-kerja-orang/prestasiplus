@@ -146,7 +146,7 @@ describe('PkskQuestionListPage (S5)', () => {
   it('shows the empty row with the create link and no pager', async () => {
     admin.fetchPkskQuestions.mockResolvedValue(listOf([], 0))
     const w = await render(PkskQuestionListPage, PATH, PATH)
-    expect(attr(w, 'pksk-questions-empty').text()).toContain('Tiada soalan PKSK lagi')
+    expect(attr(w, 'pksk-questions-empty').text()).toContain('Tiada soalan PKSK dijumpai.')
     expect(attr(w, 'pksk-empty-add').text()).toBe('Tambah soalan pertama')
     expect(w.find('nav').exists()).toBe(false)
   })
@@ -575,10 +575,10 @@ describe('PkskAccessPage (S8)', () => {
     expect(w.findAll('[data-testid=a-expires]')[0]!.text()).toBe('30/06/2026')
   })
 
-  it('shows the empty row "Tiada rekod akses"', async () => {
+  it('shows the empty row "Tiada akses PKSK direkodkan."', async () => {
     admin.fetchPkskAccessList.mockResolvedValue(listOf([], 0))
     const w = await render(PkskAccessPage, PATH, PATH)
-    expect(attr(w, 'access-empty').text()).toBe('Tiada rekod akses')
+    expect(attr(w, 'access-empty').text()).toBe('Tiada akses PKSK direkodkan.')
   })
 
   it('starts with the grant form hidden and keeps its values across the toggle', async () => {
