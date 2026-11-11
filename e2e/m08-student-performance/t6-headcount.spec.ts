@@ -219,10 +219,9 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('field-otr').getByRole('radio')).toHaveCount(4)
     await expect(page.getByTestId('field-otr').getByRole('radio', { name: '3 OTR' })).toBeChecked()
     await expect(page.getByText('2 OTR', { exact: true })).toBeVisible()
-    // APP DEFECT (red): HeadcountCreatePage.vue:202 and :212 pass `hint`, which URadioGroup does not render.
-    await expect.soft(
-      page.getByText(/Minimum 2 OTR\s*·\s*Default 3 OTR\s*·\s*Boleh tukar 2\/3\/4\/5 ikut keperluan kelas\./),
-    ).toBeVisible()
+    await expect(page.getByTestId('hint-otr')).toHaveText(
+      'Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas.',
+    )
     await expect(mode(page, /^Auto/)).toBeChecked()
     await expect(page.getByTestId('field-mode')).toContainText('Manual')
     await expect(mode(page, /^Manual/)).not.toBeChecked()
@@ -230,9 +229,9 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(mode(page, /^Manual/)).toBeChecked()
     await expect(mode(page, /^Auto/)).not.toBeChecked()
     await mode(page, /^Auto/).click()
-    await expect.soft(
-      page.getByText('Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama.'),
-    ).toBeVisible()
+    await expect(page.getByTestId('hint-mode')).toHaveText(
+      'Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama.',
+    )
     await expect(page.getByTestId('create-submit')).toHaveText('Cipta Headcount')
     await expectNoHorizontalScroll(page)
 
