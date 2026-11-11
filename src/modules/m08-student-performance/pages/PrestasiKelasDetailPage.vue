@@ -34,11 +34,16 @@ const { data, error, reload } = useRouteData(
 const own = useRouteData((signal) => fetchOwnClasses({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
 
-const subtitle = computed(() => {
+/** "{sekolah} · {subjek} · {tahun}", the subject left out for a class without one; the join code follows as "Kod: ..." (FR-M08-31, V1). */
+const subtitleParts = computed(() => {
   const c = data.value?.class
-  if (!c) return ''
-  return [c.school, c.subject, String(c.year)].filter((p) => p !== null && p !== '').join(' · ')
+  if (!c) return []
+  return [c.school, c.subject, String(c.year)].filter((p) => p !== null && p !== '')
 })
+const joinCode = computed(() => data.value?.class.joinCode?.trim() ?? '')
+const subtitle = computed(() =>
+  [...subtitleParts.value, ...(joinCode.value ? [`Kod: ${joinCode.value}`] : [])].join(' · '),
+)
 watchEffect(() => {
   const c = data.value?.class
   if (!c) return
@@ -140,6 +145,14 @@ const cardFields = [
         title-testid="class-name"
         subtitle-testid="class-sub"
       >
+        <template #subtitle>
+          <span data-testid="class-sub"
+            >{{ subtitleParts.join(' · ')
+            }}<template v-if="joinCode">
+              · Kod: <strong class="text-primary-t" data-testid="class-code">{{ joinCode }}</strong></template
+            ></span
+          >
+        </template>
         <template #breadcrumb>
           <DsBackLink to="/prestasi/kelas" label="Kembali ke senarai kelas" title="Kembali ke senarai kelas" data-testid="back-link" />
         </template>

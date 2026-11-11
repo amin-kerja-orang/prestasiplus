@@ -163,12 +163,14 @@ afterEach(() => {
 })
 
 describe('S5 PrestasiKelasDetailPage', () => {
-  it('shows the header (no join code), the 6 stat cards (with Purata Masa/Sesi) and the headcount block', async () => {
+  it('shows the header with the join code (FR-M08-31), the 6 stat cards (with Purata Masa/Sesi) and the headcount block', async () => {
     api.fetchClassDashboard.mockResolvedValue(S5)
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(t(w, 'class-name').text()).toBe('5 MARIKH - Kimia')
-    expect(t(w, 'class-sub').text()).toBe('SMK DEMO · Kimia · 2026')
-    expect(w.text()).not.toContain('DMO101')
+    expect(t(w, 'class-sub').text()).toBe('SMK DEMO · Kimia · 2026 · Kod: DMO101')
+    expect(t(w, 'class-code').text()).toBe('DMO101')
+    expect(t(w, 'class-code').element.tagName).toBe('STRONG')
+    expect(t(w, 'class-code').classes()).toEqual(expect.arrayContaining(['text-primary-t']))
     expect(t(w, 'back-link').attributes('title')).toBe('Kembali ke senarai kelas')
     expect(t(w, 'back-link').attributes('href')).toBe('/prestasi/kelas')
     expect(
@@ -191,7 +193,7 @@ describe('S5 PrestasiKelasDetailPage', () => {
     })
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(w.find('[data-testid=headcount-block]').exists()).toBe(false)
-    expect(t(w, 'class-sub').text()).toBe('SMK DEMO · 2026')
+    expect(t(w, 'class-sub').text()).toBe('SMK DEMO · 2026 · Kod: DEMO-4S')
   })
 
   it('shows zeros as "0%" / "0m" and the 30-day empty trend message when all 30 zero-filled days are empty', async () => {
