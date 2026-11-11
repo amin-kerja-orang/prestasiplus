@@ -34,6 +34,14 @@ function date(name: string, value: string | undefined): string | undefined {
   return value
 }
 
+/** `--recompute` is a bare switch: any value (`--recompute=false`, `--recompute false`) is refused, never read as "off". */
+function recomputeFlag(args: CommandArgs): boolean {
+  const v = args.flags.get('recompute')
+  if (v === undefined) return false
+  if (v !== true) throw new ApplyGuardError('--recompute takes no value: pass it bare to turn it on, or leave it out.')
+  return true
+}
+
 export interface PapersArgs {
   asOf: string
   coreAsOf?: string
@@ -61,7 +69,7 @@ export function parsePapersArgs(args: CommandArgs, prepare: (dir: string) => str
     if (e instanceof ProfileOutputError) throw new ApplyGuardError(`--out-dir: ${e.message}`)
     throw e
   }
-  return { asOf: date('as-of', flagValue(args, 'as-of')) ?? mytDay(new SystemClock().now()), coreAsOf: date('core-as-of', flagValue(args, 'core-as-of')), batchSize, outDir, filesDir, recompute: args.flags.has('recompute') || env.PP_MIGRATE_PAPERS_RECOMPUTE === '1' }
+  return { asOf: date('as-of', flagValue(args, 'as-of')) ?? mytDay(new SystemClock().now()), coreAsOf: date('core-as-of', flagValue(args, 'core-as-of')), batchSize, outDir, filesDir, recompute: recomputeFlag(args) || env.PP_MIGRATE_PAPERS_RECOMPUTE === '1' }
 }
 
 export const migratePapers: MigrateCommand = {

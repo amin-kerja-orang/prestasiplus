@@ -62,4 +62,10 @@ describe('migrate:papers --recompute', () => {
     expect(parse(['--apply'], { PP_MIGRATE_PAPERS_RECOMPUTE: '1' })).toBe(true)
     expect(parse(['--apply'], { PP_MIGRATE_PAPERS_RECOMPUTE: '0' })).toBe(false)
   })
+
+  it('refuses a value: --recompute=false is an error, never "off"', () => {
+    expect(() => parse(['--apply', '--recompute=false'])).toThrow(/takes no value/)
+    expect(() => parse(['--apply', '--recompute=0'])).toThrow(/takes no value/)
+    expect(() => parse(['--apply', '--recompute', 'false'])).toThrow()
+  })
 })
