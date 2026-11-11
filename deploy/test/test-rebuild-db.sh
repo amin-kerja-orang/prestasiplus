@@ -340,13 +340,20 @@ STUB_PSQL=1 slot 0 'ETL STEP migrate:core exit=0' etl migrate:core --apply --as-
 if grep -q 'npm run migrate:core' "$DOCKER_LOG" && grep -qF -e '-e PP_ALLOW_MIGRATE_APPLY=1' "$DOCKER_LOG"; then ok 'migrate:core --apply runs in the migrate container with the apply gate'; else bad 'migrate:core --apply did not run as expected' "$DOCKER_LOG"; fi
 STUB_PSQL=1 slot 0 'ETL STEP migrate:activity exit=0' etl migrate:activity --as-of=2026-11-10
 if grep -q 'npm run migrate:activity' "$DOCKER_LOG" && ! grep -q 'PP_ALLOW_MIGRATE_APPLY' "$DOCKER_LOG"; then ok 'migrate:activity dry-run has no apply gate'; else bad 'migrate:activity dry-run wrong' "$DOCKER_LOG"; fi
+mnt() { # mnt WANT_COUNT LABEL: number of default-path mounts in the recorded compose run
+  local n; n="$(grep -cF -e "-v $w/out:/app/.migration-out" "$DOCKER_LOG" || true)"
+  if [ "$n" = "$1" ] && grep -qF -e "-v $w/out:/app/apps/api/.migration-out" "$DOCKER_LOG"; then ok "$2: default-path mount x$1, reports mount kept"; else bad "$2: want $1 default-path mounts, got $n" "$DOCKER_LOG"; fi
+}
 # --out-dir: appended to the migrate:* commands whose CLI takes it, NOT to migrate:core / migrate:activity (their CLIs reject it, exit 2)
 STUB_PSQL=1 slot 0 'ETL STEP migrate:core exit=0' etl migrate:core --dry-run --as-of=2026-11-10
 if grep -q 'migrate:core' "$DOCKER_LOG" && ! grep -qF -e '--out-dir' "$DOCKER_LOG"; then ok 'migrate:core gets no --out-dir'; else bad 'migrate:core argv carries --out-dir' "$DOCKER_LOG"; fi
+mnt 1 migrate:core
 STUB_PSQL=1 slot 0 'ETL STEP migrate:activity exit=0' etl migrate:activity --dry-run --as-of=2026-11-10
 if grep -q 'migrate:activity' "$DOCKER_LOG" && ! grep -qF -e '--out-dir' "$DOCKER_LOG"; then ok 'migrate:activity gets no --out-dir'; else bad 'migrate:activity argv carries --out-dir' "$DOCKER_LOG"; fi
+mnt 1 migrate:activity
 slot 0 'ETL STEP migrate:questions exit=0' etl migrate:questions --plan
 if grep -qF -e '--out-dir /app/apps/api/.migration-out' "$DOCKER_LOG"; then ok 'migrate:questions still gets --out-dir appended'; else bad 'migrate:questions lost --out-dir' "$DOCKER_LOG"; fi
+mnt 0 migrate:questions
 STUB_PSQL=1 slot 2 'ETL STEP migrate:core exit=2' etl migrate:core --out-dir=/x --as-of=2026-11-10   # an explicit --out-dir is the CLI's own rejection (the stub mimics it)
 mkprod; EXTRA_ENV="PP_RELEASE_SHA=zz" slot 3 'cannot determine the release sha' etl migrate:core --as-of=2026-11-10; EXTRA_ENV=""
 slot 2 'etl COMMAND' etl migrate:nothing

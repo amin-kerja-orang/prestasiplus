@@ -142,6 +142,9 @@ check '! marker' 'a raw load clears the marker'
 check '! marker' 'throwaway-up clears the marker'
 prod; rm -f "$w/stage/SYNTHETIC-LOADED" "$w/stage/SYNTHETIC-IN-TARGET"; run 0 'gonogo: complete' -notty gonogo
 check 'grep -qF "host: not marked scratch" "$w/log"' 'gonogo on a normal host: no NO-GO line'
+prod "PP_STAGE_EXPECT=archive_cloud:1 staging_cloud:1"; run 3 'PP_STAGE_EXPECT is set in' -notty gonogo
+check 'grep -qF "gonogo: NO-GO (PP_STAGE_EXPECT set in prod.env)" "$w/log" && ! grep -qF "expected unknown" "$w/log"' 'gonogo names a persisted PP_STAGE_EXPECT as NO-GO, not "unknown"'
+prod
 
 echo "-- Codex P2 (a): the stage marker is written only under the lock"
 prod "${SCR[@]}"; manifest "$SYN"; rm -f "$w/stage/SYNTHETIC-LOADED"

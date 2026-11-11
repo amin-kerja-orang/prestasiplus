@@ -25,7 +25,7 @@
 #     (its database name ends in _staging; the loader refuses production by design);
 #   - every migrate:* runs with NODE_ENV=production and PP_MIGRATE_TARGET_DB=<the production database>, as the
 #     migration role pp_etl (--env-from-file etl.env, cutover plan P3), with PP_GIT_SHA=<release sha> and
-#     --out-dir on the mounted reports folder (not for migrate:core and migrate:activity: their CLIs reject it); PP_ALLOW_MIGRATE_APPLY=1 is added only when --apply is on the command
+#     --out-dir on the mounted reports folder (not for migrate:core and migrate:activity: their CLIs reject it; the same folder is mounted at their default /app/.migration-out); PP_ALLOW_MIGRATE_APPLY=1 is added only when --apply is on the command
 #     line (always for migrate:archive-minimise and migrate:rollback, whose dry-runs need it too),
 #     PP_ALLOW_MIGRATE_ROLLBACK=1 only for migrate:rollback. Nothing is set permanently in api.env;
 #   - --files-dir HOST_DIR is mounted read-only at /files; with --apply the api uploads volume is mounted too and
@@ -397,8 +397,11 @@ cmd_etl() {
   # The reports go to the mounted folder. The default of migrate:* is <repo root>/.migration-out = /app/.migration-out,
   # on the read-only root file system and not on the volume; staging:profile uses ./.migration-out of apps/api.
   # migrate:core and migrate:activity get NO --out-dir: their standalone CLIs reject it (unknown flag, exit 2).
+  # Their output goes to the default <repo root>/.migration-out = /app/.migration-out (migrate:core prepares it on --apply), on the read-only
+  # root file system, so the SAME host folder is also mounted there (prepareOutputDir accepts it: inside the repo root, a .migration-out path).
   if [ "$out_given" = 0 ] && [ "$c" != staging:profile ] && [ "$c" != migrate:core ] && [ "$c" != migrate:activity ]; then argv+=(--out-dir /app/apps/api/.migration-out); fi
   RUN_EXTRA=()
+  case "$c" in migrate:core|migrate:activity) RUN_EXTRA+=(-v "$out_dir:/app/.migration-out") ;; esac
   if [ "$files_seen" = 1 ]; then
     [ -n "$files_host" ] || pp_die "--files-dir needs a directory" 2
     [ -d "$files_host" ] || pp_die "--files-dir $files_host is not a directory on this host" 2
@@ -487,8 +490,12 @@ cmd_gonogo() {
     lsn="$(target_psql "select coalesce(last_archived_wal, '-') from pg_stat_archiver")"
     echo "criterion 8: PITR on, last archived WAL $lsn at $last, failed_count $failed$([ "$failed" = 0 ] || echo '  -> check the archive before go')"
   fi
-  local want_stage src_stage; want_stage="$(pp_expected_stage_counts 2>/dev/null || echo unknown)"
+  # pp_expected_stage_counts exits (pp_die) on a prod.env PP_STAGE_EXPECT, also inside $( ), so the refusal is checked first and the call skipped.
+  local want_stage src_stage
+  if [ -n "$(pp_env_value "$PP_PROD_ENV" PP_STAGE_EXPECT)" ]; then want_stage="refused"; else want_stage="$(pp_expected_stage_counts 2>/dev/null || echo unknown)"; fi
   src_stage="derived from the release DDL"; [ -z "${PP_STAGE_EXPECT:-}" ] || src_stage="PP_STAGE_EXPECT override (shell)"
+  local stage_nogo=0
+  if [ -n "$(pp_env_value "$PP_PROD_ENV" PP_STAGE_EXPECT)" ]; then echo "stage expectation: PP_STAGE_EXPECT is set in $PP_PROD_ENV  -> NO-GO (a one-run shell override, never a persisted setting: remove it from the file)"; stage_nogo=1; want_stage="refused"; src_stage="refused prod.env setting"; fi
   echo "stage: $(schema_tables target_psql) in the target (expected $want_stage while the slot runs, $src_stage)"
   f="$(find "$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)" -maxdepth 1 -name 'pp-backup-*.dump' -printf '%T@ %f\n' 2>/dev/null | sort -rn | head -n1)"
   if [ -n "$f" ]; then age=$(( ($(date +%s) - ${f%%.*}) / 3600 )); echo "backup: newest dump ${f#* } is ${age} h old$([ "$age" -le 24 ] || echo '  -> NO-GO (older than 24 h)')"; else echo "backup: NO dump found  -> NO-GO"; fi
@@ -507,6 +514,7 @@ cmd_gonogo() {
   else echo "reports: $out_dir missing or wrong owner/mode  -> NO-GO (runbook section 1)"; fi
   # Last line: a gonogo that stopped half way (db down, set -e) never prints it, so a short output cannot pass as clean.
   if [ "$scratch_nogo" = 1 ]; then echo "gonogo: NO-GO (scratch host or synthetic stage data)"; exit 3; fi
+  if [ "$stage_nogo" = 1 ]; then echo "gonogo: NO-GO (PP_STAGE_EXPECT set in prod.env)"; exit 3; fi
   echo "gonogo: complete (every check above ran)"
 }
 
