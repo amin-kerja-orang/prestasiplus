@@ -6,10 +6,11 @@
  * anchors, the 404 / 403 pages, the numeric route constraint, titles and no horizontal page scroll.
  */
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import {
+  expectContrast,
   expectNoHorizontalScroll,
   expectTabTitle,
   isDesktopShell,
@@ -37,8 +38,13 @@ async function expectNotFound(page: Page): Promise<void> {
   await expectTabTitle(page, NOT_FOUND_TITLE)
 }
 
-const statValues = (page: Page) => page.getByTestId('stat-value')
-const activityValues = (page: Page) => page.getByTestId('activity-value')
+/** The value of each tile of a DsStatRow, in order (the tabular number of the tile). */
+const statValues = (page: Page) =>
+  page.locator('[data-testid=stat-cards] li span.tabular:not([data-ds=stat-tile-delta])')
+/** The weak-topic cards of a block. */
+const weakCards = (block: Locator) => block.locator('[data-testid^=weak-card-]')
+const activityValues = (page: Page) =>
+  page.locator('[data-testid=activity-card] li span.tabular:not([data-ds=stat-tile-delta])')
 
 test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
   test.use({ mockInit: { latency: 0 } })
@@ -53,13 +59,13 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/analitik/pelajar')
     await expect(page.getByTestId('analitik-page')).toBeVisible()
-    await expectTabTitle(page, 'Analitik Pembelajaran')
+    await expectTabTitle(page, 'Analitik Pembelajaran | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('Analitik Pembelajaran')
     await expect(header(page).subtitle).toHaveText(S7_SUBTITLE)
 
     // Top block: the 4 weakest SPs of every subject, all 0 % (T1 tie rule: fewer answers, then SP id).
     await expect(page.getByTestId('top-weak')).toContainText('Topik Perlu Perhatian Utama (4)')
-    const cards = page.getByTestId('top-weak').locator('article')
+    const cards = weakCards(page.getByTestId('top-weak'))
     await expect(cards).toHaveCount(4)
     for (let i = 0; i < 4; i++) await expect(cards.nth(i)).toContainText('0%')
     // Observed order (T1 fixed): 5.1.2 (3 answers, 16), 3.4.1 (1, 16), 5.1.3 (1, 7), 4.2.1 (4, 12).
@@ -82,28 +88,31 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
     // Tabs and the BM pane: 3 / 6 / 17 / 0, ring 3 / 3 SP, 40.5 %, 79, G – C.
     await expect(page.getByTestId('tab-1')).toContainText('Bahasa Melayu')
     await expect(page.getByTestId('tab-1')).toContainText('41%')
-    await expect(page.getByTestId('tab-1')).toHaveClass(/bg-blue-600/)
+    await expect(page.getByTestId('tab-1')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByTestId('tab-5')).toContainText('Sejarah')
     await expect(page.getByTestId('tab-5')).toContainText('35%')
-    await expect(page.getByTestId('tab-5')).toHaveClass(/bg-white/)
-    await expect(page.getByTestId('ring-mahir')).toHaveText('3')
-    await expect(page.getByTestId('ring-total')).toHaveText('/ 3 SP')
-    await expect(page.getByTestId('ring-arc')).toHaveAttribute('stroke-dasharray', '314 0')
-    await expect(page.getByTestId('ring-legend').locator('> span')).toHaveText([
-      '3',
-      '6',
-      '17',
-      '0',
+    await expect(page.getByTestId('tab-5')).toHaveAttribute('aria-pressed', 'false')
+    // The ring is a meter: 3 of 3 SP.
+    const ring = page.getByTestId('ring-arc')
+    await expect(ring).toHaveAttribute('aria-valuenow', '3')
+    await expect(ring).toHaveAttribute('aria-valuemax', '3')
+    await expect(ring).toContainText('3')
+    await expect(ring).toContainText('/ 3 SP')
+    await expect(page.getByTestId('ring-legend').locator('> li')).toHaveText([
+      'Mahir 3',
+      'Sederhana 6',
+      'Lemah 17',
+      'Belum cuba 0',
     ])
     await expect(page.getByTestId('kpi-acc')).toHaveText('40.5%')
-    await expect(page.getByTestId('kpi-acc')).toHaveClass(/text-red-600/)
+    await expect(page.getByTestId('kpi-acc')).toHaveClass(/text-error/)
     await expect(page.getByTestId('kpi-answered')).toHaveText('79')
     await expect(page.getByTestId('kpi-grade')).toHaveText('G – C')
     await expect(page.getByTestId('encourage-box')).toContainText(
       'Jangan putus asa! Latihan konsisten akan membantu. Mulakan dengan topik yang paling lemah di bawah.',
     )
     await expect(page.getByTestId('map-caption')).toHaveText('KSSR Bahasa Melayu Darjah 4')
-    await expect(page.getByTestId('map-tiles').locator('> div').first()).toHaveClass(/bg-/)
+    await expect(page.getByTestId('map-tiles').first().locator('> li').first().locator('[data-status]')).toBeVisible()
     await expect(page.getByTestId('map-legend')).toContainText('Mahir (75%+)')
     await expect(page.getByTestId('map-legend')).toContainText('Sederhana (50-74%)')
     await expect(page.getByTestId('map-legend')).toContainText('Lemah (<50%)')
@@ -126,18 +135,18 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
 
     await page.getByTestId('toggle-weak').click()
     await expect(page.getByTestId('toggle-weak')).toHaveText('Sembunyi senarai penuh')
-    await expect(page.getByTestId('all-weak').locator('article')).toHaveCount(17)
+    await expect(weakCards(page.getByTestId('all-weak'))).toHaveCount(17)
     const capped = page.getByTestId('all-weak').getByTestId('weak-card-194')
     await expect(capped.getByRole('link')).toHaveText('Latihan Fokus (25 soalan)')
     await expect(capped.getByRole('link')).toHaveAttribute('href', /count=25/)
     await expectNoHorizontalScroll(page)
 
     await page.getByTestId('tab-5').click()
-    await expect(page.getByTestId('tab-5')).toHaveClass(/bg-blue-600/)
+    await expect(page.getByTestId('tab-5')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByTestId('toggle-weak')).toHaveText('Sembunyi senarai penuh')
-    await expect(page.getByTestId('all-weak').locator('article')).toHaveCount(13)
+    await expect(weakCards(page.getByTestId('all-weak'))).toHaveCount(13)
     await expect(page.getByTestId('more-count')).toHaveText('9')
-    await expect(page.getByTestId('all-weak').locator('article').first()).toContainText('15.3.2')
+    await expect(weakCards(page.getByTestId('all-weak')).first()).toContainText('15.3.2')
 
     await page.getByTestId('toggle-weak').click()
     await expect(page.getByTestId('all-weak')).toHaveCount(0)
@@ -146,9 +155,9 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
 
   test('S7 the DSKP maps: BM 1.1 / 2.1 / 3.1 and Sejarah 1.1 / 2.1', async ({ page, gotoApp }) => {
     await gotoApp('/analitik/pelajar')
-    await expect(page.getByTestId('map-tiles').locator('> div')).toHaveText(['1.1', '2.1', '3.1'])
+    await expect(page.getByTestId('map-tiles').locator('> li')).toHaveText(['1.1', '2.1', '3.1'])
     await page.getByTestId('tab-5').click()
-    await expect(page.getByTestId('map-tiles').locator('> div')).toHaveText(['1.1', '2.1'])
+    await expect(page.getByTestId('map-tiles').locator('> li')).toHaveText(['1.1', '2.1'])
   })
 
   test('S7 the Sejarah pane: ring 8 / 23 SP inside the circle, 35.0%, 40, G – D', async ({
@@ -157,18 +166,15 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/analitik/pelajar')
     await page.getByTestId('tab-5').click()
-    await expect(page.getByTestId('ring-mahir')).toHaveText('8')
-    await expect(page.getByTestId('ring-total')).toHaveText('/ 23 SP')
-    const dash = await page.getByTestId('ring-arc').getAttribute('stroke-dasharray')
-    const [filled, rest] = (dash ?? '').split(' ').map(Number)
-    expect(filled).toBeGreaterThan(0)
-    expect(filled).toBeLessThan(314)
-    expect((filled ?? 0) + (rest ?? 0)).toBeCloseTo(314, 5)
-    await expect(page.getByTestId('ring-legend').locator('> span')).toHaveText([
-      '8',
-      '2',
-      '13',
-      '0',
+    const ring = page.getByTestId('ring-arc')
+    await expect(ring).toHaveAttribute('aria-valuenow', '8')
+    await expect(ring).toHaveAttribute('aria-valuemax', '23')
+    await expect(ring).toContainText('/ 23 SP')
+    await expect(page.getByTestId('ring-legend').locator('> li')).toHaveText([
+      'Mahir 8',
+      'Sederhana 2',
+      'Lemah 13',
+      'Belum cuba 0',
     ])
     await expect(page.getByTestId('kpi-acc')).toHaveText('35.0%')
     await expect(page.getByTestId('kpi-answered')).toHaveText('40')
@@ -209,10 +215,10 @@ for (const [id, label] of [
       async ({ page, gotoApp }) => {
         await gotoApp('/analitik/pelajar')
         await expect(page.getByTestId('top-weak')).toContainText('Topik Perlu Perhatian Utama (0)')
-        await expectTabTitle(page, 'Analitik Pembelajaran')
+        await expectTabTitle(page, 'Analitik Pembelajaran | PRESTASIPLUS')
         await expect(header(page).title).toHaveText('Analitik Pembelajaran')
         await expect(header(page).subtitle).toHaveText(S7_SUBTITLE)
-        await expect(page.getByTestId('top-weak').locator('article')).toHaveCount(0)
+        await expect(weakCards(page.getByTestId('top-weak'))).toHaveCount(0)
         await expect(page.getByTestId('subject-tabs')).toHaveCount(0)
         await expect(page.getByTestId('ring-card')).toHaveCount(0)
         await expect(page.getByTestId('more-weak')).toHaveCount(0)
@@ -239,12 +245,13 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('hero')).toContainText('Prestasi 360 — Dashboard Individu')
     await expect(page.getByTestId('avatar')).toHaveText('A')
     if (isDesktopShell(page)) {
-      await expect(page.getByTestId('hero-accuracy')).toHaveText('0%')
+      // No answers: the accuracy prints "—" (no-data rule), not 0%.
+      await expect(page.getByTestId('hero-accuracy')).toHaveText('—')
       await expect(page.getByTestId('hero-streak')).toHaveText('1')
     } else {
       await expect(page.getByTestId('hero-mini')).toBeHidden()
     }
-    await expect(statValues(page)).toHaveText(['0', '0.0%', '0', '0m'])
+    await expect(statValues(page)).toHaveText(['0', '—', '0', '0m'])
     await expect(page.getByTestId('headcount-block')).toHaveCount(0)
     await expect(page.getByTestId('badges-card')).toHaveCount(0)
     await expect(page.getByTestId('mastery-empty')).toContainText('Belum ada data latihan.')
@@ -277,9 +284,11 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('S6 the hero name is white on the gradient', async ({ page, gotoApp }) => {
+  // The V2 gradient hero is gone in the v2 theme (plain page header), so "white on the gradient" became
+  // "readable on the page": the hero name keeps AA contrast.
+  test('S6 the hero name is readable on the page header', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/1')
-    await expect(page.getByTestId('hero-name')).toHaveCSS('color', 'rgb(255, 255, 255)')
+    await expectContrast(page.getByTestId('hero-name'))
   })
 
   test('S6 /prestasi/3001: 3 sessions, 14 answers, 85.7%, 14m; Kimia 89% and Sejarah 80%', async ({
@@ -294,12 +303,12 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(chem).toContainText('Kimia')
     await expect(chem).toContainText('89%')
     await expect(chem).toContainText('2 sesi · 9 soalan')
-    await expect(chem.getByTestId('pct')).toHaveClass(/text-green-600/)
+    await expect(chem.getByTestId('pct')).toHaveClass(/text-success/)
     const sej = page.getByTestId('mastery-SEJ')
     await expect(sej).toContainText('SE')
     await expect(sej).toContainText('80%')
     await expect(sej).toContainText('1 sesi · 5 soalan')
-    await expect(sej.getByTestId('pct')).toHaveClass(/text-green-600/)
+    await expect(sej.getByTestId('pct')).toHaveClass(/text-success/)
     await expect(page.getByTestId('activity-card')).toContainText('Hari Latihan')
 
     const name = await page.getByTestId('hero-name').innerText()
@@ -339,7 +348,7 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/prestasi/3201')
-    const cards = page.getByTestId('headcount-block').locator('article')
+    const cards = page.getByTestId('headcount-block').locator('[data-testid^=headcount-]:not([data-testid=headcount-block])')
     await expect(cards).toHaveCount(5)
     const order = ['Sejarah', 'Matematik', 'Bahasa Melayu', 'Sains', 'Bahasa Inggeris']
     const pills = ['Below', 'Below', 'On Track', '—', 'On Track']
@@ -350,8 +359,8 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     }
     await expect(cards.nth(0).getByTestId('chip')).toHaveText(['TOV: 67%', 'OTR3: 56%', 'ETR: 56%'])
     await expect(cards.nth(3).getByTestId('chip')).toHaveText(['TOV: 70%', 'OTR3: 61%', 'ETR: 61%'])
-    await expect(cards.nth(3).getByTestId('chip').nth(1)).toHaveClass(/bg-red-50/)
-    await expect(cards.nth(2).getByTestId('chip').nth(1)).toHaveClass(/bg-green-50/)
+    await expect(cards.nth(3).getByTestId('chip').nth(1)).toHaveClass(/error/)
+    await expect(cards.nth(2).getByTestId('chip').nth(1)).toHaveClass(/success/)
 
     await expect(page.getByTestId('badges-card')).toContainText('Lencana (3)')
     await expect(page.getByTestId('badge')).toHaveCount(3)
