@@ -173,7 +173,8 @@ EXTRA_ENV="STUB_TARGET=short" run 1 'STAGE COPY FAILED' -notty copy
 check tmarker 'a raw copy that fails after the drop keeps the target marker'
 EXTRA_ENV="STUB_TARGET=ok" run 0 'STAGE COPY PASSED' -notty copy
 check '! tmarker' 'a raw copy that passes clears the target marker'
-prod "PP_STAGE_EXPECT=archive_cloud:1 staging_cloud:1"; EXTRA_ENV="STUB_TARGET=ok" run 4 'STAGE COPY COUNTS DIFFER' -notty copy   # an explicit override wins, and a copy that differs from it is a STOP
+PP_STAGE_EXPECT="archive_cloud:1 staging_cloud:1" EXTRA_ENV="STUB_TARGET=ok" run 4 'STAGE COPY COUNTS DIFFER' -notty copy   # an explicit shell override wins, and a copy that differs from it is a STOP
+prod "PP_STAGE_EXPECT=archive_cloud:1 staging_cloud:1"; EXTRA_ENV="STUB_TARGET=ok" run 2 'PP_STAGE_EXPECT is set in' -notty copy   # a prod.env value is refused, never a fallback
 rm -f "$w/stage/SYNTHETIC-IN-TARGET"
 
 echo "passed $pass, failed $fail"

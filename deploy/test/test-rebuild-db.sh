@@ -30,7 +30,8 @@ case "$1" in
       *" ps "*) exit 0 ;;
       *pg_restore*--list*) cat >/dev/null; printf '1; 1259 1 TABLE DATA public users x\n2; 1259 2 TABLE DATA public schools x\n'; exit 0 ;;
       *" exec "*) [ -t 0 ] || cat >/dev/null; echo "${STUB_PSQL:-0}"; exit 0 ;;
-      *" run "*) exit 0 ;;
+      # the standalone migrate:core / migrate:activity CLIs reject --out-dir (load/command.ts CORE_KNOWN_FLAGS, load/activity/command.ts KNOWN_FLAGS)
+      *" run "*) case "$all" in *"migrate:core "*|*"migrate:activity "*) case "$all" in *" --out-dir"*) echo "unknown flag --out-dir." >&2; exit 2 ;; esac ;; esac; exit 0 ;;
     esac
     exit 0 ;;
   run)
@@ -79,7 +80,7 @@ bad() { fail=$((fail + 1)); echo "FAIL $1"; [ -z "${2:-}" ] || sed 's/^/     /' 
 mkprod() {
   {
     printf '%s\n' "PP_DOMAIN=uat.example.test" "PP_ALLOW_DB_REBUILD=yes" "PP_SCRATCH_HOST=yes" "PP_STATE_DIR=$w/state" "PP_BACKUP_DIR=$w/backup" \
-      "PP_MIGRATION_OUT=$w/out" "PP_RELEASE_SHA=$SHA" "PP_STAGE_EXPECT=archive_cloud:1 staging_cloud:1" "PP_REBUILD_MIN_FREE_GB=0" \
+      "PP_MIGRATION_OUT=$w/out" "PP_RELEASE_SHA=$SHA" "PP_REBUILD_MIN_FREE_GB=0" \
       "PP_LOCK_FILE=$w/lock" "PP_STAGE_DIR=$w/stage" "PP_MIGRATE_UID=$(id -u)" "PP_REBUILD_ALLOWED_DB=pp_uat" "PP_REBUILD_ALLOWED_DOMAIN=uat.example.test"
     [ $# -eq 0 ] || printf '%s\n' "$@"
   } >"$w/env/prod.env"
@@ -339,6 +340,14 @@ STUB_PSQL=1 slot 0 'ETL STEP migrate:core exit=0' etl migrate:core --apply --as-
 if grep -q 'npm run migrate:core' "$DOCKER_LOG" && grep -qF -e '-e PP_ALLOW_MIGRATE_APPLY=1' "$DOCKER_LOG"; then ok 'migrate:core --apply runs in the migrate container with the apply gate'; else bad 'migrate:core --apply did not run as expected' "$DOCKER_LOG"; fi
 STUB_PSQL=1 slot 0 'ETL STEP migrate:activity exit=0' etl migrate:activity --as-of=2026-11-10
 if grep -q 'npm run migrate:activity' "$DOCKER_LOG" && ! grep -q 'PP_ALLOW_MIGRATE_APPLY' "$DOCKER_LOG"; then ok 'migrate:activity dry-run has no apply gate'; else bad 'migrate:activity dry-run wrong' "$DOCKER_LOG"; fi
+# --out-dir: appended to the migrate:* commands whose CLI takes it, NOT to migrate:core / migrate:activity (their CLIs reject it, exit 2)
+STUB_PSQL=1 slot 0 'ETL STEP migrate:core exit=0' etl migrate:core --dry-run --as-of=2026-11-10
+if grep -q 'migrate:core' "$DOCKER_LOG" && ! grep -qF -e '--out-dir' "$DOCKER_LOG"; then ok 'migrate:core gets no --out-dir'; else bad 'migrate:core argv carries --out-dir' "$DOCKER_LOG"; fi
+STUB_PSQL=1 slot 0 'ETL STEP migrate:activity exit=0' etl migrate:activity --dry-run --as-of=2026-11-10
+if grep -q 'migrate:activity' "$DOCKER_LOG" && ! grep -qF -e '--out-dir' "$DOCKER_LOG"; then ok 'migrate:activity gets no --out-dir'; else bad 'migrate:activity argv carries --out-dir' "$DOCKER_LOG"; fi
+slot 0 'ETL STEP migrate:questions exit=0' etl migrate:questions --plan
+if grep -qF -e '--out-dir /app/apps/api/.migration-out' "$DOCKER_LOG"; then ok 'migrate:questions still gets --out-dir appended'; else bad 'migrate:questions lost --out-dir' "$DOCKER_LOG"; fi
+STUB_PSQL=1 slot 2 'ETL STEP migrate:core exit=2' etl migrate:core --out-dir=/x --as-of=2026-11-10   # an explicit --out-dir is the CLI's own rejection (the stub mimics it)
 mkprod; EXTRA_ENV="PP_RELEASE_SHA=zz" slot 3 'cannot determine the release sha' etl migrate:core --as-of=2026-11-10; EXTRA_ENV=""
 slot 2 'etl COMMAND' etl migrate:nothing
 
@@ -386,7 +395,7 @@ mkprod
 echo "-- expected stage table counts come from the release DDL (pp_expected_stage_counts), PP_STAGE_EXPECT is an override only"
 ec() { # ec EXPECTED_RC TEXT: pp_expected_stage_counts in the fixture checkout $w/repo
   local want="$1" text="$2" out rc=0
-  out="$(env PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash -c ". '$w/repo/deploy/vps/lib.sh'; pp_expected_stage_counts" 2>&1)" || rc=$?
+  out="$(env ${EC_ENV:+"$EC_ENV"} PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash -c ". '$w/repo/deploy/vps/lib.sh'; pp_expected_stage_counts" 2>&1)" || rc=$?
   if [ "$rc" = "$want" ] && [[ "$out" == *"$text"* ]]; then ok "stage counts rc $rc: $text"; else bad "stage counts want rc $want + '$text', got rc $rc: $out"; fi
 }
 mkprod; sed -i '/^PP_STAGE_EXPECT=/d' "$w/env/prod.env"
@@ -394,8 +403,10 @@ ec 3 'cannot read'
 mkdir -p "$w/repo/apps/api/src/migration/ddl"
 printf 'create table "archive_cloud"."a1" (id int);\ncreate table "archive_cloud"."a2" (id int);\ncreate table "staging_cloud"."s1" (id int);\ncreate table "staging_cloud"."s2" (id int);\ncreate table "staging_cloud"."s3" (id int);\n' >"$w/repo/apps/api/src/migration/ddl/staging_cloud.sql"
 ec 0 'archive_cloud:2 staging_cloud:3'
-mkprod "PP_STAGE_EXPECT=archive_cloud:9 staging_cloud:9"; ec 0 'archive_cloud:9 staging_cloud:9'
-rm -rf "$w/repo/apps"; mkprod "PP_STAGE_EXPECT=archive_cloud:9 staging_cloud:9"; ec 0 'archive_cloud:9 staging_cloud:9'   # the override also works with no DDL
+mkprod; EC_ENV="PP_STAGE_EXPECT=archive_cloud:9 staging_cloud:9" ec 0 "archive_cloud:9 staging_cloud:9"; EC_ENV=""
+mkprod "PP_STAGE_EXPECT=archive_cloud:9 staging_cloud:9"; ec 2 "PP_STAGE_EXPECT is set in"   # a persisted value is refused (M-1 rule)
+EC_ENV="PP_STAGE_EXPECT=archive_cloud:9 staging_cloud:9" ec 2 "PP_STAGE_EXPECT is set in"   # and the shell value does not rescue it
+rm -rf "$w/repo/apps"; mkprod; EC_ENV="PP_STAGE_EXPECT=archive_cloud:9 staging_cloud:9" ec 0 "archive_cloud:9 staging_cloud:9"; EC_ENV=""   # the override also works with no DDL
 printf 'nothing\n' >/dev/null; mkdir -p "$w/repo/apps/api/src/migration/ddl"; : >"$w/repo/apps/api/src/migration/ddl/staging_cloud.sql"; mkprod; sed -i '/^PP_STAGE_EXPECT=/d' "$w/env/prod.env"; ec 3 'no tables found'
 real="$vps/../../apps/api/src/migration/ddl/staging_cloud.sql"
 ra="$(grep -c '^create table "archive_cloud"\.' "$real")"; rs="$(grep -c '^create table "staging_cloud"\.' "$real")"

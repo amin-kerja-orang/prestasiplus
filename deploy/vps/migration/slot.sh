@@ -25,7 +25,7 @@
 #     (its database name ends in _staging; the loader refuses production by design);
 #   - every migrate:* runs with NODE_ENV=production and PP_MIGRATE_TARGET_DB=<the production database>, as the
 #     migration role pp_etl (--env-from-file etl.env, cutover plan P3), with PP_GIT_SHA=<release sha> and
-#     --out-dir on the mounted reports folder; PP_ALLOW_MIGRATE_APPLY=1 is added only when --apply is on the command
+#     --out-dir on the mounted reports folder (not for migrate:core and migrate:activity: their CLIs reject it); PP_ALLOW_MIGRATE_APPLY=1 is added only when --apply is on the command
 #     line (always for migrate:archive-minimise and migrate:rollback, whose dry-runs need it too),
 #     PP_ALLOW_MIGRATE_ROLLBACK=1 only for migrate:rollback. Nothing is set permanently in api.env;
 #   - --files-dir HOST_DIR is mounted read-only at /files; with --apply the api uploads volume is mounted too and
@@ -396,7 +396,8 @@ cmd_etl() {
   [ "$c" != staging:profile ] || envs=(NODE_ENV=production)
   # The reports go to the mounted folder. The default of migrate:* is <repo root>/.migration-out = /app/.migration-out,
   # on the read-only root file system and not on the volume; staging:profile uses ./.migration-out of apps/api.
-  if [ "$out_given" = 0 ] && [ "$c" != staging:profile ]; then argv+=(--out-dir /app/apps/api/.migration-out); fi
+  # migrate:core and migrate:activity get NO --out-dir: their standalone CLIs reject it (unknown flag, exit 2).
+  if [ "$out_given" = 0 ] && [ "$c" != staging:profile ] && [ "$c" != migrate:core ] && [ "$c" != migrate:activity ]; then argv+=(--out-dir /app/apps/api/.migration-out); fi
   RUN_EXTRA=()
   if [ "$files_seen" = 1 ]; then
     [ -n "$files_host" ] || pp_die "--files-dir needs a directory" 2
@@ -487,7 +488,7 @@ cmd_gonogo() {
     echo "criterion 8: PITR on, last archived WAL $lsn at $last, failed_count $failed$([ "$failed" = 0 ] || echo '  -> check the archive before go')"
   fi
   local want_stage src_stage; want_stage="$(pp_expected_stage_counts 2>/dev/null || echo unknown)"
-  src_stage="derived from the release DDL"; [ -z "$(pp_cfg PP_STAGE_EXPECT '')" ] || src_stage="PP_STAGE_EXPECT override"
+  src_stage="derived from the release DDL"; [ -z "${PP_STAGE_EXPECT:-}" ] || src_stage="PP_STAGE_EXPECT override (shell)"
   echo "stage: $(schema_tables target_psql) in the target (expected $want_stage while the slot runs, $src_stage)"
   f="$(find "$(pp_cfg PP_BACKUP_DIR /var/backups/pretasiplus)" -maxdepth 1 -name 'pp-backup-*.dump' -printf '%T@ %f\n' 2>/dev/null | sort -rn | head -n1)"
   if [ -n "$f" ]; then age=$(( ($(date +%s) - ${f%%.*}) / 3600 )); echo "backup: newest dump ${f#* } is ${age} h old$([ "$age" -le 24 ] || echo '  -> NO-GO (older than 24 h)')"; else echo "backup: NO dump found  -> NO-GO"; fi

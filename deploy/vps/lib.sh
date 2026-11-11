@@ -85,10 +85,12 @@ pp_norm_domain() {
 
 # pp_expected_stage_counts: "archive_cloud:N staging_cloud:M", the table counts the RELEASE expects in the two raw-copy schemas after `slot.sh copy`.
 # Derived from the generated release DDL (apps/api/src/migration/ddl/staging_cloud.sql of this checkout, the file the migrate image's staging spec
-# renders); PP_STAGE_EXPECT is an explicit override only (it wins, also when the DDL is unreadable).
+# renders). PP_STAGE_EXPECT is an explicit one-run override read from the PROCESS ENVIRONMENT only (it wins, also when the DDL is unreadable); a prod.env that
+# carries it is refused, because a persisted value would silently override the DDL on every later copy (same rule as PP_VERIFY_ACCEPT_REJECTS).
 pp_expected_stage_counts() {
   local f="$PP_REPO/apps/api/src/migration/ddl/staging_cloud.sql" a s
-  if [ -n "$(pp_cfg PP_STAGE_EXPECT '')" ]; then pp_cfg PP_STAGE_EXPECT ''; return 0; fi
+  [ -z "$(pp_env_value "$PP_PROD_ENV" PP_STAGE_EXPECT)" ] || pp_die "PP_STAGE_EXPECT is set in $PP_PROD_ENV: it is a one-run override for the shell, never a persisted setting. Remove it from the file" 2
+  if [ -n "${PP_STAGE_EXPECT:-}" ]; then printf "%s" "$PP_STAGE_EXPECT"; return 0; fi
   [ -r "$f" ] || pp_die "cannot read $f to derive the expected stage table counts (set PP_STAGE_EXPECT='archive_cloud:N staging_cloud:M')" 3
   a="$(grep -c '^create table "archive_cloud"\.' "$f" || true)"; s="$(grep -c '^create table "staging_cloud"\.' "$f" || true)"
   [ "${a:-0}" -gt 0 ] && [ "${s:-0}" -gt 0 ] || pp_die "no tables found in $f" 3
