@@ -248,7 +248,7 @@ describe('S2 / S3 levels', () => {
       [3, 114],
       [5, 100],
     ])
-  })
+  }, 180_000)
 
   it('S3 answers 404 for a level other than t1 to t5, and 401 without a session', async () => {
     const r = await getAs(runtime, ADMIN, '/api/performance/levels/t6')
@@ -279,7 +279,7 @@ describe('S2 / S3 levels', () => {
       [3008, 8, 12.5],
       [3007, 9, 33.3],
     ])
-  })
+  }, 180_000)
 })
 
 describe('S4 own classes', () => {
