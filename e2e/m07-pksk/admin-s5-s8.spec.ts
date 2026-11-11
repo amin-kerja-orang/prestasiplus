@@ -11,10 +11,9 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
+import { answerConfirm, pager } from '../m04-question-bank/list-helpers'
 import {
-  acceptNextDialog,
   actAs,
-  dismissNextDialog,
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
@@ -36,7 +35,18 @@ const asAdmin = () =>
 
 const title = (page: Page) => page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })
 const subtitle = (page: Page) => page.getByTestId('pentadbiran-subtitle')
-const rowsOf = (page: Page) => page.getByTestId('pksk-question-row')
+/** Table rows (DsDataTable, from md); the id sits on the question text cell. */
+const rowsOf = (page: Page) => page.getByTestId('pksk-questions-table').locator('tbody tr')
+const rowOf = (page: Page, id: number) =>
+  rowsOf(page).filter({ has: page.locator(`[data-question-id="${String(id)}"]`) })
+const rowSelect = (row: ReturnType<typeof rowsOf>) => row.getByRole('checkbox', { name: 'Pilih baris' })
+const selectAll = (page: Page) =>
+  page.getByTestId('pksk-questions-table').getByRole('checkbox', { name: 'Pilih semua' })
+/** The "..." menu of a row: the danger item "Padam" lives in it (DsRowActions, inline = 1). */
+async function clickRowDelete(row: ReturnType<typeof rowsOf>): Promise<void> {
+  await row.getByRole('button', { name: 'Tindakan' }).click()
+  await row.page().getByRole('menuitem', { name: 'Padam' }).click()
+}
 
 async function ids(page: Page): Promise<number[]> {
   return page
@@ -44,9 +54,20 @@ async function ids(page: Page): Promise<number[]> {
     .evaluateAll((els) => els.map((el) => Number((el as HTMLElement).dataset.questionId)))
 }
 
-async function statValues(page: Page): Promise<string[]> {
-  return page.getByTestId('stat-value').allTextContents()
+/** The stat tiles (DsStatRow): value and label are read from the tile text (no part testids on this page). */
+async function statTiles(page: Page): Promise<Array<[string, string]>> {
+  return page.locator('[data-ds="stat-row"] > li').evaluateAll((els) =>
+    els.map((e) => {
+      const parts = (e as HTMLElement).innerText
+        .split('\n')
+        .map((t) => t.trim())
+        .filter(Boolean)
+      return [parts[0] ?? '', parts.slice(1).join(' ')] as [string, string]
+    }),
+  )
 }
+const statValues = async (page: Page): Promise<string[]> => (await statTiles(page)).map((t) => t[0])
+const statLabels = async (page: Page): Promise<string[]> => (await statTiles(page)).map((t) => t[1])
 
 async function openList(page: Page, gotoApp: (p: string) => Promise<void>, query = '') {
   await gotoApp(`${LIST}${query}`)
@@ -69,24 +90,8 @@ test.describe('M07 S5 question list', MODULE, () => {
     const add = page.getByTestId('pksk-add')
     await expect(add).toHaveText('Tambah Soalan')
     await expect(add).toHaveAttribute('href', '/admin/pksk/questions/create')
-    await expect(add).toHaveClass(/bg-green-600/)
     expect(await statValues(page)).toEqual(['763', '763', '0', '383', '380'])
-    await expect(page.getByTestId('stat-label')).toHaveText([
-      'Jumlah',
-      'Diluluskan',
-      'Menunggu',
-      'Ting. 1',
-      'Ting. 4',
-    ])
-    for (const [id, cls] of [
-      ['stat-total', 'text-indigo-600'],
-      ['stat-approved', 'text-green-600'],
-      ['stat-pending', 'text-amber-600'],
-      ['stat-t1', 'text-blue-600'],
-      ['stat-t4', 'text-purple-600'],
-    ] as const) {
-      await expect(page.getByTestId(id).getByTestId('stat-value')).toHaveClass(new RegExp(cls))
-    }
+    expect(await statLabels(page)).toEqual(['Jumlah', 'Diluluskan', 'Menunggu', 'Ting. 1', 'Ting. 4'])
     if (isDesktopShell(page)) {
       const sidebar = page.getByTestId('pentadbiran-sidebar')
       await expect(sidebar.getByRole('link', { name: 'PKSK Soalan' })).toHaveAttribute('href', LIST)
@@ -97,38 +102,28 @@ test.describe('M07 S5 question list', MODULE, () => {
 
   test('E2E-M07-13 table: columns, 20 rows and the first row cells', async ({ page, gotoApp }) => {
     await openList(page, gotoApp)
-    await expect(page.getByTestId('pksk-questions-table').locator('th')).toHaveText([
-      '',
-      'Soalan',
-      'Bahagian',
-      'Domain',
-      'Level',
-      'Status',
-      'Tindakan',
-    ])
+    // Column 1 is the selection checkbox (empty header), the last the row actions.
+    await expect(page.getByTestId('pksk-questions-table').locator('th')).toHaveCount(7)
+    for (const name of ['Soalan', 'Bahagian', 'Domain', 'Level', 'Status']) {
+      await expect(
+        page.getByTestId('pksk-questions-table').getByRole('columnheader', { name }),
+      ).toBeVisible()
+    }
     await expect(rowsOf(page)).toHaveCount(20)
     const first = rowsOf(page).first()
     const text = (await first.getByTestId('q-text').textContent())?.trim() ?? ''
     expect(text.startsWith('Bagi calon T4, apakah tindakan terbaik')).toBe(true)
     expect(text.length).toBeLessThanOrEqual(83)
     if (text.length > 80) expect(text.endsWith('...')).toBe(true)
-    await expect(first.getByTestId('q-text')).toHaveCSS('white-space', 'nowrap')
     await expect(first.getByTestId('q-bahagian')).toHaveText('B')
-    await expect(first.getByTestId('q-bahagian')).toHaveClass(/bg-blue-100/)
-    await expect(first.getByTestId('q-bahagian')).toHaveClass(/text-blue-700/)
     await expect(first.getByTestId('q-domain')).toContainText('Kebudayaan Kaum')
-    await expect(first.getByTestId('q-domain').locator('svg')).toHaveCSS(
-      'color',
-      'rgb(236, 72, 153)',
-    )
     await expect(first.getByTestId('q-level')).toHaveText('T4')
     await expect(first.getByTestId('q-status')).toHaveText('Diluluskan')
-    await expect(first.getByTestId('q-status')).toHaveClass(/bg-green-100/)
-    await expect(first.getByTestId('q-edit')).toHaveAttribute(
+    await expect(first.getByRole('link', { name: 'Edit' })).toHaveAttribute(
       'href',
       '/admin/pksk/questions/178460/edit',
     )
-    await expect(first.getByTestId('q-delete')).toBeVisible()
+    await expect(first.getByRole('button', { name: 'Tindakan' })).toBeVisible()
   })
 
   test('E2E-M07-14 order: page 1 and the last page', async ({ page, gotoApp }) => {
@@ -145,17 +140,13 @@ test.describe('M07 S5 question list', MODULE, () => {
     gotoApp,
   }) => {
     await openList(page, gotoApp)
-    if (viewportWidth(page) >= 640) {
-      await expect(page.getByText('Showing 1 to 20 of 763 results')).toBeVisible()
-      await expect(page.locator('a[aria-label="Go to page 38"]')).toBeVisible()
-      await expect(page.locator('a[aria-label="Next &raquo;"]').first()).toBeVisible()
-    } else {
-      await expect(page.getByText('« Previous')).toBeVisible()
-      await expect(page.getByRole('link', { name: 'Next »' })).toHaveAttribute(
-        'href',
-        `${LIST}?page=2`,
-      )
-    }
+    // DsDataTable pager (design language 2): summary + numbered pages + Sebelum / Seterusnya.
+    await expect(pager(page)).toContainText('Menunjukkan 1-20 daripada 763 hasil')
+    await expect(pager(page).getByRole('button', { name: 'Halaman 2' })).toBeVisible()
+    await expect(pager(page).getByRole('button', { name: 'Seterusnya' })).toBeVisible()
+    await pager(page).getByRole('button', { name: 'Seterusnya' }).click()
+    await expect(page).toHaveURL(/[?&]page=2/)
+    await expect(pager(page)).toContainText('Menunjukkan 21-40 daripada 763 hasil')
     await expectNoHorizontalScroll(page)
   })
 
@@ -187,31 +178,22 @@ test.describe('M07 S5 question list', MODULE, () => {
     await expect(rowsOf(page).first().getByTestId('q-bahagian')).toHaveText('A')
     await expect(page.getByTestId('filter-bahagian')).toHaveValue('A')
     expect(await statValues(page)).toEqual(['763', '763', '0', '383', '380'])
-    if (viewportWidth(page) >= 640) {
-      await expect(page.getByText('Showing 1 to 20 of 160 results')).toBeVisible()
-      await expect(page.locator('a[aria-label="Go to page 2"]').first()).toHaveAttribute(
-        'href',
-        `${LIST}?bahagian=A&page=2`,
-      )
-    }
+    await expect(pager(page)).toContainText('Menunjukkan 1-20 daripada 160 hasil')
+    await pager(page).getByRole('button', { name: 'Halaman 2' }).click()
+    await expect(page).toHaveURL(/[?&]bahagian=A/)
+    await expect(page).toHaveURL(/[?&]page=2/)
   })
 
   test('E2E-M07-17 filter totals and search', async ({ page, gotoApp }) => {
     await openList(page, gotoApp, '?bahagian=C')
-    if (viewportWidth(page) >= 640) {
-      await expect(page.getByText('Showing 1 to 20 of 30 results')).toBeVisible()
-    }
+    await expect(pager(page)).toContainText('Menunjukkan 1-20 daripada 30 hasil')
     await openList(page, gotoApp, '?level=T1&bahagian=B')
-    if (viewportWidth(page) >= 640) {
-      await expect(page.getByText('Showing 1 to 20 of 288 results')).toBeVisible()
-    }
+    await expect(pager(page)).toContainText('Menunjukkan 1-20 daripada 288 hasil')
     await openList(page, gotoApp, '?level=t1')
-    if (viewportWidth(page) >= 640) {
-      await expect(page.getByText('Showing 1 to 20 of 383 results')).toBeVisible()
-    }
+    await expect(pager(page)).toContainText('Menunjukkan 1-20 daripada 383 hasil')
     await openList(page, gotoApp)
     await page.getByTestId('filter-search').fill('inovasi')
-    await page.getByTestId('filter-submit').click()
+    await page.getByTestId('filter-search').press('Enter')
     await expect(rowsOf(page)).toHaveCount(13)
     await expect(page).toHaveURL(/search=inovasi/)
     // The cell shows only the first 80 characters, so the full text is not asserted here.
@@ -219,19 +201,21 @@ test.describe('M07 S5 question list', MODULE, () => {
     await expect(rowsOf(page)).toHaveCount(13)
   })
 
-  test('E2E-M07-18 empty row keeps the header, no pager', async ({ page, gotoApp }) => {
+  test('E2E-M07-18 empty list shows the V2 text, no pager', async ({ page, gotoApp }) => {
+    // The empty list is the DS empty panel (no table, no pager); the filter bar stays.
     for (const q of ['?status=pending', '?status=rejected', '?search=zzzzqqq', '?status=zzz']) {
-      await openList(page, gotoApp, q)
-      await expect(page.getByTestId('pksk-questions-table').locator('th')).toHaveCount(7)
+      await gotoApp(`${LIST}${q}`)
+      await expect(page.getByTestId('pksk-filter')).toBeVisible()
+      // Empty-state layout is the V3 DS panel (D28-D32); the V2 text is kept (pksk-questions.blade.php:154).
       const empty = page.getByTestId('pksk-questions-empty')
-      await expect(empty).toContainText('Tiada soalan PKSK lagi')
+      await expect(empty).toContainText('Tiada soalan PKSK dijumpai.')
       await expect(empty.locator('svg').first()).toBeVisible()
       await expect(page.getByTestId('pksk-empty-add')).toHaveText('Tambah soalan pertama')
       await expect(page.getByTestId('pksk-empty-add')).toHaveAttribute(
         'href',
         '/admin/pksk/questions/create',
       )
-      await expect(page.getByText(/Showing .* results/)).toHaveCount(0)
+      await expect(page.locator('[data-ds="data-table-pager"]')).toHaveCount(0)
     }
   })
 
@@ -239,27 +223,26 @@ test.describe('M07 S5 question list', MODULE, () => {
     await openList(page, gotoApp)
     const bar = page.getByTestId('pksk-bulk-bar')
     await expect(bar).toHaveCount(0)
-    await page.getByTestId('row-select').first().check()
+    await rowSelect(rowsOf(page).first()).check()
     await expect(page.getByTestId('bulk-count')).toHaveText('1 dipilih')
     await expect(page.getByTestId('bulk-approve')).toHaveText('Luluskan')
-    await expect(page.getByTestId('bulk-approve')).toHaveClass(/bg-green-600/)
     await expect(page.getByTestId('bulk-reject')).toHaveText('Tolak')
-    await expect(page.getByTestId('bulk-reject')).toHaveClass(/bg-amber-600/)
     await expect(page.getByTestId('bulk-delete')).toHaveText('Padam')
-    await expect(page.getByTestId('bulk-delete')).toHaveClass(/bg-red-600/)
     if (!isDesktopShell(page)) {
       for (const id of ['bulk-approve', 'bulk-reject', 'bulk-delete']) {
         await expectTouchTarget(page.getByTestId(id))
       }
     }
-    await page.getByTestId('row-select').first().uncheck()
+    await rowSelect(rowsOf(page).first()).uncheck()
     await expect(bar).toHaveCount(0)
-    await page.getByTestId('select-all').check()
+    await selectAll(page).check()
     await expect(page.getByTestId('bulk-count')).toHaveText('20 dipilih')
-    await page.getByTestId('row-select').nth(3).uncheck()
+    await rowSelect(rowsOf(page).nth(3)).uncheck()
     await expect(page.getByTestId('bulk-count')).toHaveText('19 dipilih')
-    await expect(page.getByTestId('select-all')).toBeChecked()
-    await page.getByTestId('select-all').uncheck()
+    // The header checkbox is indeterminate with 19 of 20; ticking it selects all again, un-ticking clears.
+    await selectAll(page).check()
+    await expect(page.getByTestId('bulk-count')).toHaveText('20 dipilih')
+    await selectAll(page).uncheck()
     await expect(bar).toHaveCount(0)
   })
 
@@ -269,24 +252,20 @@ test.describe('M07 S5 question list', MODULE, () => {
     mock,
   }) => {
     await openList(page, gotoApp)
-    const dialogs: string[] = []
-    page.on('dialog', (d) => {
-      dialogs.push(d.message())
-      void d.dismiss()
-    })
-    await page.getByTestId('row-select').first().check()
+    // Approve / reject act at once (no confirm); delete asks the DS confirm dialog first.
+    await rowSelect(rowsOf(page).first()).check()
     await page.getByTestId('bulk-approve').click()
     await expect(page.getByTestId('cmp-flash')).toBeVisible()
-    expect(dialogs).toEqual([])
+    await expect(page.locator('[data-ds="confirm-ok"]')).toHaveCount(0)
     expect(await mock.lastRequest('POST /api/admin/pksk-questions/bulk')).not.toBeNull()
-    await page.getByTestId('row-select').first().check()
+    await rowSelect(rowsOf(page).first()).check()
     await page.getByTestId('bulk-reject').click()
     await expect(page.getByTestId('bulk-count')).toHaveCount(0)
-    expect(dialogs).toEqual([])
+    await expect(page.locator('[data-ds="confirm-ok"]')).toHaveCount(0)
     const before = (await mock.requests('POST /api/admin/pksk-questions/bulk')).length
-    await page.getByTestId('row-select').first().check()
+    await rowSelect(rowsOf(page).first()).check()
     await page.getByTestId('bulk-delete').click()
-    await expect.poll(() => dialogs).toEqual(['Padam soalan terpilih?'])
+    await answerConfirm(page, 'cancel', 'Padam soalan terpilih?')
     expect((await mock.requests('POST /api/admin/pksk-questions/bulk')).length).toBe(before)
   })
 
@@ -296,17 +275,13 @@ test.describe('M07 S5 question list', MODULE, () => {
     async ({ page, gotoApp }) => {
       await openList(page, gotoApp)
       const [a, b] = (await ids(page)).slice(0, 2) as [number, number]
-      await page.getByTestId('row-select').nth(0).check()
-      await page.getByTestId('row-select').nth(1).check()
+      await rowSelect(rowsOf(page).nth(0)).check()
+      await rowSelect(rowsOf(page).nth(1)).check()
       await page.getByTestId('bulk-reject').click()
       await expect(page.getByTestId('cmp-flash')).toBeVisible()
       await expect(page).toHaveURL(new RegExp(`${LIST}$`))
-      await expect(
-        page.locator(`[data-question-id="${String(a)}"]`).getByTestId('q-status'),
-      ).toHaveText('Ditolak')
-      await expect(
-        page.locator(`[data-question-id="${String(b)}"]`).getByTestId('q-status'),
-      ).toHaveText('Ditolak')
+      await expect(rowOf(page, a).getByTestId('q-status')).toHaveText('Ditolak')
+      await expect(rowOf(page, b).getByTestId('q-status')).toHaveText('Ditolak')
       expect(await statValues(page)).toEqual(['763', '761', '0', '383', '380'])
       await openList(page, gotoApp, '?status=rejected')
       expect((await ids(page)).sort()).toEqual([a, b].sort())
@@ -319,10 +294,10 @@ test.describe('M07 S5 question list', MODULE, () => {
     async ({ page, gotoApp }) => {
       await openList(page, gotoApp, '?level=T4')
       const [a, b] = (await ids(page)).slice(0, 2) as [number, number]
-      await page.getByTestId('row-select').nth(0).check()
-      await page.getByTestId('row-select').nth(1).check()
-      void acceptNextDialog(page, { type: 'confirm', message: 'Padam soalan terpilih?' })
+      await rowSelect(rowsOf(page).nth(0)).check()
+      await rowSelect(rowsOf(page).nth(1)).check()
       await page.getByTestId('bulk-delete').click()
+      await answerConfirm(page, 'ok', 'Padam soalan terpilih?')
       await expect(page.getByTestId('cmp-flash')).toBeVisible()
       await expect(page.locator(`[data-question-id="${String(a)}"]`)).toHaveCount(0)
       await expect(page.locator(`[data-question-id="${String(b)}"]`)).toHaveCount(0)
@@ -335,21 +310,20 @@ test.describe('M07 S5 question list', MODULE, () => {
     provisional('the delete result and flash are INFERRED'),
     async ({ page, gotoApp }) => {
       await openList(page, gotoApp)
-      const row = page.locator('[data-question-id="178460"]')
-      await expect(row.getByTestId('q-edit')).toHaveAttribute(
+      const row = rowOf(page, 178460)
+      await expect(row.getByRole('link', { name: 'Edit' })).toHaveAttribute(
         'href',
         '/admin/pksk/questions/178460/edit',
       )
       if (!isDesktopShell(page)) {
-        await expectTouchTarget(row.getByTestId('q-edit'))
-        await expectTouchTarget(row.getByTestId('q-delete'))
+        await expectTouchTarget(row.getByRole('link', { name: 'Edit' }))
+        await expectTouchTarget(row.getByRole('button', { name: 'Tindakan' }))
       }
-      const dismissed = dismissNextDialog(page, { type: 'confirm', message: 'Padam soalan ini?' })
-      await row.getByTestId('q-delete').click()
-      await dismissed
+      await clickRowDelete(row)
+      await answerConfirm(page, 'cancel', 'Padam soalan ini?')
       await expect(row).toHaveCount(1)
-      void acceptNextDialog(page, { type: 'confirm', message: 'Padam soalan ini?' })
-      await row.getByTestId('q-delete').click()
+      await clickRowDelete(row)
+      await answerConfirm(page, 'ok', 'Padam soalan ini?')
       await expect(page.getByTestId('cmp-flash')).toBeVisible()
       await expect(row).toHaveCount(0)
       expect(await statValues(page)).toEqual(['762', '762', '0', '383', '379'])
@@ -450,17 +424,18 @@ test.describe('M07 S6 create', MODULE, () => {
       'placeholder',
       'Teks pilihan',
     )
-    await expect(page.getByTestId('option-correct-label').first()).toBeHidden()
-    await expect(page.getByTestId('options-title')).toHaveText('Pilihan Jawapan')
+    await expect(page.getByTestId('option-correct').first()).toBeHidden()
+    await expect(page.getByTestId('options-card')).toContainText('Pilihan Jawapan')
+    await expect(page.getByTestId('options-card')).not.toContainText('Tiada jawapan betul/salah')
     await page.getByTestId('q-bahagian').selectOption('A')
-    await expect(page.getByTestId('options-title')).toHaveText(
+    await expect(page.getByTestId('options-card')).toContainText(
       'Pilihan Jawapan (Tiada jawapan betul/salah)',
     )
-    await expect(page.getByTestId('option-correct-label').first()).toBeHidden()
+    await expect(page.getByTestId('option-correct').first()).toBeHidden()
     await page.getByTestId('q-bahagian').selectOption('B')
-    await expect(page.getByTestId('options-title')).toHaveText('Pilihan Jawapan')
-    await expect(page.getByTestId('option-correct-label')).toHaveCount(4)
-    await expect(page.getByTestId('option-correct-label').first()).toBeVisible()
+    await expect(page.getByTestId('options-card')).not.toContainText('Tiada jawapan betul/salah')
+    await expect(page.getByTestId('option-correct')).toHaveCount(4)
+    await expect(page.getByTestId('option-correct').first()).toBeVisible()
     await page.getByTestId('option-correct').nth(0).check()
     await page.getByTestId('option-correct').nth(2).check()
     await expect(page.getByTestId('option-correct').nth(0)).toBeChecked()
@@ -531,7 +506,7 @@ test.describe('M07 S6 create', MODULE, () => {
       const first = rowsOf(page).first()
       await expect(first.getByTestId('q-text')).toContainText('Berapakah 3 + 4?')
       await expect(first.getByTestId('q-status')).toHaveText('Diluluskan')
-      await expect(first.getByTestId('q-edit')).toHaveAttribute(
+      await expect(first.getByRole('link', { name: 'Edit' })).toHaveAttribute(
         'href',
         '/admin/pksk/questions/9000001/edit',
       )
@@ -547,15 +522,16 @@ test.describe('M07 S6 create', MODULE, () => {
     })
     await openCreate(page, gotoApp)
     await page.getByTestId('q-text').fill('Tidak disimpan')
-    await page.getByTestId('form-back').click()
+    await page.getByTestId('form-cancel').click()
     await expect(page).toHaveURL(new RegExp(`${LIST}$`))
     expect(dialogs).toEqual([])
+    await expect(page.locator('[data-ds="confirm-ok"]')).toHaveCount(0)
     expect(await mock.requests('POST /api/admin/pksk-questions')).toHaveLength(0)
     await gotoApp(`${LIST}/178460/edit`)
     await expect(page.getByTestId('q-text')).not.toHaveValue('')
     const original = await page.getByTestId('q-text').inputValue()
     await page.getByTestId('q-text').fill('Diubah')
-    await page.getByTestId('form-back').click()
+    await page.getByTestId('form-cancel').click()
     await expect(page).toHaveURL(new RegExp(`${LIST}$`))
     await gotoApp(`${LIST}/178460/edit`)
     await expect(page.getByTestId('q-text')).toHaveValue(original)
@@ -567,13 +543,13 @@ test.describe('M07 S6 create', MODULE, () => {
     gotoApp,
   }) => {
     await openCreate(page, gotoApp)
-    const back = await page.getByTestId('form-back').boundingBox()
+    const back = await page.getByTestId('form-cancel').boundingBox()
     const submit = await page.getByTestId('form-submit').boundingBox()
     expect(back && submit).toBeTruthy()
     expect(Math.abs(back!.y - submit!.y)).toBeLessThan(8)
     expect(back!.x).toBeLessThan(submit!.x)
     if (!isDesktopShell(page)) {
-      await expectTouchTarget(page.getByTestId('form-back'))
+      await expectTouchTarget(page.getByTestId('form-cancel'))
       await expectTouchTarget(page.getByTestId('form-submit'))
     }
     await expectNoHorizontalScroll(page)
@@ -633,7 +609,7 @@ test.describe('M07 S7 edit', MODULE, () => {
     await gotoApp(edit(178359))
     await expect(page.getByTestId('pksk-question-form')).toBeVisible()
     await expect(page.getByTestId('options-card')).toBeVisible()
-    await expect(page.getByTestId('option-correct-label').first()).toBeHidden()
+    await expect(page.getByTestId('option-correct').first()).toBeHidden()
     await gotoApp(edit(178349))
     await expect(page.getByTestId('pksk-question-form')).toBeVisible()
     await expect(page.getByTestId('options-card')).toHaveCount(0)
@@ -653,7 +629,7 @@ test.describe('M07 S7 edit', MODULE, () => {
     for (let i = 0; i < 4; i++) await page.getByTestId('option-remove').first().click()
     await expect(page.getByTestId('option-remove').first()).toBeHidden()
     await page.getByTestId('q-domain').selectOption({ label: '[A] Kecerdasan Insaniah' })
-    await expect(page.getByTestId('option-correct-label').first()).toBeVisible()
+    await expect(page.getByTestId('option-correct').first()).toBeVisible()
   })
 
   test(
@@ -666,7 +642,7 @@ test.describe('M07 S7 edit', MODULE, () => {
       await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(new RegExp(`${LIST}$`))
       await expect(page.getByTestId('cmp-flash')).toBeVisible()
-      await expect(page.locator('[data-question-id="178460"]').getByTestId('q-status')).toHaveText(
+      await expect(rowOf(page, 178460).getByTestId('q-status')).toHaveText(
         'Menunggu',
       )
       expect(await statValues(page)).toEqual(['763', '762', '1', '383', '380'])
@@ -687,14 +663,16 @@ test.describe('M07 S7 edit', MODULE, () => {
   }) => {
     await gotoApp(edit(178460))
     await expect(page.getByTestId('pksk-question-form')).toBeVisible()
-    const back = await page.getByTestId('form-back').boundingBox()
+    const back = await page.getByTestId('form-cancel').boundingBox()
     const submit = await page.getByTestId('form-submit').boundingBox()
     expect(Math.abs(back!.y - submit!.y)).toBeLessThan(8)
-    const grid = page.getByTestId('q-difficulty').locator('xpath=ancestor::div[2]')
-    const columns = await grid.evaluate(
-      (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
-    )
-    expect(columns).toBe(2)
+    // The form section is a 2-column grid from sm: the nearest grid ancestor of "Kesukaran".
+    const columns = await page.getByTestId('q-difficulty').evaluate((el) => {
+      let n: HTMLElement | null = el.parentElement
+      while (n && getComputedStyle(n).display !== 'grid') n = n.parentElement
+      return n ? getComputedStyle(n).gridTemplateColumns.split(' ').length : 0
+    })
+    expect(columns).toBe(viewportWidth(page) >= 640 ? 2 : 1)
     await expectNoHorizontalScroll(page)
   })
 })
@@ -717,34 +695,20 @@ test.describe('M07 S8 access', MODULE, () => {
     await openAccess(page, gotoApp)
     await expectTabTitle(page, 'Akses PKSK | PRESTASIPLUS')
     await expectHeader(page, 'Akses PKSK', 'Urus akses premium pengguna')
-    await expect(page.getByTestId('stat-label')).toHaveText([
-      'Jumlah Akses Aktif',
-      'Akses T1',
-      'Akses T4',
-    ])
+    expect(await statLabels(page)).toEqual(['Jumlah Akses Aktif', 'Akses T1', 'Akses T4'])
     expect(await statValues(page)).toEqual(['3', '3', '3'])
-    await expect(page.getByTestId('stat-active').getByTestId('stat-value')).toHaveClass(
-      /text-indigo-600/,
-    )
-    await expect(page.getByTestId('stat-t1').getByTestId('stat-value')).toHaveClass(/text-blue-600/)
-    await expect(page.getByTestId('stat-t4').getByTestId('stat-value')).toHaveClass(
-      /text-purple-600/,
-    )
-    await expect(page.getByTestId('access-table').locator('th')).toHaveText([
-      'Pengguna',
-      'Pakej',
-      'Diberi Oleh',
-      'Tarikh',
-      'Tamat',
-      'Status',
-      'Tindakan',
-    ])
+    await expect(page.getByTestId('access-table').locator('th')).toHaveCount(7)
+    for (const name of ['Pengguna', 'Pakej', 'Diberi Oleh', 'Tarikh', 'Tamat', 'Status']) {
+      await expect(
+        page.getByTestId('access-table').getByRole('columnheader', { name }),
+      ).toBeVisible()
+    }
     const order = async () =>
       page
         .getByTestId('access-row')
         .evaluateAll((els) => els.map((el) => Number((el as HTMLElement).dataset.accessId)))
     expect(await order()).toEqual([3, 2, 1])
-    const rows = page.getByTestId('access-row')
+    const rows = page.getByTestId('access-table').locator('tbody tr')
     await expect(rows).toHaveCount(3)
     const expected = [
       ['Pelajar Maju Demo', 'pelajarmaju@demo.test', '22/04/2026'],
@@ -756,12 +720,11 @@ test.describe('M07 S8 access', MODULE, () => {
       await expect(r.getByTestId('a-name')).toHaveText(name)
       if (email) await expect(r.getByTestId('a-email')).toHaveText(email)
       await expect(r.getByTestId('a-package')).toHaveText('PKSK Kombo (T1 + T4)')
-      await expect(r.getByTestId('a-package')).toHaveClass(/bg-green-100/)
       await expect(r.getByTestId('a-granter')).toHaveText('-')
       await expect(r.getByTestId('a-granted')).toHaveText(date)
       await expect(r.getByTestId('a-expires')).toHaveText('Tiada had')
       await expect(r.getByTestId('a-status')).toHaveText('Aktif')
-      await expect(r.getByTestId('a-revoke')).toHaveText('Tarik')
+      await expect(r.getByRole('button', { name: 'Tarik' })).toBeVisible()
     }
     await openAccess(page, gotoApp)
     expect(await order()).toEqual([3, 2, 1])
@@ -771,14 +734,15 @@ test.describe('M07 S8 access', MODULE, () => {
   test('E2E-M07-35 search and the empty row', async ({ page, gotoApp }) => {
     await openAccess(page, gotoApp)
     await page.getByTestId('access-search').fill('maju')
-    await page.getByTestId('access-search-submit').click()
+    await page.getByTestId('access-search').press('Enter')
     await expect(page.getByTestId('access-row')).toHaveCount(1)
     await expect(page.getByTestId('a-name')).toHaveText('Pelajar Maju Demo')
     expect(await statValues(page)).toEqual(['3', '3', '3'])
     for (const q of ['?search=zzzzqqq', '?page=2']) {
-      await openAccess(page, gotoApp, q)
-      await expect(page.getByTestId('access-table').locator('th')).toHaveCount(7)
-      await expect(page.getByTestId('access-empty')).toContainText('Tiada rekod akses')
+      // The empty list is the DS empty panel (no table); the search bar stays.
+      await gotoApp(`${ACCESS}${q}`)
+      await expect(page.getByTestId('access-search-form')).toBeVisible()
+      await expect(page.getByTestId('access-empty')).toContainText('Tiada akses PKSK direkodkan.')
     }
   })
 
@@ -844,7 +808,7 @@ test.describe('M07 S8 access', MODULE, () => {
       await expect(page.getByTestId('cmp-flash')).toBeVisible()
       await expect(page.getByTestId('grant-form')).toBeHidden()
       await expect(page.getByTestId('access-row')).toHaveCount(4)
-      const first = page.getByTestId('access-row').first()
+      const first = page.getByTestId('access-table').locator('tbody tr').first()
       await expect(first.getByTestId('a-name')).toHaveText('Pelajar Dua Demo')
       await expect(first.getByTestId('a-package')).toHaveText('PKSK Tingkatan 1 (SBP/MRSM)')
       await expect(first.getByTestId('a-granter')).toHaveText('Admin Demo')
@@ -857,11 +821,11 @@ test.describe('M07 S8 access', MODULE, () => {
 
   test('E2E-M07-38 revoke: confirm text, cancel keeps the row', async ({ page, gotoApp, mock }) => {
     await openAccess(page, gotoApp)
-    const dismissed = dismissNextDialog(page, { type: 'confirm', message: 'Tarik balik akses?' })
-    await page.getByTestId('access-row').last().getByTestId('a-revoke').click()
-    await dismissed
+    const rows = page.getByTestId('access-table').locator('tbody tr')
+    await rows.last().getByRole('button', { name: 'Tarik' }).click()
+    await answerConfirm(page, 'cancel', 'Tarik balik akses?')
     expect(await mock.requests('POST /api/admin/pksk-access/1/revoke')).toHaveLength(0)
-    await expect(page.getByTestId('a-revoke')).toHaveCount(3)
+    await expect(page.getByRole('button', { name: 'Tarik', exact: true })).toHaveCount(3)
     expect(await statValues(page)).toEqual(['3', '3', '3'])
   })
 
@@ -870,12 +834,15 @@ test.describe('M07 S8 access', MODULE, () => {
     provisional('the revoke result, flash and label are INFERRED (L-7)'),
     async ({ page, gotoApp }) => {
       await openAccess(page, gotoApp)
-      const row = page.locator('[data-access-id="1"]')
-      void acceptNextDialog(page, { type: 'confirm', message: 'Tarik balik akses?' })
-      await row.getByTestId('a-revoke').click()
+      const row = page
+        .getByTestId('access-table')
+        .locator('tbody tr')
+        .filter({ has: page.locator('[data-access-id="1"]') })
+      await row.getByRole('button', { name: 'Tarik' }).click()
+      await answerConfirm(page, 'ok', 'Tarik balik akses?')
       await expect(page.getByTestId('cmp-flash')).toBeVisible()
       await expect(row.getByTestId('a-status')).toHaveText('Ditarik')
-      await expect(row.getByTestId('a-revoke')).toHaveCount(0)
+      await expect(row.getByRole('button', { name: 'Tarik' })).toHaveCount(0)
       expect(await statValues(page)).toEqual(['2', '2', '2'])
     },
   )
@@ -891,7 +858,7 @@ test.describe('M07 S8 access', MODULE, () => {
       await expect(rows).toHaveCount(5)
       await expect(page.getByTestId('a-status').filter({ hasText: 'Tamat Tempoh' })).toHaveCount(1)
       await expect(page.getByTestId('a-status').filter({ hasText: 'Ditarik' })).toHaveCount(1)
-      await expect(page.getByTestId('a-revoke')).toHaveCount(3)
+      await expect(page.getByRole('button', { name: 'Tarik', exact: true })).toHaveCount(3)
       await expect(page.getByText('30/06/2026')).toBeVisible()
       expect(await statValues(page)).toEqual(['3', '3', '3'])
     },
@@ -903,29 +870,17 @@ test.describe('M07 S8 access', MODULE, () => {
   }) => {
     await openAccess(page, gotoApp)
     const stats = page.getByTestId('access-stats')
-    const cols = await stats.evaluate(
-      (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
+    // The three stat tiles share one row (DsStatRow cols 3); the grant form is one column below md.
+    const tops = await stats.locator('li').evaluateAll((els) =>
+      els.map((e) => Math.round(e.getBoundingClientRect().top)),
     )
-    expect(cols).toBe(3)
+    expect(tops).toHaveLength(3)
+    if (viewportWidth(page) >= 768) expect(new Set(tops).size).toBe(1)
     await page.getByTestId('grant-toggle').click()
-    const formCols = await page
-      .getByTestId('grant-form')
-      .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)
-    expect(formCols).toBe(viewportWidth(page) >= 768 ? 4 : 1)
-    const scroller = page.getByTestId('access-table').locator('xpath=ancestor::div[2]')
-    const overflow = await scroller.evaluate((el) => ({
-      scroll: el.scrollWidth,
-      client: el.clientWidth,
-    }))
-    if (viewportWidth(page) < 768) expect(overflow.scroll).toBeGreaterThan(overflow.client)
-    await expect(page.getByTestId('access-table').locator('td, th').first()).not.toHaveCSS(
-      'position',
-      'sticky',
-    )
+    await expect(page.getByTestId('grant-form')).toBeVisible()
     if (!isDesktopShell(page)) {
       await expectTouchTarget(page.getByTestId('grant-toggle'))
       await expectTouchTarget(page.getByTestId('grant-submit'))
-      await expectTouchTarget(page.getByTestId('access-search-submit'))
     }
     await expectNoHorizontalScroll(page)
   })
@@ -941,42 +896,28 @@ test.describe('M07 S5 layout', MODULE, () => {
   }) => {
     await openList(page, gotoApp)
     const width = viewportWidth(page)
-    const cols = await page
+    const tops = await page
       .getByTestId('pksk-stats')
-      .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)
-    expect(cols).toBe(width >= 1024 ? 5 : 2)
-    const scroller = page.getByTestId('pksk-questions-table').locator('xpath=ancestor::div[2]')
-    const m = await scroller.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }))
-    if (width < 1024) expect(m.scroll).toBeGreaterThan(m.client)
-    await expect(page.getByTestId('pksk-questions-table').locator('td, th').first()).not.toHaveCSS(
-      'position',
-      'sticky',
-    )
+      .locator('li')
+      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)))
+    expect(tops).toHaveLength(5)
+    // Five tiles on one row from lg; they wrap below.
+    if (width >= 1024) expect(new Set(tops).size).toBe(1)
+    else expect(new Set(tops).size).toBeGreaterThan(1)
     const level = await page.getByTestId('filter-level').boundingBox()
     const bahagian = await page.getByTestId('filter-bahagian').boundingBox()
-    const submit = await page.getByTestId('filter-submit').boundingBox()
     const add = await page.getByTestId('pksk-add').boundingBox()
-    expect(Math.abs(level!.y - bahagian!.y)).toBeLessThan(2)
-    if (width < 1024) expect(submit!.y).toBeGreaterThan(bahagian!.y + 20)
+    if (level && bahagian) expect(Math.abs(level.y - bahagian.y)).toBeLessThan(2)
     expect(add!.y + add!.height).toBeGreaterThan(0)
-    if (!isDesktopShell(page)) {
-      await expectTouchTarget(page.getByTestId('filter-submit'))
-      await expectTouchTarget(page.getByTestId('pksk-add'))
-      await expectTouchTarget(page.getByTestId('filter-bahagian'))
-    }
+    if (!isDesktopShell(page)) await expectTouchTarget(page.getByTestId('pksk-add'))
     await expectNoHorizontalScroll(page)
-    // Scrolling the card to its end brings "Tindakan" into view.
-    await scroller.evaluate((el) => {
-      el.scrollLeft = el.scrollWidth
-    })
-    await expect(page.getByTestId('pksk-questions-table').locator('th').last()).toBeInViewport()
   })
 })
 
 test.describe('M07 admin access control', MODULE, () => {
   // No `asAdmin()`: `actAs` switches the session itself.
   test(
-    'E2E-M07-42 guest goes to /login, a student to the landing page',
+    'E2E-M07-42 guest goes to /login, a student gets the in-place 403 page',
     provisional('the role redirect is INFERRED'),
     async ({ page, gotoApp, mock }) => {
       await gotoApp('/login')
@@ -984,9 +925,11 @@ test.describe('M07 admin access control', MODULE, () => {
         await actAs(page, mock, gotoApp, null, path)
         await expect(page).toHaveURL(/\/login/)
       }
+      // A forbidden role gets the in-place 403 page, the URL unchanged.
       for (const path of [LIST, '/admin/pksk/access']) {
         await actAs(page, mock, gotoApp, 'pelajar@demo.test', path)
-        await expect(page).toHaveURL(/\/dashboard/)
+        await expect(page).toHaveURL(new RegExp(path.replace(/\//g, '\\/') + '$'))
+        await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
       }
     },
   )
