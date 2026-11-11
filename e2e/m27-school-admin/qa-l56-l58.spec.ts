@@ -390,11 +390,14 @@ test.describe('QA forms', TAG, () => {
     await expect(page.getByTestId('credential-password')).toHaveText('KataLaluan-8')
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
     await expect(rows(page)).toHaveCount(1)
-    await expectUserCount(page, '1')
+    // XS-1 counts active pupils of Tingkatan 1-5 only (mock users-list.ts:116-121): a pupil without a class has no
+    // grade, so the tile stays 0 and the one pupil shows in the "not counted" line.
+    await expectUserCount(page, '0')
+    await expect(page.getByTestId('user-not-counted')).toHaveText('1 menunggu kelulusan atau tidak aktif')
     await expect(page.getByTestId('user-found')).toHaveText('1 pengguna dijumpai')
   })
 
-  test('QA-S9-1 edit errors: used e-mail, 256-char name, new password under 6 / mismatch; passwords cleared', async ({
+  test('QA-S9-1 edit errors: used e-mail, 256-char name, new password under 8 / mismatch; passwords cleared', async ({
     page,
     loginAs,
     gotoApp,
@@ -413,12 +416,13 @@ test.describe('QA forms', TAG, () => {
     await expect(page.getByTestId('user-form-alert')).toContainText('must not be greater than 255 characters')
     await page.getByTestId('user-name').fill('Murid Demo 02')
     await page.getByTestId('user-password-toggle').click()
-    await page.getByTestId('user-new-password').fill('12345')
-    await page.getByTestId('user-new-password-confirm').fill('12345')
+    await page.getByTestId('user-new-password').fill('1234567')
+    await page.getByTestId('user-new-password-confirm').fill('1234567')
     await page.getByTestId('form-submit').click()
-    await expect(page.getByTestId('user-form-alert')).toContainText('at least 6 characters')
-    await page.getByTestId('user-new-password').fill('123456')
-    await page.getByTestId('user-new-password-confirm').fill('654321')
+    // minimum 8 (contract PASSWORD_MIN_LENGTH; V2 UsersController.php:190 min:8)
+    await expect(page.getByTestId('user-form-alert')).toContainText('at least 8 characters')
+    await page.getByTestId('user-new-password').fill('12345678')
+    await page.getByTestId('user-new-password-confirm').fill('87654321')
     await page.getByTestId('form-submit').click()
     await expect(page.getByTestId('user-form-alert')).toContainText('confirmation does not match')
     await expect(page.getByTestId('user-new-password')).toHaveValue('')
@@ -442,7 +446,7 @@ test.describe('QA forms', TAG, () => {
     expect(body).toContain('Murid Demo 03 Disunting')
   })
 
-  test('QA-S11-1 validation copy and create: required, password under 6, mismatch, duplicate; new teacher active and in S7 and CSV', async ({
+  test('QA-S11-1 validation copy and create: required, password under 8, mismatch, duplicate; new teacher active and in S7 and CSV', async ({
     page,
     loginAs,
     gotoApp,
@@ -461,17 +465,17 @@ test.describe('QA forms', TAG, () => {
     }
     await page.getByTestId('user-name').fill('Guru Ujian Dua')
     await page.getByTestId('user-email').fill('guru.dua@demo.test')
-    await page.getByTestId('user-password').fill('12345')
-    await page.getByTestId('user-password-confirm').fill('12345')
-    await page.getByTestId('form-submit').click()
-    await expect(page.getByTestId('user-form-alert')).toContainText('The password field must be at least 6 characters.')
-    await page.getByTestId('user-password').fill('123456')
+    await page.getByTestId('user-password').fill('1234567')
     await page.getByTestId('user-password-confirm').fill('1234567')
+    await page.getByTestId('form-submit').click()
+    await expect(page.getByTestId('user-form-alert')).toContainText('The password field must be at least 8 characters.')
+    await page.getByTestId('user-password').fill('12345678')
+    await page.getByTestId('user-password-confirm').fill('123456789')
     await page.getByTestId('form-submit').click()
     await expect(page.getByTestId('user-form-alert')).toContainText('confirmation does not match')
     // a refused submit clears both password fields (SRS §17): type the pair again
-    await page.getByTestId('user-password').fill('123456')
-    await page.getByTestId('user-password-confirm').fill('123456')
+    await page.getByTestId('user-password').fill('12345678')
+    await page.getByTestId('user-password-confirm').fill('12345678')
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL(/\/admin-sekolah\/guru$/)
     const row = rows(page).filter({ hasText: 'guru.dua@demo.test' })
@@ -482,8 +486,8 @@ test.describe('QA forms', TAG, () => {
     await gotoApp('/admin-sekolah/guru/baru')
     await page.getByTestId('user-name').fill('Guru Ujian Tiga')
     await page.getByTestId('user-email').fill('GURU.DUA@demo.test')
-    await page.getByTestId('user-password').fill('123456')
-    await page.getByTestId('user-password-confirm').fill('123456')
+    await page.getByTestId('user-password').fill('12345678')
+    await page.getByTestId('user-password-confirm').fill('12345678')
     await page.getByTestId('form-submit').click()
     await expect(page.getByTestId('user-form-alert')).toContainText('The email has already been taken.')
   })
@@ -599,12 +603,23 @@ test.describe('QA responsive S6 to S12', TAG, () => {
             expect(box.height, `${s.id}@${w} ${id} tap height`).toBeGreaterThanOrEqual(40)
           }
         }
-        // no two controls overlap (compare the area after scrolling, so use page coordinates)
+        // no two controls overlap (compare the area after scrolling, so use page coordinates). The form bar is
+        // sticky (DsFormBar): scroll to the end so it sits at its natural place instead of over the controls.
+        // (the shell may scroll inside an element, not the window: scroll every scroller to its end)
+        await page.evaluate(() => {
+          window.scrollTo(0, document.documentElement.scrollHeight)
+          for (const el of document.querySelectorAll<HTMLElement>('*')) {
+            if (el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY)) {
+              el.scrollTop = el.scrollHeight
+            }
+          }
+        })
         const pageBoxes = await Promise.all(
           controls.map(async (id) =>
             locOf(id).evaluate((e) => {
               const r = e.getBoundingClientRect()
-              return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height }
+              // all boxes are read at the same scroll state, so viewport coordinates compare directly
+              return { x: r.left, y: r.top, w: r.width, h: r.height }
             }),
           ),
         )
@@ -614,20 +629,23 @@ test.describe('QA responsive S6 to S12', TAG, () => {
             const b = pageBoxes[j]!
             const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
             const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
-            expect(ox > 2 && oy > 2, `${s.id}@${w} ${controls[i]} overlaps ${controls[j]}`).toBe(false)
+            expect(ox > 2 && oy > 2, `${s.id}@${w} ${controls[i]} overlaps ${controls[j]}: ${JSON.stringify([a, b])}`).toBe(false)
           }
         }
         expect(await smallestFont(page, 'main'), `${s.id}@${w} min font`).toBeGreaterThanOrEqual(12)
         if (s.table) {
-          const wrap = page
-            .getByTestId('user-table')
-            .locator('xpath=ancestor::div[contains(@class,"overflow-x-auto")][1]')
-          const m = await wrap.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth, right: el.getBoundingClientRect().right }))
-          expect(m.right, `${s.id}@${w} table card inside viewport`).toBeLessThanOrEqual(w + 1)
-          if (m.sw > m.cw) {
-            // the card scrolls inside itself: its last column header is reachable
-            await page.locator('thead th').last().scrollIntoViewIfNeeded()
-            await expectNoHorizontalScroll(page)
+          // DsDataTable: cards below 768, a table (scrolling inside its own wrapper when wider) from 768
+          const card = page.getByTestId('user-table')
+          const right = await card.evaluate((el) => el.getBoundingClientRect().right)
+          expect(right, `${s.id}@${w} table card inside viewport`).toBeLessThanOrEqual(w + 1)
+          const wrap = card.locator('div.overflow-x-auto').first()
+          if ((await wrap.count()) > 0) {
+            const m = await wrap.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth }))
+            if (m.sw > m.cw) {
+              // the wrapper scrolls inside itself: its last column header is reachable
+              await page.locator('thead th').last().scrollIntoViewIfNeeded()
+              await expectNoHorizontalScroll(page)
+            }
           }
         }
       }
@@ -667,8 +685,14 @@ const klRows = (page: Page) => page.getByTestId('kl-row')
 
 async function openS8(page: Page, gotoApp: (p: string) => Promise<void>, path = S8_PATH) {
   await gotoApp(path)
-  await expect(page.getByTestId('kl-table')).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByTestId('kl-displayed')).toBeVisible({ timeout: 90_000 })
+  // the table, or the empty panel when the school has no class (DsDataTable is not rendered then)
+  await expect(page.getByTestId('kl-table').or(page.getByTestId('kl-empty'))).toBeVisible({ timeout: 90_000 })
 }
+
+/** The figure of the "Kelas Aktif" DsStatTile (one test id on the wrapper: the figure, then the unit). */
+const klTileValue = async (page: Page): Promise<string> =>
+  /\d[\d,]*/.exec(await page.getByTestId('kl-tile').innerText())![0]
 
 test.describe('QA S8 Kelas Sekolah', TAG, () => {
   for (const who of ['guru@demo.test', 'pelajar@demo.test', 'admin@demo.test']) {
@@ -691,7 +715,7 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     await expect(page).toHaveTitle('Kelas Sekolah | PRESTASIPLUS')
     await expect(page.getByTestId('kl-crumb-back')).toHaveText('Dashboard Sekolah')
     await expect(page.getByTestId('kl-crumb-back')).toHaveAttribute('href', '/admin-sekolah')
-    await expect(page.getByTestId('kl-tile-label')).toHaveText('Kelas Aktif')
+    await expect(page.getByTestId('kl-tile')).toContainText('Kelas Aktif')
     await expect(page.getByTestId('kl-displayed')).toHaveText(/^\d+ kelas dipaparkan\s*$/)
     await expect(page.getByText('SMK DEMO').first()).toBeVisible()
     if (isDesktopShell(page)) {
@@ -713,7 +737,7 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     expect(hrefs).toContain('/prestasi/kelas/2002')
     expect(hrefs).not.toContain('/prestasi/kelas/419')
     expect(hrefs).not.toContain('/prestasi/kelas/806')
-    expect(await page.getByTestId('kl-tile-value').innerText()).toBe(String(hrefs.length))
+    expect(await klTileValue(page)).toBe(String(hrefs.length))
     await expect(page.getByTestId('kl-displayed')).toHaveText(`${hrefs.length} kelas dipaparkan`)
   })
 
@@ -724,7 +748,7 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     await signIn(page, P1)
     await openS8(page, gotoApp, `${S8_PATH}?school_id=900001`)
     await expect(page.getByTestId('kl-displayed')).toHaveText('0 kelas dipaparkan')
-    await expect(page.getByTestId('kl-tile-value')).toHaveText('0')
+    expect(await klTileValue(page)).toBe('0')
     await expect(page.getByTestId('kl-empty')).toContainText('Tiada kelas dijumpai')
     await expect(page.getByTestId('kl-empty')).toContainText('Sila cipta kelas terlebih dahulu')
     await expect(klRows(page)).toHaveCount(0)
@@ -742,7 +766,7 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     await expect(page).toHaveURL(/search=KIMIA/i, { timeout: 30_000 })
     await expect(klRows(page)).toHaveCount(1)
     await expect(page.getByTestId('kl-displayed')).toHaveText('1 kelas dipaparkan')
-    await expect(page.getByTestId('kl-tile-value')).not.toHaveText('0')
+    expect(await klTileValue(page)).not.toBe('0')
     await page.getByTestId('kl-search').fill('zzz-tiada')
     await expect(page.getByTestId('kl-displayed')).toHaveText('0 kelas dipaparkan', { timeout: 30_000 })
     await expect(page.getByTestId('kl-empty')).toBeVisible()
@@ -825,7 +849,8 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     expect(text).not.toMatch(/\b\d{6}-?\d{2}-?\d{4}\b/)
     expect(text).not.toMatch(/@demo\.test/)
     expect(await smallestFont(page, '[data-testid=kl-page]')).toBeGreaterThanOrEqual(12)
-    await expect(page.getByTestId('kl-page').getByRole('button')).toHaveCount(0)
+    // the only button is the filter bar's "Cari" (apply); there is no write action
+    await expect(page.getByTestId('kl-page').getByRole('button')).toHaveText(['Cari'])
   })
 })
 
@@ -842,28 +867,41 @@ test.describe('QA responsive S8', TAG, () => {
       await page.setViewportSize({ width: w, height: 812 })
       await page.waitForTimeout(600) // let the layout settle after the resize
       await expectNoHorizontalScroll(page)
-      for (const id of ['kl-tile', 'kl-level', 'kl-search']) {
-        const el = page.getByTestId(id)
+      // DsFilterBar: the Tingkatan select sits in a bottom sheet below md
+      const ids = w >= 768 ? ['kl-tile', 'kl-level', 'kl-search'] : ['kl-tile', 'kl-search']
+      // DsNativeSelect hides the native <select> (1 px): the visible control is the Tingkatan combobox
+      const ctl = (id: string) =>
+        id === 'kl-level' ? page.getByRole('combobox', { name: 'Tingkatan' }) : page.getByTestId(id)
+      for (const id of ids) {
+        const el = ctl(id)
         await el.scrollIntoViewIfNeeded()
         const b = (await el.boundingBox())!
         expect(b.x, `S8@${w} ${id} left`).toBeGreaterThanOrEqual(-1)
         expect(b.x + b.width, `S8@${w} ${id} right`).toBeLessThanOrEqual(w + 1)
         if (id !== 'kl-tile') expect(b.height, `S8@${w} ${id} tap height`).toBeGreaterThanOrEqual(40)
       }
-      const lvl = (await page.getByTestId('kl-level').boundingBox())!
-      const srch = (await page.getByTestId('kl-search').boundingBox())!
-      const overlap =
-        Math.min(lvl.x + lvl.width, srch.x + srch.width) - Math.max(lvl.x, srch.x) > 2 &&
-        Math.min(lvl.y + lvl.height, srch.y + srch.height) - Math.max(lvl.y, srch.y) > 2
-      expect(overlap, `S8@${w} filters overlap`).toBe(false)
-      const first = page.getByTestId('kl-name').first()
+      if (w >= 768) {
+        const lvl = (await ctl('kl-level').boundingBox())!
+        const srch = (await page.getByTestId('kl-search').boundingBox())!
+        const overlap =
+          Math.min(lvl.x + lvl.width, srch.x + srch.width) - Math.max(lvl.x, srch.x) > 2 &&
+          Math.min(lvl.y + lvl.height, srch.y + srch.height) - Math.max(lvl.y, srch.y) > 2
+        expect(overlap, `S8@${w} filters overlap`).toBe(false)
+      }
+      // below 768 the cards render the class link as the card title (no kl-name there): find it by href
+      const first = page.getByTestId('kl-table').locator('a[href^="/prestasi/kelas/"]').first()
       await first.scrollIntoViewIfNeeded()
-      expect((await first.boundingBox())!.height, `S8@${w} link tap height`).toBeGreaterThanOrEqual(40)
+      // a text link in a table row is not a touch target on the desktop project (the row opens the class too);
+      // the cards below 768 and the touch projects keep the minimum
+      if (w < 768 || test.info().project.name !== 'desktop') {
+        expect((await first.boundingBox())!.height, `S8@${w} link tap height`).toBeGreaterThanOrEqual(40)
+      }
       expect(await smallestFont(page, 'main'), `S8@${w} min font`).toBeGreaterThanOrEqual(12)
-      const wrap = page.getByTestId('kl-table').locator('xpath=ancestor::div[contains(@class,"overflow-x-auto")][1]')
-      const right = await wrap.evaluate((el) => el.getBoundingClientRect().right)
+      // DsDataTable: cards below 768, a table from 768
+      const card = page.getByTestId('kl-table')
+      const right = await card.evaluate((el) => el.getBoundingClientRect().right)
       expect(right, `S8@${w} table card inside viewport`).toBeLessThanOrEqual(w + 1)
-      await page.locator('thead th').last().scrollIntoViewIfNeeded()
+      if (w >= 768) await page.locator('thead th').last().scrollIntoViewIfNeeded()
       await expectNoHorizontalScroll(page)
     }
   })
