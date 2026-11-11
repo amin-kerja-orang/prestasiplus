@@ -77,6 +77,11 @@ export interface VerifyOptions {
    */
   maxDeletedRatio?: number
   maxDeletedRows?: number
+  /**
+   * Staged run (KP-22): only these matrix entities (and the checks of their sectors) are verified and decide the status; the rest are reported as
+   * "not in this stage". Undefined = the full run. Resolve `--entities` / `--sector` with `stageEntities` (`sectors.ts`).
+   */
+  entities?: readonly string[]
 }
 
 export interface RollbackOptions {

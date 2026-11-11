@@ -17,6 +17,7 @@ import { ROLE_MAP } from '../transform/enums'
 import { buildGeo } from '../transform/reference'
 import { survivorSql } from './deleted'
 import { questionFileChecks, standaloneRejects } from './bank-checks'
+import { CHECK_SECTORS, type Sector } from './sectors'
 import { capped, entityOf, exists, reported, type CheckContext } from './check-kit'
 import { canonicalDetail, canonicalTotal, findingsDetail, findingsTotal, positionGapGroups, readCanonicalFindings, readGroupFindings } from './group-checks'
 import { readStimulusLinkFindings, stimulusLinkDetail, stimulusLinkTotal } from './stimulus-link-checks'
@@ -622,9 +623,15 @@ const CHECKS: readonly [string, (ctx: CheckContext) => Promise<StatCheck[]>][] =
 ]
 
 /** Runs every check. A check that cannot run is a `mismatch` (it must not pass silently); the cause is sanitised. */
-export async function runChecks(ctx: CheckContext): Promise<StatCheck[]> {
+export async function runChecks(ctx: CheckContext, stage?: ReadonlySet<Sector>): Promise<StatCheck[]> {
   const out: StatCheck[] = []
   for (const [label, check] of CHECKS) {
+    // A staged run (KP-22) runs only the checks of its sectors; the others are listed, never judged. A check with no sector row runs always.
+    const sectors = CHECK_SECTORS[label]
+    if (stage !== undefined && sectors !== undefined && !sectors.some((s) => stage.has(s))) {
+      out.push({ name: label, kind: 'counts', expected: null, actual: null, status: 'reported', detail: 'not in this stage' })
+      continue
+    }
     try {
       out.push(...(await check(ctx)))
     } catch (err) {

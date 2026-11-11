@@ -280,7 +280,8 @@ export const STANDALONE_ENTITIES = [
  * reason (an unknown subject, level or status) has no expectation: it is listed as unexplained and the check fails (unless the run allowlist accepts it).
  */
 export async function standaloneRejects({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
-  const counts = await rejectCounts(pool, source, STANDALONE_ENTITIES)
+  // Only the entities of this run: a sector that is not in the stage (not-run) keeps rejects of an older run that are not judged here.
+  const counts = await rejectCounts(pool, source, STANDALONE_ENTITIES.filter((n) => entityOf(entities, n) !== undefined))
   const out: StatCheck[] = []
   let expectedTotal = 0
   const computed = new Set<string>()

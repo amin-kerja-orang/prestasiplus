@@ -86,7 +86,7 @@ describe('migrate:* commands refuse unknown flags', () => {
     ])
     expect([...(KNOWN_FLAGS['migrate:all'] as ReadonlySet<string>)].sort()).toEqual(['as-of', 'batch-size', 'content-owner', 'files-dir', 'out-dir'])
     expect([...(KNOWN_FLAGS['migrate:delta'] as ReadonlySet<string>)].sort()).toEqual(['as-of', 'batch-size', 'content-owner', 'files-dir', 'out-dir', 'since'])
-    expect([...(KNOWN_FLAGS['migrate:verify'] as ReadonlySet<string>)]).toEqual(['out-dir'])
+    expect([...(KNOWN_FLAGS['migrate:verify'] as ReadonlySet<string>)].sort()).toEqual(['entities', 'out-dir', 'sector'])
     expect([...(KNOWN_FLAGS['migrate:rollback'] as ReadonlySet<string>)].sort()).toEqual(['confirm', 'out-dir'])
     expect([...(KNOWN_FLAGS['migrate:link-questions'] as ReadonlySet<string>)].sort()).toEqual(['batch-size', 'out-dir'])
     expect([...(KNOWN_FLAGS['migrate:export-question-reports'] as ReadonlySet<string>)]).toEqual(['out-dir'])

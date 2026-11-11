@@ -13,6 +13,7 @@ import { sanitizeDbError } from '../kit/errors'
 import { quoteIdent } from '../kit/sql'
 import { assertLegacySource, type LegacySource } from '../kit/types'
 import { runChecks } from './checks'
+import { sectorsOf } from './sectors'
 import { deletedAtSource, type DeletedAtSource } from './deleted'
 import { ENTITY_MATRIX, matrixEntry, type MatrixEntry } from './entities'
 import type { EntityCheck, StatCheck, VerifyOptions, VerifyReport } from './types'
@@ -21,6 +22,7 @@ export * from './types'
 export { ENTITY_MATRIX, CLAIMABLE_TABLES, ETL_DERIVED_CHILDREN, matrixEntry, type MatrixEntry } from './entities'
 export { renderVerifyJson, renderVerifyMarkdown, writeVerifyReport } from './render'
 export { rollbackLegacy, RollbackRefusedError } from './rollback'
+export { SECTORS, sectorEntities, stageEntities, type Sector } from './sectors'
 
 interface ReconRow {
   run_id: string
@@ -186,7 +188,16 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
     const entities: EntityCheck[] = []
     const deletedIds: Record<string, string[]> = {}
     const extra: StatCheck[] = []
+    const stage = options.entities === undefined ? undefined : new Set(options.entities)
     for (const entry of ENTITY_MATRIX) {
+      if (stage !== undefined && !stage.has(entry.entity)) {
+        // KP-22: a sector that is not loaded yet is not judged (its staging may legitimately differ from the last run).
+        entities.push({
+          entity: entry.entity, stagingTable: entry.stagingTable, targetTable: entry.targetTable, sourceCount: 0, eligibleCount: 0, loaded: 0, rejected: 0,
+          expectedDelta: 0, targetCount: null, status: 'not-run', note: 'not in this stage',
+        })
+        continue
+      }
       const recon1 = byEntity.get(entry.entity)
       // Only an entity that ran has a loaded count to compare; the others keep their own status.
       const deleted = recon1 ? await deletedAtSource(pool, source, entry) : null
@@ -219,7 +230,7 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
     }
     // An entity that ran but is not in the matrix cannot be verified: a gap in this file, so it fails the gate.
     for (const r of recon) {
-      if (matrixEntry(r.entity)) continue
+      if (matrixEntry(r.entity) || stage !== undefined) continue
       entities.push({
         entity: r.entity,
         stagingTable: null,
@@ -235,12 +246,13 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
       })
     }
 
-    const checks = [...(await runChecks({ pool, source, entities })), ...extra]
+    const checks = [...(await runChecks({ pool, source, entities }, stage === undefined ? undefined : sectorsOf(stage))), ...extra]
 
     const used = [...new Set(recon.map((r) => r.run_id))].sort((a, b) => Number(a) - Number(b))
     const runIds = used.length > 0 ? used : [...(options.runIds ?? [])]
     const required = new Map(ENTITY_MATRIX.map((m) => [m.entity, m.required]))
-    const entitiesPass = entities.every((e) => e.status === 'ok' || (e.status === 'not-run' && required.get(e.entity) !== true))
+    // In a staged run an entity inside the stage that did not run still fails when it is required; the entities outside the stage never do.
+    const entitiesPass = entities.every((e) => e.status === 'ok' || (e.status === 'not-run' && (stage?.has(e.entity) !== true || required.get(e.entity) !== true)))
     const checksPass = checks.every((c) => c.status !== 'mismatch')
     return {
       generatedAt: (options.now ?? new Date()).toISOString(),

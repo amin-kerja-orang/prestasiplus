@@ -4,7 +4,7 @@
  *   npm run migrate:all -w @pp/api -- [--dry-run | --apply] [--as-of YYYY-MM-DD] [--batch-size N]
  *       [--content-owner <v2 user id>] [--files-dir <export dir outside the repo>] [--out-dir <.migration-out path>]
  *   npm run migrate:delta -w @pp/api -- --since <ISO-8601 timestamp> --as-of <first load YYYY-MM-DD> [--apply] [same flags as migrate:all]
- *   npm run migrate:verify -w @pp/api -- [--out-dir <.migration-out path>]
+ *   npm run migrate:verify -w @pp/api -- [--out-dir <.migration-out path>] [--entities a,b] [--sector core|questions|structured|papers|terbit|activity]
  *   PP_ALLOW_MIGRATE_ROLLBACK=1 PP_ALLOW_MIGRATE_APPLY=1 PP_MIGRATE_TARGET_DB=<database name> npm run migrate:rollback -w @pp/api -- --confirm <database name> [--apply]
  *   npm run migrate:link-questions -w @pp/api -- [--apply] [--batch-size N]
  *   npm run migrate:export-question-reports -w @pp/api -- [--out-dir <.migration-out path>]
@@ -86,6 +86,7 @@ import { assertMinimiseAllowed, minimiseArchive } from './export/archive-minimis
 import { exportOpenQuestionReports } from './export/question-reports'
 import { prepareOutputDir, ProfileOutputError } from './profile'
 import { linkQuestions, LinkQuestionsBusyError } from './backfill/link-questions'
+import { stageEntities } from './verify/sectors'
 import { rollbackLegacy, runVerify, writeVerifyReport, type VerifyOptions, type VerifyReport } from './verify'
 
 type Env = Readonly<Record<string, string | undefined>>
@@ -433,7 +434,7 @@ const COMMON_FLAGS = ['as-of', 'batch-size', 'content-owner', 'files-dir', 'out-
 export const KNOWN_FLAGS: Readonly<Record<string, ReadonlySet<string>>> = {
   'migrate:all': new Set(COMMON_FLAGS),
   'migrate:delta': new Set([...COMMON_FLAGS, 'since']),
-  'migrate:verify': new Set(['out-dir']),
+  'migrate:verify': new Set(['out-dir', 'entities', 'sector']),
   'migrate:rollback': new Set(['confirm', 'out-dir']),
   'migrate:link-questions': new Set(['batch-size', 'out-dir']),
   'migrate:export-question-reports': new Set(['out-dir']),
@@ -583,7 +584,16 @@ export const migrateVerify: MigrateCommand = {
   async run(args, ctx) {
     assertKnownFlags('migrate:verify', args)
     const outDir = outDirOf(args)
-    const report = await runVerify({ pool: ctx.pool, env: ctx.env, source: 'cloud', outDir })
+    // KP-22 staged run: `--entities a,b` and/or `--sector core|questions|structured|papers|terbit|activity` (the default is the full run).
+    const entitiesFlag = flagValue(args, 'entities')
+    const sectorFlag = flagValue(args, 'sector')
+    let entities: string[] | null
+    try {
+      entities = stageEntities(entitiesFlag === undefined ? undefined : entitiesFlag.split(','), sectorFlag)
+    } catch (e) {
+      throw new ApplyGuardError(`--entities/--sector: ${e instanceof Error ? e.message : 'invalid'}`)
+    }
+    const report = await runVerify({ pool: ctx.pool, env: ctx.env, source: 'cloud', outDir, ...(entities === null ? {} : { entities }) })
     report.files = writeVerifyReport(report, outDir)
     printVerify(ctx, report)
     return report.status === 'pass' ? 0 : 1
