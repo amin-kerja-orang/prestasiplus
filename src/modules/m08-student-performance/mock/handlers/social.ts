@@ -217,7 +217,10 @@ export const socialRoutes: RouteDef[] = [
       const w = wallet.summary(user.id)
       const st = streak.get(user.id)
       const levelId = stats?.profileLevelId ?? user.grade
-      const level = levelId === null ? undefined : curriculum.level(levelId)
+      // Like the API (users-directory.adapter.ts:44-52, curriculum.repository.ts:132-135 `levelForGrade`): only an
+      // active, non-primary level is named; a Darjah or inactive level reads '' (D72).
+      const found = levelId === null ? undefined : curriculum.level(levelId)
+      const level = found && found.isActive && found.stage !== 'primary' ? found : undefined
       const body: PublicProfile = {
         id: user.id,
         name: user.name,

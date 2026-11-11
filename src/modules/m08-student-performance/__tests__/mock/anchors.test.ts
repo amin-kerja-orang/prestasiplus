@@ -660,7 +660,8 @@ describe('S16 – S18 timeline and public profile', () => {
       name: 'Admin Demo',
       firstName: 'Admin',
       schoolName: null,
-      levelName: 'Darjah 6', // OBSERVED profile level (M08 activity anchor), kept as stored
+      // The stored profile level is Darjah 6 (M08 activity anchor), hidden like the API does (D72).
+      levelName: '',
       joinedAt: '2025-10-25T20:00:00+08:00',
       syiling: 256,
       streak: { current: 1, best: 5 },
@@ -681,6 +682,18 @@ describe('S16 – S18 timeline and public profile', () => {
       progressPct: 51.2,
     })
   })
+  it('the public profile never names a Darjah or inactive level (D72, API levelForGrade)', async () => {
+    for (let id = 1; id <= 60; id++) {
+      let p: PublicProfile
+      try {
+        p = await get<PublicProfile>(null, `/api/public/students/${String(id)}`)
+      } catch {
+        continue // no such user
+      }
+      expect(p.levelName, `user ${String(id)}`).not.toMatch(/^Darjah/)
+    }
+  }, 120_000)
+
   it('"Tahap" is the tier ordinal by minSyiling: a Silver-tier user gets 2, Bronze 1 (INFERRED)', async () => {
     let silver: number | undefined
     for (let id = 2; id < 3300 && silver === undefined; id++) {
