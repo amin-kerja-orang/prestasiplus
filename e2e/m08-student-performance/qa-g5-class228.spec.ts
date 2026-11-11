@@ -1,6 +1,6 @@
 /**
  * M08 G5 QA: AC-M08-13.2a / CH-M08-01. Class 228 "Perlu Perhatian": the total 57 and the first three rows
- * (3 sesi 48.3%, 2 sesi 45%, 5 sesi 44.6%) are OBSERVED; the 11 / 46 split is INFERRED and is not asserted.
+ * (3 sesi 48.3%, 2 sesi 45%, 5 sesi 44.6%; V2 prints whole percents (TeacherController.php:75, :749), so 48% / 45% / 45%) are OBSERVED; the 11 / 46 split is INFERRED and is not asserted.
  */
 
 import { expect, test } from '../fixtures/test'
@@ -18,9 +18,9 @@ test.describe('M08 G5 class 228 attention list', { tag: [moduleTag(8)] }, () => 
       .getByTestId('attention-count')
       .locator('xpath=ancestor::*[self::section or self::div][.//text()[contains(., "sesi")]][1]')
     const text = await box.innerText()
-    const i1 = text.indexOf('3 sesi · 48.3% ketepatan')
+    const i1 = text.indexOf('3 sesi · 48% ketepatan')
     const i2 = text.indexOf('2 sesi · 45% ketepatan')
-    const i3 = text.indexOf('5 sesi · 44.6% ketepatan')
+    const i3 = text.indexOf('5 sesi · 45% ketepatan')
     expect(i1, text.slice(0, 400)).toBeGreaterThanOrEqual(0)
     expect(i2).toBeGreaterThan(i1)
     expect(i3).toBeGreaterThan(i2)

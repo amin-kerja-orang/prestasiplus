@@ -286,10 +286,10 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('home')).toHaveAttribute('href', '/')
 
     await expect(page.getByTestId('tier-pill')).toHaveText('🥉 Bronze')
-    // Admin Demo has no school (src/mock/core-data/accounts.ts:99). Its profile level comes from the activity stats
-    // (mock handlers/social.ts:219) and prints a hidden Darjah (D72): the chip must not show one.
+    // Admin Demo has no school (src/mock/core-data/accounts.ts:99) and its level is Darjah, which the API hides
+    // (curriculum.repository.ts:132-135, D72); PublicProfilePage renders the level chip only for a non-empty name.
     await expect(page.getByTestId('chip-school')).toHaveCount(0)
-    await expect(page.getByTestId('chip-level')).not.toContainText('Darjah')
+    await expect(page.getByTestId('chip-level')).toHaveCount(0)
     await expect(page.getByTestId('chip-joined')).toHaveText('Ahli sejak 25 Oktober 2025')
     await expect(page.getByTestId('coin-value')).toHaveText('256')
     await expect(page.getByTestId('mini-kombo')).toContainText('1')
