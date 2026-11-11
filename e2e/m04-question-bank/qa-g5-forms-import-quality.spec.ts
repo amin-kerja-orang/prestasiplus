@@ -83,12 +83,20 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
       '-- Tidak ditetapkan --',
     )
     await expect(byId(page, 'import-file')).toHaveAttribute('required', '')
-    await expect(byId(page, 'import-format-card')).toContainText(
-      /subject_id.*(atau guna Tetapan Lalai)/,
-    )
-    await expect(byId(page, 'import-format-card')).toContainText(
-      /education_level_id.*(atau guna Tetapan Lalai)/,
-    )
+    // C-51: the format card is the V2 copy (import.blade.php:104-118) plus the kertas line; subject and level come
+    // from the dialog only (QuestionImport.php:42-51 both required), never from the file.
+    const formatCard = byId(page, 'import-format-card')
+    await expect(formatCard).toContainText('Kolum mengikut kedudukan (baris pertama = header, dilangkau):')
+    await expect(formatCard.locator('li')).toHaveText([
+      '1. body — Teks soalan',
+      '2-5. option_a … option_d — Pilihan (kosongkan yang tiada)',
+      '6. correct — Jawapan (A/B/C/D)',
+      '7. difficulty — Kesukaran 1-5 (opsional, lalai 3)',
+      '8. kertas — Kertas 1, 2, 3 atau 4 (opsional, di hujung)',
+    ])
+    await expect(formatCard).toContainText('Subjek dan tahap dipilih dalam dialog import, bukan dalam fail CSV.')
+    await expect(formatCard).not.toContainText('subject_id')
+    await expect(formatCard).not.toContainText('education_level_id')
     await expect(byId(page, 'import-template-card')).toContainText('Muat Turun Template')
     await expect(byId(page, 'import-submit')).toContainText('Mula Import')
     await byId(page, 'import-submit').click()
@@ -119,6 +127,8 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
       page,
     }) => {
       await byId(page, 'import-default-subject').selectOption({ label: 'Matematik' })
+      // V2 QuestionImport.php:42-51: subject AND level are both required in the dialog; the file carries neither.
+      await byId(page, 'import-default-level').selectOption({ label: 'Tingkatan 4' })
       await byId(page, 'import-file').setInputFiles({
         name: 'qa.csv',
         mimeType: 'text/csv',
@@ -202,7 +212,9 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
       await expect(main.locator('thead th').filter({ hasText: h }).first()).toBeVisible()
     expect(await main.locator('tbody tr').count()).toBeGreaterThan(20)
     await expect(main.getByText('Mengikut Tingkatan', { exact: true })).toBeVisible()
-    await expect(main.getByText(/^Darjah 1$/)).toBeVisible()
+    // D72: Darjah levels are hidden from every list and chart; the first level is Tingkatan 1.
+    await expect(main.getByText(/^Tingkatan 1$/)).toBeVisible()
+    await expect(main.getByText(/^Darjah/)).toHaveCount(0)
     await expect(main.getByText(/^Tingkatan 5$/)).toBeVisible()
   })
 
