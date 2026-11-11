@@ -305,7 +305,7 @@ const accountMenu = computed(() =>
                   <!-- Avatar only (PO 2026-11-09): the name and role head the dropdown. -->
                   <button
                     type="button"
-                    class="group ml-1 grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline-none md:size-10"
+                    class="group ml-1 grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline-none staff:lg:size-10"
                     :aria-label="`Menu akaun: ${accountName || 'Akaun'}`"
                     :title="accountName || 'Akaun'"
                     data-testid="pentadbiran-account"
