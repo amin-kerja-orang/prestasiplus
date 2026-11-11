@@ -142,7 +142,8 @@ const stimuli = computed<StimulusData[]>(() => {
   if (text.trim() !== '') out.push({ id: 'stimulus', kind: 'passage', text })
   if (image.value) out.push({ id: 'figure', kind: 'image', src: image.value, alt: 'Rajah soalan' })
   // The linked rajah of the set (group or own stimulus, or the "Gambar tiada" placeholder): always shown with the text.
-  out.push(...toStimuliData(data.value?.stimuli))
+  // A passage that is the stem itself is shown once (the stem above), not twice.
+  out.push(...toStimuliData(data.value?.stimuli).filter((s) => !(s.kind === 'passage' && s.text !== undefined && s.text.trim() === text.trim())))
   return out
 })
 

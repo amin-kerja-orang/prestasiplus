@@ -113,6 +113,16 @@ describe('S5-T11 structured answer: the parts tree', () => {
     expect(w.text().split('Petikan tentang kadar.').length - 1).toBe(1)
   })
 
+  it('an own passage stimulus equal to the stem is shown once', async () => {
+    api.fetchStructuredDetail.mockResolvedValue({
+      ...DETAIL,
+      stimuli: [{ id: '7-1', kind: 'passage', label: 'Petikan', alt: 'Petikan', text: 'Petikan tentang kadar.' }],
+    })
+    const w = await open()
+    await settle()
+    expect(w.text().split('Petikan tentang kadar.').length - 1).toBe(1)
+  })
+
   it('shows the linked rajah (own or group stimulus) next to the text: its picture is rendered', async () => {
     api.fetchStructuredDetail.mockResolvedValue({
       ...DETAIL,
