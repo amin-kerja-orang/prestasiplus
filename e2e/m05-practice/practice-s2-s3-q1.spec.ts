@@ -13,6 +13,7 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
+  isDesktopShell,
   isMobileWidth,
   moduleTag,
   provisional,
@@ -282,7 +283,7 @@ test.describe('M05 S3 configuration', { tag: [moduleTag(5)] }, () => {
     )
     await expect(tid(page, 'config-ready')).toHaveCount(0)
     await expect(tid(page, 'config-start')).toHaveAttribute('aria-disabled', 'true')
-    await tid(page, 'config-start').click()
+    await tid(page, 'config-start').click({ force: true }) // aria-disabled link: Playwright treats it as not enabled
     await expect(page).toHaveURL(/\/practice\/MATH$/)
     await expectNoHorizontalScroll(page)
   })
@@ -359,7 +360,8 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, 'btn-check')).toHaveCount(0)
       await tid(page, 'option-B').click()
       await expect(tid(page, 'option-B')).toHaveAttribute('data-state', 'selected')
-      await expect(tid(page, 'option-B')).toHaveClass(/bg-primary\/18/)
+      // The tint is the option's own overlay span (src/ds/DsQuizOption.vue tint map), not the button.
+      await expect(tid(page, 'option-B').locator('span.bg-primary\\/18')).toHaveCount(1)
       await tid(page, 'btn-check').click()
       await expect(tid(page, 'quiz-feedback')).toBeVisible()
       await expect(tid(page, 'option-B')).toBeDisabled()
@@ -368,13 +370,13 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
       const correct = (await tid(page, 'quiz-feedback').getAttribute('data-correct')) === 'true'
       await expect(page.locator('[data-state=wrong]')).toHaveCount(correct ? 0 : 1)
       await expect(tid(page, 'feedback-title')).toHaveText(correct ? 'Betul!' : 'Salah')
-      // "Lapor Soalan" sits between the question card and the feedback card.
+      // "Lapor Soalan" follows the question card and the feedback card (QuizRunner.vue:609-622; not in V2 latih-tubi/quiz).
       const order = await page.evaluate(() => {
         const q = document.querySelector('[data-testid=quiz-question]')!
         const r = document.querySelector('[data-testid=btn-report]')!
         const f = document.querySelector('[data-testid=quiz-feedback]')!
         const pos = (a: Element, b: Element) => a.compareDocumentPosition(b)
-        return [pos(q, r), pos(r, f)].map((p) => (p & Node.DOCUMENT_POSITION_FOLLOWING) !== 0)
+        return [pos(q, f), pos(f, r)].map((p) => (p & Node.DOCUMENT_POSITION_FOLLOWING) !== 0)
       })
       expect(order).toEqual([true, true])
       await expectNoHorizontalScroll(page)
@@ -410,18 +412,21 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
   )
 
   test(
-    'the trial gate: an admin with no free questions goes to /pricing and no session is stored',
+    'the trial gate: an admin with no free questions sees the message in place (/pricing unrouted) and no session is stored',
     provisional('LS-8: the trial-exhausted start was never observed on live'),
     async ({ page, loginAs, gotoApp, mock }) => {
       await loginAs(ADMIN)
       await gotoApp('/practice/MATH')
       await tid(page, 'config-start').click()
-      await expect(page).toHaveURL(/\/pricing$/)
+      // D9 dead link: /pricing (M19) is not routed, so QuizRunner shows the message in place (QuizRunner.vue:20,153-156).
+      await expect(page).toHaveURL(/\/practice\/MATH\/quiz\?count=10$/)
+      await expect(tid(page, 'trial-exhausted-start')).toContainText('Baki percubaan percuma anda telah habis.')
+      await expect(tid(page, 'trial-exhausted-back')).toHaveAttribute('href', '/practice/MATH')
       const starts = await mock.requests('/api/practice/sessions')
       const posts = starts.filter((r) => r.method === 'POST')
       expect(posts).toHaveLength(1)
       expect(posts[0]?.status).toBe(402)
-      await expect(page.getByTestId('quiz-runner')).toHaveCount(0)
+      await expect(page.getByTestId('quiz-question')).toHaveCount(0)
     },
   )
 
@@ -467,7 +472,7 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
         els.map((e) => e.getAttribute('data-correct') === 'true'),
       )
       expect(flags).toEqual(right)
-      await expectTouchTarget(page.getByTestId('review-report').first())
+      if (!isDesktopShell(page)) await expectTouchTarget(page.getByTestId('review-report').first())
       await expectNoHorizontalScroll(page)
 
       await expect(tid(page, 'result-back')).toHaveAttribute('href', '/practice/MATH')
@@ -487,7 +492,7 @@ test.describe('M05 Q1 random quiz', { tag: [moduleTag(5)] }, () => {
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 15')
     const last = await mock.lastRequest('/api/practice/sessions')
     expect(last?.body).toMatchObject({
-      mode: 'random',
+      mode: 'latih_tubi',
       subjectCode: 'MATH',
       levelId: 10,
       difficulty: 3,
