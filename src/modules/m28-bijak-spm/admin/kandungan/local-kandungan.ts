@@ -27,10 +27,12 @@ import {
 } from '@pp/contract'
 
 import { toIsoMyt } from '@/lib/time/zone'
+import { api as appApi } from '@/api'
 
 import type { AdminPaperSummary, BankRow } from '../../domain/admin-types'
 import { bijakAdminServer } from '../../server/client'
 import { BijakError } from '../../server/errors'
+import { toBijakError } from '../../server/http'
 import { KANDUNGAN_ROUTES, TrackingRefusal, laneRouteOf, type KandunganApi, type LanePage, type LaneQuery, type LaneSubject, type TrackingLanePage } from './api'
 
 const ACTIVITIES: ServabilityActivity[] = [
@@ -41,6 +43,15 @@ const ACTIVITIES: ServabilityActivity[] = [
   'simulasi_kuiz',
   'jana_kertas',
 ]
+
+/** Body of a lane page as the API sends it (the part the Subjektif read uses). */
+interface LaneBody {
+  data?: ServabilityLaneRow[]
+  meta?: { page?: number; pageSize?: number; totalItems?: number }
+  subjects?: LaneSubject[]
+  count?: number
+  attention?: { count: number; text: string }[]
+}
 
 /** Lifecycle code of the API for a mock bank status. */
 const WIRE_STATUS: Record<BankRow['status'], string> = {
@@ -157,8 +168,9 @@ export function createMockKandungan(): KandunganApi {
     lane: ServabilityHubLane,
     rows: { attention: readonly unknown[] }[],
     total = rows.length,
+    attentionCount?: number,
   ): ServabilityHubCard => {
-    const attention = rows.filter((r) => r.attention.length > 0).length
+    const attention = attentionCount ?? rows.filter((r) => r.attention.length > 0).length
     const { title, description, attentionLabel } = SERVABILITY_HUB_CARDS[lane]
     return {
       lane,
@@ -181,19 +193,36 @@ export function createMockKandungan(): KandunganApi {
           !term || r.previewPlain.toLowerCase().includes(term) || r.id.toLowerCase().includes(term),
       )
   }
-  /** Subjektif lane rows: the structured and essay questions of the bank. The mock bank holds no answer keys, so no attention. */
-  const subjektifRows = (rows: BankRow[], q: LaneQuery): ServabilityLaneRow[] =>
-    matching(rows, q)
-      .filter((r) => r.kind !== 'objektif')
-      .filter((r) => !q.status || WIRE_STATUS[r.status] === q.status)
-      .map((r) => ({
-        id: r.id,
-        title: r.previewPlain.slice(0, 120),
-        meta: `#${r.id} · ${r.subjectName}`,
-        status: WIRE_STATUS[r.status],
-        attention: [],
-        actions: ['preview', 'edit'],
-      }))
+  /**
+   * Subjektif lane: the structured questions are owned by M04 (D12), so the lane is read from M04's mock of the same endpoint as the API
+   * (`/api/admin/servability/lanes/subjektif`), through the app transport. Rows carry the numeric question id, so `Sunting` opens the
+   * Skema & Rubrik editor of that question. Needs the M04 mock and an admin session, as every Kandungan screen does.
+   */
+  const subjektifRead = (q: LaneQuery): Promise<LanePage<ServabilityLaneRow> & { attention: number }> => {
+    const query = new URLSearchParams()
+    if (q.subjectId) query.set('subjectId', q.subjectId)
+    if (q.status) query.set('status', q.status)
+    if (q.search?.trim()) query.set('search', q.search.trim())
+    query.set('page', String(q.page ?? 1))
+    query.set('pageSize', String(q.pageSize ?? 25))
+    return appApi
+      .request<LaneBody>('GET', `/api/admin/servability/lanes/subjektif?${query.toString()}`, { raw: true })
+      .then((res) => {
+        const total = res.meta?.totalItems ?? res.data?.length ?? 0
+        return {
+          rows: res.data ?? [],
+          page: res.meta?.page ?? q.page ?? 1,
+          pageSize: res.meta?.pageSize ?? q.pageSize ?? 25,
+          total,
+          count: res.count ?? total,
+          subjects: res.subjects ?? [],
+          attention: (res.attention ?? []).reduce((n, line) => n + line.count, 0),
+        }
+      })
+      .catch((e: unknown) => {
+        throw toBijakError(e)
+      })
+  }
   /** Latih Tubi lane cells: the mock bank has subjects but no Tingkatan, so one cell per subject, every approved question servable. */
   const latihTubiCells = (rows: BankRow[], q: LaneQuery): ServabilityLatihTubiCell[] => {
     const totals = new Map<string, { name: string; n: number }>()
@@ -265,7 +294,7 @@ export function createMockKandungan(): KandunganApi {
 
   const api: KandunganApi = {
     async overview(): Promise<ServabilityOverview> {
-      const [rows, allPapers] = await Promise.all([bank(), admin.listAdminPapers()])
+      const [rows, allPapers, subjektifLanePage] = await Promise.all([bank(), admin.listAdminPapers(), subjektifRead({ page: 1, pageSize: 1 })])
       const approved = rows.filter((r) => r.status === 'terbit').length
       const papers = allPapers.filter((p) => p.status === 'terbit')
       const cells = latihTubiCells(rows, {})
@@ -273,7 +302,6 @@ export function createMockKandungan(): KandunganApi {
       /** Lanes the mock has rows for, Tracking A aside; Kertas Subjektif has none. */
       const cardRows: Partial<Record<ServabilityHubLane, { attention: readonly unknown[] }[]>> = {
         databank: databankRows(rows, {}),
-        subjektif: subjektifRows(rows, {}),
         'bijak-spm': paperRows(allPapers, {}),
         'latih-tubi': cells,
       }
@@ -296,9 +324,11 @@ export function createMockKandungan(): KandunganApi {
             basis: 'evaluated' as const,
           }
         }),
-        cards: SERVABILITY_HUB_LANES.map((lane) =>
-          cardOf(lane, laneRouteOf(lane) === KANDUNGAN_ROUTES.trackingA ? tracking : (cardRows[lane] ?? []), lane === 'latih-tubi' ? cells.reduce((sum, c) => sum + c.total, 0) : undefined),
-        ),
+        cards: SERVABILITY_HUB_LANES.map((lane) => {
+          // The Subjektif card is measured on M04's structured store, the same rows as its lane (D11).
+          if (lane === 'subjektif') return cardOf(lane, [], subjektifLanePage.total, subjektifLanePage.attention)
+          return cardOf(lane, laneRouteOf(lane) === KANDUNGAN_ROUTES.trackingA ? tracking : (cardRows[lane] ?? []), lane === 'latih-tubi' ? cells.reduce((sum, c) => sum + c.total, 0) : undefined)
+        }),
       }
     },
 
@@ -316,7 +346,9 @@ export function createMockKandungan(): KandunganApi {
     },
 
     async subjektifLane(q: LaneQuery): Promise<LanePage<ServabilityLaneRow>> {
-      return page(subjektifRows(await bank(), q), q, admin.subjects().map((s) => ({ id: s.code, name: s.name })))
+      const { attention: _attention, ...lane } = await subjektifRead(q)
+      void _attention
+      return lane
     },
 
     async latihTubiLane(q: LaneQuery): Promise<LanePage<ServabilityLatihTubiCell>> {

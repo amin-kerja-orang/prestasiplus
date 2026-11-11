@@ -68,6 +68,12 @@ const NEWEST_FIRST = [
   { field: 'id', dir: 'asc' },
 ] as const
 
+/** A leaf part (no other sub-question names it as parent) with a text answer and no rubric row: the servability lane's `no_scheme` reason. */
+export function laneHasNoScheme(q: StructuredQuestion): boolean {
+  const parents = new Set(q.subQuestions.flatMap((s) => (s.parentSubId === null ? [] : [s.parentSubId])))
+  return q.subQuestions.some((s) => !parents.has(s.id) && s.answerType === 'text' && s.rubrics.length === 0)
+}
+
 function contract(message: string): never {
   throw new RepositoryError('CONTRACT', `structured: ${message}`)
 }
@@ -164,6 +170,54 @@ export const structuredRepo = defineRepository({
             published: store.count({ ...scope, status: 'published' }),
             bySubject: store.groupCount('subjectId', scope),
           },
+        }
+      },
+      /**
+       * Admin servability lane "Subjektif" (M28 Kandungan, API `subjektifLane`): every structured question of a visible level (any status),
+       * newest id first; `search` matches the stimulus (case-insensitive). `status` is the lifecycle code of the lane: the store holds only
+       * `published` (approved) and `draft`, so `review` and `archived` match nothing.
+       */
+      laneList: (filter: {
+        subjectId?: number
+        status?: 'approved' | 'review' | 'draft' | 'archived'
+        search?: string
+        page: number
+        pageSize: number
+      }) => {
+        const status =
+          filter.status === undefined
+            ? undefined
+            : filter.status === 'approved'
+              ? 'published'
+              : filter.status === 'draft'
+                ? 'draft'
+                : null
+        if (status === null) return { rows: [] as StructuredQuestion[], total: 0 }
+        const term = filter.search?.trim().toLowerCase() ?? ''
+        return store.query({
+          where: compact<Where<StructuredQuestion>>({
+            subjectId: filter.subjectId,
+            educationLevelId: levelScope(),
+            status,
+          }),
+          ...(term !== '' ? { match: (q: StructuredQuestion) => q.stimulus.toLowerCase().includes(term), cacheKey: `lane-search:${term}` } : {}),
+          sort: { field: 'id', dir: 'desc' },
+          page: filter.page,
+          pageSize: filter.pageSize,
+        })
+      },
+      /** The hub card of the lane, on the same rows: the rows, and those pupils could be served that have a leaf part with no rubric. */
+      laneFigures: (): { total: number; attention: number } => {
+        const where = { educationLevelId: levelScope() } as Where<StructuredQuestion>
+        return {
+          total: store.count(where),
+          attention: store.query({
+            where: { ...where, status: 'published', isActive: true },
+            match: laneHasNoScheme,
+            cacheKey: 'lane-no-scheme',
+            page: 1,
+            pageSize: 1,
+          }).total,
         }
       },
       /** M10 S17 (`structured.list`): `updatedAt` desc, ties id asc (BR-M10-20). */
