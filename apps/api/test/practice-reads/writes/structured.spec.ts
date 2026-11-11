@@ -644,6 +644,24 @@ describe('AC1 GET /api/practice/structured/:id', () => {
         await t.db.query('delete from stimuli where id = $1::bigint', [sid])
       }
     })
+
+    it('KP-15 per item: one unshowable picture and a passage give the placeholder AND the passage, in order', async () => {
+      const q = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzrajah gambar tiada dengan petikan' })
+      const pic = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label) values ('diagram', 'Rajah 4') returning id::text id`))[0]?.id as string
+      const txt = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', 'Petikan', 'Petikan zzkekal.') returning id::text id`))[0]?.id as string
+      try {
+        await t.db.query('insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, 1), ($1, $3, 2)', [await liveVersion(q), pic, txt])
+        const d = await detail(q)
+        expect(d.stimuli?.map((s) => [s.label, s.text === 'Petikan zzkekal.' ? s.text : null])).toEqual([
+          ['Gambar tiada', null],
+          ['Petikan', 'Petikan zzkekal.'],
+        ])
+      } finally {
+        await t.db.query('update questions set is_active = false where id = $1', [q])
+        await t.db.query('delete from question_version_stimuli where stimulus_id = any($1::bigint[])', [[pic, txt]])
+        await t.db.query('delete from stimuli where id = any($1::bigint[])', [[pic, txt]])
+      }
+    })
   })
 
   it('backUrl follows scope and track (FR-M05-137)', async () => {

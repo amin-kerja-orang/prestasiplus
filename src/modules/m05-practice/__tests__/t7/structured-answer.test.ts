@@ -123,6 +123,36 @@ describe('S5-T11 structured answer: the parts tree', () => {
     expect(w.text().split('Petikan tentang kadar.').length - 1).toBe(1)
   })
 
+  it('stem dedupe: a passage equal to the stem (ignoring outer spaces) is dropped; a different passage is kept; picture and table are unaffected', async () => {
+    api.fetchStructuredDetail.mockResolvedValue({
+      ...DETAIL,
+      stimuli: [
+        { id: '7-1', kind: 'passage', label: 'Sama', alt: 'Sama', text: '  Petikan tentang kadar.  ' },
+        { id: '7-2', kind: 'passage', label: 'Lain', alt: 'Lain', text: 'Petikan lain zzkekal.' },
+        { id: '7-3', kind: 'image', label: 'Rajah 1', alt: 'Rajah 1', image: { url: '/api/files/tokenBbbbbbbbbbbbbbbbb' } },
+        { id: '7-4', kind: 'table', label: 'Jadual 1', alt: 'Jadual 1', table: { head: ['zzkepala'], rows: [['zzsel']] } },
+      ],
+    })
+    const w = await open()
+    await settle()
+    // The stem once (the stimulus group above), the equal passage not repeated.
+    expect(w.text().split('Petikan tentang kadar.').length - 1).toBe(1)
+    expect(w.text()).toContain('Petikan lain zzkekal.')
+    expect(document.body.querySelector('img[src="/api/files/tokenBbbbbbbbbbbbbbbbb"]')).not.toBeNull()
+    expect(w.text()).toContain('zzsel')
+  })
+
+  it('stem dedupe: with an empty stem a passage is kept', async () => {
+    api.fetchStructuredDetail.mockResolvedValue({
+      ...DETAIL,
+      stimulus: '',
+      stimuli: [{ id: '7-1', kind: 'passage', label: 'Petikan', alt: 'Petikan', text: 'Petikan zzsaja.' }],
+    })
+    const w = await open()
+    await settle()
+    expect(w.text()).toContain('Petikan zzsaja.')
+  })
+
   it('shows the linked rajah (own or group stimulus) next to the text: its picture is rendered', async () => {
     api.fetchStructuredDetail.mockResolvedValue({
       ...DETAIL,

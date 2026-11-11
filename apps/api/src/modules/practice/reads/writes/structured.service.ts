@@ -10,11 +10,12 @@ import { idToString } from '../../../../db/ids'
 import { ownStimuliOf } from '../../../bijak/kuiz/own-stimuli'
 import { CurriculumRepository } from '../../../curriculum'
 import { FilesService } from '../../../files'
-import { mediaFileIds, placeholderStimulus, practiceMediaOf } from '../../question-bridge/practice-media'
+import { mediaFileIds } from '../../question-bridge/practice-media'
 import { PracticePorts, type PracticeStructuredAudit } from '../../ports'
 import { isStructuredVisible, QuestionsRepository, type QuestionPart, type QuestionRecord } from '../../../questions'
 import { SchoolsRepository } from '../../../schools'
 import { UsersRepository } from '../../../users'
+import { structuredStimuliOf } from './structured-stimuli'
 import { StructuredAttemptsRepository } from './attempts.repository'
 import { StructuredListingRepository, type DegradedSet } from './listing.repository'
 import { flatten } from './flatten'
@@ -298,16 +299,15 @@ export class StructuredService {
   /**
    * The rajah of a set (KP-15, D90/D105): the stimulus of its group and the stimuli linked straight to it, read by the one reader the drills and the
    * quiz use. A linked figure always shows; one that cannot be shown (no file token, shared but not grouped, unknown kind) shows the placeholder
-   * "Gambar tiada", never the text without its figure. A set with no stimulus has none.
+   * "Gambar tiada" in its own place (the other stimuli stay), never the text without its figure. A set with no stimulus has none.
    */
   private async stimuliOf(q: QuestionRecord): Promise<NonNullable<PracticeReadStructuredDetail['stimuli']>> {
     const group = q.groupId === null ? null : ((await this.questions.groupsByIds([q.groupId]))[0] ?? null)
     const own = await ownStimuliOf(this.questions, [q], new Map(group === null || q.groupId === null ? [] : [[q.groupId, group] as const]))
     const files = mediaFileIds(q, group, own)
     const tokens = files.length === 0 || this.files === undefined ? new Map<string, string>() : await this.files.publicIdsOf(files)
-    const media = practiceMediaOf(q, group, own, tokens)
-    if (media === null) return [placeholderStimulus(q.id)]
-    return media.stimuli
+    // Per item (KP-15): only the stimulus that cannot be shown becomes the placeholder; the drills and the quiz still refuse the whole question.
+    return structuredStimuliOf(q, group, own, tokens)
   }
 
   // --- #16 detail ----------------------------------------------------------------------------------
