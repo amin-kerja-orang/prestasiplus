@@ -23,6 +23,7 @@ import {
   grouped,
   isLevelCode,
   levelNumber,
+  pctTrim,
   pctWhole,
   plain,
   riskText,
@@ -62,7 +63,7 @@ const stats = computed<StatSpec[]>(() => {
   return [
     { id: 'kelas', label: 'Kelas', value: plain(d.classes), icon: 'chalkboard' },
     { id: 'murid', label: 'Murid', value: plain(d.students), icon: 'users' },
-    { id: 'ketepatan', label: 'Purata Ketepatan', value: pctWhole(capPct(d.accuracy)), icon: 'target' },
+    { id: 'ketepatan', label: 'Purata Ketepatan', value: pctTrim(capPct(d.accuracy)), icon: 'target' },
     { id: 'sesi', label: 'Jumlah Sesi', value: grouped(d.sessions), icon: 'lightning' },
     { id: 'on', label: 'On Track', value: plain(d.onTrack), icon: 'check-circle' },
     {

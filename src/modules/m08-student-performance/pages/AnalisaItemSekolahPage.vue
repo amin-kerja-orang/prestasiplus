@@ -25,6 +25,7 @@ import {
   LEVEL_ICON,
   dec2,
   grouped,
+  pctTrim,
   pctWhole,
   ratioPct,
 } from '../lib/prestasi/format'
@@ -149,7 +150,7 @@ const stats = computed<StatSpec[]>(() => {
     {
       id: 'ketepatan',
       label: 'Ketepatan Keseluruhan',
-      value: d.accuracy === null ? DASH : pctWhole(d.accuracy),
+      value: d.accuracy === null ? DASH : pctTrim(d.accuracy),
       icon: 'target',
     },
   ]

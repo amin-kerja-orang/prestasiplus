@@ -352,7 +352,7 @@ describe('S3 TingkatanPage', () => {
     const w = await render(TingkatanPage, '/prestasi/tingkatan/t4', '/prestasi/tingkatan/:code')
     expect(api.fetchLevelDetail.mock.calls[0]?.[0]).toBe('t4')
     expect(t(w, 'level-summary').text()).toBe('Dashboard Prestasi Tingkatan · 13 kelas · 5 subjek')
-    expect(t(w, 'stat-ketepatan').text()).toContain('64%')
+    expect(t(w, 'stat-ketepatan').text()).toContain('63.9%')
     expect(t(w, 'headcount-pct').text()).toBe('0% On Track')
     expect(tr(w, 'class-row-5').text()).toContain('Lihat →')
     expect(tr(w, 'class-row-806').text()).not.toContain('Lihat')
@@ -578,7 +578,7 @@ describe('S9 AnalisaItemSekolahPage', () => {
     )
     expect(t(w, 'school-name').text()).toBe('SMK Demo Tinggi')
     expect(t(w, 'school-answers').text()).toBe('10,194')
-    expect(t(w, 'stat-ketepatan').text()).toContain('72%')
+    expect(t(w, 'stat-ketepatan').text()).toContain('71.7%')
     expect(t(w, 'diff-sukar').text()).toContain('2')
     expect(w.findAll('[data-testid^=question-][data-testid$="1"]').length).toBeGreaterThan(0)
     // Pills are alphabetical (live), not in order of first appearance (Sains comes first in the data).
