@@ -20,12 +20,12 @@ describe('paper rules (44-F4)', () => {
     expect(validatePaperFiles(Array.from({ length: 6 }, (_, i) => f(`a${String(i)}.pdf`)))).toBe(
       'Maksimum 5 fail, saiz maksimum 20MB setiap fail',
     )
-    expect(validatePaperFiles([f('a.pdf'), f('b.doc')])).toBe(
+    expect(validatePaperFiles([f('a.pdf'), f('b.png')])).toBe(
       'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.',
     )
-    expect(validatePaperFiles([f('a.xls')])).toContain('Jenis fail tidak disokong')
+    expect(validatePaperFiles([f('a.txt')])).toContain('Jenis fail tidak disokong')
     expect(validatePaperFiles([f('a.pdf', 25 * MB)])).toBe('Fail melebihi saiz maksimum 20 MB.')
-    expect(validatePaperFiles([f('a.pdf', 20 * MB), f('b.DOCX'), f('c.xlsx')])).toBeNull()
+    expect(validatePaperFiles([f('a.pdf', 20 * MB), f('b.DOCX'), f('c.xlsx'), f('d.doc'), f('e.XLS')])).toBeNull()
   })
 
   it('field texts and the confirmation', () => {

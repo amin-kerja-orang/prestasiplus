@@ -326,7 +326,7 @@ async function submit(): Promise<void> {
           :model-value="files"
           name="files[]"
           multiple
-          accept=".pdf,.docx,.xlsx"
+          accept=".pdf,.doc,.docx,.xls,.xlsx"
           preview="none"
           label="Klik untuk pilih fail"
           hint="PDF (teks), DOCX, XLSX — maks 5 fail, 20MB setiap fail"

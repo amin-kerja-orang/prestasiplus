@@ -38,7 +38,7 @@ export const PAPER_MESSAGES = {
   fileSize: 'Fail melebihi saiz maksimum 20 MB.',
 } as const
 
-const PAPER_FILE = /\.(pdf|docx|xlsx)$/i
+const PAPER_FILE = /\.(pdf|doc|docx|xls|xlsx)$/i
 
 /** The one error of a picked file list (`null` = valid): none, more than 5, a wrong type, a file over 20 MB. */
 export function validatePaperFiles(

@@ -46,7 +46,7 @@ const PAPER_LABELS: Readonly<Record<(typeof PAPER_TYPES)[number], string>> = {
 
 const MAX_FILES = 5
 const MAX_FILE_BYTES = 20 * 1024 * 1024
-const PAPER_EXT = /\.(pdf|docx|xlsx)$/i
+const PAPER_EXT = /\.(pdf|doc|docx|xls|xlsx)$/i
 
 /** The 44-F4 texts (the same strings as the real API). */
 const PAPER_MSG = {
