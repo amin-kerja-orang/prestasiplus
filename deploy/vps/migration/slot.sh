@@ -342,8 +342,8 @@ cmd_wipe_dump() {
 cmd_etl() {
   local c="${1:-}"; [ $# -eq 0 ] || shift
   case "$c" in
-    staging:profile|migrate:all|migrate:delta|migrate:verify|migrate:rollback|migrate:questions|migrate:structured|migrate:papers|migrate:terbit|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
-    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:verify | migrate:rollback | migrate:questions | migrate:structured | migrate:papers | migrate:terbit | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (standalone migrate:core / migrate:activity take no source lock: use migrate:all / migrate:delta)" 2 ;;
+    staging:profile|migrate:all|migrate:delta|migrate:core|migrate:activity|migrate:verify|migrate:rollback|migrate:questions|migrate:structured|migrate:papers|migrate:terbit|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
+    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:core | migrate:activity | migrate:verify | migrate:rollback | migrate:questions | migrate:structured | migrate:papers | migrate:terbit | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (migrate:core and migrate:activity run alone take no advisory source lock; slot.sh holds its own PP_LOCK_FILE for the whole run, so two slot runs cannot overlap)" 2 ;;
   esac
   local a apply=0 envs=(NODE_ENV=production "PP_MIGRATE_TARGET_DB=$target_db") argv=() files_host="" files_seen=0 out_given=0 i=0
   local args=("$@")
@@ -369,7 +369,7 @@ cmd_etl() {
   esac
   # Only the loads read staging_cloud; link-questions, archive-minimise and rollback must still run after the drop.
   case "$c" in
-    migrate:all|migrate:delta)
+    migrate:all|migrate:delta|migrate:core|migrate:activity)
       if [ "$apply" = 1 ]; then
         [ "$(target_psql "select count(*) from information_schema.schemata where schema_name = 'staging_cloud'")" = 1 ] \
           || pp_die "no staging_cloud in the target: run copy first" 3
@@ -422,7 +422,7 @@ cmd_etl() {
     if [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then envs+=("PP_GIT_SHA=$sha")
     else
       case "$c" in
-        migrate:all|migrate:delta) pp_die "cannot determine the release sha (set PP_RELEASE_SHA to the 40-character sha): etl_runs.git_sha would be NULL" 3 ;;
+        migrate:all|migrate:delta|migrate:core|migrate:activity) pp_die "cannot determine the release sha (set PP_RELEASE_SHA to the 40-character sha): etl_runs.git_sha would be NULL" 3 ;;
         *) pp_warn "no release sha (PP_RELEASE_SHA / git): PP_GIT_SHA not passed" ;;
       esac
     fi

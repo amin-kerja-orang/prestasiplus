@@ -332,6 +332,14 @@ mkprod "PP_VERIFY_ACCEPT_REJECTS=questions|INVALID_VALUE|options=5"
 slot 0 'ETL STEP migrate:questions exit=0' etl migrate:questions --plan   # only verify refuses; other commands never read the key
 mkprod
 STUB_PSQL=0 slot 3 'no staging_cloud in the target' etl migrate:all --apply --as-of=2026-11-10
+# migrate:core and migrate:activity run alone (stage 1 and stage 6 of the staged clone): same guards as migrate:all
+STUB_PSQL=0 slot 3 'no staging_cloud in the target' etl migrate:core --apply --as-of=2026-11-10
+STUB_PSQL=0 slot 3 'no staging_cloud in the target' etl migrate:activity --apply --as-of=2026-11-10
+STUB_PSQL=1 slot 0 'ETL STEP migrate:core exit=0' etl migrate:core --apply --as-of=2026-11-10
+if grep -q 'npm run migrate:core' "$DOCKER_LOG" && grep -qF -e '-e PP_ALLOW_MIGRATE_APPLY=1' "$DOCKER_LOG"; then ok 'migrate:core --apply runs in the migrate container with the apply gate'; else bad 'migrate:core --apply did not run as expected' "$DOCKER_LOG"; fi
+STUB_PSQL=1 slot 0 'ETL STEP migrate:activity exit=0' etl migrate:activity --as-of=2026-11-10
+if grep -q 'npm run migrate:activity' "$DOCKER_LOG" && ! grep -q 'PP_ALLOW_MIGRATE_APPLY' "$DOCKER_LOG"; then ok 'migrate:activity dry-run has no apply gate'; else bad 'migrate:activity dry-run wrong' "$DOCKER_LOG"; fi
+mkprod; EXTRA_ENV="PP_RELEASE_SHA=zz" slot 3 'cannot determine the release sha' etl migrate:core --as-of=2026-11-10; EXTRA_ENV=""
 slot 2 'etl COMMAND' etl migrate:nothing
 
 echo

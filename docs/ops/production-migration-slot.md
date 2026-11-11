@@ -155,7 +155,7 @@ deploy/vps/migration/slot.sh etl migrate:delta --since=<T-dump1> --as-of=... [--
 - `PP_ALLOW_MIGRATE_APPLY=1` is added only when `--apply` is given, except for `migrate:archive-minimise` (its dry-run
   checks the gate too) and `migrate:rollback`, which always get it. `migrate:rollback` also always gets
   `PP_ALLOW_MIGRATE_ROLLBACK=1`, because the cutover plan (6.3) needs both for its dry-run too.
-- The "no `staging_cloud`" pre-check runs only for `migrate:all` / `migrate:delta` with `--apply`, so
+- The "no `staging_cloud`" pre-check runs only for `migrate:all` / `migrate:delta` / `migrate:core` / `migrate:activity` with `--apply`, so
   `migrate:link-questions`, `migrate:archive-minimise` and `migrate:rollback` still run after the section 7 drop.
 - **Reports.** `migrate:*` write to `<repo root>/.migration-out` by default, which is `/app/.migration-out` on the
   image's read-only root file system. `etl` therefore appends `--out-dir /app/apps/api/.migration-out` (the mounted
