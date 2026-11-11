@@ -365,9 +365,7 @@ describe('DsDrawer (S8-T06)', () => {
 describe('DsFormField scroll clearance (S8-T06)', () => {
   it('FR-X6-5: states.css gives every form row a scroll margin for a sticky bar', () => {
     // The checkout may carry CRLF line endings; the rule is the same.
-    const css = readFileSync('src/ds/states.css', 'utf8').replace(/
-/g, '
-')
+    const css = readFileSync('src/ds/states.css', 'utf8').replace(/\r\n/g, '\n')
     expect(css).toContain(
       "[data-ds='form-field'] :is(input, select, textarea, [contenteditable], [tabindex]) {\n  scroll-margin-bottom: 6rem;",
     )
