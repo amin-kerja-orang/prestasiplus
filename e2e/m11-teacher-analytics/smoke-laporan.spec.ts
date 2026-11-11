@@ -27,19 +27,6 @@ const MODULE = { tag: [moduleTag(11)] }
 
 test.use({ mockInit: { latency: 0 } })
 
-/**
- * Landing path per role (M01 BR-07, `src/mock/auth/landing.ts`; not imported: that file pulls `@/` aliases the e2e
- * tsconfig does not resolve).
- */
-const LANDING: Record<string, string> = {
-  'adminsekolah@demo.test': '/dashboard',
-  'pelajar@demo.test': '/dashboard',
-  'ibubapa@demo.test': '/dashboard',
-  'penaja@demo.test': '/dashboard',
-  'ppd@demo.test': '/ppd/dashboard',
-  'jpn@demo.test': '/jpn/dashboard',
-}
-
 const S1 = '/guru/laporan'
 const S6 = '/guru/analisis-item'
 
@@ -57,12 +44,12 @@ async function expectHeader(page: Page, title: string, subtitle: string): Promis
 }
 
 async function s1Header(page: Page): Promise<void> {
-  await expectTabTitle(page, 'Laporan Statistik - Portal Guru')
+  await expectTabTitle(page, 'Laporan Statistik | PRESTASIPLUS')
   await expectHeader(page, 'Laporan Statistik', 'Selamat datang, ')
 }
 
 async function s6Header(page: Page): Promise<void> {
-  await expectTabTitle(page, 'Analisis Item Soalan - Portal Guru')
+  await expectTabTitle(page, 'Analisis Item Soalan | PRESTASIPLUS')
   await expectHeader(
     page,
     'Analisis Item Soalan',
@@ -72,35 +59,21 @@ async function s6Header(page: Page): Promise<void> {
 
 const value = (page: Page, card: string) => page.getByTestId(card).getByTestId('card-value')
 
-/** The chart config published by `ChartCanvas` (dev / e2e registry). */
+/**
+ * The chart as DsChart exposes it: its visually hidden data table (`data-ds="chart-table"`, one row per label, one column
+ * per series, values as "{n} aktiviti"). The Chart.js config is no longer published on `window.__charts`.
+ */
 async function chartOf(page: Page, id: string) {
   return page.evaluate((key) => {
-    const c = (
-      window as unknown as {
-        __charts?: Record<
-          string,
-          {
-            type: string
-            data: { labels: string[]; datasets: { data: number[]; label: string }[] }
-            options: {
-              plugins?: { legend?: { display?: boolean } }
-              scales?: { y?: { beginAtZero?: boolean; ticks?: { stepSize?: number } } }
-            }
-          }
-        >
-      }
-    ).__charts?.[key]
-    return c
-      ? {
-          type: c.type,
-          labels: c.data.labels,
-          data: c.data.datasets[0]!.data,
-          label: c.data.datasets[0]!.label,
-          legend: c.options.plugins?.legend?.display,
-          yBegin: c.options.scales?.y?.beginAtZero,
-          yStep: c.options.scales?.y?.ticks?.stepSize,
-        }
-      : null
+    const root = document.querySelector(`[data-testid="${key}"]`)
+    const rows = root ? [...root.querySelectorAll('tbody tr')] : []
+    if (rows.length === 0) return null
+    const cell = (tr: Element, i: number) => (tr.children[i]?.textContent ?? '').trim()
+    return {
+      label: (root!.querySelector('thead th:nth-child(2)')?.textContent ?? '').trim(),
+      labels: rows.map((tr) => cell(tr, 0)),
+      data: rows.map((tr) => parseFloat(cell(tr, 1))),
+    }
   }, id)
 }
 
@@ -180,7 +153,7 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
     await expect(page.getByTestId('panel-login')).toContainText(
       'Belum ada pelajar dalam kelas anda.',
     )
-    await expect(login).toHaveClass(/ring-blue-400/)
+    await expect(login).toHaveAttribute('data-open', 'true')
 
     await page.getByTestId('card-latihan').click()
     await expect(page.getByTestId('panel-login')).toHaveCount(0)
@@ -190,16 +163,16 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
     await expect(page.getByTestId('panel-latihan')).toContainText(
       'Belum ada pelajar dalam kelas anda.',
     )
-    await expect(page.getByTestId('card-latihan')).toHaveClass(/ring-emerald-400/)
+    await expect(page.getByTestId('card-latihan')).toHaveAttribute('data-open', 'true')
 
     await page.getByTestId('card-latihan').click()
     await expect(page.getByTestId('panel-latihan')).toHaveCount(0)
-    await expect(page.getByTestId('card-latihan')).not.toHaveClass(/ring-2/)
+    await expect(page.getByTestId('card-latihan')).toHaveAttribute('data-open', 'false')
 
     await gotoApp(`${S1}?range=7`)
     await page.getByTestId('card-aktiviti').click()
     await expect(page.getByTestId('panel-title')).toHaveText('Pecahan Aktiviti (7 Hari Lepas)')
-    await expect(page.getByTestId('card-aktiviti')).toHaveClass(/ring-purple-400/)
+    await expect(page.getByTestId('card-aktiviti')).toHaveAttribute('data-open', 'true')
     await expect(
       page.locator('[data-testid="panel-aktiviti"] [data-testid="tile-value"]'),
     ).toHaveText(['0', '0', '0', '0', '0', '0', '0'])
@@ -217,7 +190,7 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
       '-%',
     ])
     await expect(skor).not.toContainText('Permainan')
-    await expect(page.getByTestId('card-skor')).toHaveClass(/ring-amber-400/)
+    await expect(page.getByTestId('card-skor')).toHaveAttribute('data-open', 'true')
     await expectNoHorizontalScroll(page)
   })
 
@@ -232,15 +205,12 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
     await expect(page.getByTestId('trend-card')).toContainText('30 hari lepas')
     await expect.poll(() => chartOf(page, 'laporan-trend-chart')).not.toBeNull()
     const chart = (await chartOf(page, 'laporan-trend-chart'))!
-    expect(chart.type).toBe('line')
     expect(chart.label).toBe('Aktiviti')
     expect(chart.labels).toHaveLength(30)
     expect(chart.labels[0]).toBe('27/08')
     expect(chart.labels.at(-1)).toBe('25/09')
     expect(chart.data.every((n) => n === 0)).toBe(true)
-    expect(chart.legend).toBe(false)
-    expect(chart.yBegin).toBe(true)
-    expect(chart.yStep).toBe(1)
+    // type / legend / y-axis options are not observable any more (no window.__charts): not asserted.
     await expectNoHorizontalScroll(page)
   })
 
@@ -392,7 +362,7 @@ test.describe('M11 S1 Laporan Statistik: teacher', MODULE, () => {
         .getByTestId('summary-cards')
         .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)
       const width = page.viewportSize()!.width
-      expect(cols).toBe(width >= 1024 ? 5 : 2)
+      expect(cols).toBe(width >= 1024 ? 4 : 2) // four summary cards: grid-cols-2 lg:grid-cols-4 (LaporanPage.vue:126)
       const tiles = await page
         .getByTestId('panel-aktiviti')
         .locator('[data-testid^="tile-"]:not([data-testid="tile-value"])')
@@ -511,7 +481,7 @@ test.describe('M11 S6 Analisis Item Soalan: admin', MODULE, () => {
     await expect(page.getByTestId('item-empty')).toContainText(
       'Pelajar perlu membuat latihan dahulu.',
     )
-    await expect(page.getByTestId('filter-reset')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Reset', exact: true })).toHaveCount(0)
     await expectTargetBelowLg(page, page.getByTestId('filter-subject'))
     await expectTargetBelowLg(page, page.getByTestId('filter-classroom'))
     await expectNoHorizontalScroll(page)
@@ -519,12 +489,12 @@ test.describe('M11 S6 Analisis Item Soalan: admin', MODULE, () => {
     await page.getByTestId('filter-subject').selectOption({ label: 'Bahasa Melayu' })
     await expect(page).toHaveURL(/\/guru\/analisis-item\?subject_id=1&classroom_id=$/)
     await expect(page.getByTestId('filter-subject')).toHaveValue('1')
-    await expect(page.getByTestId('filter-reset')).toBeVisible()
-    await expectTargetBelowLg(page, page.getByTestId('filter-reset'))
+    await expect(page.getByRole('button', { name: 'Reset', exact: true })).toBeVisible()
+    await expectTargetBelowLg(page, page.getByRole('button', { name: 'Reset', exact: true }))
     await expect(page.getByTestId('item-empty')).toBeVisible()
-    await page.getByTestId('filter-reset').click()
+    await page.getByRole('button', { name: 'Reset', exact: true }).click()
     await expect(page).toHaveURL(/\/guru\/analisis-item$/)
-    await expect(page.getByTestId('filter-reset')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Reset', exact: true })).toHaveCount(0)
     await expect(page.getByTestId('filter-subject')).toHaveValue('')
   })
 
@@ -537,7 +507,7 @@ test.describe('M11 S6 Analisis Item Soalan: admin', MODULE, () => {
     await gotoApp(`${S6}?classroom_id=228`)
     await expect(page.getByTestId('item-empty')).toBeVisible()
     await expect(page.getByTestId('filter-classroom')).toHaveValue('')
-    await expect(page.getByTestId('filter-reset')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Reset', exact: true })).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -577,7 +547,7 @@ test.describe('M11 S6 Analisis Item Soalan: teacher', MODULE, () => {
         '5 MARIKH - Sejarah',
       ])
       await expect(page.getByTestId('filter-classroom')).toHaveValue('2001')
-      await expect(page.getByTestId('filter-reset')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Reset', exact: true })).toBeVisible()
       const rows = page.getByTestId('item-row')
       await expect(rows).toHaveCount(8)
       // M08 anchors Q1-Q8: p 75, 50, 60, 25, 12.5, 12.5, 50, 50 (ordered % betul ascending)
@@ -592,11 +562,11 @@ test.describe('M11 S6 Analisis Item Soalan: teacher', MODULE, () => {
         '75%',
       ])
       await expect(rows.nth(0)).toHaveAttribute('data-band', 'sukar')
-      await expect(rows.nth(0).getByTestId('item-dot')).toHaveClass(/bg-red-500/)
+      await expect(rows.nth(0).getByTestId('item-dot')).toHaveAttribute('data-band', 'sukar')
       await expect(rows.nth(3)).toHaveAttribute('data-band', 'sederhana')
-      await expect(rows.nth(3).getByTestId('item-dot')).toHaveClass(/bg-amber-400/)
+      await expect(rows.nth(3).getByTestId('item-dot')).toHaveAttribute('data-band', 'sederhana')
       await expect(rows.nth(7)).toHaveAttribute('data-band', 'mudah')
-      await expect(rows.nth(7).getByTestId('item-dot')).toHaveClass(/bg-emerald-500/)
+      await expect(rows.nth(7).getByTestId('item-dot')).toHaveAttribute('data-band', 'mudah')
       await expect(
         page.getByTestId('item-disc-note').filter({ hasText: 'semak semula' }),
       ).toHaveCount(1)
@@ -613,9 +583,9 @@ test.describe('M11 S6 Analisis Item Soalan: teacher', MODULE, () => {
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
       await gotoApp(S6)
-      await expect(page.getByTestId('item-table')).toBeVisible()
+      await expect(page.getByTestId('item-table-card')).toBeVisible()
       expect(await page.getByTestId('item-row').count()).toBeGreaterThanOrEqual(8)
-      await expect(page.getByTestId('filter-reset')).toHaveCount(0)
+      await expect(page.getByRole('button', { name: 'Reset', exact: true })).toHaveCount(0)
       await expectNoHorizontalScroll(page)
     },
   )
@@ -625,7 +595,7 @@ test.describe('M11 S1 / S6 access', MODULE, () => {
   test('E2E-M11-03 a guest is sent to /login @m11', async ({ page, gotoApp }) => {
     for (const path of [S1, S6]) {
       await gotoApp(path)
-      await expect(page).toHaveURL('/login')
+      await expect(page).toHaveURL(/\/login(\?|$)/)
     }
   })
 
@@ -650,16 +620,17 @@ test.describe('M11 S1 / S6 access', MODULE, () => {
     'ppd@demo.test',
     'jpn@demo.test',
   ]) {
-    test(`role refusal: ${who} is redirected from S1 and S6 to its role landing path (the page never renders) @m11`, async ({
+    test(`role refusal: ${who} gets the in-place 403 page on S1 and S6 (the page never renders) @m11`, async ({
       page,
       gotoApp,
       loginAs,
     }) => {
-      const landing = LANDING[who]!
       await loginAs(who)
       for (const path of [S1, S6]) {
         await gotoApp(path)
-        await expect(page).toHaveURL(landing)
+        // v2: a forbidden role gets the 403 page in place, URL unchanged (E2E rules)
+        await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
+        await expect(page).toHaveURL(path)
         await expect(page.getByTestId('laporan-page')).toHaveCount(0)
         await expect(page.getByTestId('analisis-item-page')).toHaveCount(0)
       }
