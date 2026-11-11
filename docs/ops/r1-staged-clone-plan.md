@@ -56,3 +56,22 @@ Status (11 Nov 2026): Stage 0 DONE (fresh dump 20261111, staging copied). Stage 
 - Stage 1/6 split depends on the slot.sh whitelist change (gap 1); stage verify depends on manual entity filtering (gap 2).
 - Raw personal data of minors: staging_cloud and every stage dump hold it; `PP_RAW_PURGE_BY` (6 Nov) is already overdue: PO sets a new date.
 - Disk: 6 whole-DB dumps plus staging (guard needs 5 GB free): measure DB size first. Whether the API reads `archive_cloud` while it is replaced: keep api stopped during copy.
+
+## 5. Lessons from the 11-12 Nov staged clone (operator rules)
+
+All points below were verified on UAT. Read them before any stage.
+
+- **Pin the image tag on every manual compose command.** `compose.prod.yaml` tags images `${PP_IMAGE_TAG:-prod}`, and `:prod` is a stale build on UAT. Any manual `docker compose up/run` of api, frontend or migrate MUST pass `PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag)`; never let it default. Why: two incidents, 11 Nov 13:30-13:41 UTC (api on `:prod`: `/api/admin/blueprints` returned 500 and `/api/ready` had no worker) and about 20 s at 16:57 UTC.
+  - `slot.sh etl` and `slot.sh load` now pin the migrate image (commits 501acd3ba, 0dfb86558): they use `current.tag` or an exported `PP_IMAGE_TAG`, refuse `prod`, `local` and `latest`, and only warn when the tag and the sha differ.
+  - `docker start pretasiplus-api-1` is safe only because it reuses the existing container's image.
+  - After every restart check that `docker inspect -f '{{.Config.Image}}' pretasiplus-api-1` equals `current.tag` and that `/api/ready` lists `worker`.
+- **Remote scripts fed through `ssh ... "bash -s" < script`:** commands that read stdin (`backup.sh`, `deploy.sh --dry-run`, `docker exec -i`, `psql`) swallow the rest of the script. Give every such command `</dev/null`.
+- **One operator for UAT writes.** On 11 Nov a second operator re-dumped V2 (dump 20261111b), replaced `staging_cloud`/`archive_cloud` at 15:54 UTC and re-ran core while the staged clone was mid-stage. The next stage's preflight caught it (the questions preflight refuses when no succeeded core apply matches the staged data). Rules:
+  - One named owner for UAT writes.
+  - Before each stage check `tmux ls` (root and ppdeploy), `who`, running slot/backup/deploy/pg processes, non-idle `pg_stat_activity`, and `max(_loaded_at)` of `staging_cloud.users` against the stage-0 copy time.
+  - If staging changed, stop and re-run Stage 1 on the new staging before the next stage.
+- **Stage-1 stop rule: count V2 changes by the loader's own comparison, not by `updated_at`.** V2 does not bump `users.updated_at` on login, so users whose `last_login_at` changed show as `updated` (11 Nov: 2). Core compares users by `legacy_hash` of the V2 values, so V3-only edits (for example an argon rehash on login) are not overwritten.
+- **Dry-run artefacts.** `migrate:questions` dry-run always reports `question_files` inserted=2113 even when the apply reports unchanged=2113 (seen in runs 5/6, 15/16, 28/29). The "about 38 held" figure is held QUESTIONS (verify row), not missing files (2 unusable paths).
+- **Stage-2 verify.** The G-5 check (questions with a V2 stimulus link showing no group and no own stimulus: 283) fails until Stage 3 runs. It is not a Stage-2 no-go when the Stage-2 apply changed 0 rows.
+- **Stage 3.** The stricter canonical dedupe (74ade0196) failed with an IdMap conflict when a copy had been mapped by an earlier run to a different legacy question; fixed in dacda9e8d (deploy #6). Never enable papers `--recompute` without handling canonical repoints (reviewer note).
+- **Smoke block E after an approved deletion cascade** fails on activity tables until Stage 6 reloads activity. Activity-only failures are not a Stage-1 no-go (handoff section 3.6).

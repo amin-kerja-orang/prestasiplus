@@ -158,6 +158,13 @@ cp -p "$f" "$f.sha256" "$d/" && (cd "$d" && sha256sum -c "$(basename "$f").sha25
 
 `migrate:verify` also takes `--entities a,b` to check named entities only. Entities outside the stage's sector show "not in this stage" and do not fail the run. After stage 6, run ONE final full `deploy/vps/migration/slot.sh etl migrate:verify` with no flag: it must pass before the final step below.
 
+**Operator rules learned on 11-12 Nov** (details and reasons: `r1-staged-clone-plan.md`, section 5):
+
+- Manual `docker compose up/run` of api, frontend or migrate must pass `PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag)`; the `:prod` default is a stale build. After any restart, `docker inspect -f '{{.Config.Image}}' pretasiplus-api-1` must equal `current.tag` and `/api/ready` must list `worker`. `slot.sh etl` and `load` refuse `prod`, `local` and `latest`.
+- Commands inside a script fed by `ssh ... "bash -s" < script` that read stdin (`backup.sh`, `deploy.sh --dry-run`, `docker exec -i`, `psql`) need `</dev/null`, or they swallow the rest of the script.
+- One named owner for UAT writes. Before each stage check `tmux ls`, `who`, running slot/backup/deploy/pg processes, non-idle `pg_stat_activity` and `max(_loaded_at)` of `staging_cloud.users`; if staging changed, re-run stage 1 before going on.
+- The stage-1 `updated` count follows the loader's own comparison, not `updated_at` (V2 does not bump it on login). The G-5 verify check fails after stage 2 until stage 3 runs, and smoke block E activity failures after a deletion cascade stay until stage 6; neither is a no-go by itself.
+
 **Retention decision (PO, KP-23).** The raw V2 dump and the per-stage dumps on UAT are kept until the staged clone is complete and verified, then DELETED 7 days after stage 6 finishes.
 
 **Step 0, at stage 1: set a PROVISIONAL purge date.** `PP_RAW_PURGE_BY` defaults to 2026-11-06, which is already past, so as soon as raw data is on the host `restore-point.sh raw-check` exits 1 every night and `backup.sh` sends "RAW DATA RETENTION OVERDUE". At the start of stage 1 set `PP_RAW_PURGE_BY=<planned stage-6 date + 7 days>` in `prod.env`. When stage 6 passes, reset it to the actual date + 7 days (final step below). `raw-check` also lists the copied pre-stage dumps in `staged-clone/` as raw copies.
