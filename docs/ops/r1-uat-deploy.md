@@ -129,3 +129,34 @@ To enable on UAT:
 **Rollback:** set `INTAKE_TEACHER_ENABLED=false`, and teachers get 403 again. clamav can stay running or be removed from `PP_PROFILES`. A deploy rollback (`rollback.sh`) to a build from before #78 is refused (exit 3, nothing changed) while `INTAKE_TEACHER_ENABLED` is true: set it to `false` first. `rollback.sh` finds out by running the target image once (`grep` for the `CLAMAV_SCAN_ENABLED` marker in `dist/main.js`); in pull mode it pulls the image first.
 
 **Residual risk until enablement.** With `INTAKE_TEACHER_ENABLED=false` and no `CLAMAV_HOST`, admin Office/PDF uploads are not scanned, which is the same as before #78. Setting `CLAMAV_HOST` makes scanning required for every intake upload, admin included. The ClamAV enablement deploy should therefore follow soon after the 11 Nov deploy.
+
+## 9. Staged V2 clone: order, final step and raw purge (KP-22, KP-23)
+
+**Order.** The clone runs in stages with `deploy/vps/migration/slot.sh etl`. `migrate:core` (stage 1: users, schools, classes) runs before `migrate:activity` (stage 6: practice, wallets, gifts, articles and the other activity entities). Nothing enforces this order: the operator does. Both take the `etl:source:cloud` lock; exit 2 can mean "busy" (see `production-migration-slot.md`, section 2).
+
+**Retention decision (PO, KP-23).** The raw V2 dump and the per-stage dumps on UAT are kept until the staged clone is complete and verified, then DELETED 7 days after stage 6 finishes.
+
+**Final step, once stage 6 has passed its verification.**
+
+1. Set the purge date in `prod.env`: `PP_RAW_PURGE_BY=<date stage 6 finished + 7 days>` (`YYYY-MM-DD`, for example `date -u -d '+7 days' +%F` run on the day stage 6 passed). From that date `restore-point.sh raw-check` turns every remaining raw copy into a `RAW RETENTION OVERDUE` warning (exit 1), and the nightly `backup.sh` sends the alert "RAW DATA RETENTION OVERDUE". Before that date it only reports.
+2. Do nothing else until the date; the copies stay as the fallback for the 7 days.
+
+**Purge, on or after `PP_RAW_PURGE_BY`** (an operator on the UAT host as `ppdeploy`; needs the PO's go-ahead, and it is irreversible):
+
+| What | Where | Command |
+|---|---|---|
+| The raw V2 dump and each per-stage dump (directories with `manifest.json`), and any `.tar.gpg` of them | wherever the stages were extracted (`PP_STAGE_DIR`, for example `/srv/pretasiplus/stage/<dump dir>`, and the `--dump-dir` given to `rebuild-db.sh`) | `deploy/vps/migration/slot.sh wipe-dump <dump dir> [<file>.gpg]` for each one. It overwrites, deletes, and exits 3 when a path does not exist (nothing deleted). `npm run dump:wipe` is the same step for the machine that ran `dump:cloud` |
+| The files export given to `--files-dir` (raw uploads) | the host folder of the export | delete the folder by hand once the files are in the api volume: `rm -r <files export>` after checking the path with `ls` (outside the repo) |
+| The throwaway staging cluster, if still present | `PP_STAGE_DIR/pgdata`, container `pp-stage-throwaway` | `deploy/vps/migration/slot.sh throwaway-down` |
+| `staging_cloud` (raw `.cloud` copy) in the UAT database | the database | `rebuild-db.sh` drops it at step 15 unless `--keep-staging` was used; otherwise `$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "drop schema if exists staging_cloud cascade"'`. `archive_cloud` is the minimised archive kept by decision Q12 A (12 months): it is not part of this purge unless the PO says so |
+| Restore points that hold raw data (`raw_data=yes`) and the PITR base backups and WAL from the clone window | `PP_BACKUP_DIR/restore-points`, `/walarchive/base` | after the schema is dropped: `restore-point.sh take post_drop`, then `restore-point.sh purge-raw --after post_drop` (asks for the database name), and `pitr.sh base --label post_drop` then `pitr.sh cleanup --keep-from <that base>` if PITR is on (see `production-migration-slot.md`, sections 3 and 4) |
+| The deleted-at-source ids file in the reports folder (real data) | `PP_MIGRATION_OUT` | delete it by hand; the other reports hold aggregates and surrogate ids only |
+
+**Verify that they are gone.**
+
+- `deploy/vps/migration/restore-point.sh raw-check` prints `RAW CHECK OK: no copy of raw .cloud data found` and exits 0 (exit 1 lists what is left, exit 2 means a check could not run: fix that first).
+- `deploy/vps/migration/slot.sh gonogo` shows the `raw data:` line with the same result, and `throwaway: none running`.
+- `ls` of each dump directory, the files export and `PP_STAGE_DIR` shows them absent (`wipe-dump` also logs `DUMP COPIES DELETED`).
+- `select count(*) from information_schema.schemata where schema_name = 'staging_cloud';` gives 0.
+- `restore-points/custody.tsv` shows the raw points with status `deleted`.
+- Record the date and the operator name in the cutover notes.
