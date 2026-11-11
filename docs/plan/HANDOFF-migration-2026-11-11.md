@@ -178,6 +178,76 @@ Deploy #4 is not part of this handoff unless the PO asks.
 - The final raw-data purge date and go-ahead (KP-23).
 - Anything that would change, delete or demote V2 data in a way §5 does not already allow.
 
+## 10. FIRST TASK for the new account: unblock Stage 1 (exact steps)
+
+Ownership of these files now passes to you. The lead session will NOT continue them. Nobody else is editing `deploy/**`.
+
+**10.1 Uncommitted, half-done work in the tree.**
+- These four files hold an UNTESTED change by an ops agent that hit its usage limit:
+  - `deploy/vps/lib.sh`
+  - `deploy/vps/migration/slot.sh`
+  - `deploy/test/test-rebuild-db.sh`
+  - `deploy/vps/migration/test-scratch-override.sh`
+- Content: `PP_STAGE_EXPECT` becomes a one-run override, read from the process environment only. A value persisted in prod.env is refused with exit 2, the same rule as `PP_VERIFY_ACCEPT_REJECTS`. The tests were adjusted.
+- A copy of the diff is in `C:\Users\hp\.pp-secrets\wip-pp-stage-expect.patch`. Check with `git diff --ignore-cr-at-eol -- <file>`; the working copies show CRLF noise.
+- Keep this change. It was requested by review.
+- Finish it together with 10.2, and run the tests.
+
+**10.2 The Stage-1 blocker: slot.sh appends `--out-dir` to commands that reject it.**
+- In `deploy/vps/migration/slot.sh`, `cmd_etl`, the line is:
+  `if [ "$out_given" = 0 ] && [ "$c" != staging:profile ]; then argv+=(--out-dir /app/apps/api/.migration-out); fi`
+- Checked facts:
+
+  | Command | CLI | Accepts `--out-dir`? |
+  |---|---|---|
+  | `migrate:core` | `apps/api/src/migration/load/cli.ts` → `load/command.ts:19`, `CORE_KNOWN_FLAGS` = `as-of`, `batch-size` | **REJECTS** (exit 2 "unknown flag --out-dir") |
+  | `migrate:activity` | `load/activity/command.ts:29`, `KNOWN_FLAGS` = `as-of`, `core-as-of`, `batch-size`, `content-owner`, `report-file`, `group`, `table`, `files-dir` | **REJECTS** |
+  | `migrate:questions` | `load/questions/command.ts` | yes |
+  | `migrate:structured` | `load/questions/structured-command.ts` | yes |
+  | `migrate:papers` | `load/papers/command.ts` | yes |
+  | `migrate:terbit` | `load/papers/terbit-command.ts` | yes |
+  | `migrate:all`, `migrate:delta`, `migrate:verify`, `migrate:link-questions` | `orchestrate.ts` | yes |
+
+- The fix: also skip the append for `migrate:core` and `migrate:activity`:
+  `if [ "$out_given" = 0 ] && [ "$c" != staging:profile ] && [ "$c" != migrate:core ] && [ "$c" != migrate:activity ]; then ...`
+  Leave everything else unchanged.
+- Test: make the docker stub in `deploy/test/test-rebuild-db.sh` reject `--out-dir` for `migrate:core` and `migrate:activity`, as the real CLIs do. Add a case where `slot.sh etl migrate:core --dry-run --as-of=2026-11-10` passes no `--out-dir`.
+- Run the shell tests in a throwaway Linux container:
+  `docker run --rm -v "D:\Dev Projects\prestasiplus-v3:/src:ro" node:22.22.2-bookworm bash -lc "cp -r /src /w && cd /w && sed -i 's/\r$//' deploy/**/*.sh 2>/dev/null; bash deploy/test/test-rebuild-db.sh && bash deploy/vps/migration/test-scratch-override.sh"`
+  The CRLF strip is needed because the Windows working copy has CRLF; the index is LF. The last known passes were `test-rebuild-db.sh` 135 and `test-scratch-override.sh` 64, before 10.1 and 10.2. Expect more now.
+- Before running, check `docker stats --no-stream`, and never stop neoX containers.
+- Commit only these files: `git add <paths>`, an English message, and the co-author line your system prompt specifies.
+
+**10.3 Review.**
+- The project rule is that a reviewer approves every src commit before deploy (CLAUDE.md §2 G4).
+- If you cannot reach the review session on this PC, run a `code-reviewer` subagent on your commit (Sonnet, read-only). Give it: the diff; the table in 10.2; the rule that `slot.sh` must keep every existing guard (staging_cloud pre-check for apply, the 40-char SHA, the `pp_etl` role, `PP_ALLOW_MIGRATE_APPLY` only on `--apply`, the env-only allowlists).
+- Fix any Blocker or Major it raises, then re-run the tests.
+
+**10.4 Deploy the fix to UAT** (needs the PO's approval in your session, for the exact SHA).
+- The commits after 4ec503ea2 that would ride along: a3dc59d9d, c07356af6 and e7deeebbe (all reviewed and approved), plus B's UI commits C-42/C-43/C-44 (approved), plus any newer commits by session B.
+- Check `git log 4ec503ea2..<sha> -- apps packages src deploy`. Any src commit you cannot confirm as reviewed: have your code-reviewer subagent check it (Blocker/Major only), or pin the SHA before it.
+- Run `NODE_OPTIONS=--max-old-space-size=8192 npx vue-tsc -b --noEmit`; it must exit 0.
+- Ask the PO with the exact SHA. Push that SHA to `origin/feature/v3-bijak-r1`.
+- On UAT:
+  - back up the env files;
+  - set `PP_RELEASE_SHA` to the full SHA in `/etc/pretasiplus/prod.env`;
+  - `sudo -u ppdeploy git fetch` and `checkout --detach <sha>` in `/opt/pretasiplus`;
+  - `deploy/vps/deploy.sh --dry-run`, then `deploy.sh --yes` in a NEW tmux session (quoted heredoc);
+  - check that it prints `deploy complete`, that `/api/ready` reports ready, and that `current.tag` is updated.
+- `INTAKE_TEACHER_ENABLED` stays `false`.
+- Record the deploy in tracker §6.
+
+**10.5 Resume Stage 1.**
+- The PO approved Stage 1 already, on 11 Nov, in the lead session. That approval was given to the lead, not to you. Ask the PO to re-confirm Stage 1 in YOUR session before running it.
+- The restore point and `rebuild-prev.tag` from §1 stay valid if the DB has not changed since 10:40 UTC 11 Nov. If you are unsure, take a new restore point (§3 step 2).
+- Then follow §3 from step 3, with `--as-of=2026-11-10`.
+
+## 11. Other sessions on this PC (you may not be able to reach them)
+
+- The lead, mandor (coordinator), A (reviewer) and B (E2E) sessions ran in another account.
+- B may still commit E2E/UI work on this branch. Never edit `e2e/**`, `src/shells/pembelajaran/**` or `src/theme/**`, and never reset or stash other people's uncommitted files.
+- Background agents of the lead session are stopped and will not resume on these tasks.
+
 ## 9. Where to record things
 
 - Progress: tracker `docs/plan/r1-pelan-100-peratus.md` §6, one row per stage (BM, counts only, no personal data). Commit as `docs(plan): …`, ending with the co-author line the session's system prompt specifies.
