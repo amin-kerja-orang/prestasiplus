@@ -19,12 +19,13 @@ const empty = (): InterventionList => ({ kpi: { total: 0, pending: 0, up: 0, dow
 
 let wrapper: VueWrapper | undefined
 
-async function typeItems(prefix: string, role?: string) {
+/** `basePath` is the mount prop; `urlPrefix` is the route path (defaults to the same mount). */
+async function typeItems(prefix: string, role?: string, urlPrefix = prefix) {
   const m = await mountPage(
     KirkpatrickInterventionsPage,
     { basePath: prefix },
-    `${prefix}/interventions`,
-    `${prefix}/interventions`,
+    `${urlPrefix}/interventions`,
+    `${urlPrefix}/interventions`,
     null,
     role,
   )
@@ -60,5 +61,20 @@ describe('S7 "Jenis Amaran" options by mount (C-57)', () => {
 
   it('keeps "Lain-lain" on the school-admin mount', async () => {
     expect(await typeItems('/admin-sekolah/kirkpatrick', 'school_admin')).toEqual(FOUR)
+  })
+
+  it('follows the basePath prop, not the route path (guru basePath under an /admin route gives 4)', async () => {
+    expect(await typeItems('/guru/kirkpatrick', undefined, '/admin/kirkpatrick')).toEqual(FOUR)
+  })
+
+  it('defaults the form to the admin set when the page gets no basePath', async () => {
+    const m = await mountPage(
+      KirkpatrickInterventionsPage,
+      {},
+      '/guru/kirkpatrick/interventions',
+      '/guru/kirkpatrick/interventions',
+    )
+    wrapper = m.wrapper
+    expect(select(m.wrapper, 'alert_type').props('items')).toEqual(THREE)
   })
 })

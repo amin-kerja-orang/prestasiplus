@@ -8,8 +8,6 @@
  */
 import { computed, reactive, ref } from 'vue'
 
-import { useRoute } from 'vue-router'
-
 import { isApiError } from '@/api'
 import { clock, formatMyt } from '@/lib/time'
 
@@ -18,6 +16,7 @@ import type { AlertType, Mood } from '../../../api/types'
 import { KIRKPATRICK_ADMIN_BASE } from '../common'
 import { ADMIN_ALERT_TYPES, ALERT_TYPES, MOODS } from './intervention-format'
 
+const props = withDefaults(defineProps<{ basePath?: string }>(), { basePath: KIRKPATRICK_ADMIN_BASE })
 const emit = defineEmits<{ saved: [] }>()
 
 /** A select item cannot carry an empty value, so "-- Pilih --" travels as this word and maps to "". */
@@ -42,10 +41,8 @@ const studentError = ref('')
 const form = reactive(blank())
 
 /** The mount decides the type set: only the Admin Pusat mount (`/admin/kirkpatrick`) drops "Lain-lain". */
-const route = useRoute()
-const onAdminMount = computed(() => route.path.startsWith(`${KIRKPATRICK_ADMIN_BASE}/`))
 const typeItems = computed(() =>
-  (onAdminMount.value ? ADMIN_ALERT_TYPES : ALERT_TYPES).map((t) => ({
+  (props.basePath === KIRKPATRICK_ADMIN_BASE ? ADMIN_ALERT_TYPES : ALERT_TYPES).map((t) => ({
     label: t.label,
     value: t.value,
   })),

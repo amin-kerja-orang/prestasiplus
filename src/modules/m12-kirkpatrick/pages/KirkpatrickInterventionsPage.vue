@@ -15,7 +15,7 @@ import InterventionForm from '../components/kirkpatrick/interventions/Interventi
 import InterventionKpis from '../components/kirkpatrick/interventions/InterventionKpis.vue'
 import InterventionList from '../components/kirkpatrick/interventions/InterventionList.vue'
 
-withDefaults(defineProps<{ basePath?: string }>(), { basePath: KIRKPATRICK_ADMIN_BASE })
+const props = withDefaults(defineProps<{ basePath?: string }>(), { basePath: KIRKPATRICK_ADMIN_BASE })
 
 const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
   fetchKirkpatrickInterventions({ signal }),
@@ -39,7 +39,7 @@ const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
     </p>
     <template v-if="data">
       <InterventionKpis :kpi="data.kpi" />
-      <InterventionForm @saved="reload" />
+      <InterventionForm :base-path="props.basePath" @saved="reload" />
       <InterventionList :rows="data.rows" @changed="reload" />
     </template>
   </DsPage>
