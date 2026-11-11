@@ -12,6 +12,7 @@ test.describe('M14 QA E2E-M14-28', { tag: [moduleTag(14)] }, () => {
     'E2E-M14-28 gamificationSession pays challenges and Langkah Pertama; second session pays Kilat only',
     provisional('FN-M14-4.2.2 / 4.3.1 payouts are INFERRED / PROPOSED', [moduleTag(14)]),
     async ({ page, gotoApp, loginAs, mock }) => {
+      test.setTimeout(180_000) // ten page loads, two sessions and three claims
       await loginAs(3)
       await gotoApp('/gamification/history')
       await mock.setNow('2026-09-26T09:00:00+08:00')
@@ -25,7 +26,7 @@ test.describe('M14 QA E2E-M14-28', { tag: [moduleTag(14)] }, () => {
 
       await gotoApp('/gamification/challenges')
       expect(new Date(await mock.now()).toISOString().slice(0, 10)).toBe('2026-09-26')
-      await expect(page.getByTestId('s13-counter-value')).toHaveText('2/10')
+      await expect(page.getByTestId('s13-counter-value')).toHaveText('2/15')
 
       await gotoApp('/gamification/history')
       await expect(page.getByTestId('s17-row').first()).toBeVisible()
@@ -33,9 +34,23 @@ test.describe('M14 QA E2E-M14-28', { tag: [moduleTag(14)] }, () => {
       const amounts = await page.getByTestId('s17-row-amount').allTextContents()
       const pair = (d: string) => amounts[descs.indexOf(d)]
       expect(pair('Latih Tubi: 6 betul — 60%')).toBe('+6')
-      expect(pair('Cabaran selesai: Mula Hari Ini')).toBe('+10')
-      expect(pair('Cabaran selesai: Jawab 5 Betul')).toBe('+12')
       expect(pair('Pencapaian: Langkah Pertama')).toBe('+5')
+      // S7-T04 (gamification.ts:586-652): a completed challenge pays only when its reward is claimed ("Tuntut")
+      expect(descs.some((d) => d.startsWith('Cabaran selesai')), descs.join(' / ')).toBe(false)
+      await gotoApp('/gamification/challenges')
+      for (const title of ['Mula Hari Ini', 'Jawab 5 Betul']) {
+        await page.getByTestId('s13-card').filter({ hasText: title }).getByTestId('s13-claim').click()
+        await expect(
+          page.getByTestId('s13-card').filter({ hasText: title }).getByTestId('s13-claimed'),
+        ).toBeVisible()
+      }
+      await gotoApp('/gamification/history')
+      await expect(page.getByTestId('s17-row').first()).toBeVisible()
+      const descs1 = await page.getByTestId('s17-row-desc').allTextContents()
+      const amounts1 = await page.getByTestId('s17-row-amount').allTextContents()
+      const pair1 = (d: string) => amounts1[descs1.indexOf(d)]
+      expect(pair1('Cabaran selesai: Mula Hari Ini')).toBe('+10')
+      expect(pair1('Cabaran selesai: Jawab 5 Betul')).toBe('+12')
       await expect(page.getByTestId('s17-balance')).toHaveText('Baki semasa: 33 syiling')
 
       await mock.hook('gamificationSession', 3, {
@@ -44,6 +59,12 @@ test.describe('M14 QA E2E-M14-28', { tag: [moduleTag(14)] }, () => {
         total: 5,
         timeSpentSec: 120,
       })
+      await gotoApp('/gamification/challenges')
+      await page
+        .getByTestId('s13-card')
+        .filter({ hasText: 'Kilat Matematik' })
+        .getByTestId('s13-claim')
+        .click()
       await gotoApp('/gamification/history')
       await expect(page.getByTestId('s17-row').first()).toBeVisible()
       const d2 = await page.getByTestId('s17-row-desc').allTextContents()
