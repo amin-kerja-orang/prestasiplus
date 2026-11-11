@@ -88,58 +88,62 @@ async function navHrefs(page: Page): Promise<Map<string, string>> {
   return m
 }
 
-test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
+// URS AC-M08-01.1 describes the user-portal menu. The Admin Pusat (Portal Pentadbiran) has none of these links in V2 either
+// (prestasiplus-reference admin/layout.blade.php:194-292), so the checks run as the school admin, whose user-portal nav
+// carries them (src/shells/nav/user-nav.ts:223-230 student/admin rows, :387-398 school-admin rows). Pusat PM-24..27 stay
+// untested until the S0 menu PR lands (r1-development-plan.md:1832-1834).
+test.describe('M08 G5 menus (school admin)', { tag: [moduleTag(8)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('AC-01.1/01.2/33.2 the seven M08 links in the sidebar (1280) or the "Lagi" drawer (375/768)', async ({
+  test('AC-01.1/01.2/33.2 the M08 links in the sidebar (1280) or the "Lagi" drawer (375/768)', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
-    await loginAs('admin@demo.test')
+    await loginAs('adminsekolah@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page, 'pentadbiran').title).toHaveText('Dashboard Sekolah')
+    await expect(header(page, 'pembelajaran').title).toHaveText('Dashboard Sekolah')
     const links = await navHrefs(page)
     const keys = [...links.keys()]
     for (const [label, href] of [
       ['Headcount', '/headcount'],
       ['Prestasi', '/prestasi'],
-      ['Analitik Adaptif', '/analitik/pelajar'],
+      // user-nav.ts:393: the school admin's Analitik Adaptif is the class view, not /analitik/pelajar.
+      ['Analitik Adaptif', '/analitik/kelas'],
       ['Analisa Item', '/analisa-item'],
+    ]) {
+      expect(keys, `${label} -> ${href}`).toContain(`${label}|${href}`)
+    }
+    // user-nav.ts:230, :443, :473: Laporan Mingguan, Kedudukan and Timeline Saya are student/admin rows only.
+    for (const [label, href] of [
       ['Laporan Mingguan', '/laporan-mingguan'],
       ['Kedudukan', '/ranking'],
       ['Timeline Saya', '/timeline'],
     ]) {
-      expect(keys, `${label} -> ${href}`).toContain(`${label}|${href}`)
+      expect(keys, `${label} -> ${href} is not a school-admin link`).not.toContain(`${label}|${href}`)
     }
     await expectNoHorizontalScroll(page)
   })
 
-  test('AC-01.1 the sidebar items are navigable: Prestasi, Kedudukan, Timeline Saya', async ({
-    page,
-    gotoApp,
-    loginAs,
-  }) => {
-    await loginAs('admin@demo.test')
+  test('AC-01.1 the sidebar items are navigable: Headcount, Prestasi', async ({ page, gotoApp, loginAs }) => {
+    await loginAs('adminsekolah@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page, 'pentadbiran').title).toHaveText('Dashboard Sekolah')
+    await expect(header(page, 'pembelajaran').title).toHaveText('Dashboard Sekolah')
     const scope = await navRoot(page)
-    await scope.locator('a[href="/ranking"]').first().click()
-    await expect.poll(() => new URL(page.url()).pathname).toBe('/ranking')
+    // /ranking is not in the school-admin nav (user-nav.ts:443), so the first click is Headcount.
+    await scope.locator('a[href="/headcount"]').first().click()
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/headcount')
   })
 
-  test('AC-03.1 the "Analisa Item" menu item opens S10 for the admin', async ({
-    page,
-    gotoApp,
-    loginAs,
-  }) => {
-    await loginAs('admin@demo.test')
+  test('AC-03.1 the "Analisa Item" menu item opens S9 for the school admin', async ({ page, gotoApp, loginAs }) => {
+    await loginAs('adminsekolah@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page, 'pentadbiran').title).toHaveText('Dashboard Sekolah')
+    await expect(header(page, 'pembelajaran').title).toHaveText('Dashboard Sekolah')
     const scope = await navRoot(page)
     await scope.locator('a[href="/analisa-item"]').first().click()
-    await expect.poll(() => new URL(page.url()).pathname).toBe('/analisa-item/kelas')
-    await expect(header(page, 'pentadbiran').title).toHaveText('Analisa Item')
+    // routes/analisa-item.ts:17: the school admin goes to the own-school S9 (the admin and teacher go to S10).
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/analisa-item/sekolah')
+    await expect(header(page, 'pembelajaran').title).toHaveText('Analisa Item — Sekolah')
   })
 })
 
