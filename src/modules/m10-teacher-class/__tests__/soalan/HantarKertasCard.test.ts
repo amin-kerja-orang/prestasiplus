@@ -115,27 +115,20 @@ describe('Hantar Kertas submit (contract #60)', () => {
     expect(guru.submitQuestionPaper).not.toHaveBeenCalled()
   })
 
-  it('C-32 (V2 TeacherController:1007): .doc and .xls are accepted like .pdf/.docx/.xlsx', async () => {
+  it('44-F4: .doc and .xls are refused, any invalid file rejects all', async () => {
     const w = mount(HantarKertasCard)
-    await fill(w, [new File(['x'], 'lama.doc'), new File(['y'], 'jadual.xls')])
-    expect(t(w, 'paper-files-error').exists()).toBe(false)
-    expect(t(w, 'paper-file-list').exists()).toBe(true)
-  })
-
-  it('44-F4: any other type is refused and any invalid file rejects all', async () => {
-    const w = mount(HantarKertasCard)
-    await fill(w, [new File(['x'], 'ok.pdf'), new File(['y'], 'gambar.png')])
+    await fill(w, [new File(['x'], 'ok.pdf'), new File(['y'], 'lama.doc')])
     expect(t(w, 'paper-files-error').text()).toBe(
       'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.',
     )
     expect(t(w, 'paper-file-list').exists()).toBe(false)
   })
 
-  it('44-F4 / V2 soalan-hub.blade.php:335: the accept list is pdf, doc, docx, xls, xlsx; the busy text is "Memuat naik..."', async () => {
+  it('44-F4: the accept list is pdf, docx, xlsx; the busy text is "Memuat naik..."', async () => {
     let release: (v: unknown) => void = () => undefined
     guru.submitQuestionPaper.mockReturnValue(new Promise((r) => (release = r)))
     const w = mount(HantarKertasCard)
-    expect(w.find('input[type="file"]').attributes('accept')).toBe('.pdf,.doc,.docx,.xls,.xlsx')
+    expect(w.find('input[type="file"]').attributes('accept')).toBe('.pdf,.docx,.xlsx')
     await fillAndSubmit(w)
     expect(t(w, 'paper-submit').text()).toContain('Memuat naik...')
     release({})

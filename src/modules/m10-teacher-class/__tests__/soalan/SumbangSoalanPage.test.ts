@@ -369,7 +369,7 @@ describe('S21 Hantar Kertas', () => {
     expect(t(w, 'paper-oleh').attributes('maxlength')).toBe('150')
     expect(t(w, 'paper-catatan').attributes('maxlength')).toBe('1000')
     expect(t(w, 'paper-tahun').attributes('min')).toBe('2000')
-    expect(t(w, 'paper-files').attributes('accept')).toBe('.pdf,.doc,.docx,.xls,.xlsx')
+    expect(t(w, 'paper-files').attributes('accept')).toBe('.pdf,.docx,.xlsx')
     expect(
       t(w, 'paper-jenis')
         .findAll('option')

@@ -1509,8 +1509,8 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
       [valid, [], 'files'],
       [valid, Array.from({ length: 6 }, () => pdf()), 'files'],
       [valid, [pdf('gambar.png')], 'files'],
-      [valid, [pdf('lama.png')], 'files'],
-      [valid, [pdf('lama.txt')], 'files'],
+      [valid, [pdf('lama.doc')], 'files'],
+      [valid, [pdf('lama.xls')], 'files'],
       [valid, [pdf('besar.pdf', 20 * 1024 * 1024 + 1)], 'files'],
     ]
     for (const [fields, files, field] of cases) {
@@ -1527,7 +1527,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
         ),
       ).files,
     ).toBe('Maksimum 5 fail, saiz maksimum 20MB setiap fail')
-    expect(fieldsOf(await paper(valid, [pdf('a.png')])).files).toBe(
+    expect(fieldsOf(await paper(valid, [pdf('a.doc')])).files).toBe(
       'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.',
     )
     expect(fieldsOf(await paper(valid, [pdf('b.pdf', 20 * 1024 * 1024 + 1)])).files).toBe(
