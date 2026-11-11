@@ -554,6 +554,7 @@ test.describe('unknown ids', MODULE, () => {
     page,
     gotoApp,
   }) => {
+    test.setTimeout(240_000) // eight full page loads
     for (const path of [
       `${CC}/school/abc`,
       `${CC}/school/8080/teacher/abc`,
