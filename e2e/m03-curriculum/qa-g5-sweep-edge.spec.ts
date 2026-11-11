@@ -127,21 +127,28 @@ test.describe('QA G5 responsive sweep of the admin routes', MODULE, () => {
         await expectNoHorizontalScroll(page)
         continue
       }
-      // DsDataTable: the table sits in its own overflow-x container inside the card.
-      const scroller = page.getByTestId(table).locator('div.overflow-x-auto').first()
-      const info = await scroller.evaluate((el) => ({
-        over: el.scrollWidth - el.clientWidth,
-        ox: getComputedStyle(el).overflowX,
-      }))
+      // DsDataTable: the <table> sits in its own overflow-x container (the nearest scrollable ancestor of the table, inside the card).
+      const tableEl = page.getByTestId(table).locator('table').first()
+      const info = await tableEl.evaluate((t) => {
+        let el: HTMLElement | null = t.parentElement
+        while (el && !['auto', 'scroll'].includes(getComputedStyle(el).overflowX)) el = el.parentElement
+        return el
+          ? { over: el.scrollWidth - el.clientWidth, ox: getComputedStyle(el).overflowX, cls: el.className }
+          : { over: 0, ox: 'none', cls: '' }
+      })
       if (viewportWidth(page) >= 1280) expect(info.over, path).toBeLessThanOrEqual(0)
       else {
-        expect(['auto', 'scroll']).toContain(info.ox)
+        expect(['auto', 'scroll'], JSON.stringify({ path, info })).toContain(info.ox)
         // Scroll the card to the end: the last header becomes visible inside the viewport.
-        await scroller.evaluate((el) => (el.scrollLeft = el.scrollWidth))
+        await tableEl.evaluate((t) => {
+          let el: HTMLElement | null = t.parentElement
+          while (el && !['auto', 'scroll'].includes(getComputedStyle(el).overflowX)) el = el.parentElement
+          if (el) el.scrollLeft = el.scrollWidth
+        })
         const lastTh = page.getByTestId(table).locator('thead th').last()
         await expect(lastTh).toHaveText(new RegExp(last, 'i'))
         const box = await lastTh.boundingBox()
-        expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth(page) + 1)
+        expect(box!.x + box!.width, JSON.stringify({ path, info })).toBeLessThanOrEqual(viewportWidth(page) + 1)
       }
       await expectNoHorizontalScroll(page)
     }
