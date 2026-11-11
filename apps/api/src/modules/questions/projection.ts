@@ -326,16 +326,23 @@ export function constantFields(record: QuestionRecord): {
 
 interface PromptNode {
   prompt?: { ms?: unknown } | undefined
+  options?: unknown
   children?: unknown
 }
 
 const PROMPT_PLACEHOLDER = '~~empty-prompt~~'
 
-/** Copy of a part tree whose empty `prompt.ms` is replaced by a placeholder (`mask`) or put back (`!mask`), same shape and order. */
+const swapMs = <T extends { ms?: unknown }>(text: T, mask: boolean): T => ((mask ? text.ms === '' : text.ms === PROMPT_PLACEHOLDER) ? { ...text, ms: mask ? PROMPT_PLACEHOLDER : '' } : text)
+
+/**
+ * Copy of a part tree whose empty `prompt.ms` and empty option `body.ms` (an image-only V2 option) are replaced by a placeholder
+ * (`mask`) or put back (`!mask`), same shape and order.
+ */
 function swapEmptyPrompts(node: unknown, mask: boolean): unknown {
   const n = node as PromptNode
   const out: Record<string, unknown> = { ...(n as Record<string, unknown>) }
-  if (n.prompt && (mask ? n.prompt.ms === '' : n.prompt.ms === PROMPT_PLACEHOLDER)) out.prompt = { ...n.prompt, ms: mask ? PROMPT_PLACEHOLDER : '' }
+  if (n.prompt) out.prompt = swapMs(n.prompt, mask)
+  if (Array.isArray(n.options)) out.options = n.options.map((o: { body?: { ms?: unknown } }) => (o && typeof o === 'object' && o.body ? { ...o, body: swapMs(o.body, mask) } : o))
   if (Array.isArray(n.children)) out.children = n.children.map((c) => swapEmptyPrompts(c, mask))
   return out
 }

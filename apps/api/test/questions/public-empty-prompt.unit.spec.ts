@@ -28,3 +28,15 @@ describe('toPublic with a migrated V2 question that has an empty leaf prompt', (
     expect(JSON.stringify(pub)).not.toContain('"key"')
   })
 })
+
+describe('toPublic with an empty option body (an image-only V2 option)', () => {
+  it('does not throw, keeps the option body empty and still strips the key', () => {
+    const rec = migratedRecord('Pilih jawapan.')
+    const leaf = (rec.version.parts as unknown as { options: { label: string; body: { ms: string } }[] }[])[0]!
+    leaf.options[1]!.body = { ms: '' }
+    const pub = toPublic(rec)
+    const options = (pub.parts?.[0] as unknown as { options: { label: string; body: { ms: string } }[] }).options
+    expect(options.map((o) => o.body.ms)).toEqual(['a', '', 'c', 'd'])
+    expect(JSON.stringify(pub)).not.toContain('"key"')
+  })
+})
