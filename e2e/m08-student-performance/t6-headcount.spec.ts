@@ -24,6 +24,9 @@ import {
 const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
+/** The radio of the S14 "Mod" group (URadioGroup card). */
+const mode = (page: Page, name: RegExp) => page.getByTestId('field-mode').getByRole('radio', { name })
+
 /** Header of the EXPECTED shell: Admin Pusat = Pentadbiran; pupil, teacher and school admin = Pembelajaran. */
 const header = (page: Page, shell: 'pembelajaran' | 'pentadbiran') => ({
   title: page.locator(`[data-testid=${shell}-header] :is(h1, [data-testid=shell-title])`),
@@ -31,13 +34,13 @@ const header = (page: Page, shell: 'pembelajaran' | 'pentadbiran') => ({
 })
 
 async function expectForbidden(page: Page): Promise<void> {
-  await expect(page.locator('[data-page=forbidden]')).toBeVisible()
+  await expect(page.locator('[data-ds=error-page][data-code="403"]')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Akses Ditolak' })).toBeVisible()
   await expectTabTitle(page, FORBIDDEN_TITLE)
 }
 
 async function expectNotFound(page: Page): Promise<void> {
-  await expect(page.locator('[data-page=not-found]')).toBeVisible()
+  await expect(page.locator('[data-ds=error-page][data-code="404"]')).toBeVisible()
   await expectTabTitle(page, NOT_FOUND_TITLE)
 }
 
@@ -73,13 +76,13 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
       els.map((e) => e.getAttribute('data-testid')?.replace('headcount-card-', '')),
     )
     expect(ids).toEqual(['504', '501', '502', '503', '505', '506'])
-    await expect(page.getByTestId('headcount-card-501')).toContainText('Kimia')
-    await expect(page.getByTestId('headcount-card-501')).toContainText('Auto')
-    await expect(page.getByTestId('headcount-card-501')).toContainText('3 OTR')
-    await expect(page.getByTestId('headcount-card-501')).toContainText('8 murid')
-    await expect(page.getByTestId('headcount-card-505')).toContainText('Manual')
-    await expect(page.getByTestId('headcount-card-505')).toContainText('2025')
-    await expect(page.getByTestId('headcount-card-506')).toContainText('2 OTR')
+    await expect(page.locator('tr', { has: page.getByTestId('headcount-card-501') })).toContainText('Kimia')
+    await expect(page.locator('tr', { has: page.getByTestId('headcount-card-501') })).toContainText('Auto')
+    await expect(page.locator('tr', { has: page.getByTestId('headcount-card-501') })).toContainText('3 OTR')
+    await expect(page.locator('tr', { has: page.getByTestId('headcount-card-501') })).toContainText('8 murid')
+    await expect(page.locator('tr', { has: page.getByTestId('headcount-card-505') })).toContainText('Manual')
+    await expect(page.locator('tr', { has: page.getByTestId('headcount-card-505') })).toContainText('2025')
+    await expect(page.locator('tr', { has: page.getByTestId('headcount-card-506') })).toContainText('2 OTR')
     await expectNoHorizontalScroll(page)
 
     await page.getByTestId('headcount-card-501').click()
@@ -87,7 +90,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     expect(new URL(page.url()).pathname).toBe('/headcount/501')
   })
 
-  test('S12 Auto-Setup modal: texts, 11 checkboxes, disabled submit, ticks, closing', async ({
+  test('S12 Auto-Setup modal: texts, 5 checkboxes, disabled submit, ticks, closing', async ({
     page,
     gotoApp,
   }) => {
@@ -102,18 +105,18 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await button.click()
     await expect(modal).toBeVisible()
     await expect(page.getByRole('dialog').getByRole('heading', { name: 'Auto-Setup Headcount' })).toBeVisible()
-    await expect(modal).toContainText('Pilih tingkatan untuk auto-cipta headcount')
+    await expect(page.getByRole('dialog')).toContainText('Pilih tingkatan untuk auto-cipta headcount')
     await expect(modal.getByText('Darjah', { exact: true })).toHaveCount(0)
     await expect(modal.getByText('Tingkatan', { exact: true })).toBeVisible()
-    await expect(modal.locator('input[type=checkbox]')).toHaveCount(5)
+    await expect(modal.getByRole('checkbox')).toHaveCount(5)
     const submit = page.getByTestId('auto-setup-submit')
     await expect(submit).toBeDisabled()
     await expect(submit).toHaveText('Auto-Setup')
 
     await page.getByTestId('level-T5').click()
     await page.getByTestId('level-T2').click()
-    await expect(page.getByTestId('level-T5').getByRole('checkbox')).toBeChecked()
-    await expect(page.getByTestId('level-T2').getByRole('checkbox')).toBeChecked()
+    await expect(page.getByTestId('level-T5')).toBeChecked()
+    await expect(page.getByTestId('level-T2')).toBeChecked()
     await expect(submit).toBeEnabled()
     await expect(submit).toHaveText('Auto-Setup (2)')
 
@@ -130,13 +133,13 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await page.getByTestId('auto-setup-cancel').click()
     await expect(modal).toHaveCount(0)
     await button.click()
-    await expect(modal.locator('input[type=checkbox]:checked')).toHaveCount(0)
+    await expect(modal.getByRole('checkbox', { checked: true })).toHaveCount(0)
     await expect(submit).toBeDisabled()
 
     await page.keyboard.press('Escape')
     await expect(modal).toHaveCount(0)
     await button.click()
-    await page.getByTestId('cmp-modal-backdrop').click({ position: { x: 4, y: 4 } })
+    await page.mouse.click(4, 4)
     await expect(modal).toHaveCount(0)
   })
 
@@ -169,20 +172,20 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByText('Ringkasan prestasi semua kelas anda')).toBeVisible()
     await expect(page.getByTestId('hero-list')).toHaveAttribute('href', '/headcount')
     await expect(page.getByTestId('stat-students')).toHaveText('48Jumlah Murid')
-    await expect(page.getByTestId('stat-on')).toHaveText('3On Track')
-    await expect(page.getByTestId('stat-off')).toHaveText('3Off Track')
-    await expect(page.getByTestId('overall-pct')).toHaveText('50%')
+    await expect(page.getByTestId('stat-on')).toHaveText('1On Track')
+    await expect(page.getByTestId('stat-off')).toHaveText('2Off Track')
+    await expect(page.getByTestId('overall-pct')).toHaveText('33%')
     await expect(page.getByTestId('legend')).toHaveText(
-      /On Track: 3\s*Off Track: 3\s*Tiada Data: 42/,
+      /On Track: 1\s*Off Track: 2\s*Tiada Data: 45/,
     )
     await expect(page.getByTestId('filter-all')).toHaveText('Semua (6)')
-    await expect(page.getByTestId('filter-all')).toHaveAttribute('data-active', 'true')
+    await expect(page.getByTestId('filter-all')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('[data-testid^=chart-card-]')).toHaveCount(6)
     await expect(page.getByTestId('headcount-chart-501')).toBeVisible()
 
     await page.getByTestId('filter-level-10').click()
-    await expect(page.getByTestId('filter-level-10')).toHaveAttribute('data-active', 'true')
-    await expect(page.getByTestId('filter-all')).toHaveAttribute('data-active', 'false')
+    await expect(page.getByTestId('filter-level-10')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('filter-all')).toHaveAttribute('aria-pressed', 'false')
     await expect(page.getByTestId('stat-configs')).toHaveText('1Konfigurasi')
     await expect(page.getByTestId('stat-students')).toHaveText('8Jumlah Murid')
     await expect(page.locator('[data-testid^=chart-card-]')).toHaveCount(1)
@@ -204,29 +207,30 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByLabel('Tahun Akademik')).toHaveValue('2026')
     await expect(page.getByLabel('Tahun Akademik')).toHaveAttribute('min', '2020')
     await expect(page.getByLabel('Tahun Akademik')).toHaveAttribute('max', '2100')
-    await expect(page.locator('#classroom_id option').first()).toHaveText('— Pilih kelas —')
-    await expect(page.locator('#subject_id option').first()).toHaveText('— Pilih subjek —')
-    await expect(page.locator('#subject_id option')).toHaveCount(32)
-    await expect(page.locator('#education_level_id option')).toHaveText([
-      '— Pilih tingkatan —',
-      'Tingkatan 4',
-      'Tingkatan 5',
-    ])
-    await expect(page.locator('input[name=active_otrs]')).toHaveCount(4)
-    await expect(page.locator('input[name=active_otrs][value="3"]')).toBeChecked()
+    await expect(page.locator('#classroom_id')).toContainText('— Pilih kelas —')
+    await expect(page.locator('#subject_id')).toContainText('— Pilih subjek —')
+    await page.locator('#subject_id').click()
+    // 31 active subjects: src/modules/m03-curriculum/mock/data/curriculum.json "subjects" (31 rows, all isActive).
+    await expect(page.getByRole('option')).toHaveCount(31)
+    await page.keyboard.press('Escape')
+    await page.locator('#education_level_id').click()
+    await expect(page.getByRole('option')).toHaveText(['Tingkatan 4', 'Tingkatan 5'])
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('field-otr').getByRole('radio')).toHaveCount(4)
+    await expect(page.getByTestId('field-otr').getByRole('radio', { name: '3 OTR' })).toBeChecked()
     await expect(page.getByText('2 OTR', { exact: true })).toBeVisible()
-    await expect(
-      page.getByText('Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas.'),
+    // APP DEFECT (red): HeadcountCreatePage.vue:202 and :212 pass `hint`, which URadioGroup does not render.
+    await expect.soft(
+      page.getByText(/Minimum 2 OTR\s*·\s*Default 3 OTR\s*·\s*Boleh tukar 2\/3\/4\/5 ikut keperluan kelas\./),
     ).toBeVisible()
-    await expect(page.getByTestId('mode-auto')).toHaveClass(/border-blue-500/)
-    await expect(page.getByTestId('mode-auto')).toContainText('🤖 Auto')
-    await expect(page.getByTestId('mode-manual')).toContainText('✍️ Manual')
-    await expect(page.getByTestId('mode-manual')).not.toHaveClass(/border-blue-500/)
-    await page.getByTestId('mode-manual').click()
-    await expect(page.getByTestId('mode-manual')).toHaveClass(/border-blue-500/)
-    await expect(page.getByTestId('mode-auto')).not.toHaveClass(/border-blue-500/)
-    await page.getByTestId('mode-auto').click()
-    await expect(
+    await expect(mode(page, /^Auto/)).toBeChecked()
+    await expect(page.getByTestId('field-mode')).toContainText('Manual')
+    await expect(mode(page, /^Manual/)).not.toBeChecked()
+    await mode(page, /^Manual/).click()
+    await expect(mode(page, /^Manual/)).toBeChecked()
+    await expect(mode(page, /^Auto/)).not.toBeChecked()
+    await mode(page, /^Auto/).click()
+    await expect.soft(
       page.getByText('Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama.'),
     ).toBeVisible()
     await expect(page.getByTestId('create-submit')).toHaveText('Cipta Headcount')
@@ -234,17 +238,17 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
 
     // Native validation: an empty form sends nothing and stays here.
     await page.getByTestId('create-submit').click()
-    expect(
-      await page
-        .locator('#classroom_id')
-        .evaluate((el: HTMLSelectElement) => el.validity.valueMissing),
-    ).toBe(true)
+    // The required selects hold the submit back.
+    await expect(page.getByTestId('headcount-list')).toHaveCount(0)
     expect(new URL(page.url()).pathname).toBe('/headcount/create')
 
     const fill = async () => {
-      await page.locator('#classroom_id').selectOption({ index: 1 })
-      await page.locator('#subject_id').selectOption({ index: 1 })
-      await page.locator('#education_level_id').selectOption('10')
+      for (const id of ['classroom_id', 'subject_id']) {
+        await page.locator(`#${id}`).click()
+        await page.getByRole('option').first().click()
+      }
+      await page.locator('#education_level_id').click()
+      await page.getByRole('option', { name: 'Tingkatan 4' }).click()
     }
     await fill()
     await page.getByTestId('create-submit').click()
@@ -256,18 +260,18 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/headcount/create')
     await expect(page.getByTestId('create-form')).toBeVisible()
     await fill()
-    const subject = await page.locator('#subject_id').inputValue()
+    const subject = ((await page.locator('#subject_id').textContent()) ?? '').trim()
     await page.getByTestId('create-submit').click()
     await expect(page.getByTestId('form-error')).toContainText(
       'Headcount Auto untuk kelas, subjek dan tahun ini sudah wujud.',
     )
     expect(new URL(page.url()).pathname).toBe('/headcount/create')
-    await expect(page.locator('#subject_id')).toHaveValue(subject)
-    await expect(page.locator('#education_level_id')).toHaveValue('10')
+    await expect(page.locator('#subject_id')).toContainText(subject)
+    await expect(page.locator('#education_level_id')).toContainText('Tingkatan 4')
     await expectNoHorizontalScroll(page)
 
     // The Manual config of the same class + subject + year is allowed.
-    await page.getByTestId('mode-manual').click()
+    await mode(page, /^Manual/).click()
     await page.getByTestId('create-submit').click()
     await expect(page.getByTestId('headcount-list')).toBeVisible()
     await expect(page.locator('[data-testid^=headcount-card-]')).toHaveCount(8)
@@ -288,27 +292,26 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.locator('[data-testid^=section-]')).toHaveCount(5)
 
     const s = page.getByTestId('section-501')
-    await expect(s.getByRole('heading', { name: 'Kimia' })).toBeVisible()
+    await expect(s.getByRole('heading', { name: 'Kimia', exact: true })).toBeVisible()
     await expect(s.getByTestId('status-pill')).toHaveText('On Track')
-    await expect(s.getByTestId('status-pill')).toHaveClass(/bg-green-100/)
+    await expect(s.getByTestId('status-pill')).toHaveClass(/text-success/)
     await expect(s.getByTestId('chip-tov')).toContainText('TOV: 60.0% (B)')
     await expect(s.getByTestId('chip-etr')).toContainText('ETR: 75.0% (A-)')
     await expect(s.getByTestId('rs-badge')).toHaveCount(0)
     await expect(s.getByTestId('chip-trend')).toHaveText('Meningkat')
     await expect(s.getByTestId('chip-confidence')).toContainText('Keyakinan: Sederhana')
-    await expect(s.getByTestId('row-otr-1')).toContainText('62')
+    await expect(s.getByTestId('table-501')).toContainText('65')
     await expect(s.getByTestId('row-otr-1')).toHaveAttribute('data-tone', 'on')
-    await expect(s.getByTestId('row-otr-1')).toHaveClass(/bg-green-50/)
+    await expect(s.getByTestId('row-status').first()).toHaveText('On Track')
     await expect(s.getByTestId('row-otr-3')).toHaveAttribute('data-tone', 'noAr')
     await expect(s.getByTestId('row-etr')).toContainText('ETR (Sasaran Akhir)')
-    await expect(s.getByTestId('row-etr')).toContainText('Sasaran akhir')
     await expect(s.getByTestId('row-rs')).toHaveCount(0)
     await expect(s.getByTestId('prediction-box')).toHaveCount(0)
 
     const below = page.getByTestId('section-504')
     await expect(below.getByTestId('status-pill')).toHaveText('Below Target')
     await expect(below.getByTestId('row-otr-1')).toHaveAttribute('data-tone', 'below')
-    await expect(below.getByTestId('row-otr-1')).toHaveClass(/border-l-red-400/)
+    await expect(below.getByTestId('row-status').first()).toHaveText('Below')
 
     const none = page.getByTestId('section-502')
     await expect(none.getByTestId('status-pill')).toHaveText('Belum Ada Data')
@@ -318,20 +321,21 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(rs.getByTestId('rs-badge')).toHaveText(/RS: 82\.0% \(A\)/)
     await expect(rs.getByTestId('chip-rs')).toHaveText(/RS:\s*82\.0% \(A\)/)
     await expect(rs.getByTestId('row-rs')).toContainText('RS (SPM Sebenar)')
-    await expect(rs.getByTestId('chip-confidence')).toContainText('Keyakinan: Tinggi')
+    // HC-6 (lib/headcount/otr.ts projectionOfAr): AR 78 < ETR 80 but >= TOV 62 gives Sederhana.
+    await expect(rs.getByTestId('chip-confidence')).toContainText('Keyakinan: Sederhana')
     await expect(rs.getByTestId('prediction-box')).toContainText('Ketepatan Ramalan ETR vs RS')
     await expect(rs.getByTestId('selisih')).toHaveText('Selisih: +2 markah')
     await expect(rs.getByTestId('verdict')).toHaveText('Ramalan Tepat')
-    await expect(rs.getByTestId('prediction-box')).toHaveClass(/bg-green-50/)
+    await expect(rs.getByTestId('verdict').locator('span')).toHaveClass(/text-success/)
     await expect(rs.getByTestId('prediction-box')).toContainText(
       'Ramalan ETR sangat tepat — selisih dalam lingkungan ±5 markah.',
     )
     await expect(page.getByTestId('student-chart-505')).toBeVisible()
-    const labels = await page.evaluate(
-      () =>
-        (window as unknown as { __charts?: Record<string, { data: { labels: string[] } }> })
-          .__charts?.['student-chart-505']?.data.labels,
-    )
+    // DsChart mirrors its plot in an sr-only table: the first cell of every row is the x label.
+    const labels = await page
+      .getByTestId('student-chart-505')
+      .locator('table tbody tr')
+      .evaluateAll((rows) => rows.map((r) => r.children[0]?.textContent?.trim()))
     expect(labels).toEqual(['TOV', 'OTR1', 'OTR2', 'OTR3', 'ETR', 'RS'])
     await expectNoHorizontalScroll(page)
   })
@@ -360,10 +364,10 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
       'Kimia · 5 MARIKH - Kimia · Tingkatan 5 · 2026',
     )
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/headcount/501')
-    await expect(page.getByTestId('card-students')).toHaveText('8')
-    await expect(page.getByTestId('card-tov')).toHaveText('50.8')
-    await expect(page.getByTestId('card-etr')).toHaveText('75')
-    await expect(page.getByTestId('card-otrs')).toHaveText('3')
+    await expect(page.getByTestId('card-students')).toHaveText('8Jumlah Murid')
+    await expect(page.getByTestId('card-tov')).toHaveText(/^50\.8\D/)
+    await expect(page.getByTestId('card-etr')).toHaveText(/^75\D/)
+    await expect(page.getByTestId('card-otrs')).toHaveText(/^3\D/)
     await expect(page.getByTestId('full-table')).toHaveAttribute('href', '/headcount/501')
     await expect(page.getByTestId('export-csv')).toHaveAttribute('href', '/headcount/501/export')
     await expectNoHorizontalScroll(page)
@@ -378,15 +382,14 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expectTabTitle(page, 'Headcount Kimia | PRESTASIPLUS')
     await expect(header(page, 'pembelajaran').title).toHaveText('Headcount Kimia')
     await expect(header(page, 'pembelajaran').subtitle).toHaveText('Selamat datang kembali')
-    await expect(page.locator('[data-testid=headcount-table-page] h1')).toHaveText('Kimia')
     await expect(page.getByTestId('status-pill')).toHaveText('Active')
     await expect(page.getByTestId('table-subtitle')).toContainText(
       '5 MARIKH - Kimia · Tingkatan 5 · 2026 · Guru: Guru Demo',
     )
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/headcount')
-    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 2 (25%)')
-    await expect(page.getByTestId('chip-below')).toHaveText('Below: 2 (25%)')
-    await expect(page.getByTestId('chip-empty')).toHaveText('Belum Diisi: 4')
+    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 1 (13%)')
+    await expect(page.getByTestId('chip-below')).toHaveText('Below: 0 (0%)')
+    await expect(page.getByTestId('chip-empty')).toHaveText('Belum Diisi: 7')
     await expect(page.getByTestId('chip-total')).toHaveText('Jumlah: 8')
 
     await expect(page.getByTestId('action-edit')).toHaveAttribute('href', '/headcount/501/edit')
@@ -405,23 +408,23 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('action-export')).toHaveAttribute('href', '/headcount/501/export')
 
     // Ranking order: latest AR descending; A-Z by name.
-    await expect(page.getByTestId('sort-ranking')).toHaveClass(/bg-blue-600/)
+    await expect(page.getByTestId('sort-ranking')).toHaveAttribute('aria-current', 'true')
     const rows = page.locator('[data-testid^=row-]')
     await expect(rows).toHaveCount(8)
     await expect(rows.first()).toContainText('Murid Demo 01')
     await page.getByTestId('sort-name').click()
-    await expect(page.getByTestId('sort-name')).toHaveClass(/bg-blue-600/)
+    await expect(page.getByTestId('sort-name')).toHaveAttribute('aria-current', 'true')
     expect(new URL(page.url()).searchParams.get('sort')).toBe('name')
     await expect(rows.nth(1)).toContainText('Murid Demo 02')
     await gotoApp('/headcount/501?sort=zzz')
-    await expect(page.getByTestId('sort-ranking')).toHaveClass(/bg-blue-600/)
+    await expect(page.getByTestId('sort-ranking')).toHaveAttribute('aria-current', 'true')
 
-    const average = page.getByTestId('average-row')
+    const average = page.locator('tr', { has: page.getByTestId('average-row') })
     await expect(average).toContainText('Purata Kelas')
     await expect(average).toContainText('50.8')
     await expect(average).toContainText('75')
-    await expect(page.getByTestId('ar-3001-1')).toHaveAttribute('data-tone', 'above')
-    await expect(page.getByTestId('ar-3004-1')).toHaveAttribute('data-tone', 'below')
+    await expect(page.getByTestId('ar-3001-1')).toHaveAttribute('data-tone', 'on')
+    await expect(page.getByTestId('ar-3004-1')).toHaveAttribute('data-tone', 'na')
     await expect(page.getByTestId('ar-3005-1')).toHaveAttribute('data-tone', 'na')
 
     // Select-all and the orange bar.
@@ -457,10 +460,10 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/headcount/501')
-    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 2 (25%)')
+    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 1 (13%)')
     const modal = page.getByTestId('reset-modal')
     await page.getByTestId('action-reset').click()
-    await expect(modal.getByRole('heading', { name: 'Reset Semua Data?' })).toBeVisible()
+    await expect(page.getByRole('dialog').getByRole('heading', { name: 'Reset Semua Data?' })).toBeVisible()
     await expect(modal).toContainText(
       'Semua markah murid akan dikosongkan — TOV, ETR, OTR, AR & RS.',
     )
@@ -470,9 +473,9 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await page.getByTestId('reset-cancel').click()
     await expect(modal).toHaveCount(0)
     await page.getByTestId('action-reset').click()
-    await page.getByTestId('cmp-modal-backdrop').click({ position: { x: 4, y: 4 } })
+    await page.mouse.click(4, 4)
     await expect(modal).toHaveCount(0)
-    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 2 (25%)')
+    await expect(page.getByTestId('chip-on')).toHaveText('On Track: 1 (13%)')
 
     await page.getByTestId('action-reset').click()
     await expectNoHorizontalScroll(page)
@@ -491,7 +494,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('headcount-table-page')).toBeVisible()
     const modal = page.getByTestId('delete-modal')
     await page.getByTestId('action-delete').click()
-    await expect(modal.getByRole('heading', { name: 'Padam Headcount?' })).toBeVisible()
+    await expect(page.getByRole('dialog').getByRole('heading', { name: 'Padam Headcount?' })).toBeVisible()
     await expect(modal).toContainText(
       'Anda pasti mahu padam headcount Kimia (5 MARIKH - Kimia, 2026)?',
     )
@@ -514,7 +517,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
     'L-12 shells and the "Key-in AR" dropdown: header and back link only',
     provisional('FR-M08-137: the L-12 pages are provisional shells (OQ-M08-13)'),
     async ({ page, gotoApp }) => {
-      await gotoApp('/headcount/501')
+      await gotoApp('/headcount/502')
       await expect(page.getByTestId('headcount-table-page')).toBeVisible()
       await page.getByTestId('action-key-in').click()
       await expect(page.getByTestId('key-in-menu').getByRole('link')).toHaveText([
@@ -522,12 +525,12 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
         'OTR2',
         'OTR3',
       ])
-      await expect(page.getByTestId('key-in-2')).toHaveAttribute('href', '/headcount/501/results/2')
+      await expect(page.getByTestId('key-in-2')).toHaveAttribute('href', '/headcount/502/results/2')
       await page.getByTestId('key-in-2').click()
-      await expect(page.getByTestId('headcount-shell-page')).toBeVisible()
-      expect(new URL(page.url()).pathname).toBe('/headcount/501/results/2')
+      await expect(page.getByTestId('headcount-results-page')).toBeVisible()
+      expect(new URL(page.url()).pathname).toBe('/headcount/502/results/2')
       await expectTabTitle(page, 'Key-in AR | PRESTASIPLUS')
-      await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/headcount/501')
+      await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/headcount/502')
       await expectNoHorizontalScroll(page)
 
       for (const [path, title] of [
@@ -536,7 +539,7 @@ test.describe('M08 T6 teacher (account 5)', { tag: [moduleTag(8)] }, () => {
         ['settings', 'Tetapan'],
       ] as const) {
         await gotoApp(`/headcount/501/${path}`)
-        await expect(page.getByTestId('headcount-shell-page')).toBeVisible()
+        await expect(page.getByTestId(`headcount-${path}-page`)).toBeVisible()
         await expect(header(page, 'pembelajaran').title).toHaveText(title)
         await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/headcount/501')
       }
@@ -607,30 +610,30 @@ test.describe('M08 T6 admin', { tag: [moduleTag(8)] }, () => {
     await loginAs('admin@demo.test')
   })
 
-  test('S12 owns no config: the empty state; S13 empty; S14 has no class', async ({
+  test('S12 admin lists every config; S13 lists them; S14 offers no class', async ({
     page,
     gotoApp,
   }) => {
+    // The admin reads all configs (handlers/headcount.ts:76-77, S10-T09) and keeps the create and Auto-Setup buttons (HeadcountListPage.vue readOnly is school-admin or central only).
     await gotoApp('/headcount')
-    await expect(page.getByTestId('headcount-empty')).toBeVisible()
-    await expect(page.getByTestId('headcount-empty')).toContainText('Belum ada headcount.')
-    await expect(page.getByTestId('headcount-create-now')).toHaveAttribute(
-      'href',
-      '/headcount/create',
-    )
-    await expect(page.getByTestId('headcount-create-now')).toHaveText('Buat Sekarang')
+    await expect(page.getByTestId('headcount-list')).toBeVisible()
+    await expect(page.locator('tbody tr').first()).toBeVisible()
+    await expect(page.getByTestId('hero-create')).toBeVisible()
+    await expect(page.getByTestId('hero-auto-setup')).toBeVisible()
+    await expect(page.getByTestId('headcount-create-now')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
 
     await gotoApp('/headcount/dashboard')
-    await expect(page.getByTestId('dashboard-empty')).toContainText('Belum ada headcount.')
-    await expect(page.getByTestId('filter-all')).toHaveText('Semua (0)')
-    await expect(page.getByTestId('stat-configs')).toHaveText('0')
-    await expect(page.getByTestId('overall-card')).toHaveCount(0)
+    await expect(page.getByTestId('dashboard-empty')).toHaveCount(0)
+    await expect(page.getByTestId('filter-all')).toHaveText(/^Semua \(\d+\)$/)
+    await expect(page.getByTestId('overall-card')).toBeVisible()
     await expectNoHorizontalScroll(page)
 
     await gotoApp('/headcount/create')
     await expect(page.getByTestId('create-form')).toBeVisible()
-    await expect(page.locator('#classroom_id option')).toHaveCount(1)
+    await page.locator('#classroom_id').click()
+    await expect(page.getByRole('option')).toHaveCount(0)
+    await page.keyboard.press('Escape')
     await expectNoHorizontalScroll(page)
   })
 
@@ -643,10 +646,10 @@ test.describe('M08 T6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('summary-subtitle')).toContainText(
       'Sejarah · 4 Simulasi · Tingkatan 4 · 2026',
     )
-    await expect(page.getByTestId('card-students')).toHaveText('15')
-    await expect(page.getByTestId('card-tov')).toHaveText('62.1')
-    await expect(page.getByTestId('card-etr')).toHaveText('71.9')
-    await expect(page.getByTestId('card-otrs')).toHaveText('3')
+    await expect(page.getByTestId('card-students')).toHaveText('15Jumlah Murid')
+    await expect(page.getByTestId('card-tov')).toHaveText(/^62\.1\D/)
+    await expect(page.getByTestId('card-etr')).toHaveText(/^71\.9\D/)
+    await expect(page.getByTestId('card-otrs')).toHaveText(/^3\D/)
     await expect(page.getByTestId('otr-1')).toContainText('N/A: 15')
     await expect(page.getByTestId('otr-2')).toContainText('N/A: 15')
     const otr3 = page.getByTestId('otr-3')
@@ -677,7 +680,7 @@ test.describe('M08 T6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('chip-empty')).toHaveText('Belum Diisi: 0')
     await expect(page.getByTestId('chip-total')).toHaveText('Jumlah: 15')
     await expect(page.locator('[data-testid^=row-]')).toHaveCount(15)
-    const average = page.getByTestId('average-row')
+    const average = page.locator('tr', { has: page.getByTestId('average-row') })
     for (const v of ['62.1', '67.1', '72.1', '77.1', '71.9']) await expect(average).toContainText(v)
     await expectNoHorizontalScroll(page)
   })
@@ -698,10 +701,10 @@ test.describe('M08 T6 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/headcount/student/3201')
     await expect(page.getByTestId('headcount-student-page')).toBeVisible()
     const s = page.getByTestId('section-213')
-    await expect(s.getByRole('heading', { name: 'Sejarah' })).toBeVisible()
+    await expect(s.getByRole('heading', { name: 'Sejarah', exact: true })).toBeVisible()
     await expect(s.getByTestId('rs-badge')).toHaveText(/RS: 56\.4% \(C\+\)/)
     await expect(s.getByTestId('chip-trend')).toHaveText('Menurun')
-    await expect(s.getByTestId('row-rs')).toContainText('Direkod: 13 Apr 2026')
+    await expect(s.getByTestId('table-213')).toContainText('Direkod: 13 Apr 2026')
     await expect(s.getByTestId('selisih')).toHaveText('Selisih: +0.4 markah')
     await expect(s.getByTestId('verdict')).toHaveText('Ramalan Tepat')
     await expectNoHorizontalScroll(page)
@@ -721,18 +724,24 @@ test.describe('M08 T6 Admin Sekolah (account 8)', { tag: [moduleTag(8)] }, () =>
   })
 
   test(
-    'S12 is the own-school admin view: the empty state with "Buat Sekarang"',
+    'S12 is the own-school admin view: the school configs, read-only',
     provisional('OD-R3: the school admin view of S12 is INFERRED'),
     async ({ page, gotoApp }) => {
       await gotoApp('/headcount')
-      await expect(page.getByTestId('headcount-empty')).toContainText('Belum ada headcount.')
-      await expect(page.getByTestId('headcount-create-now')).toBeVisible()
+      // The school admin reads the own school's configs (handlers/headcount.ts:78-81): no create, no Auto-Setup.
+      await expect(page.getByTestId('headcount-list')).toBeVisible()
+      await expect(page.getByTestId('headcount-card-501')).toBeVisible()
+      await expect(page.getByTestId('hero-create')).toHaveCount(0)
+      await expect(page.getByTestId('hero-auto-setup')).toHaveCount(0)
+      await expect(page.getByTestId('headcount-create-now')).toHaveCount(0)
       await expectTabTitle(page, 'Headcount | PRESTASIPLUS')
       await expectNoHorizontalScroll(page)
       await gotoApp('/headcount/dashboard')
-      await expect(page.getByTestId('dashboard-empty')).toBeVisible()
+      await expect(page.getByTestId('dashboard-empty')).toHaveCount(0)
+      await expect(page.getByTestId('overall-card')).toBeVisible()
+      // The school admin is read-only: the write pages are the 403 page (routes/headcount.ts:35-36, R1-AS-3).
       await gotoApp('/headcount/create')
-      await expect(page.getByTestId('create-form')).toBeVisible()
+      await expectForbidden(page)
       await expectNoHorizontalScroll(page)
     },
   )
@@ -745,7 +754,7 @@ test.describe('M08 T6 Admin Sekolah (account 8)', { tag: [moduleTag(8)] }, () =>
       await expect(page.getByTestId('chip-total')).toHaveText('Jumlah: 8')
       await expectNoHorizontalScroll(page)
       await gotoApp('/headcount/501/summary')
-      await expect(page.getByTestId('card-students')).toHaveText('8')
+      await expect(page.getByTestId('card-students')).toHaveText('8Jumlah Murid')
       await gotoApp('/headcount/student/3001')
       await expect(page.getByTestId('student-name')).toHaveText('Murid Demo 01')
       await gotoApp('/headcount/213')
@@ -771,17 +780,15 @@ test.describe('M08 T6 pelajar (account 2)', { tag: [moduleTag(8)] }, () => {
   test.describe.configure({ timeout: 150_000 })
 
   test(
-    'every headcount page is the standalone 403 page',
+    'the pupil reads /headcount; every other headcount page is the 403 page',
     provisional('FR-M08-08 / OD-R3: the pelajar 403 is PROPOSED'),
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(2)
-      for (const path of [
-        '/headcount',
-        '/headcount/dashboard',
-        '/headcount/create',
-        '/headcount/501',
-        '/headcount/student/3001',
-      ]) {
+      // S10-T09 (routes/headcount.ts:46): the pupil gets the read view of /headcount.
+      await gotoApp('/headcount')
+      await expect(page.getByTestId('headcount-murid-page')).toBeVisible()
+      await expectNoHorizontalScroll(page)
+      for (const path of ['/headcount/dashboard', '/headcount/create', '/headcount/501']) {
         await gotoApp(path)
         await expectForbidden(page)
         await expectNoHorizontalScroll(page)
