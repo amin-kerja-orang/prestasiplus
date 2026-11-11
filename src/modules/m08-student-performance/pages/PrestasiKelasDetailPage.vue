@@ -143,7 +143,6 @@ const cardFields = [
         :show-title="true" :title="data.class.name"
         :subtitle="subtitle"
         title-testid="class-name"
-        subtitle-testid="class-sub"
       >
         <template #subtitle>
           <span data-testid="class-sub"

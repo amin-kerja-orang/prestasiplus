@@ -168,6 +168,9 @@ describe('S5 PrestasiKelasDetailPage', () => {
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(t(w, 'class-name').text()).toBe('5 MARIKH - Kimia')
     expect(t(w, 'class-sub').text()).toBe('SMK DEMO · Kimia · 2026 · Kod: DMO101')
+    // C-48: one node per test id (getByTestId must not hit a strict-mode violation).
+    expect(w.findAll('[data-testid=class-sub]')).toHaveLength(1)
+    expect(w.findAll('[data-testid=class-code]')).toHaveLength(1)
     expect(t(w, 'class-code').text()).toBe('DMO101')
     expect(t(w, 'class-code').element.tagName).toBe('STRONG')
     expect(t(w, 'class-code').classes()).toEqual(expect.arrayContaining(['text-primary-t']))
