@@ -45,6 +45,8 @@ describe('session endpoints', () => {
       const { features, ...rest } = SessionSchema.parse(res.body.data)
       expect(rest).toEqual(me.session)
       expect(features).toEqual(expect.any(Object))
+      // The env flag INTAKE_TEACHER_ENABLED rides along as `intake_teacher` (a boolean; off when the env is unset).
+      expect(features?.intake_teacher).toBe(false)
       expect(res.headers['cache-control']).toBe('no-store')
     })
 

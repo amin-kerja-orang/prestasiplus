@@ -32,6 +32,8 @@ export const COPY = {
   addFirst: 'Tambah Soalan Pertama',
   /** 44-F4 success. */
   paperSent: 'Kertas dihantar kepada admin.',
+  /** Shown instead of the paper upload while the server has teacher intake off. */
+  paperOff: 'Penghantaran kertas soalan kepada admin belum dibuka buat masa ini.',
   paperFailed: 'Gagal menghantar kertas soalan.',
 } as const
 

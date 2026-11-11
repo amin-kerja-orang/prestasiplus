@@ -8,8 +8,10 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isServerFeatureOn } from '@/app/features'
 import { useApi, useFlash, usePrototypeScope } from '@/composables'
 import { DsEmptyState, DsPage, useConfirm, DsPanel, DsLoadError } from '@/ds'
+import { useSessionStore } from '@/stores/session'
 
 import {
   deleteContributedQuestion,
@@ -31,6 +33,9 @@ const flash = useFlash()
 const confirm = useConfirm()
 // Prototype scope (D43): the Audio KBAT card links to screens outside the matrix.
 const { allows } = usePrototypeScope()
+// The paper upload is Admin only while the server has INTAKE_TEACHER_ENABLED off (session feature `intake_teacher`); the API answers 403 to a teacher.
+const session = useSessionStore()
+const paperUploadOff = computed(() => session.role === 'teacher' && !isServerFeatureOn('intake_teacher'))
 
 const page = computed(() => {
   const n = Number(route.query.page)
@@ -184,6 +189,9 @@ const retry = (): void => {
       </template>
     </section>
 
-    <HantarKertasCard />
+    <DsPanel v-if="paperUploadOff" data-testid="paper-off">
+      <p class="text-body text-muted">{{ COPY.paperOff }}</p>
+    </DsPanel>
+    <HantarKertasCard v-else />
   </DsPage>
 </template>

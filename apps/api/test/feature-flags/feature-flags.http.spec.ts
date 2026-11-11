@@ -132,9 +132,12 @@ describe('Kawalan Ciri (S0-T10)', () => {
     expectError(await http().get('/api/games/probe'), 'NOT_FOUND')
     expectError(await admin.agent.get('/api/games/probe'), 'NOT_FOUND')
     const session = SessionSchema.parse((await admin.agent.get('/api/session')).body.data)
-    expect(Object.keys(session.features ?? {})).toHaveLength(32)
+    // `intake_teacher` is the INTAKE_TEACHER_ENABLED env flag, not a Kawalan Ciri row: leave it out of the toggle checks.
+    const toggles = Object.entries(session.features ?? {}).filter(([k]) => k !== 'intake_teacher')
+    expect(toggles).toHaveLength(32)
+    expect(session.features?.intake_teacher).toBe(false)
     expect(session.features).toMatchObject({ permainan: false, 'latih-tubi': true, 'cikgu-alesa': false, 'keluarga-angkat': false, leaderboard: true, 'tiket-bantuan': false })
-    expect(Object.entries(session.features ?? {}).filter(([, on]) => !on).map(([k]) => k).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat', 'permainan', 'tiket-bantuan'])
+    expect(toggles.filter(([, on]) => !on).map(([k]) => k).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat', 'permainan', 'tiket-bantuan'])
 
     expect((await api.put('/admin/feature-toggles/permainan', { enabled: true })).status).toBe(200)
     expect((await http().get('/api/games/probe')).status).toBe(200)

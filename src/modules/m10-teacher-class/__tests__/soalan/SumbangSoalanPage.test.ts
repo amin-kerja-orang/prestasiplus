@@ -20,7 +20,7 @@ const guru = vi.hoisted(() => ({
   downloadQuestionTemplate: vi.fn(),
 }))
 vi.mock('../../api/guru', () => guru)
-const sessionMock = vi.hoisted((): { role: string | null } => ({ role: 'teacher' }))
+const sessionMock = vi.hoisted((): { role: string | null; features: Record<string, boolean> } => ({ role: 'teacher', features: {} }))
 vi.mock('@/stores/session', () => ({ useSessionStore: () => sessionMock }))
 const saveBlob = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/save-blob', () => ({ saveBlob }))
@@ -40,6 +40,7 @@ const all = (w: VueWrapper, id: string) => w.findAll(`[data-testid="${id}"]`)
 beforeEach(() => {
   setActivePinia(createPinia())
   sessionMock.role = 'teacher'
+  sessionMock.features = {}
   router = makeRouter()
   guru.fetchContributions.mockResolvedValue(summary())
   guru.fetchContributedQuestions.mockResolvedValue({
@@ -468,5 +469,23 @@ describe('Alat Soalan (FR-GUR-44-8, AC-GUR-44-9, D-T06-1)', () => {
     sessionMock.role = 'admin'
     const admin = await mountPage()
     expect(all(admin, 'alat-tile')).toHaveLength(6)
+  })
+  it('hides the paper upload for a teacher while the server has teacher intake off, and shows a note', async () => {
+    sessionMock.features = { intake_teacher: false }
+    const w = await mountPage()
+    expect(t(w, 'paper-card').exists()).toBe(false)
+    expect(t(w, 'paper-off').text()).toBe(COPY.paperOff)
+    sessionMock.role = 'admin'
+    const admin = await mountPage()
+    expect(t(admin, 'paper-card').exists()).toBe(true)
+  })
+
+  it('shows the paper upload to a teacher when teacher intake is on or the flag is absent', async () => {
+    const absent = await mountPage()
+    expect(t(absent, 'paper-card').exists()).toBe(true)
+    sessionMock.features = { intake_teacher: true }
+    const on = await mountPage()
+    expect(t(on, 'paper-card').exists()).toBe(true)
+    expect(t(on, 'paper-off').exists()).toBe(false)
   })
 })

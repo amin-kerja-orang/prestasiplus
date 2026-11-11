@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import {
   EnterModeRequestSchema,
   LoginRequestSchema,
@@ -14,6 +15,7 @@ import { FeatureFlagsService } from '../../common/feature-flags/feature-flags.se
 import { Public } from '../../common/guards/decorators'
 import { ok } from '../../common/http/respond'
 import { requestIdOf } from '../../common/request/request-id'
+import { intakeTeacherEnabled } from '../intake/intake-teacher.gate'
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
 import { CLOCK, type Clock } from '../../db/clock'
 import { AuthConfig } from './auth.config'
@@ -96,6 +98,7 @@ export class SessionController extends SessionResponder {
     @Inject(AuthConfig) config: AuthConfig,
     @Inject(CLOCK) clock: Clock,
     @Inject(FeatureFlagsService) private readonly flags: FeatureFlagsService,
+    @Inject(ConfigService) private readonly env: ConfigService,
   ) {
     super(config, clock)
   }
@@ -106,7 +109,8 @@ export class SessionController extends SessionResponder {
     const state = await this.resolver.require(req)
     noStore(res)
     // S0-T10 (API-AUTH-03): the SPA reads the feature flags here.
-    return ok({ ...state.session, features: await this.flags.featureMap() })
+    // `intake_teacher` is the server env flag INTAKE_TEACHER_ENABLED (not a Kawalan Ciri row): false hides the teacher paper upload.
+    return ok({ ...state.session, features: { ...(await this.flags.featureMap()), intake_teacher: intakeTeacherEnabled(this.env.get<unknown>('INTAKE_TEACHER_ENABLED')) } })
   }
 
   @Post('role')
