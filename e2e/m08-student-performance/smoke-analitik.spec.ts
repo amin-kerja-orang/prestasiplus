@@ -22,9 +22,10 @@ const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const S7_SUBTITLE = 'Pantau prestasi dan kenal pasti topik yang perlu diperkukuhkan'
 
-const header = (page: Page) => ({
-  title: page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1'),
-  subtitle: page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]'),
+/** Header of the EXPECTED shell: Admin Pusat = Pentadbiran; pupil, teacher and school admin = Pembelajaran. */
+const header = (page: Page, shell: 'pembelajaran' | 'pentadbiran') => ({
+  title: page.locator(`[data-testid=${shell}-header] :is(h1, [data-testid=shell-title])`),
+  subtitle: page.getByTestId(`${shell}-subtitle`),
 })
 
 async function expectForbidden(page: Page): Promise<void> {
@@ -60,8 +61,8 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/analitik/pelajar')
     await expect(page.getByTestId('analitik-page')).toBeVisible()
     await expectTabTitle(page, 'Analitik Pembelajaran | PRESTASIPLUS')
-    await expect(header(page).title).toHaveText('Analitik Pembelajaran')
-    await expect(header(page).subtitle).toHaveText(S7_SUBTITLE)
+    await expect(header(page, 'pentadbiran').title).toHaveText('Analitik Pembelajaran')
+    await expect(header(page, 'pentadbiran').subtitle).toHaveText(S7_SUBTITLE)
 
     // Top block: the 4 weakest SPs of every subject, all 0 % (T1 tie rule: fewer answers, then SP id).
     await expect(page.getByTestId('top-weak')).toContainText('Topik Perlu Perhatian Utama (4)')
@@ -81,7 +82,8 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
       await expect(cards.nth(i).getByRole('link')).toHaveText(`Latihan Fokus (${count} soalan)`)
       await expect(cards.nth(i).getByRole('link')).toHaveAttribute(
         'href',
-        `/practice/BM/quiz?level=4&dskp_sp_id=${String(sp)}&count=${count}`,
+        // The demo admin has no education level, so the link carries no `level` (WeakTopicsCard: omitted when unknown).
+        `/practice/BM/quiz?dskp_sp_id=${String(sp)}&count=${count}`,
       )
     }
 
@@ -92,12 +94,13 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('tab-5')).toContainText('Sejarah')
     await expect(page.getByTestId('tab-5')).toContainText('35%')
     await expect(page.getByTestId('tab-5')).toHaveAttribute('aria-pressed', 'false')
-    // The ring is a meter: 3 of 3 SP.
+    // The ring is a meter: 3 mahir of the denominator. The admin has no level, so the map has no tiles and the
+    // denominator is the answered SP count 3 + 6 + 17 = 26 (DV-13, mock analytics.ts ringTotal).
     const ring = page.getByTestId('ring-arc')
     await expect(ring).toHaveAttribute('aria-valuenow', '3')
-    await expect(ring).toHaveAttribute('aria-valuemax', '3')
+    await expect(ring).toHaveAttribute('aria-valuemax', '26')
     await expect(ring).toContainText('3')
-    await expect(ring).toContainText('/ 3 SP')
+    await expect(ring).toContainText('/ 26 SP')
     await expect(page.getByTestId('ring-legend').locator('> li')).toHaveText([
       'Mahir 3',
       'Sederhana 6',
@@ -111,8 +114,8 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('encourage-box')).toContainText(
       'Jangan putus asa! Latihan konsisten akan membantu. Mulakan dengan topik yang paling lemah di bawah.',
     )
-    await expect(page.getByTestId('map-caption')).toHaveText('KSSR Bahasa Melayu Darjah 4')
-    await expect(page.getByTestId('map-tiles').first().locator('> li').first().locator('[data-status]')).toBeVisible()
+    await expect(page.getByTestId('map-caption')).toHaveText('Peta DSKP — Standard Pembelajaran')
+    await expect(page.getByTestId('map-tiles')).toHaveCount(0)
     await expect(page.getByTestId('map-legend')).toContainText('Mahir (75%+)')
     await expect(page.getByTestId('map-legend')).toContainText('Sederhana (50-74%)')
     await expect(page.getByTestId('map-legend')).toContainText('Lemah (<50%)')
@@ -153,11 +156,12 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('toggle-weak')).toHaveText('Lihat semua 13 topik lemah')
   })
 
-  test('S7 the DSKP maps: BM 1.1 / 2.1 / 3.1 and Sejarah 1.1 / 2.1', async ({ page, gotoApp }) => {
+  test('S7 the DSKP map of an admin without an education level has no tiles (mock analytics.ts: tiles only at the viewer level)', async ({ page, gotoApp }) => {
     await gotoApp('/analitik/pelajar')
-    await expect(page.getByTestId('map-tiles').locator('> li')).toHaveText(['1.1', '2.1', '3.1'])
+    await expect(page.getByTestId('dskp-map')).toBeVisible()
+    await expect(page.getByTestId('map-tiles')).toHaveCount(0)
     await page.getByTestId('tab-5').click()
-    await expect(page.getByTestId('map-tiles').locator('> li')).toHaveText(['1.1', '2.1'])
+    await expect(page.getByTestId('map-tiles')).toHaveCount(0)
   })
 
   test('S7 the Sejarah pane: ring 8 / 23 SP inside the circle, 35.0%, 40, G – D', async ({
@@ -179,7 +183,7 @@ test.describe('M08 T2 S7 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('kpi-acc')).toHaveText('35.0%')
     await expect(page.getByTestId('kpi-answered')).toHaveText('40')
     await expect(page.getByTestId('kpi-grade')).toHaveText('G – D')
-    await expect(page.getByTestId('map-caption')).toHaveText('KSSR Sejarah Darjah 4')
+    await expect(page.getByTestId('map-caption')).toHaveText('Peta DSKP — Standard Pembelajaran')
     await expectNoHorizontalScroll(page)
   })
 
@@ -210,18 +214,21 @@ for (const [id, label] of [
     })
 
     test(
-      'S7 shows only "Topik Perlu Perhatian Utama (0)": no tabs, no pane',
+      'S7 shows "Topik Perlu Perhatian Utama (0)"; a pupil with a level has a tab per mapped subject (FR-MUR-5-2), the others no tabs and no pane',
       provisional('FR-M08-53: the no-data state of S7 is PROPOSED (OQ-M08-08)'),
       async ({ page, gotoApp }) => {
         await gotoApp('/analitik/pelajar')
         await expect(page.getByTestId('top-weak')).toContainText('Topik Perlu Perhatian Utama (0)')
         await expectTabTitle(page, 'Analitik Pembelajaran | PRESTASIPLUS')
-        await expect(header(page).title).toHaveText('Analitik Pembelajaran')
-        await expect(header(page).subtitle).toHaveText(S7_SUBTITLE)
+        await expect(header(page, 'pembelajaran').title).toHaveText('Analitik Pembelajaran')
+        await expect(header(page, 'pembelajaran').subtitle).toHaveText(S7_SUBTITLE)
         await expect(weakCards(page.getByTestId('top-weak'))).toHaveCount(0)
-        await expect(page.getByTestId('subject-tabs')).toHaveCount(0)
-        await expect(page.getByTestId('ring-card')).toHaveCount(0)
-        await expect(page.getByTestId('more-weak')).toHaveCount(0)
+        // R1-MUR-5 FR-MUR-5-2: the pupil (account 2) has an education level, so every mapped subject gets a tab.
+        await expect(page.getByTestId('subject-tabs')).toHaveCount(id === 2 ? 1 : 0)
+        if (id !== 2) {
+          await expect(page.getByTestId('ring-card')).toHaveCount(0)
+          await expect(page.getByTestId('more-weak')).toHaveCount(0)
+        }
         await expectNoHorizontalScroll(page)
       },
     )
@@ -239,8 +246,8 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/prestasi/1')
     await expect(page.getByTestId('prestasi360-page')).toBeVisible()
     await expectTabTitle(page, 'Prestasi 360 — Admin Demo | PRESTASIPLUS')
-    await expect(header(page).title).toHaveText('Prestasi 360')
-    await expect(header(page).subtitle).toHaveText('Selamat datang kembali')
+    await expect(header(page, 'pentadbiran').title).toHaveText('Prestasi 360')
+    await expect(header(page, 'pentadbiran').subtitle).toHaveText('Selamat datang kembali')
     await expect(page.getByTestId('hero-name')).toHaveText('Admin Demo')
     await expect(page.getByTestId('hero')).toContainText('Prestasi 360 — Dashboard Individu')
     await expect(page.getByTestId('avatar')).toHaveText('A')
@@ -254,11 +261,12 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(statValues(page)).toHaveText(['0', '—', '0', '0m'])
     await expect(page.getByTestId('headcount-block')).toHaveCount(0)
     await expect(page.getByTestId('badges-card')).toHaveCount(0)
-    await expect(page.getByTestId('mastery-empty')).toContainText('Belum ada data latihan.')
+    await expect(page.getByTestId('mastery-empty')).toContainText('Belum ada latihan.')
     await expect(page.getByTestId('mastery-start')).toHaveAttribute('href', '/practice')
     // M14: streak 1, best 5, Koin 256 (DV-M14-09); practice days 13 (§6.10).
     await expect(activityValues(page)).toHaveText(['1', '5', '256', '13'])
-    await expect(page.getByTestId('weak-empty')).toContainText('Tiada topik lemah! Teruskan usaha.')
+    // No weak topic: the whole card is left out (Prestasi360Page v-if weakTopics.length).
+    await expect(page.getByTestId('weak-block')).toHaveCount(0)
     await expect(page.getByTestId('suggestions')).toContainText(
       'Sudah 127 hari tiada latihan. Mulakan semula dengan 10 soalan mudah untuk pemanasan.',
     )
@@ -417,7 +425,7 @@ test.describe('M08 T2 S6 other roles (§9)', { tag: [moduleTag(8)] }, () => {
       await loginAs(2)
       await gotoApp('/prestasi/2')
       await expect(page.getByTestId('prestasi360-page')).toBeVisible()
-      await expect(header(page).title).toHaveText('Prestasi 360')
+      await expect(header(page, 'pembelajaran').title).toHaveText('Prestasi 360')
       await expectNoHorizontalScroll(page)
       await gotoApp('/prestasi/3001')
       await expectForbidden(page)
