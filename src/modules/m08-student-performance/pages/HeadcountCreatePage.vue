@@ -192,26 +192,35 @@ async function submit() {
         </UFormField>
 
         <fieldset class="flex min-w-0 flex-col gap-6" data-testid="otr-field">
-          <URadioGroup
-            v-model="form.activeOtrs"
-            legend="Bilangan OTR"
-            name="active_otrs"
-            :items="OTR_ITEMS"
-            orientation="horizontal"
-            variant="card"
-            hint="Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas."
-            data-testid="field-otr"
-          />
-          <URadioGroup
-            v-model="form.mode"
-            legend="Mod Pengiraan Markah"
-            name="mode"
-            :items="MODE_ITEMS"
-            variant="card"
-            class="min-w-0"
-            hint="Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama."
-            data-testid="field-mode"
-          />
+          <div class="flex min-w-0 flex-col gap-2">
+            <URadioGroup
+              v-model="form.activeOtrs"
+              legend="Bilangan OTR"
+              name="active_otrs"
+              :items="OTR_ITEMS"
+              orientation="horizontal"
+              variant="card"
+              data-testid="field-otr"
+            />
+            <!-- V1 hint (URadioGroup has no group-level hint; inventory S14 EL-M08-S14-025). -->
+            <p class="text-caption text-muted" data-testid="hint-otr">
+              Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas.
+            </p>
+          </div>
+          <div class="flex min-w-0 flex-col gap-2">
+            <URadioGroup
+              v-model="form.mode"
+              legend="Mod Pengiraan Markah"
+              name="mode"
+              :items="MODE_ITEMS"
+              variant="card"
+              class="min-w-0"
+              data-testid="field-mode"
+            />
+            <p class="text-caption text-muted" data-testid="hint-mode">
+              Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama.
+            </p>
+          </div>
         </fieldset>
 
         <UButton

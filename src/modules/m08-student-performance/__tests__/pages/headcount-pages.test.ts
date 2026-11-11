@@ -325,6 +325,13 @@ describe('S14 HeadcountCreatePage', () => {
       expect(prop(w, id, 'required')).toBe(true)
     expect(radio(w, 'field-otr', '3').attributes('aria-checked')).toBe('true')
     expect(w.findAll('[data-testid=field-otr] [role=radio]')).toHaveLength(4)
+    // C-41: the V1 hints render under each group.
+    expect(w.get('[data-testid=hint-otr]').text()).toBe(
+      'Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas.',
+    )
+    expect(w.get('[data-testid=hint-mode]').text()).toBe(
+      'Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama.',
+    )
     expect(radio(w, 'field-mode', 'auto').attributes('aria-checked')).toBe('true')
     await radio(w, 'field-mode', 'manual').trigger('click')
     expect(radio(w, 'field-mode', 'manual').attributes('aria-checked')).toBe('true')
