@@ -342,6 +342,42 @@ if grep -q 'npm run migrate:activity' "$DOCKER_LOG" && ! grep -q 'PP_ALLOW_MIGRA
 mkprod; EXTRA_ENV="PP_RELEASE_SHA=zz" slot 3 'cannot determine the release sha' etl migrate:core --as-of=2026-11-10; EXTRA_ENV=""
 slot 2 'etl COMMAND' etl migrate:nothing
 
+echo "-- slot.sh drop-staging (KP-23): typed database name, shared lock, no arguments"
+mkprod; mkdb pp_uat
+# drop-staging runs db-roles.sh apply (a real database); the fixture uses a copy of deploy/vps with that one script stubbed (and LF line endings).
+mkdir -p "$w/repo/deploy"; cp -r "$vps" "$w/repo/deploy/vps"; find "$w/repo/deploy/vps" -name '*.sh' -exec sed -i 's/\r$//' {} +
+printf '#!/bin/sh\necho "db-roles $*" >>"$DOCKER_LOG"\nexit 0\n' >"$w/repo/deploy/vps/db-roles.sh"
+slotin() { # slotin EXPECTED_EXIT TEXT INPUT ARGS...: slot.sh with a piped confirmation (accepted on the PP_SCRATCH_HOST=yes fixture host only)
+  local want="$1" text="$2" input="$3" rc=0; shift 3
+  : >"$DOCKER_LOG"
+  printf '%b' "$input" | env PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash "$w/repo/deploy/vps/migration/slot.sh" "$@" >"$w/log" 2>&1 || rc=$?
+  if [ "$rc" = "$want" ] && grep -qF -- "$text" "$w/log"; then ok "slot.sh exit $rc: $text"; else bad "slot.sh want exit $want + '$text', got exit $rc" "$w/log"; fi
+}
+slotin 3 'confirmation did not match; nothing was dropped' 'wrong\n' drop-staging
+if grep -q 'drop schema' "$DOCKER_LOG"; then bad 'a wrong confirmation still dropped the schema'; else ok 'wrong confirmation: nothing dropped'; fi
+slotin 3 'no confirmation was typed' '' drop-staging
+slotin 2 'takes no arguments' 'pp_uat\n' drop-staging now
+mkprod "PP_SCRATCH_HOST=no"; slotin 3 'needs a terminal' 'pp_uat\n' drop-staging; mkprod
+STUB_PSQL=0 slotin 0 'STAGING DROPPED' 'pp_uat\n' drop-staging
+if grep -q 'drop schema if exists staging_cloud cascade' "$DOCKER_LOG" && ! grep -q 'archive_cloud cascade' "$DOCKER_LOG"; then ok 'drop-staging drops staging_cloud only'; else bad 'drop-staging statements wrong' "$DOCKER_LOG"; fi
+STUB_PSQL=1 slotin 1 'is still in pp_uat after the drop' 'pp_uat\n' drop-staging
+
+echo "-- restore-point.sh raw-check scans the staged-clone dumps"
+rp() { # rp EXPECTED_EXIT TEXT : raw-check with the fixture env
+  local want="$1" text="$2" rc=0
+  env PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash "$vps/migration/restore-point.sh" raw-check >"$w/log" 2>&1 || rc=$?
+  if [ "$rc" = "$want" ] && grep -qF -- "$text" "$w/log"; then ok "raw-check exit $rc: $text"; else bad "raw-check want exit $want + '$text', got exit $rc" "$w/log"; fi
+}
+rm -rf "$w/backup/staged-clone"
+mkprod "PP_RAW_PURGE_BY=2099-01-01"; rp 0 'RAW CHECK OK'
+mkdir -p "$w/backup/staged-clone/stage-1"; printf d >"$w/backup/staged-clone/stage-1/pp-backup-x.dump"; printf s >"$w/backup/staged-clone/stage-1/pp-backup-x.dump.sha256"
+rp 0 'staged-clone copy stage-1/pp-backup-x.dump'
+if grep -q 'sha256' "$w/log"; then bad 'the checksum sidecar was listed as a copy'; else ok 'only the dump is listed, not its .sha256'; fi
+mkprod "PP_RAW_PURGE_BY=2020-01-01"; rp 1 'RAW RETENTION OVERDUE (purge by 2020-01-01): staged-clone copy stage-1/pp-backup-x.dump'
+rp 1 'RAW CHECK OVERDUE: 1 copy'
+rm -rf "$w/backup/staged-clone"; rp 0 'RAW CHECK OK'
+mkprod
+
 echo
 echo "passed $pass, failed $fail"
 [ "$fail" = 0 ]

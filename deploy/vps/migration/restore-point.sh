@@ -29,7 +29,8 @@
 # purge-raw  deletes every restore point marked raw_data=yes that is OLDER than the newest verified post_drop point,
 #         and records the deletion in custody.tsv (cutover plan section 7, due 6 Nov 2026). Asks for the database name.
 # raw-check  raw .cloud data retention (no automatic expiry, so this is the reminder): lists the copies that may
-#         still hold raw data: kept raw_data=yes restore points, schema staging_cloud in the production database, and
+#         still hold raw data: kept raw_data=yes restore points, schema staging_cloud in the production database, the
+#         pre-stage dump copies in <PP_BACKUP_DIR>/staged-clone (staged clone, r1-uat-deploy.md section 9), and
 #         PITR base backups older than the newest post_drop point (their archived WAL replays the raw copy; all base
 #         backups when there is no post_drop yet). Before PP_RAW_PURGE_BY (default 2026-11-06, cutover plan section 7)
 #         it reports and exits 0; from that day on every remaining copy is a WARN line and it exits 1. When a check
@@ -44,7 +45,7 @@ export PP_SCRIPT=restore-point
 # shellcheck source=../lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib.sh"
 
-usage() { sed -n '2,39p' "${BASH_SOURCE[0]}"; }
+usage() { sed -n '2,40p' "${BASH_SOURCE[0]}"; }
 cmd="${1:-}"; [ $# -eq 0 ] || shift
 name=""; operator="${PP_OPERATOR:-}"; yes=0; after=""; expect=""
 case "$cmd" in
@@ -245,6 +246,13 @@ cmd_raw_check() {
   fi
   schema="$(psql_target "select count(*) from information_schema.schemata where schema_name = 'staging_cloud'" 2>/dev/null || echo '?')"
   case "$schema" in 0) ;; 1) raw_ever=1; found "schema staging_cloud in the production database (drop it, cutover plan section 7)" ;; *) incomplete=1; pp_warn "could not check schema staging_cloud (db down?)" ;; esac
+  # The pre-stage dumps copied for the staged clone (r1-uat-deploy.md section 9): whole-database dumps kept outside normal retention until purged.
+  local sc="$backup_dir/staged-clone" scf
+  if [ -d "$sc" ]; then
+    if scf="$(find "$sc" -maxdepth 2 -type f ! -name '*.sha256' 2>/dev/null | sort)"; then
+      while IFS= read -r b; do [ -z "$b" ] || found "staged-clone copy ${b#"$sc"/} (pre-stage dump kept for the staged clone; delete it with the purge, r1-uat-deploy.md section 9)"; done <<<"$scf"
+    else incomplete=1; pp_warn "could not list $sc"; fi
+  fi
   # PITR: a base backup older than the clean point needs WAL from the slot, so the archive still holds the raw copy.
   stamp="${anchor//[-:]/}"
   # Only once raw data has been on this host (a raw restore point was ever taken, or staging_cloud exists): routine

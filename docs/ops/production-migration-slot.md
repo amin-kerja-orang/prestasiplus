@@ -218,7 +218,7 @@ in them: it is kept for 12 months, decision Q12 A. The restore drill compares pu
 taken while `staging_cloud` exists (`post_switch`, or a replan's `pre_delta`), in `staging_cloud` inside the production database, and in the PITR base backups
 and archived WAL from the slot. Nothing deletes these by itself: the section 7 clean-up does, by hand, by 6 Nov
 (`PP_RAW_PURGE_BY`). `restore-point.sh raw-check` lists every copy still present: kept `raw_data=yes` points, the
-`staging_cloud` schema, and the base backups older than the newest `post_drop` point (all of them while there is no
+`staging_cloud` schema, the pre-stage dump copies in `<PP_BACKUP_DIR>/staged-clone/`, and the base backups older than the newest `post_drop` point (all of them while there is no
 `post_drop`; none before any raw data reached the host). Before `PP_RAW_PURGE_BY` it only reports. From that day on each
 copy is a `RAW RETENTION OVERDUE` warning and it exits 1. When a check could not run (db down, the archive folder not
 listable) it never prints `RAW CHECK OK`: it prints `RAW CHECK INCOMPLETE` and exits 2 (overdue copies still exit 1).

@@ -10,6 +10,7 @@
 #                                                                     copy, etl --apply and gonogo read until the next throwaway-up)
 #   deploy/vps/migration/slot.sh copy                                 B5: staging_cloud + archive_cloud -> target
 #   deploy/vps/migration/slot.sh throwaway-down                       B5: destroy the cluster and its data dir
+#   deploy/vps/migration/slot.sh drop-staging                         KP-23: drop staging_cloud (typed database name, shared lock)
 #   deploy/vps/migration/slot.sh wipe-dump DIR [FILE.gpg] [--missing-ok]  after a good load: delete the raw dump copies
 #                                                                     (a missing path exits 3; --missing-ok: STOP block only)
 #   deploy/vps/migration/slot.sh etl COMMAND [ARGS...]                B6-B8, C5, C6: staging:profile / migrate:* in the
@@ -43,7 +44,7 @@ export PP_SCRIPT=migration-slot
 # shellcheck source=../lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib.sh"
 
-usage() { sed -n '2,34p' "${BASH_SOURCE[0]}"; }
+usage() { sed -n '2,35p' "${BASH_SOURCE[0]}"; }
 cmd="${1:-}"; [ $# -eq 0 ] || shift
 case "$cmd" in -h|--help|help|'') usage; exit 0 ;; esac
 
@@ -294,6 +295,22 @@ cmd_copy() {
   pp_log "STAGE COPY PASSED: $b, duration_s=$((SECONDS - t0))"
 }
 
+cmd_drop_staging() { # KP-23: the irreversible purge of the raw .cloud copy (staging_cloud) in the target database
+  [ $# -eq 0 ] || pp_die "drop-staging takes no arguments" 2
+  if [ ! -t 0 ] && ! scratch_host; then pp_die "drop-staging needs a terminal for the typed confirmation (a pipe only on a PP_SCRATCH_HOST=yes rehearsal host)" 3; fi
+  local answer=""
+  printf 'DROP the raw .cloud copy: schema staging_cloud in database "%s" (archive_cloud is kept). This cannot be undone.\nType the DATABASE NAME to confirm: ' "$target_db" >&2
+  read -r answer || pp_die "no confirmation was typed; nothing was dropped" 3
+  [ "$answer" = "$target_db" ] || pp_die "confirmation did not match; nothing was dropped" 3
+  pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
+  "$PP_VPS_DIR/db-roles.sh" apply   # an older copy made by another role becomes pp_stager's, so it can drop it
+  target_psql "drop schema if exists staging_cloud cascade" >/dev/null
+  local left; left="$(target_psql "select count(*) from information_schema.schemata where schema_name = 'staging_cloud'")"
+  [ "$left" = 0 ] || pp_die "staging_cloud is still in $target_db after the drop"
+  rm -f "$(target_marker)"
+  pp_log "STAGING DROPPED: schema staging_cloud removed from $target_db; $(schema_tables target_psql) remain. Next: restore-point.sh raw-check (r1-uat-deploy.md section 9)"
+}
+
 cmd_throwaway_down() {
   pp_lock "$(pp_cfg PP_LOCK_WAIT 1800)"
   docker rm -f -v "$stage_name" >/dev/null 2>&1 || true
@@ -494,6 +511,7 @@ case "$cmd" in
   load) cmd_load "$@" ;;
   copy) cmd_copy ;;
   throwaway-down) cmd_throwaway_down ;;
+  drop-staging) cmd_drop_staging "$@" ;;
   wipe-dump) cmd_wipe_dump "$@" ;;
   etl) cmd_etl "$@" ;;
   gonogo) cmd_gonogo ;;

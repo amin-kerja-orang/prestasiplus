@@ -1111,7 +1111,7 @@ The rejects of the picture pass are judged by the files, so `migrate:verify` and
 1. **The causes.** The cause word of each row (`missing`, `unlisted`, `checksum`, `type`, `size`) is in the offending value. A few `missing` rows can be V2 data gaps; many `checksum`, `type` or `size` rows, or a cause that is new, mean the files export is wrong or damaged: stop and report it to the migration developers.
 2. **The held count.** On today's data (10 Nov 2026) the number of questions held for a missing image is **38**. A clearly different count is a stop, not a note: compare with the previous run and the files export before the ETL result is accepted.
 
-A code ceiling for this is being added by the migration developers; until it lands, this step is the only check.
+Do this check, after the last `migrate:structured --files-dir` repair run, BEFORE the files export is deleted by the KP-23 purge (`r1-uat-deploy.md` section 9): the export is the only input of the picture pass. A code ceiling for this is being added by the migration developers; until it lands, this step is the only check.
 
 ### 11.3 ClamAV scanner
 
