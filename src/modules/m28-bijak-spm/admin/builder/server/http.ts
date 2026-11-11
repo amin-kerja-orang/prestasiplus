@@ -231,6 +231,10 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
     )
   }
 
+  async addSection(id: string, label: string): Promise<PaperEditorData> {
+    return editorFromWire(await this.call<BijakBuilderEditor>('POST', `/api/admin/papers/${enc(id)}/sections`, { label }))
+  }
+
   async updateReference(id: string, panels: ReferencePanel[]): Promise<PaperEditorData> {
     return editorFromWire(
       await this.call<BijakBuilderEditor>('PUT', `/api/admin/papers/${enc(id)}`, { reference: panels }),

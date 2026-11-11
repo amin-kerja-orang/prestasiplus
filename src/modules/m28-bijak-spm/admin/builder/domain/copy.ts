@@ -177,6 +177,11 @@ export const builderCopy = {
   reviewStale: 'Simpan draf untuk menyegarkan semakan.', // [PROPOSED]
   reviewError: 'Tidak dapat memuatkan semakan kertas.', // [PROPOSED]
   sectionsEdit: 'Sunting bahagian', // V2
+  sectionAdd: 'Tambah bahagian', // V2 (Semak Kertas Simulasi)
+  sectionAddLabel: 'Label bahagian', // V2
+  sectionAddNone: 'Tiada bahagian lagi. Tambah satu bahagian untuk mula menyusun soalan.', // [PROPOSED]
+  sectionAdded: (l: string): string => `Bahagian '${l}' telah ditambah.`, // [PROPOSED]
+  errSectionAdd: 'Bahagian gagal ditambah — cuba lagi.', // [PROPOSED]
   sectionLabel: 'Label bahagian', // V2
   sectionInstruction: 'Arahan bahagian', // V2
   sectionCompulsory: 'Wajib dijawab', // PRD30 15-13

@@ -651,6 +651,18 @@ export class MockBuilderServer implements BuilderApi {
     return this.withChips(await a.savePaper(id, {}))
   }
 
+  async addSection(id: string, label: string): Promise<PaperEditorData> {
+    const a = await this.a()
+    const ed = await a.getPaperEditor(id)
+    if (ed.paper.status === 'terbit') throw new BuilderError('invalid', LOCKED)
+    const name = label.trim()
+    if (!name) throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.sectionLabelRequired)
+    if (ed.paper.sections.length >= 20) throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.sectionLimit)
+    if (ed.paper.sections.some((s) => s.label.trim().toLowerCase() === name.toLowerCase())) throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.sectionLabelUsed)
+    ed.paper.sections.push({ id: `s-${String(ed.paper.sections.length + 1)}-${String(Date.now())}`, label: name, markBudget: 0, questionCount: 0, rule: { type: 'all' }, questionIds: [], adminCreated: true } as never)
+    return this.withChips(await a.savePaper(id, {}))
+  }
+
   async updateReference(id: string, panels: ReferencePanel[]): Promise<PaperEditorData> {
     const a = await this.a()
     const ed = await a.getPaperEditor(id)

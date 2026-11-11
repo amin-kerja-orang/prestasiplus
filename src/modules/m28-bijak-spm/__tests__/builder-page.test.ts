@@ -223,6 +223,34 @@ describe('SetBuilderPage', () => {
     expect(w.get('[data-testid="builder-bank"]').text()).not.toContain('Memuatkan')
   })
 
+  it('Tambah bahagian: an empty paper shows the empty state with the button; adding sends the label, the new Bahagian becomes the bank destination and the bank loads', async () => {
+    const empty = editor(paper({ sections: [] }))
+    const added = editor(paper({ sections: [{ id: 'sN', label: 'Bahagian Baru', markBudget: 0, questionCount: 0, rule: { type: 'all' }, questionIds: [] }] }))
+    const { m, api } = stub({ getEditor: vi.fn().mockResolvedValue(empty), addSection: vi.fn().mockResolvedValue(added) })
+    const w = await render(api)
+    expect(w.find('[data-testid="edit-sections-empty"]').exists()).toBe(true)
+    expect(m.pool).not.toHaveBeenCalled()
+    await w.get('[data-testid="section-add-label"]').setValue('Bahagian Baru')
+    await w.get('[data-testid="section-add"]').trigger('submit')
+    await flushPromises()
+    expect(m.addSection).toHaveBeenCalledWith('p1', 'Bahagian Baru')
+    expect(m.pool).toHaveBeenCalled()
+    expect(m.pool.mock.calls[0]![1]).toBe('sN')
+    expect(w.find('[data-testid="bank-no-section"]').exists()).toBe(false)
+  })
+
+  it('Tambah bahagian: a blank label adds the V2 default "Part n"; a duplicate-label refusal shows the server BM line', async () => {
+    const empty = editor(paper({ sections: [] }))
+    const dup = new BuilderError('invalid', 'Label bahagian ini sudah digunakan dalam kertas ini.')
+    const { m, api } = stub({ getEditor: vi.fn().mockResolvedValue(empty), addSection: vi.fn().mockRejectedValue(dup) })
+    const show = vi.spyOn(useFlashStore(), 'show')
+    const w = await render(api)
+    await w.get('[data-testid="section-add"]').trigger('submit')
+    await flushPromises()
+    expect(m.addSection).toHaveBeenCalledWith('p1', 'Part 1')
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ type: 'error', message: dup.message }))
+  })
+
   it('a published set is locked: no bank, no Terbitkan, Tarik balik and Salin set present', async () => {
     const ed = editor(paper({ status: 'terbit' }))
     const { m, api } = stub({ getEditor: vi.fn().mockResolvedValue(ed) })

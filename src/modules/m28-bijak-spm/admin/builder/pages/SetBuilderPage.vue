@@ -359,6 +359,7 @@ async function editThen(run: () => Promise<PaperEditorData>, okMessage: string, 
   }
 }
 const saveSection = (sid: string, p: SectionPatch): Promise<void> => editThen(() => api.updateSection(id.value, sid, p), t.sectionSaved(p.label ?? ''), t.errRename)
+const addSection = (label: string): Promise<void> => editThen(() => api.addSection(id.value, label), t.sectionAdded(label), t.errSectionAdd)
 const savePassage = (gid: string, label: string): Promise<void> => editThen(() => api.updateGroupLabel(id.value, gid, label), t.passageSaved(label), t.errPassage)
 const groupLabel = (gid: string): string => {
   const g = editor.value?.groups.find((x) => x.id === gid)
@@ -786,7 +787,7 @@ const dskpItems = computed(() => [
       </div>
 
       <DsPanel v-if="editor" data-testid="paper-edit-blocks">
-        <PaperEditBlocks :editor="editor" :readonly="locked" :busy="editBusy" @section="saveSection" @passage="savePassage" />
+        <PaperEditBlocks :editor="editor" :readonly="locked" :busy="editBusy" @section="saveSection" @passage="savePassage" @add-section="addSection" />
       </DsPanel>
 
       <!-- Terbitkan: sticky bar below lg, inline from lg -->

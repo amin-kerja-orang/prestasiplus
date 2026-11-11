@@ -196,6 +196,8 @@ export interface BuilderApi {
   publish(id: string, options?: PublishOptions): Promise<PublishResult>
   /** Sunting bahagian. */
   updateSection(id: string, sectionId: string, patch: SectionPatch): Promise<PaperEditorData>
+  /** Tambah bahagian (R1-T48, `POST /admin/papers/:id/sections`): an admin-added Bahagian at the end. Refusals (duplicate label, 20 sections, a Terbit paper) come as BM `BuilderError`s. */
+  addSection(id: string, label: string): Promise<PaperEditorData>
   /** Bahan rujukan (kulit kertas): replaces the whole reference-sheet list (`PUT /admin/papers/:id {reference}`, R1-T34). */
   updateReference(id: string, panels: ReferencePanel[]): Promise<PaperEditorData>
   /** Sunting petikan: the title of a stimulus group (`PUT /admin/papers/:id/groups/:groupId`). */

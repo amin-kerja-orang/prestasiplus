@@ -5,7 +5,7 @@
  * shown read-only (the blueprint owns them). Petikan: the title of each stimulus group on the paper.
  * Each row saves on its own (own flash line, V2).
  */
-import { reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import type { PaperEditorData } from '../../../domain/admin-types'
 import { builderCopy as t } from '../domain/copy'
@@ -16,12 +16,21 @@ const props = defineProps<{ editor: PaperEditorData; readonly?: boolean; busy?: 
 const emit = defineEmits<{
   section: [sectionId: string, patch: SectionPatch]
   passage: [groupId: string, label: string]
+  addSection: [label: string]
 }>()
 
 interface Draft {
   label: string
   instruction: string
   compulsory: boolean
+}
+// "Tambah bahagian" (V2 creates "Part {n+1}"; the admin may rename it before adding).
+const newLabel = ref('')
+const nextLabel = computed(() => `Part ${String(props.editor.paper.sections.length + 1)}`)
+function addSection(): void {
+  const v = (newLabel.value.trim() || nextLabel.value).trim()
+  emit('addSection', v)
+  newLabel.value = ''
 }
 const sections = reactive<Record<string, Draft>>({})
 const passages = reactive<Record<string, string>>({})
@@ -60,6 +69,7 @@ function savePassage(id: string): void {
   <div class="flex flex-col gap-6" data-testid="edit-blocks">
     <section v-if="!passagesOnly" class="flex flex-col gap-3" data-testid="edit-sections">
       <h3 class="text-heading text-highlighted">{{ t.sectionsEdit }}</h3>
+      <p v-if="!editor.paper.sections.length" class="text-body text-muted" data-testid="edit-sections-empty">{{ t.sectionAddNone }}</p>
       <form
         v-for="(s, si) in editor.paper.sections"
         :key="s.id"
@@ -91,6 +101,13 @@ function savePassage(id: string): void {
         />
       </form>
     </section>
+
+    <form v-if="!passagesOnly && !readonly" class="flex flex-wrap items-end gap-3" data-testid="section-add" @submit.prevent="addSection">
+      <UFormField :label="t.sectionAddLabel" class="min-w-0 grow">
+        <UInput v-model="newLabel" :placeholder="nextLabel" class="w-full" maxlength="60" data-testid="section-add-label" />
+      </UFormField>
+      <UButton type="submit" icon="i-ph-plus" :label="t.sectionAdd" class="min-h-11" :loading="busy" data-testid="section-add-submit" />
+    </form>
 
     <section v-if="placedGroups().length" class="flex flex-col gap-3" data-testid="edit-passages">
       <h3 class="text-heading text-highlighted">{{ t.passagesEdit }}</h3>

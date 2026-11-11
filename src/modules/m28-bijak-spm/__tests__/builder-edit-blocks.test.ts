@@ -54,6 +54,24 @@ describe('PublishOverride', () => {
   })
 })
 
+describe('Tambah bahagian (mock)', () => {
+  it('adds a Bahagian at the end; a duplicate label (trim, case-insensitive) and a blank one are refused; the form emits the label', async () => {
+    const api = new MockBuilderServer()
+    const s = (await api.builderSubjects())[0]!
+    const id = await api.create({ subject: s.code, kertas: s.kertas[0]!, title: 'T' })
+    const before = (await api.getEditor(id)).paper.sections.length
+    const after = await api.addSection(id, '  Bahagian Tambahan ')
+    expect(after.paper.sections).toHaveLength(before + 1)
+    expect(after.paper.sections.at(-1)).toMatchObject({ label: 'Bahagian Tambahan', questionIds: [] })
+    await expect(api.addSection(id, 'bahagian tambahan')).rejects.toThrow('Label bahagian ini sudah digunakan dalam kertas ini.')
+    await expect(api.addSection(id, '   ')).rejects.toThrow()
+    const w = mount(PaperEditBlocks, { props: { editor: after } })
+    await w.get('[data-testid="section-add-label"]').setValue('Lain')
+    await w.get('[data-testid="section-add"]').trigger('submit')
+    expect(w.emitted('addSection')![0]).toEqual(['Lain'])
+  })
+})
+
 describe('Sunting bahagian / petikan (mock)', () => {
   it('renames a Bahagian and the editor form shows it', async () => {
     const api = new MockBuilderServer()
