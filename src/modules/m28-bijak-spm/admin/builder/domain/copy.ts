@@ -91,6 +91,7 @@ export const builderCopy = {
   remove: 'Buang', // V2
   inSet: 'Dalam set', // V2 (Panel)
   noMatch: 'Tiada soalan sepadan.', // V2
+  bankNoSection: 'Tambah satu bahagian dahulu untuk memilih soalan daripada bank.', // [PROPOSED] N2: a paper with no Bahagian has no destination
   fill: (n: number, total: number): string => `${n} / ${total} dipilih`, // V2
   sectionEmpty: "Tiada soalan dalam bahagian ini. Gunakan butang 'Tambah' pada senarai bank.", // [PROPOSED] (V2 says "Lepaskan soalan di sini", no drag here)
   upAria: (n: number): string => `Naik soalan ${n}`, // PRD30 14-08

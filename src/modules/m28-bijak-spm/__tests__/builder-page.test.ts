@@ -214,6 +214,15 @@ describe('SetBuilderPage', () => {
     expect(m.addPlacement).toHaveBeenCalledWith('p1', 's1', 'n1')
   })
 
+  it('N2: a new paper with no Bahagian settles the bank pane (no endless "Memuatkan…") with a hint and asks the server for no pool', async () => {
+    const ed = editor(paper({ sections: [] }))
+    const { m, api } = stub({ getEditor: vi.fn().mockResolvedValue(ed) })
+    const w = await render(api)
+    expect(m.pool).not.toHaveBeenCalled()
+    expect(w.find('[data-testid="bank-no-section"]').exists()).toBe(true)
+    expect(w.get('[data-testid="builder-bank"]').text()).not.toContain('Memuatkan')
+  })
+
   it('a published set is locked: no bank, no Terbitkan, Tarik balik and Salin set present', async () => {
     const ed = editor(paper({ status: 'terbit' }))
     const { m, api } = stub({ getEditor: vi.fn().mockResolvedValue(ed) })

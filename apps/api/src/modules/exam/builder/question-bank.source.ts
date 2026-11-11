@@ -115,9 +115,19 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     // Secondary-only (R1-B21): a Darjah or PKSK question is not described, so it can never be placed on a paper.
     const allowed = await this.servableVersions(questions.map((q) => ({ id: q.id, versionNo: wanted.get(q.id) ?? q.liveVersionNo ?? q.latestVersionNo })))
     const picks = questions.filter((q) => allowed.has(q.id)).map((q) => ({ q, versionNo: wanted.get(q.id) ?? q.liveVersionNo ?? q.latestVersionNo }))
-    const statusNos = questions.flatMap((q) => [q.liveVersionNo, q.latestVersionNo].flatMap((n) => (n === null ? [] : [{ questionId: q.id, versionNo: n }])))
-    const versions = await this.db.questionVersion.findMany({
-      where: { OR: [...picks.map(({ q, versionNo }) => ({ questionId: q.id, versionNo })), ...statusNos] },
+    // Perf: the list reads thousands of placed questions. Two plain IN lookups (a small superset, trimmed in memory) replace one OR of 3 x N pairs, and the parts
+    // (the heavy rows) are read for the picked versions only: the live / latest versions that only supply a status come back without them.
+    const pickIds = [...new Set(picks.map(({ q }) => q.id))]
+    const pickNos = [...new Set(picks.map(({ versionNo }) => versionNo))]
+    const pickKeys = new Set(picks.map(({ q, versionNo }) => `${q.id}:${versionNo}`))
+    const statusNos = [...new Set(questions.flatMap((q) => [q.liveVersionNo, q.latestVersionNo].flatMap((n) => (n === null ? [] : [n]))))]
+    const statusRows =
+      questions.length === 0 || statusNos.length === 0
+        ? []
+        : await this.db.questionVersion.findMany({ where: { questionId: { in: questions.map((q) => q.id) }, versionNo: { in: statusNos } }, select: { questionId: true, versionNo: true, status: true } })
+    const statusByKey = new Map(statusRows.map((r) => [`${r.questionId}:${r.versionNo}`, r.status]))
+    const fetched = pickIds.length === 0 ? [] : await this.db.questionVersion.findMany({
+      where: { questionId: { in: pickIds }, versionNo: { in: pickNos } },
       select: {
         questionId: true,
         versionNo: true,
@@ -134,6 +144,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         },
       },
     })
+    const versions = fetched.filter((v) => pickKeys.has(`${v.questionId}:${v.versionNo}`))
     const byKey = new Map(versions.map((v) => [`${v.questionId}:${v.versionNo}`, v]))
     const subjects = await this.builder.subjectsByIds(versions.flatMap((v) => (v.subjectId === null ? [] : [v.subjectId])))
     const units = await this.unitNames(versions.flatMap((v) => (v.unitNodeId === null ? [] : [v.unitNodeId])))
@@ -148,13 +159,13 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         versionNo,
         versionStatus: statusOf({
           isActive: true,
-          liveStatus: q.liveVersionNo === null ? null : (byKey.get(`${q.id}:${q.liveVersionNo}`)?.status ?? null),
-          latestStatus: byKey.get(`${q.id}:${q.latestVersionNo}`)?.status ?? null,
+          liveStatus: q.liveVersionNo === null ? null : (statusByKey.get(`${q.id}:${q.liveVersionNo}`) ?? null),
+          latestStatus: statusByKey.get(`${q.id}:${q.latestVersionNo}`) ?? null,
         }),
         status: statusOf({
           isActive: q.isActive,
-          liveStatus: q.liveVersionNo === null ? null : (byKey.get(`${q.id}:${q.liveVersionNo}`)?.status ?? null),
-          latestStatus: byKey.get(`${q.id}:${q.latestVersionNo}`)?.status ?? null,
+          liveStatus: q.liveVersionNo === null ? null : (statusByKey.get(`${q.id}:${q.liveVersionNo}`) ?? null),
+          latestStatus: statusByKey.get(`${q.id}:${q.latestVersionNo}`) ?? null,
         }),
         subject: subject ? bijakCodeOf(subject.code) : '',
         // A question without a kertas can never be a candidate; 0 keeps it out of every blueprint match.

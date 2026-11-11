@@ -99,6 +99,13 @@ async function load(): Promise<void> {
 }
 async function refresh(next?: PaperEditorData): Promise<void> {
   if (next) editor.value = next
+  // N2: a Bahagian added to an empty paper becomes the destination; its watcher loads the bank (one request, not two).
+  const first = sections.value[0]?.id
+  if (!dest.value && first) {
+    dest.value = first
+    await actions.loadReview()
+    return
+  }
   await Promise.all([actions.loadReview(), loadPool()])
 }
 watch(
@@ -181,7 +188,15 @@ async function loadUnits(): Promise<void> {
 }
 
 async function loadPool(append = false): Promise<void> {
-  if (!paper.value || !dest.value) return
+  if (!paper.value) return
+  // N2: a paper with no Bahagian yet has no destination, so there is no pool to ask for. Settle the pane (it used to stay on "Memuatkan…" for ever) and say why;
+  // the first Bahagian that appears becomes the destination (`refresh`) and loads the bank.
+  if (!dest.value) {
+    ++poolSeq
+    pool.value = null
+    poolState.value = 'ready'
+    return
+  }
   const seq = ++poolSeq
   if (!append) poolState.value = 'loading'
   const q = append ? poolQuery : search.value
@@ -564,6 +579,7 @@ const dskpItems = computed(() => [
                 <DsText variant="body" tone="error" role="alert" data-testid="bank-error">{{ t.errPool }}</DsText>
                 <UButton color="neutral" variant="soft" :label="t.retry" data-testid="bank-retry" @click="loadPool()" />
               </DsCluster>
+              <p v-else-if="!pool" class="text-body text-muted" data-testid="bank-no-section">{{ t.bankNoSection }}</p>
               <p v-else-if="pool && !pool.units.length" class="text-body text-muted" data-testid="bank-empty">
                 {{ t.noMatch }}
               </p>
