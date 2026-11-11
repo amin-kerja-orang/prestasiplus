@@ -13,7 +13,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { questionPoolSeed } from '../../prisma/seed/questions/pool'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { DatabankModule } from '../../src/modules/classes/teacher-tools/databank.module'
-import { QuestionsModule } from '../../src/modules/questions'
+import { OverviewCache, QuestionsModule } from '../../src/modules/questions'
+import { DATABANK_SNAPSHOT_SCOPE } from '../../src/modules/classes/teacher-tools/databank.service'
 import {
   ADMIN,
   SCHOOL_ADMIN,
@@ -43,6 +44,8 @@ describe('GET /api/guru/databank/overview and /questions (S6-T19)', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     return DatabankQuestionsResponseSchema.parse(res.body)
   }
+  /** The snapshot is cached: a direct SQL change in a spec drops it, as a question event does in the app. */
+  const dropSnapshot = () => t.get(OverviewCache).evict(DATABANK_SNAPSHOT_SCOPE)
   const tiles = (o: Awaited<ReturnType<typeof overview>>) => [...o.teras, ...o.elektif]
   const tileOf = (o: Awaited<ReturnType<typeof overview>>, subjectId: string) => tiles(o).find((x) => x.subjectId === subjectId)
   const subjectOfRef = async (ref: string) =>
@@ -137,12 +140,15 @@ describe('GET /api/guru/databank/overview and /questions (S6-T19)', () => {
       const qid = await idOfRef('SEED-MCQ-BM-T4')
       try {
         await t.db.query(`update question_versions set stimulus_flag = 'stimulus_missing', stimulus_flag_ref = 'numbered', stimulus_flag_at = now() where number_label = 'SEED-MCQ-BM-T4'`)
+        dropSnapshot()
         expect(tileOf(await overview(), bm)?.count).toBe(before - 1)
         expect((await list(`?subjectId=${bm}`)).data.flatMap((u) => u.questions.map((q) => q.id))).not.toContain(qid)
         await t.db.query(`update question_versions set flag_dismissed_at = now() where number_label = 'SEED-MCQ-BM-T4'`)
+        dropSnapshot()
         expect(tileOf(await overview(), bm)?.count).toBe(before)
       } finally {
         await t.db.query(`update question_versions set stimulus_flag = null, stimulus_flag_ref = null, stimulus_flag_at = null, flag_dismissed_at = null where number_label = 'SEED-MCQ-BM-T4'`)
+        dropSnapshot()
       }
       // The draft row of the seed (BM, T4) never appears.
       const draftId = await idOfRef('SEED-DRAFT-BM-T4')
@@ -207,10 +213,12 @@ describe('GET /api/guru/databank/overview and /questions (S6-T19)', () => {
       const member = unit.questions[1]!.id
       try {
         await t.db.query(`update questions set is_active = false where id = $1::bigint`, [member])
+        dropSnapshot()
         const after = await list('?q=Pasar%20tani')
         expect(after.data.filter((u) => u.group !== null)).toHaveLength(0)
       } finally {
         await t.db.query(`update questions set is_active = true where id = $1::bigint`, [member])
+        dropSnapshot()
       }
     })
 

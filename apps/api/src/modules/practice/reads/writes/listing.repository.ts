@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
+import { Prisma } from '../../../../db/generated/client'
 import { idFromString, idToString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
 import { ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
@@ -38,38 +39,40 @@ export class StructuredListingRepository {
     // LIKE wildcards in the pupil's text are literal.
     const like = q.q === null ? null : `%${q.q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
     const order = q.subjectOrder && subjects !== null ? subjects : []
-    const [rows, totals] = await Promise.all([
-      db.$queryRaw<{ id: bigint }[]>`
-        SELECT q.id FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-        WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured' AND ${BANK_VISIBLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL}
+    // The candidates first, as a materialised step: the live approved structured sets of the offered levels (and the subject and KBAT asked for).
+    // The planner cannot estimate how many the many learner predicates leave (UAT: it guessed one set where 1 700 qualify, and without this step it
+    // chose per-row sequential scans of the stimuli table: 7 s a page, minutes under load). With the candidates fixed (about 1 700 rows, the partial
+    // index `ix_qv_structured_live_level`) every predicate below runs as a hash anti-join over them. The same rows are listed and counted as before.
+    const candidates = Prisma.sql`WITH c AS MATERIALIZED (
+          SELECT q.id AS qid, v.id AS vid FROM questions q
+          JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+          WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured'
+            AND v.education_level_id = ANY(${levels}::bigint[])
+            AND (${subjects}::bigint[] IS NULL OR v.subject_id = ANY(${subjects}::bigint[]))
+            AND (${q.kbat}::int IS NULL OR LEAST(6, GREATEST(1, COALESCE(v.cognitive_level, 1))) = ${q.kbat}::int))`
+    const visible = Prisma.sql`${BANK_VISIBLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL}
           AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
-          AND v.education_level_id = ANY(${levels}::bigint[])
-          AND (${subjects}::bigint[] IS NULL OR v.subject_id = ANY(${subjects}::bigint[]))
-          AND (${q.kbat}::int IS NULL OR LEAST(6, GREATEST(1, COALESCE(v.cognitive_level, 1))) = ${q.kbat}::int)
           AND (${like}::text IS NULL OR v.stem_ms ILIKE ${like}::text OR EXISTS (
                 SELECT 1 FROM question_version_stimuli qs JOIN stimuli st ON st.id = qs.stimulus_id
-                WHERE qs.question_version_id = v.id AND (st.body_ms ILIKE ${like}::text OR st.label ILIKE ${like}::text)))
+                WHERE qs.question_version_id = v.id AND (st.body_ms ILIKE ${like}::text OR st.label ILIKE ${like}::text)))`
+    const [rows, totals] = await Promise.all([
+      db.$queryRaw<{ id: bigint }[]>(Prisma.sql`
+        ${candidates}
+        SELECT q.id FROM c JOIN questions q ON q.id = c.qid JOIN question_versions v ON v.id = c.vid
+        WHERE ${visible}
           AND (NOT ${q.markable}::boolean OR ${ALL_LEAVES_KEYED_SQL})
         ORDER BY (CASE WHEN cardinality(${order}::bigint[]) > 0 THEN array_position(${order}::bigint[], v.subject_id) END) ASC NULLS FIRST,
                  COALESCE(v.published_at, q.created_at) DESC, q.id ASC
-        LIMIT ${q.limit} OFFSET ${q.offset}`,
-      db.$queryRaw<{ n: number; pending: number }[]>`
+        LIMIT ${q.limit} OFFSET ${q.offset}`),
+      db.$queryRaw<{ n: number; pending: number }[]>(Prisma.sql`
+        ${candidates}
         SELECT count(*) FILTER (WHERE NOT ${q.markable}::boolean OR ok)::int AS n,
                count(*) FILTER (WHERE NOT ok)::int AS pending
         FROM (
           SELECT ${ALL_LEAVES_KEYED_SQL} AS ok
-          FROM questions q
-          JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-          WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured' AND ${BANK_VISIBLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL}
-          AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
-            AND v.education_level_id = ANY(${levels}::bigint[])
-            AND (${subjects}::bigint[] IS NULL OR v.subject_id = ANY(${subjects}::bigint[]))
-            AND (${q.kbat}::int IS NULL OR LEAST(6, GREATEST(1, COALESCE(v.cognitive_level, 1))) = ${q.kbat}::int)
-            AND (${like}::text IS NULL OR v.stem_ms ILIKE ${like}::text OR EXISTS (
-                  SELECT 1 FROM question_version_stimuli qs JOIN stimuli st ON st.id = qs.stimulus_id
-                  WHERE qs.question_version_id = v.id AND (st.body_ms ILIKE ${like}::text OR st.label ILIKE ${like}::text)))
-        ) t`,
+          FROM c JOIN questions q ON q.id = c.qid JOIN question_versions v ON v.id = c.vid
+          WHERE ${visible}
+        ) t`),
     ])
     return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0, pendingScheme: totals[0]?.pending ?? 0 }
   }

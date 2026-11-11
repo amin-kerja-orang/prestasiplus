@@ -31,8 +31,13 @@ export const BANK_VISIBLE_SQL = Prisma.sql`v.visibility = ${Prisma.raw(`'${BANK_
  */
 export const isBankVersion = (version: { visibility?: string | undefined }): boolean => version.visibility === undefined || version.visibility === BANK_VISIBILITY
 
-/** M07 PKSK questions are served by M07 only. */
-export const NOT_PKSK_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
+/**
+ * M07 PKSK questions are served by M07 only. Written as an uncorrelated NOT IN (a hashed sub-plan built once per statement), not a correlated
+ * NOT EXISTS: while the planner statistics of `question_tags` are out of date (the PKSK tags are written long after the last ANALYZE) the
+ * anti-join was planned as a nested loop that re-read every PKSK tag for every candidate question (286 million comparisons on the 457 thousand
+ * questions of UAT: 10 s for a bank-wide count, 1.3 s with this form). `question_tags.question_id` is NOT NULL, so both forms give the same rows.
+ */
+export const NOT_PKSK_SQL = Prisma.sql`q.id NOT IN (SELECT pt.question_id FROM question_tags pt WHERE pt.kind = 'pksk_domain')`
 
 /**
  * Secondary-only (D72, OQ-06): a question of a primary-stage level (Darjah) is hidden from everyone, admin included. Apply it to

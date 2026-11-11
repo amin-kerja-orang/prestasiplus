@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common'
 import { ThrottleModule } from '../../../common/throttle'
 import { QuestionsModule } from '../../questions'
 import { DatabankController } from './databank.controller'
+import { DatabankWarmer } from './databank-warmer'
 import { DatabankService } from './databank.service'
 
 /**
@@ -13,6 +14,6 @@ import { DatabankService } from './databank.service'
 @Module({
   imports: [ThrottleModule, QuestionsModule],
   controllers: [DatabankController],
-  providers: [DatabankService],
+  providers: [DatabankService, DatabankWarmer],
 })
 export class DatabankModule {}

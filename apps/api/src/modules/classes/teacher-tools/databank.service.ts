@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Optional } from '@nestjs/common'
 import {
   DATABANK_PAGE_SIZE,
   DatabankQuestionsQuerySchema,
@@ -11,7 +11,7 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { listMeta } from '../../../common/http'
-import { QuestionsRepository } from '../../questions'
+import { OverviewCache, QuestionsRepository } from '../../questions'
 import { parseStrict } from '../strict-body'
 
 type Query = z.output<typeof DatabankQuestionsQuerySchema>
@@ -60,18 +60,50 @@ const ACTIVE_SUBJECT_SQL = Prisma.sql`EXISTS (SELECT 1 FROM subjects ds WHERE ds
 
 const likePattern = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
 
+/** The slot of the servable-set snapshot in the shared `OverviewCache` (a question event marks it stale; `evict` makes the next read compute it afresh). */
+export const DATABANK_SNAPSHOT_SCOPE = 'databank:snapshot'
+
+/**
+ * Every row of the servable set (see the class comment), newest question first: the question id, its group id (0 = none) and its subject id.
+ * Ids are exact as doubles (they stay far below 2^53), which keeps the 333 thousand rows of UAT in three flat arrays (about 8 MB).
+ */
+export interface DatabankSnapshot {
+  ids: readonly number[]
+  groups: readonly number[]
+  subjects: readonly number[]
+}
+
+/** The units of a snapshot slice, newest unit first: a group is `-groupId`, a standalone question its own id; `members` = servable questions of the unit. */
+interface UnitList {
+  keys: number[]
+  members: number[]
+  totalQuestions: number
+}
+
+const keyOf = (key: number): string => (key < 0 ? `g${-key}` : `q${key}`)
+
 /**
  * Databank Soalan for teachers (S6-T19, API-GUR-27). Read-only. The ONE set it counts and lists is what pupils are served:
  * `QuestionsRepository.scopeSql({ status: 'approved', active: true, wholeGroups: true }, true)` (live version approved, active
  * question, learner-visible level, not source-taken-down, not flagged `stimulus_missing`/`figure_only`, every leaf keyed, not PKSK,
  * a group only when it is complete) plus the Tingkatan 1-5 and active-subject guards above, so the tile of a subject equals the
  * total of its list (D11, D91). It does not use SPM_SERVABLE_SQL (T4/T5 only) nor the pupil `/spm/databank` lane.
+ *
+ * Speed (UAT, 457 thousand questions: overview 40 s, list 35 s): the servable set is read ONCE per question event (or 5 minutes) as a
+ * snapshot of three flat arrays (1.8 s, stale-while-revalidate, warmed at boot); the tiles, the unit totals and the page order are then
+ * computed in memory from it, so no request scans the bank. Only the page's own rows (members, options, stimuli) are read from the database,
+ * with the same servable predicate, so a question that stopped being servable since the snapshot drops out of its page. A search asks the
+ * database only for the ids whose stem matches, then keeps the ones in the snapshot: the same units and counts as the old per-request
+ * aggregate, which the specs compare.
  */
 @Injectable()
 export class DatabankService {
+  private readonly units = new WeakMap<DatabankSnapshot, Map<string, UnitList>>()
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(QuestionsRepository) private readonly bank: QuestionsRepository,
+    @Optional() @Inject(OverviewCache) private readonly cache?: OverviewCache,
   ) {}
 
   /** FROM + WHERE of the servable set (aliases `q`, `v`). */
@@ -81,15 +113,33 @@ export class DatabankService {
     return { from: scope.from, where: Prisma.sql`${scope.where} AND ${TINGKATAN_1_5_SQL} AND ${ACTIVE_SUBJECT_SQL}` }
   }
 
-  async overview(): Promise<DatabankOverview> {
+  /** The servable set as three flat arrays, newest question first. */
+  async loadSnapshot(): Promise<DatabankSnapshot> {
     const { from, where } = this.servable()
-    const rows = await this.prisma.client.$queryRaw<{ id: bigint; name: string; name_en: string; is_core: boolean; n: number }[]>(Prisma.sql`
-      SELECT s.id, s.name, s.name_en, s.is_core, COALESCE(c.n, 0)::int AS n
-        FROM subjects s
-        LEFT JOIN (SELECT v.subject_id AS sid, count(*) AS n ${from} WHERE ${where} GROUP BY v.subject_id) c ON c.sid = s.id
-       WHERE s.is_active
-       ORDER BY s.sort_order, s.name, s.id`)
-    const tiles = rows.map((r) => ({ core: r.is_core, tile: { subjectId: idToString(r.id), nameMs: r.name, nameEn: r.name_en, count: r.n } satisfies SubjectTile }))
+    const rows = await this.prisma.client.$queryRaw<{ ids: number[] | null; groups: number[] | null; subjects: number[] | null }[]>(Prisma.sql`
+      SELECT array_agg(t.id ORDER BY t.id DESC) AS ids, array_agg(t.gid ORDER BY t.id DESC) AS groups, array_agg(t.sid ORDER BY t.id DESC) AS subjects
+        FROM (SELECT q.id::float8 AS id, COALESCE(q.group_id, 0)::float8 AS gid, COALESCE(v.subject_id, 0)::float8 AS sid ${from} WHERE ${where}) t`)
+    const r = rows[0]
+    return { ids: r?.ids ?? [], groups: r?.groups ?? [], subjects: r?.subjects ?? [] }
+  }
+
+  private async snapshot(): Promise<DatabankSnapshot> {
+    if (!this.cache) return this.loadSnapshot()
+    return (await this.cache.get(() => this.loadSnapshot(), DATABANK_SNAPSHOT_SCOPE)).value
+  }
+
+  /** Fills the snapshot (the boot warm-up). */
+  async warm(): Promise<void> {
+    await this.snapshot()
+  }
+
+  async overview(): Promise<DatabankOverview> {
+    const snap = await this.snapshot()
+    const perSubject = new Map<number, number>()
+    for (const s of snap.subjects) perSubject.set(s, (perSubject.get(s) ?? 0) + 1)
+    const rows = await this.prisma.client.$queryRaw<{ id: bigint; name: string; name_en: string; is_core: boolean }[]>(Prisma.sql`
+      SELECT s.id, s.name, s.name_en, s.is_core FROM subjects s WHERE s.is_active ORDER BY s.sort_order, s.name, s.id`)
+    const tiles = rows.map((r) => ({ core: r.is_core, tile: { subjectId: idToString(r.id), nameMs: r.name, nameEn: r.name_en, count: perSubject.get(Number(r.id)) ?? 0 } satisfies SubjectTile }))
     return {
       totalQuestions: tiles.reduce((sum, t) => sum + t.tile.count, 0),
       activeSubjects: tiles.filter((t) => t.tile.count > 0).length,
@@ -98,33 +148,71 @@ export class DatabankService {
     }
   }
 
+  /**
+   * The units of the snapshot (one subject or all), newest first: one per group (`-id`) or standalone question (`id`), with the number of servable
+   * questions of the subject in it. With `hits` (a search) only the units that hold a matching question are kept; the members still count every question.
+   */
+  private unitsOf(snap: DatabankSnapshot, subject: number | null, hits: ReadonlySet<number> | null): UnitList {
+    let memo: Map<string, UnitList> | null = null
+    if (hits === null) {
+      memo = this.units.get(snap) ?? new Map<string, UnitList>()
+      this.units.set(snap, memo)
+    }
+    const memoKey = String(subject)
+    const cached = memo?.get(memoKey)
+    if (cached) return cached
+    const position = new Map<number, number>()
+    const keys: number[] = []
+    const members: number[] = []
+    const matched: boolean[] = []
+    for (let i = 0; i < snap.ids.length; i++) {
+      if (subject !== null && snap.subjects[i] !== subject) continue
+      const id = snap.ids[i]!
+      const gid = snap.groups[i]!
+      const key = gid === 0 ? id : -gid
+      let at = position.get(key)
+      if (at === undefined) {
+        at = keys.length
+        position.set(key, at)
+        keys.push(key)
+        members.push(0)
+        matched.push(false)
+      }
+      members[at] = members[at]! + 1
+      if (hits?.has(id)) matched[at] = true
+    }
+    const kept = hits === null ? keys.map((_, i) => i) : keys.flatMap((_, i) => (matched[i] ? [i] : []))
+    const out: UnitList = { keys: kept.map((i) => keys[i]!), members: kept.map((i) => members[i]!), totalQuestions: kept.reduce((n, i) => n + members[i]!, 0) }
+    memo?.set(memoKey, out)
+    return out
+  }
+
+  /** The ids (as numbers) of the live approved versions whose stem matches `search`, narrowed to a subject when asked (the snapshot keeps the servable ones). */
+  private async hitsOf(search: string, subject: Prisma.Sql): Promise<Set<number>> {
+    const rows = await this.prisma.client.$queryRaw<{ ids: number[] | null }[]>(Prisma.sql`
+      SELECT array_agg(q.id::float8) AS ids FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE v.status = 'approved' ${subject} AND (v.stem_ms ILIKE ${likePattern(search)} ESCAPE '\\' OR v.stem_en ILIKE ${likePattern(search)} ESCAPE '\\')`)
+    return new Set(rows[0]?.ids ?? [])
+  }
+
   async questions(rawQuery: Record<string, unknown>): Promise<DatabankPage> {
     const query: Query = parseStrict(DatabankQuestionsQuerySchema, rawQuery)
     const page = query.page ?? 1
     const search = query.q && query.q.length > 0 ? query.q : null
-    const { from, where } = this.servable()
-    const subject = query.subjectId ? Prisma.sql`AND v.subject_id = ${idFromString(query.subjectId)}` : Prisma.empty
-    const hit = search ? Prisma.sql`(v.stem_ms ILIKE ${likePattern(search)} ESCAPE '\\' OR v.stem_en ILIKE ${likePattern(search)} ESCAPE '\\')` : Prisma.sql`TRUE`
-    // One row per unit: a group is `g<id>`, a standalone question `q<id>`; a unit is listed when any member matches the search.
-    const units = Prisma.sql`
-      WITH s AS (
-        SELECT q.id, q.group_id, CASE WHEN q.group_id IS NULL THEN 'q' || q.id ELSE 'g' || q.group_id END AS unit_key, ${hit} AS hit
-          ${from} WHERE ${where} ${subject}
-      ), u AS (
-        SELECT unit_key, max(id) AS newest, count(*)::int AS members FROM s GROUP BY unit_key HAVING bool_or(hit)
-      )`
-    const totals = await this.prisma.client.$queryRaw<{ units: number; members: number }[]>(
-      Prisma.sql`${units} SELECT count(*)::int AS units, COALESCE(sum(members), 0)::int AS members FROM u`,
-    )
-    const totalUnits = totals[0]?.units ?? 0
-    const totalQuestions = totals[0]?.members ?? 0
+    const subjectKey = query.subjectId ? idFromString(query.subjectId) : null
+    const subject = subjectKey === null ? null : Number(subjectKey)
+    const [snap, hits] = await Promise.all([
+      this.snapshot(),
+      search === null ? Promise.resolve(null) : this.hitsOf(search, subjectKey === null ? Prisma.empty : Prisma.sql`AND v.subject_id = ${subjectKey}`),
+    ])
+    // One unit per group (`g<id>`) or standalone question (`q<id>`), newest first; a unit is listed when any member matches the search.
+    const units = this.unitsOf(snap, subject, hits)
+    const totalUnits = units.keys.length
+    const totalQuestions = units.totalQuestions
     const meta = { ...listMeta(page, DATABANK_PAGE_SIZE, totalUnits), totalUnits, totalQuestions }
     if (totalUnits === 0 || (page - 1) * DATABANK_PAGE_SIZE >= totalUnits) return { data: [], meta }
 
-    const pageUnits = await this.prisma.client.$queryRaw<{ unit_key: string }[]>(
-      Prisma.sql`${units} SELECT unit_key FROM u ORDER BY newest DESC, unit_key LIMIT ${DATABANK_PAGE_SIZE} OFFSET ${(page - 1) * DATABANK_PAGE_SIZE}`,
-    )
-    const keys = pageUnits.map((u) => u.unit_key)
+    const keys = units.keys.slice((page - 1) * DATABANK_PAGE_SIZE, page * DATABANK_PAGE_SIZE).map(keyOf)
     const groupIds = keys.filter((k) => k.startsWith('g')).map((k) => BigInt(k.slice(1)))
     const singleIds = keys.filter((k) => k.startsWith('q')).map((k) => BigInt(k.slice(1)))
     return { data: await this.rowsOf(keys, groupIds, singleIds), meta }
