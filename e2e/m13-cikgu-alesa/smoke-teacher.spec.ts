@@ -131,7 +131,7 @@ test.describe('M13 shell, 404 and routing', MODULE, () => {
     const alesa = tid(page, 'pembelajaran-alesa')
     await expect(alesa).toHaveAttribute('href', '/cikgu')
     await alesa.click()
-    await expect(page).toHaveURL(//cikgu$/)
+    await expect(page).toHaveURL(/\/cikgu$/)
   })
 
   test('E2E-M13-06 admin: unknown M13 paths and /cikgu-alesa show the 404 page @m13', async ({
