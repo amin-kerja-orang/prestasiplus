@@ -179,3 +179,31 @@ describe('canonical copies whose id-map entry points to another question (stage 
     expect(await snapshot()).toBe(before)
   })
 })
+
+describe('canonical copy whose id-map entry points to a question that no longer exists (stage 3 conflict, case c)', () => {
+  const missing = '987654321'
+
+  it('seeds (c) a copy of legacy 2 mapped to a question id that does not exist', async () => {
+    await canonical(9010, 'Nilai 2x+3 ialah?', ['1', '2', '3', '4'], 0)
+    expect((await sql(`select count(*)::int as n from questions where id = $1::bigint`, [missing])).rows[0]?.n).toBe(0)
+    await sql(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('cloud', 'exam_questions', '9010', $1)`, [missing])
+    expect(await mapOf('9010')).toBe(missing)
+  })
+
+  it('drops the dangling entry, registers the copy mapping, raises no conflict and leaves every question row alone', async () => {
+    const questionsBefore = (await sql(`select count(*)::int as n from questions`)).rows[0]?.n as number
+    const notes = await both()
+    expect(await mapOf('9010')).toBe(await legacyId('2'))
+    // a dangling entry is neither a legacy repoint nor a kept-own copy; the copy mapping is counted with the other copies
+    expect(notes.get('canonical.dedupe_repointed_legacy') ?? 0).toBe(0)
+    expect(notes.get('canonical.deduped_to_legacy')).toBeGreaterThanOrEqual(1)
+    expect((await sql(`select count(*)::int as n from questions`)).rows[0]?.n).toBe(questionsBefore) // no question added or deleted
+  })
+
+  it('a further run changes nothing', async () => {
+    const before = await snapshot()
+    await both()
+    expect(await mapOf('9010')).toBe(await legacyId('2'))
+    expect(await snapshot()).toBe(before)
+  })
+})
