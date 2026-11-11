@@ -260,6 +260,8 @@ test.describe('content (QA extras)', MODULE, () => {
     page,
     gotoApp,
   }) => {
+    // four full mock boots in one test: the 60 s default is too short
+    test.setTimeout(240_000)
     for (const who of [AZLAN, SUHAIMI, ADMIN_SEKOLAH, POPULATED]) {
       await signIn(page, who)
       await open(page, gotoApp)
@@ -376,15 +378,16 @@ test.describe('presentation (QA extras)', MODULE, () => {
     // First load of S0 without cached data: open another school-admin page first (S0 never loaded in this session;
     // a reload would reset the in-memory mock and drop the injected fault), then go to S0 inside the app.
     await gotoApp('/admin-sekolah/pelajar')
-    await mock.networkErrorNext('/api/admin-sekolah/dashboard')
+    // A GET is retried twice by the client (src/api/client.ts RETRY_DELAYS_MS, ~1 s + ~3 s): arm three faults.
+    for (let i = 0; i < 3; i++) await mock.networkErrorNext('/api/admin-sekolah/dashboard')
     await spaGoto(page, PAGE)
-    await expect(page.getByTestId('sd-error')).toBeVisible()
+    await expect(page.getByTestId('sd-error')).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId('sd-cards')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
     await spaGoto(page, '/admin-sekolah/pelajar')
-    await mock.failNext('/api/admin-sekolah/dashboard', 500)
+    for (let i = 0; i < 3; i++) await mock.failNext('/api/admin-sekolah/dashboard', 500)
     await spaGoto(page, PAGE)
-    await expect(page.getByTestId('sd-error')).toBeVisible()
+    await expect(page.getByTestId('sd-error')).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId('sd-performance')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
@@ -394,6 +397,7 @@ test.describe('presentation (QA extras)', MODULE, () => {
     await open(page, gotoApp)
     await expectTabTitle(page, 'Dashboard Sekolah | PRESTASIPLUS')
     await page.getByTestId('sd-panel-levels').click()
+    await expect(page).toHaveURL(/\/prestasi\/tingkatan/)
     await page.goBack()
     await expect(page.getByTestId('sd-page')).toBeVisible({ timeout: 60_000 })
     await expectTabTitle(page, 'Dashboard Sekolah | PRESTASIPLUS')
