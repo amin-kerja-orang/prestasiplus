@@ -13,6 +13,7 @@ import {
   chooseDelete,
   confirmDialog,
   expectSwitch,
+  isCardLayout,
   listRows,
   listTable,
   rowById,
@@ -114,6 +115,27 @@ test.describe('M03 S6 subject list', MODULE, () => {
     await expect(add).toHaveText('Tambah')
     await expect(add).toHaveAttribute('href', '/admin/subjects/create')
 
+    if (isCardLayout(page)) {
+      // Below md DsDataTable renders a card list: the name as title, Kod / Nama (EN) / Soalan pairs, the
+      // "Aktif" switch and the row actions (no header cells, level line, Teras badge or colour column).
+      await expect(listRows(page, 'subjects')).toHaveCount(31)
+      const math = subjectRow(page, 3)
+      await expect(math).toContainText('Matematik')
+      await expect(math).toContainText('MATH')
+      await expect(math).toContainText('Mathematics')
+      await expect(math).toContainText('6110')
+      await expect(rowEdit(math)).toHaveAttribute('href', '/admin/subjects/3/edit')
+      await expect(rowEdit(math)).toHaveAttribute('title', 'Edit')
+      await expectSwitch(subjectRow(page, 12), true)
+      // V2 content the card list does not show yet (red until it does): level line, Teras / Elektif, colour.
+      await expect.soft(subjectRow(page, 8).getByTestId('subject-levels')).toHaveText('Tingkatan 4, Tingkatan 5')
+      await expect.soft(subjectRow(page, 3).getByTestId('subject-core')).toHaveText('Teras')
+      await expect.soft(subjectRow(page, 8).getByTestId('subject-core')).toHaveText('Elektif')
+      expect(await smallestTextInMain(page)).toBeGreaterThanOrEqual(12)
+      await expectNoHorizontalScroll(page)
+      return
+    }
+
     // Headers (the DsTable header cells; the label text is the source label, case aside).
     const headers = listTable(page, 'subjects').locator('thead th')
     await expect(headers).toHaveCount(10)
@@ -166,7 +188,9 @@ test.describe('M03 S6 subject list', MODULE, () => {
       const last = await headers.nth(9).boundingBox()
       expect(last!.x + last!.width).toBeLessThanOrEqual(card!.x + card!.width + 1)
     } else {
-      expect(overflow).toBeGreaterThan(0)
+      // From md the compact table fits the card at 768 too (the live site scrolled); it must still be a
+      // scroll container of its own so a wider table never scrolls the page.
+      expect(await scroller.evaluate((el) => getComputedStyle(el).overflowX)).toBe('auto')
     }
     expect(await smallestTextInMain(page)).toBeGreaterThanOrEqual(12)
     await expectNoHorizontalScroll(page)
@@ -179,6 +203,11 @@ test.describe('M03 S6 subject list', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openSubjects(page, gotoApp)
+    if (isCardLayout(page)) {
+      // V2 shows the icon tile at every width; the v2 card list (below md) has none: red until the card shows it.
+      await expect(subjectRow(page, 1).getByTestId('subject-icon')).toBeVisible()
+      return
+    }
     for (let id = 1; id <= 31; id++) {
       const tile = subjectRow(page, id).getByTestId('subject-icon')
       const glyph = await tile.evaluate((el) => ({
@@ -392,8 +421,9 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
       await expect(page.getByText('Subjek berjaya ditambah.')).toBeVisible()
       await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 32 subjek')
       const created = listRows(page, 'subjects').filter({ hasText: 'Sains Demo' })
-      await expect(created.getByTestId('subject-code')).toHaveText('DEMO01')
-      await expect(created.getByTestId('subject-levels')).toHaveText('Tingkatan 1, Tingkatan 2')
+      await expect(created).toContainText('DEMO01')
+      const check = isCardLayout(page) ? expect.soft : expect // the card list has no level line (red until it does)
+      await check(created.getByTestId('subject-levels')).toHaveText('Tingkatan 1, Tingkatan 2')
       await expectSwitch(created, true)
       await expectNoHorizontalScroll(page)
     },
@@ -426,9 +456,12 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
       test.slow()
       await loginAs(ADMIN)
       await openLevels(page, gotoApp)
-      const t1Text = await levelRow(page, 7).getByTestId('level-subjects').innerText()
-      const t1Subjects = Number.parseInt(t1Text, 10)
-      expect(t1Subjects).toBeGreaterThan(0)
+      // Tingkatan 1 has 15 subjects (curriculum.json subjectLevels with level 7); the card list shows no count.
+      let t1Subjects = 15
+      if (!isCardLayout(page)) {
+        t1Subjects = Number.parseInt(await levelRow(page, 7).getByTestId('level-subjects').innerText(), 10)
+        expect(t1Subjects).toBeGreaterThan(0)
+      }
       await openSubjects(page, gotoApp)
       await rowEdit(subjectRow(page, 3)).click()
       await expect(page).toHaveURL('/admin/subjects/3/edit')
@@ -452,10 +485,11 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
       await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL('/admin/subjects')
       await expect(page.getByText('Subjek berjaya dikemaskini.')).toBeVisible()
-      await expect(subjectRow(page, 3).getByTestId('subject-levels')).not.toContainText('Tingkatan 1,')
+      const check = isCardLayout(page) ? expect.soft : expect // the card list has no level line / counts (red until it does)
+      await check(subjectRow(page, 3).getByTestId('subject-levels')).not.toContainText('Tingkatan 1,')
 
       await openLevels(page, gotoApp)
-      await expect(levelRow(page, 7).getByTestId('level-subjects')).toHaveText(
+      await check(levelRow(page, 7).getByTestId('level-subjects')).toHaveText(
         `${String(t1Subjects - 1)} subjek`,
       )
     },
@@ -496,6 +530,25 @@ test.describe('M03 S9 level list', MODULE, () => {
     await expect(add).toHaveText('Tambah Tahap')
     await expect(add).toHaveAttribute('href', '/admin/education-levels/create')
 
+    if (isCardLayout(page)) {
+      // Below md: the card list (name title, Kod / Nama (EN) / Kurikulum pairs, switch and row actions).
+      await expect(listRows(page, 'levels')).toHaveCount(5)
+      const t1Card = levelRow(page, 7)
+      await expect(t1Card).toContainText('Tingkatan 1')
+      await expect(t1Card).toContainText('T1')
+      await expect(t1Card).toContainText('Form 1')
+      await expect(t1Card).toContainText('KSSM')
+      await expect(rowEdit(t1Card)).toHaveAttribute('href', '/admin/education-levels/7/edit')
+      await expect(rowEdit(t1Card)).toHaveAttribute('title', 'Edit')
+      await expectSwitch(levelRow(page, 11), true)
+      // V2 content the card list does not show yet (red until it does): stage, question and subject counts.
+      await expect.soft(t1Card.getByTestId('level-stage')).toHaveText('Menengah Rendah')
+      await expect.soft(t1Card.getByTestId('level-questions')).toHaveText('19455 soalan')
+      await expect.soft(t1Card.getByTestId('level-subjects')).toHaveText('15 subjek')
+      expect(await smallestTextInMain(page)).toBeGreaterThanOrEqual(12)
+      await expectNoHorizontalScroll(page)
+      return
+    }
     const headers = listTable(page, 'levels').locator('thead th')
     expect(
       (await headers.evaluateAll((els) => els.map((el) => (el as HTMLElement).innerText))).map(
@@ -536,7 +589,7 @@ test.describe('M03 S9 level list', MODULE, () => {
     const scroller = listTable(page, 'levels').locator('div.overflow-x-auto').first()
     const overflow = await scroller.evaluate((el) => el.scrollWidth - el.clientWidth)
     if (viewportWidth(page) >= 1280) expect(overflow).toBeLessThanOrEqual(0)
-    else expect(overflow).toBeGreaterThan(0)
+    else expect(await scroller.evaluate((el) => getComputedStyle(el).overflowX)).toBe('auto')
     expect(await smallestTextInMain(page)).toBeGreaterThanOrEqual(12)
     await expectNoHorizontalScroll(page)
   })
@@ -597,7 +650,8 @@ test.describe('M03 S9 level list', MODULE, () => {
 
       await gotoApp('/admin/subjects')
       await expectListLoaded(page, 'subjects')
-      await expect(subjectRow(page, 8).getByTestId('subject-levels')).toHaveText('Tingkatan 4')
+      const check = isCardLayout(page) ? expect.soft : expect // the card list has no level line (red until it does)
+      await check(subjectRow(page, 8).getByTestId('subject-levels')).toHaveText('Tingkatan 4')
       await expectNoHorizontalScroll(page)
     },
   )
@@ -686,8 +740,9 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
       await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 6 tahap')
       const created = listRows(page, 'levels').filter({ hasText: 'Tahun Demo' })
       await expect(created).toContainText('YD')
-      await expect(created.getByTestId('level-questions')).toHaveText('0 soalan')
-      await expect(created.getByTestId('level-subjects')).toHaveText('0 subjek')
+      const check = isCardLayout(page) ? expect.soft : expect // the card list has no counts (red until it does)
+      await check(created.getByTestId('level-questions')).toHaveText('0 soalan')
+      await check(created.getByTestId('level-subjects')).toHaveText('0 subjek')
       await expectNoHorizontalScroll(page)
     },
   )
