@@ -12,6 +12,7 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
+  isDesktopShell,
   isMobileWidth,
   moduleTag,
   provisional,
@@ -86,8 +87,10 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     const card = mcqCards(page).first()
     await expect(card.getByTestId('diagram-file')).toHaveAttribute('accept', 'image/*')
     await expect(card.getByTestId('diagram-dismiss')).toHaveText('Dismiss')
-    await expectTouchTarget(card.getByTestId('diagram-upload'))
-    await expectTouchTarget(card.getByTestId('diagram-dismiss'), 44)
+    if (!isDesktopShell(page)) {
+      await expectTouchTarget(card.getByTestId('diagram-upload'))
+      await expectTouchTarget(card.getByTestId('diagram-dismiss'), 44)
+    }
 
     // UPagination (no Laravel "Showing x to y" text): page 1 is current, the last page is ceil(total / 20):
     // 6144 MCQ (anchor, discovery M04:529) -> 308, 522 structured -> 27. Red while the mock computes 5,652 (data deferred).
@@ -114,8 +117,11 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(page.getByTestId('diagrams-school')).toHaveCount(0)
     await expect(page.getByTestId('diagram-upload').first()).toBeVisible()
     await expect(page.getByTestId('diagram-file').first()).toBeAttached()
-    await expectTouchTarget(page.getByTestId('diagram-upload').first())
-    await expectTouchTarget(page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' }), 44)
+    // Touch targets >= 44 px are asserted on the touch projects only (staff controls are 40 px from lg).
+    if (!isDesktopShell(page)) {
+      await expectTouchTarget(page.getByTestId('diagram-upload').first())
+      await expectTouchTarget(page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' }), 44)
+    }
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true)
@@ -162,7 +168,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
   })
 
   // V3 addition, no V2 source (V2 has no school filter).
-  test('the school filter applies to the MCQ list only (school 380 has no MCQ)', async ({
+  test('the school filter applies to the MCQ list only (school 8300 has no MCQ)', async ({
     page,
     loginAs,
     gotoApp,
@@ -171,13 +177,17 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await openAudit(page, gotoApp)
     // The school select has 10,221 native options: selectOption times out under load (test technique, the control
     // works for users), so the value is set directly and a change event is dispatched.
+    // The school options load after the page (async lookup): wait for the option before setting the value.
+    await expect(page.locator('[data-testid="diagrams-school"] option[value="8300"]')).toBeAttached({
+      timeout: 30_000,
+    })
     await page.getByTestId('diagrams-school').evaluate((el: HTMLSelectElement) => {
-      el.value = '380'
+      el.value = '8300'
       el.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    await expect(page.getByTestId('diagrams-school')).toHaveValue('380')
+    await expect(page.getByTestId('diagrams-school')).toHaveValue('8300')
     await page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' }).click()
-    await expect(page).toHaveURL(/school_id=380/)
+    await expect(page).toHaveURL(/school_id=8300/)
     await expect(page.getByTestId('diagrams-mcq')).toHaveCount(0)
     await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText('Struktur (522)')
     await expect(page.getByTestId('diagrams-empty')).toHaveCount(0)
