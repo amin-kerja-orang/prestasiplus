@@ -182,8 +182,14 @@ describe('cards (FR-M27-24, BR-M27-12, 13)', () => {
     [SUHAIMI, 900002],
   ])('equal the owners counts for school %#', async (uid, schoolId) => {
     const d = await dashboard(uid)
-    expect(d.cards.pupils).toBe(users.adminList({ role: 'student', schoolId, pageSize: 1 }).total)
-    expect(d.cards.teachers).toBe(users.adminList({ role: 'teacher', schoolId, pageSize: 1 }).total)
+    // XS-1 (active pupils of Tingkatan 1-5) and XS-3 (active teachers), the same figures as M08 for the school.
+    const xs1 = users.countWhere({ role: 'student', isActive: true, grade: { gte: 7, lte: 11 }, schoolId })
+    const xs3 = users.countWhere({ role: 'teacher', isActive: true, schoolId })
+    expect(d.cards.pupils).toBe(xs1)
+    expect(d.cards.teachers).toBe(xs3)
+    const perf = schoolPerformance({ kind: 'school', schoolId }, 2026)
+    expect(d.cards.pupils).toBe(perf.stats.students)
+    expect(d.cards.teachers).toBe(perf.stats.teachers)
     expect(d.cards.activeClasses).toBe(classrooms.list({ isActive: true, schoolId }).length)
     expect(d.pendingTeachers).toBe(0)
   })
@@ -344,6 +350,11 @@ describe('populated school (NFR-M27-01)', () => {
     const took = performance.now() - t0
     console.log(`M27 S0 8078 took ${took.toFixed(0)} ms`)
     expect(d.school.id).toBe(8078)
+    // S0 "Pelajar" = XS-1 = the M08 school pupil total for the same school (not every student account).
+    expect(d.cards.pupils).toBe(schoolPerformance({ kind: 'school', schoolId: 8078 }, 2026).stats.students)
+    expect(d.cards.pupils).toBe(
+      users.countWhere({ role: 'student', isActive: true, grade: { gte: 7, lte: 11 }, schoolId: 8078 }),
+    )
     expect(d.performance.practice.sessions).toBeGreaterThan(0)
     expect(d.performance.practice.accuracy).not.toBeNull()
     expect(d.performance.total).toBe(d.performance.gps.entries)

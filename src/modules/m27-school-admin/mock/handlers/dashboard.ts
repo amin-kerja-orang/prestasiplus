@@ -109,7 +109,6 @@ export function buildSchoolDashboard(
   const year = new Date(now + 8 * 3_600_000).getUTCFullYear()
   const perf = schoolPerformance({ kind: 'school', schoolId }, year)
   const sub = currentSubscriptionStatus(schoolId, now)
-  const count = (role: 'student' | 'teacher') => users.countWhere({ role, schoolId })
 
   const gpsValue = perf.gps.value
   const practice = perf.stats
@@ -135,8 +134,9 @@ export function buildSchoolDashboard(
     // The pending-teacher mock list is always empty (mock/handlers/pending-teachers.ts): no record is invented.
     pendingTeachers: 0,
     cards: {
-      pupils: count('student'),
-      teachers: count('teacher'),
+      // XS-1 / XS-3 like the API (apps/api/.../school-admin/dashboard.service.ts:93-94): the M08 school figures.
+      pupils: perf.stats.students,
+      teachers: perf.stats.teachers,
       activeClasses: classrooms.list({ isActive: true, schoolId }).length,
       subscription: { status: sub, label: SUBSCRIPTION_LABEL[sub] },
     },
