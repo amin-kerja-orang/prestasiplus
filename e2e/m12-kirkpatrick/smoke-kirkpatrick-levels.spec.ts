@@ -1474,6 +1474,14 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
       await spaGo(page, '/guru/kirkpatrick/interventions')
       await expectHeader(page, 'pembelajaran', TITLES.s7Guru)
       await expectStat(page.getByTestId('int-kpi-total'), '0', 'Jumlah Intervensi')
+      // C-57: only the Admin Pusat form is cut to the three V2 types; the guru mount keeps "Lain-lain".
+      await page.getByTestId('int-form-toggle').click()
+      expect(await selectOptions(page, page.getByTestId('int-type'))).toEqual([
+        'Mood / Kesejahteraan',
+        'Tidak Aktif',
+        'Prestasi Menurun',
+        'Lain-lain',
+      ])
 
       // S6-T02 / D-T02-2: S8 is scoped to the viewer's school (mock/handlers/common.ts:87-90). Student A (4664) is outside
       // the school of guru 5 -> the 404 page; pupil 3001 of the same school renders.

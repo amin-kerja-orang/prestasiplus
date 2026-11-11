@@ -403,35 +403,35 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
-    // V2 admin/kirkpatrick/overview.blade.php:240-246. The app prints the API sentences (OverviewComparison.vue:summary,
-    // sentences from the M12 mock repository): "Peningkatan 53.7% dalam ketepatan jawapan. 56 pelajar baru mula aktif. ...".
+    // V2 admin/kirkpatrick/overview.blade.php:240-246: four clauses in this order; the accuracy is a whole number here
+    // (docs/plan/R1-START-HERE.md section 11) where V2 prints one decimal (53.7%).
     await loginAs(ADMIN)
     await gotoApp(S1)
     await expect(page.getByTestId('kirk-summary')).toHaveText(
-      'Ringkasan: 56 pelajar baru mula aktif berbanding Januari. Ketepatan jawapan meningkat 53.7%. Jumlah jawapan bertambah 13,965. 28 pelajar naik ke tahap Champion.',
+      'Ringkasan: 56 pelajar baru mula aktif berbanding Januari. Ketepatan jawapan meningkat 54%. Jumlah jawapan bertambah 13,965. 28 pelajar naik ke tahap Champion.',
       TEXT,
     )
   })
 
-  test('E2E-M12-22c S1 comparison panels sit side by side above 768 and stack at 768 and below (V2) @m12', async ({
+  test('E2E-M12-22c S1 comparison panels sit side by side from 768 and stack below 768 (V2, PO 1 px deviation) @m12', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
-    // V2 overview.blade.php:95-101: .kp-ba is two columns, one column at max-width 768. The app stacks them at every
-    // width (OverviewComparison.vue: panels are flex-col siblings).
+    // V2 overview.blade.php:59,97-99: .kp-ba is two columns and one column up to 768 px. PO decision (via the lead): the
+    // panels sit side by side from 768 px (>= 768, a 1 px deviation from V2, which switches at 769) and stack below 768.
     await loginAs(ADMIN)
     await gotoApp(S1)
     const b = await page.getByTestId('kirk-panel-before').boundingBox()
     const a = await page.getByTestId('kirk-panel-after').boundingBox()
-    if (viewportWidth(page) > 768) {
+    if (viewportWidth(page) >= 768) {
       expect(Math.abs(a!.y - b!.y)).toBeLessThan(2)
     } else {
       expect(a!.y).toBeGreaterThan(b!.y + b!.height - 2)
     }
   })
 
-  test('E2E-M12-23 S1 comparison with ?school_id=8080 (red deltas, Penurunan) @m12', async ({
+  test('E2E-M12-23 S1 comparison with ?school_id=8080 (red deltas, menurun) @m12', async ({
     page,
     gotoApp,
     loginAs,
@@ -459,8 +459,10 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     ])
     await expect(page.getByTestId('kirk-delta-value')).toHaveText(['-11', '-17%', '-451', '-2'])
     await expect(page.getByTestId('kirk-delta-active')).toHaveAttribute('data-tone', 'down')
-    await expect(page.getByTestId('kirk-summary')).toContainText(
-      'Penurunan 16.6% dalam ketepatan jawapan. 11 pelajar kurang aktif berbanding sebelumnya.',
+    // V2 overview.blade.php:240-246 negative branch: "menurun" / "berkurang" with the absolute value; the active and
+    // Champion counts print signed, as V2 does ({{ $deltaActive }}); accuracy is a whole number (R1-START-HERE.md section 11).
+    await expect(page.getByTestId('kirk-summary')).toHaveText(
+      'Ringkasan: -11 pelajar baru mula aktif berbanding Januari. Ketepatan jawapan menurun 17%. Jumlah jawapan berkurang 451. -2 pelajar naik ke tahap Champion.',
       TEXT,
     )
   })
@@ -988,6 +990,16 @@ test.describe(
         await gotoApp(`${ALIAS}/reaction`)
         await expect(page.getByTestId('kirk-reaction-page')).toBeVisible()
         await expectHeader(page, 'pembelajaran', TITLES.s2)
+        // C-53: this mount has no shell section strip, so it keeps the page strip, with the V2 labels (not "Tahap N").
+        await expect(page.getByTestId('pentadbiran-section-tabs')).toHaveCount(0)
+        const tabs = page.getByTestId('kirk-tabs')
+        await expect(tabs).toBeVisible()
+        await expect(tabs.getByRole('link')).toHaveText(
+          ['Overview', 'T1: Reaksi', 'T2: Pembelajaran', 'T3: Tingkah Laku', 'T4: Hasil', 'Intervensi'],
+          TEXT,
+        )
+        await expect(tabs.getByRole('link', { name: 'T1: Reaksi' })).toHaveAttribute('href', `${ALIAS}/reaction`)
+        await expect(tabs.getByRole('link', { name: 'T4: Hasil' })).toHaveAttribute('href', `${ALIAS}/results`)
         await gotoApp(`${ALIAS}/learning`)
         await expect(page.getByTestId('kirk-learning-page')).toBeVisible()
         await expectHeader(page, 'pembelajaran', TITLES.s3)
