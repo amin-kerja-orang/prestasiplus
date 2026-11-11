@@ -5,7 +5,7 @@
  * - Hero (V2 text "Siapa kumpul syiling paling banyak?"; the shell subtitle "Kedudukan pelajar terbaik mengikut syiling" (V2 subheading, leaderboard.blade.php:4) stays for every period) and the period links
  *   "Semua Masa" / "Minggu Ini" / "Bulan Ini"; no or unknown `period` is the week.
  * - "Kedudukan Anda": the viewer's rank, coins, sessions and accuracy ("#-", 0, 0, 0% when unranked).
- * - Podium (top 3, order 2-1-3) and a table of at most 50 rows: # / Pelajar / Koin, Sesi from 768px,
+ * - Podium (top 3, order 2-1-3) and a table of at most 50 rows: # / Pelajar / Syiling, Sesi from 768px,
  *   Ketepatan from 1024px. Every viewer sees the same list; names are plain text (no user link).
  * - Footer "{n} peserta bersaing" and, from 768px, "Dikemaskini real-time".
  */
@@ -57,7 +57,7 @@ const meTiles = computed<StatItem[]>(() => {
   if (!m) return []
   return [
     { key: 'rank', label: 'Ranking', icon: 'i-ph-ranking', accent: 'action', value: m.rank === null ? '#-' : `#${String(m.rank)}` },
-    { key: 'coins', label: 'Koin', icon: 'i-ph-coins', accent: 'win', value: formatNumber(m.coins) },
+    { key: 'coins', label: 'Syiling', icon: 'i-ph-coins', accent: 'win', value: formatNumber(m.coins) },
     { key: 'sessions', label: 'Sesi', icon: 'i-ph-books', accent: 'heat', value: formatNumber(m.sessions) },
     { key: 'accuracy', label: 'Ketepatan', icon: 'i-ph-target', accent: 'friend', value: percentText(m.accuracy) },
   ]
@@ -82,7 +82,7 @@ type Row = NonNullable<typeof data.value>['rows'][number]
 const columns: TableColumn<Row>[] = [
   { accessorKey: 'rank', header: '#' },
   { accessorKey: 'name', header: 'Pelajar' },
-  { accessorKey: 'coins', header: 'Koin' },
+  { accessorKey: 'coins', header: 'Syiling' },
   { accessorKey: 'sessions', header: 'Sesi' },
   { accessorKey: 'accuracy', header: 'Ketepatan' },
 ]
@@ -191,7 +191,7 @@ const columns: TableColumn<Row>[] = [
             </div>
             <dl class="grid grid-cols-3 gap-x-3">
               <div>
-                <dt class="text-caption text-muted">Koin</dt>
+                <dt class="text-caption text-muted">Syiling</dt>
                 <dd class="tabular text-label text-highlighted">{{ formatNumber(row.coins) }}</dd>
               </div>
               <div>
