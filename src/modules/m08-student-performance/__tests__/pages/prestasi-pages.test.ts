@@ -226,6 +226,8 @@ describe('S1 PrestasiSekolahPage', () => {
     for (const [id, value] of expected) {
       expect(t(w, `stat-${id}`).find('.tabular').text()).toBe(value)
     }
+    // C-39: the level card prints the same one-decimal figure as the tile family (API tenths), not a whole number.
+    expect(t(w, 'level-card-t4').text()).toContain('63.9%')
   })
 
   it('shows "—" and no band pill without headcount GPS, never 0', async () => {

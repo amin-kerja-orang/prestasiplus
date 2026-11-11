@@ -13,6 +13,7 @@ import {
   TONE_TEXT,
   accuracyToneWhole,
   levelNumber,
+  pctTrim,
   pctWhole,
   plain,
 } from '../../lib/prestasi/format'
@@ -41,7 +42,7 @@ const teacherBar = (on: number, below: number): number =>
           <span class="flex items-baseline justify-between gap-3">
             <span class="text-label text-highlighted">Tingkatan {{ levelNumber(l.code) }}</span>
             <span :class="[TONE_TEXT[accuracyToneWhole(l.accuracy)], 'tabular text-heading']">{{
-              pctWhole(l.accuracy)
+              pctTrim(l.accuracy)
             }}</span>
           </span>
           <UProgress
