@@ -92,7 +92,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     await expectTabTitle(page, 'PKSK PRO | PRESTASIPLUS')
     await expect(title(page, 'pentadbiran')).toHaveText('PKSK PRO')
     await expect(subtitle(page, 'pentadbiran')).toHaveText('Bank soalan Pentaksiran Kompetensi & Sijil Kemahiran')
-    await expect(page.getByTestId('hub-title')).toHaveCSS('color', 'rgb(255, 255, 255)')
+    await expect(page.getByTestId('hub-title')).toBeVisible() // the banner text colour is a DS theme token now (was fixed white)
     await expect(page.getByTestId('pksk-banner')).toContainText('SBP / MRSM / SMKA')
     await expect(page.getByTestId('pksk-banner')).toContainText(
       'Latih tubi soalan dan peperiksaan penuh untuk persediaan kemasukan sekolah berasrama penuh',
@@ -100,9 +100,9 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
 
     await expect(page.getByRole('heading', { name: 'Format Peperiksaan' })).toBeVisible()
     const tiles = [
-      ['A', 'Kecerdasan Insaniah', '30 soalan', 'Pemberat: 20%', 'Nilai, akhlak & sahsiah', 'bg-blue-500'],
-      ['B', 'Kecerdasan Intelek', '70 soalan', 'Pemberat: 70%', 'Kognitif & penaakulan', 'bg-purple-500'],
-      ['C', 'Artikulasi Penulisan', '1 esei', 'Pemberat: 10%', 'Penulisan kreatif', 'bg-pink-500'],
+      ['A', 'Kecerdasan Insaniah', '30 soalan', 'Pemberat: 20%', 'Nilai, akhlak & sahsiah', 'bg-primary'],
+      ['B', 'Kecerdasan Intelek', '70 soalan', 'Pemberat: 70%', 'Kognitif & penaakulan', 'bg-friend'],
+      ['C', 'Artikulasi Penulisan', '1 esei', 'Pemberat: 10%', 'Penulisan kreatif', 'bg-heat'],
     ] as const
     for (const [letter, name, count, weight, chip, circle] of tiles) {
       const tile = page.getByTestId(`format-${letter}`)
@@ -122,7 +122,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       await expect(card.getByRole('heading', { name })).toBeVisible()
       await expect(card).toContainText(text)
       await expect(card.getByTestId('badge-aktif')).toHaveText('AKTIF')
-      await expect(card).toHaveClass(/border-green-400/)
+      await expect(card).toHaveAttribute('data-active', 'true')
       await expect(card.getByRole('link', { name: 'Mula Latihan' })).toHaveAttribute(
         'href',
         `/pksk/level/${lvl}`,
@@ -186,7 +186,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       await expectTabTitle(page, `Dashboard PKSK - ${lvl} | PRESTASIPLUS`)
       await expect(title(page, 'pentadbiran')).toHaveText(`Dashboard PKSK - ${lvl}`)
       await expect(subtitle(page, 'pentadbiran')).toHaveText('Pantau kemajuan latihan anda')
-      const back = page.getByTestId('back-link')
+      const back = page.locator('[data-ds="back-link"]')
       await expect(back).toHaveText('Kembali ke PKSK')
       await expect(back).toHaveAttribute('href', '/pksk')
       const hero = page.getByTestId('readiness')
@@ -257,16 +257,14 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
             lvl === 'T1' ? `${String(PELAJAR_MASTERY[code] ?? 0)}%` : '0%',
           )
           if (lvl === 'T1') {
-            await expect(card.getByTestId('mastery-bar')).toHaveAttribute(
+            await expect(card.getByTestId('mastery-bar').getByRole('progressbar')).toHaveAttribute(
               'aria-valuenow',
               String(PELAJAR_MASTERY[code] ?? 0),
             )
           }
         }
-        // the icon carries the domain colour
-        await expect(
-          cards.first().getByTestId('domain-icon'),
-        ).toHaveCSS('color', 'rgb(59, 130, 246)')
+        // the icon chip is shown (its colour is the Bahagian accent token, DsIconChip; not a fixed rgb any more)
+        await expect(cards.first().getByTestId('domain-icon')).toBeVisible()
       }
     },
   )
@@ -283,14 +281,14 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       await expectTabTitle(page, `Domain PKSK - ${lvl} | PRESTASIPLUS`)
       await expect(title(page, 'pentadbiran')).toHaveText(`Domain PKSK - ${lvl}`)
       await expect(subtitle(page, 'pentadbiran')).toHaveText('Pilih domain untuk latih tubi')
-      const back = page.getByTestId('back-link')
+      const back = page.locator('[data-ds="back-link"]')
       await expect(back).toHaveText('Kembali ke Dashboard')
       await expect(back).toHaveAttribute('href', `/pksk/level/${lvl}`)
 
       const sections = [
-        ['A', 'bg-blue-500', 'Kecerdasan Insaniah', 'Nilai, akhlak & sahsiah', 1],
-        ['B', 'bg-purple-500', 'Kecerdasan Intelek', 'Kognitif & penaakulan', 13],
-        ['C', 'bg-pink-500', 'Artikulasi Penulisan', 'Penulisan kreatif', 1],
+        ['A', 'bg-primary', 'Kecerdasan Insaniah', 'Nilai, akhlak & sahsiah', 1],
+        ['B', 'bg-friend', 'Kecerdasan Intelek', 'Kognitif & penaakulan', 13],
+        ['C', 'bg-heat', 'Artikulasi Penulisan', 'Penulisan kreatif', 1],
       ] as const
       let total = 0
       for (const [b, badge, name, sub, n] of sections) {
@@ -344,11 +342,11 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     await expectTabTitle(page, 'Sejarah PKSK - T1 | PRESTASIPLUS')
     await expect(title(page, 'pembelajaran')).toHaveText('Sejarah PKSK - T1')
     await expect(subtitle(page, 'pembelajaran')).toHaveText('Lihat prestasi lepas')
-    const back = page.getByTestId('back-link')
+    const back = page.locator('[data-ds="back-link"]')
     await expect(back).toHaveText('Kembali ke Dashboard')
     await expect(back).toHaveAttribute('href', '/pksk/level/T1')
     await expect(page.locator('th')).toHaveText(['Tarikh', 'Skor', 'Gred'])
-    const rows = page.getByTestId('history-row')
+    const rows = page.getByTestId('history-table').locator('tbody tr')
     await expect(rows).toHaveCount(2)
     await expect(rows.nth(0).locator('td')).toHaveText(['20/09/2026', '64%', 'C'])
     await expect(rows.nth(1).locator('td')).toHaveText(['10/09/2026', '46%', 'D'])
