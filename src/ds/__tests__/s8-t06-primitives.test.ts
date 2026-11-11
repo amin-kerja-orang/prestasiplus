@@ -255,8 +255,12 @@ describe('DsDataTable cards (S8-T06)', () => {
         ],
       },
       slots: {
-        'tahap-cell': (p: { row: { original: { tahap: { n: string }[] } } }) =>
-          h('span', { 'data-testid': 'lv' }, p.row.original.tahap.map((x) => x.n).join(', ')),
+        'tahap-cell': (p: Record<string, unknown>) =>
+          h(
+            'span',
+            { 'data-testid': 'lv' },
+            (p as { row: { original: { tahap: { n: string }[] } } }).row.original.tahap.map((x) => x.n).join(', '),
+          ),
       },
     })
     await w.vm.$nextTick()
