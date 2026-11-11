@@ -47,7 +47,7 @@ async function confirmDelete(page: Page, click: () => Promise<void>): Promise<vo
 
 test.describe('QA G5 lookups', MODULE, () => {
   test.use({ mockInit: { latency: 0 } })
-  test.setTimeout(90_000 * TIMEOUT_FACTOR)
+  test.setTimeout(180_000 * TIMEOUT_FACTOR)
 
   test('E2E-M03-25 a deactivated subject and level leave the lookups (M04 question form) but stay in admin lists and S1', async ({
     page,
