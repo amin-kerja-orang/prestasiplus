@@ -530,7 +530,7 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     )
     await mountPage()
     await openRemedial()
-    expect(text('cc-remedial-error')).toBe('Ralat memuatkan data. Sila cuba semula.')
+    expect(text('cc-remedial-error')).toBe('Ralat mengimbas.')
   })
 
   it('lists the weak students with the count line and the open test of one @provisional UNVERIFIED COPY', async () => {

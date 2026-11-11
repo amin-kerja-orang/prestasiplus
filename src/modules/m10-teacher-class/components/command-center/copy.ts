@@ -35,6 +35,8 @@ export const S2_COPY = {
   bandHint: 'Klik: senarai pelajar',
   /** Fixed BM line of a failed modal load (the server text is English; SWE). */
   loadFailed: 'Ralat memuatkan data. Sila cuba semula.',
+  /** Failed Smart Remedial scan (V2 guru/command-center.blade.php:503). */
+  remedialFailed: 'Ralat mengimbas.',
 } as const
 
 export const TAB_TITLE = (name: string) => `Command Center — Guru: ${name}`

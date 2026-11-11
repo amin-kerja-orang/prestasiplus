@@ -139,7 +139,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
     @close="$emit('close')"
   >
     <p v-if="error" class="text-body text-error" data-testid="cc-remedial-error">
-      {{ S2_COPY.loadFailed }}
+      {{ S2_COPY.remedialFailed }}
     </p>
     <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Mengimbas topik lemah pelajar...

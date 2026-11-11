@@ -18,6 +18,6 @@ describe('Command Center modals: a failed load never shows the server text (SWE-
   it.each(MODALS)('%s shows the fixed BM line, not error.message', (name) => {
     const source = readFileSync(join(DIR, `${name}.vue`), 'utf8')
     expect(source).not.toMatch(/error(\.value)?\.message/)
-    expect(source).toContain('S2_COPY.loadFailed')
+    expect(source).toContain(name === 'RemedialModal' ? 'S2_COPY.remedialFailed' : 'S2_COPY.loadFailed')
   })
 })
