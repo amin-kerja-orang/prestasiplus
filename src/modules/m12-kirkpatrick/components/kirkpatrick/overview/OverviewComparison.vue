@@ -77,38 +77,41 @@ const deltas = computed(() => {
       <p class="text-body text-muted" data-testid="kirk-comparison-subtitle">
         {{ comparison.subtitle }}
       </p>
-      <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-before">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-1 pb-2">
-          <p class="text-label text-highlighted">SEBELUM</p>
-          <p class="text-body text-muted" data-testid="kirk-panel-range">
-            {{ range(comparison.before) }}
-          </p>
-        </div>
-        <div class="grid grid-cols-2 gap-3 text-center md:grid-cols-4">
-          <div v-for="m in metrics(comparison.before)" :key="m.key" class="min-w-0">
-            <p class="tabular text-heading text-highlighted" data-testid="kirk-panel-value">
-              {{ m.value }}
+      <!-- C-55: two columns from md (768px); V2 stacks at 768px, so 1px differs. -->
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2" data-testid="kirk-panels">
+        <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-before">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-1 pb-2">
+            <p class="text-label text-highlighted">SEBELUM</p>
+            <p class="text-body text-muted" data-testid="kirk-panel-range">
+              {{ range(comparison.before) }}
             </p>
-            <p class="text-body text-muted">{{ m.label }}</p>
           </div>
-        </div>
-      </UCard>
-      <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-after">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-1 pb-2">
-          <p class="text-label text-primary-t">SELEPAS</p>
-          <p class="text-body text-muted" data-testid="kirk-panel-range">
-            {{ range(comparison.after) }}
-          </p>
-        </div>
-        <div class="grid grid-cols-2 gap-3 text-center md:grid-cols-4">
-          <div v-for="m in metrics(comparison.after)" :key="m.key" class="min-w-0">
-            <p class="tabular text-heading text-primary-t" data-testid="kirk-panel-value">
-              {{ m.value }}
+          <div class="grid grid-cols-2 gap-3 text-center">
+            <div v-for="m in metrics(comparison.before)" :key="m.key" class="min-w-0">
+              <p class="tabular text-heading text-highlighted" data-testid="kirk-panel-value">
+                {{ m.value }}
+              </p>
+              <p class="text-body text-muted">{{ m.label }}</p>
+            </div>
+          </div>
+        </UCard>
+        <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-after">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-1 pb-2">
+            <p class="text-label text-primary-t">SELEPAS</p>
+            <p class="text-body text-muted" data-testid="kirk-panel-range">
+              {{ range(comparison.after) }}
             </p>
-            <p class="text-body text-muted">{{ m.label }}</p>
           </div>
-        </div>
-      </UCard>
+          <div class="grid grid-cols-2 gap-3 text-center">
+            <div v-for="m in metrics(comparison.after)" :key="m.key" class="min-w-0">
+              <p class="tabular text-heading text-primary-t" data-testid="kirk-panel-value">
+                {{ m.value }}
+              </p>
+              <p class="text-body text-muted">{{ m.label }}</p>
+            </div>
+          </div>
+        </UCard>
+      </div>
       <UCard variant="soft" class="min-w-0">
         <div class="grid grid-cols-2 gap-3 text-center md:grid-cols-4" data-testid="kirk-deltas">
           <div
