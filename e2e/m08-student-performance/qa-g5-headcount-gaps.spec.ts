@@ -9,7 +9,7 @@ import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, moduleTag } from '../support'
 
 async function text(page: Page): Promise<string> {
-  const main = page.locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]')
+  const main = page.getByTestId('pentadbiran-main')
   await expect(main).not.toBeEmpty()
   return (await main.innerText()).replace(/\s+/g, ' ').trim()
 }
@@ -87,7 +87,7 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
       'href',
       '/headcount/213/summary',
     )
-    const html = await page.locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]').innerHTML()
+    const html = await page.getByTestId('pentadbiran-main').innerHTML()
     expect(html).toMatch(/width: 46\.66\d*%/)
     expect(html).toMatch(/width: 53\.33\d*%/)
   })
@@ -130,7 +130,7 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
     for (const h of hrefs) expect(h).toMatch(/^\/prestasi\/\d+$/)
     await page.getByText('Lihat Analitik').first().click()
     await expect.poll(() => new URL(page.url()).pathname).toMatch(/^\/prestasi\/\d+$/)
-    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveText('Prestasi 360')
+    await expect(page.locator('[data-testid=pentadbiran-header] :is(h1, [data-testid=shell-title])')).toHaveText('Prestasi 360')
   })
 
   test('AC-36.1 / 36.3 S22 header, back link, cards and buttons', async ({ page, gotoApp }) => {

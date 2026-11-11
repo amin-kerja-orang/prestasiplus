@@ -11,11 +11,10 @@ import { expectNoHorizontalScroll, expectTabTitle, isDesktopShell, moduleTag } f
 const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
-const header = (page: Page) => ({
-  title: page.locator(
-    '[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1',
-  ),
-  subtitle: page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]'),
+/** Header of the EXPECTED shell: Admin Pusat = Pentadbiran; pupil, teacher and school admin = Pembelajaran. */
+const header = (page: Page, shell: 'pembelajaran' | 'pentadbiran') => ({
+  title: page.locator(`[data-testid=${shell}-header] :is(h1, [data-testid=shell-title])`),
+  subtitle: page.getByTestId(`${shell}-subtitle`),
 })
 
 async function expectNotFound(page: Page): Promise<void> {
@@ -99,7 +98,7 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page).title).toHaveText('Dashboard Sekolah')
+    await expect(header(page, 'pentadbiran').title).toHaveText('Dashboard Sekolah')
     const links = await navHrefs(page)
     const keys = [...links.keys()]
     for (const [label, href] of [
@@ -123,7 +122,7 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page).title).toHaveText('Dashboard Sekolah')
+    await expect(header(page, 'pentadbiran').title).toHaveText('Dashboard Sekolah')
     const scope = await navRoot(page)
     await scope.locator('a[href="/ranking"]').first().click()
     await expect.poll(() => new URL(page.url()).pathname).toBe('/ranking')
@@ -136,11 +135,11 @@ test.describe('M08 G5 menus (admin)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/prestasi/sekolah')
-    await expect(header(page).title).toHaveText('Dashboard Sekolah')
+    await expect(header(page, 'pentadbiran').title).toHaveText('Dashboard Sekolah')
     const scope = await navRoot(page)
     await scope.locator('a[href="/analisa-item"]').first().click()
     await expect.poll(() => new URL(page.url()).pathname).toBe('/analisa-item/kelas')
-    await expect(header(page).title).toHaveText('Analisa Item')
+    await expect(header(page, 'pentadbiran').title).toHaveText('Analisa Item')
   })
 })
 
@@ -154,7 +153,7 @@ test.describe('M08 G5 menus (guru drawer PENILAIAN)', { tag: [moduleTag(8)] }, (
   }) => {
     await loginAs('guru@demo.test')
     await gotoApp('/prestasi/kelas')
-    await expect(header(page).title).toHaveText('Prestasi Kelas')
+    await expect(header(page, 'pembelajaran').title).toHaveText('Prestasi Kelas')
     const links = await navHrefs(page)
     const keys = [...links.keys()]
     expect(keys).toContain('Headcount|/headcount')
@@ -292,8 +291,8 @@ test.describe('M08 G5 shell header titles (AC-01.3 / 01.4)', { tag: [moduleTag(8
     test(`${c.path} -> "${c.title}"`, async ({ page, gotoApp, loginAs }) => {
       await loginAs('admin@demo.test')
       await gotoApp(c.path)
-      await expect(header(page).title).toHaveText(c.title)
-      await expect(header(page).subtitle).toHaveText(c.subtitle)
+      await expect(header(page, 'pentadbiran').title).toHaveText(c.title)
+      await expect(header(page, 'pentadbiran').subtitle).toHaveText(c.subtitle)
     })
   }
 })
@@ -350,7 +349,7 @@ test.describe(
       await loginAs('admin@demo.test')
       await gotoApp('/prestasi')
       await expect.poll(() => new URL(page.url()).pathname).toBe('/prestasi/sekolah')
-      await expect(header(page).title).toHaveText('Dashboard Sekolah')
+      await expect(header(page, 'pentadbiran').title).toHaveText('Dashboard Sekolah')
     })
 
     for (const path of [
