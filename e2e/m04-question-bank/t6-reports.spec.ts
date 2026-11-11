@@ -62,7 +62,7 @@ test.describe('M04 S7 admin report triage', { tag: [TAG.smoke, moduleTag(4)] }, 
     await loginAs(ADMIN)
     await openS7(page, gotoApp)
     await expectTabTitle(page, 'Laporan Soalan | PRESTASIPLUS')
-    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText('Soalan yang dilaporkan oleh pelajar')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Laporan Soalan')
     await expect(page.getByTestId('reports-subtitle')).toHaveText(
       'Soalan yang dilaporkan oleh pelajar dari kuiz, latihan & Papan Bijak',
@@ -316,10 +316,8 @@ test.describe('M04 S13 and S14 as the pelajar', { tag: [TAG.smoke, moduleTag(4)]
     await expect(page.getByTestId('my-reports-list').locator('li')).toHaveCount(1)
     await expect(page.getByTestId('my-report-title')).toHaveText('Soalan #564161')
     await expect(page.getByTestId('my-report-status')).toHaveText('Menunggu')
-    await expect(page.getByTestId('my-report-reason')).toHaveText([
-      'Jawapan tidak tepat',
-      'Kesalahan ejaan / taip',
-    ])
+    // DD1 (R1-MUR-54, LaporanSoalanPage.vue:37): the type chip shows the label of the FIRST reason only.
+    await expect(page.getByTestId('my-report-reason')).toHaveText(['Jawapan tidak tepat'])
     await expectNoHorizontalScroll(page)
   })
 
