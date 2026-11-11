@@ -145,7 +145,7 @@ describe('S1 GuruDashboardPage', () => {
     expect(text).toContain('Kelas anda sudah disediakan oleh admin')
     expect(text).toContain('Pelajar sudah ditugaskan')
     expect(w.get('[data-testid="today-analytics"]').attributes('href')).toBe('/analitik/kelas')
-    expect(w.get('[data-testid="today-action-link"]').attributes('href')).toBe('/guru/kelas')
+    expect(w.get('[data-testid="today-action-link"]').attributes('href')).toBe('/analitik/kelas')
     expect(w.get('[data-testid="today-counters"]').text().replace(/\s+/g, ' ')).toBe(
       'Pelajar0Topik0Tindakan0',
     )

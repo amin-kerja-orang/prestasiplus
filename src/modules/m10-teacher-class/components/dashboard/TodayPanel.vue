@@ -99,7 +99,7 @@ defineProps<{
               <UBadge color="neutral" variant="subtle">{{ DASH_COPY.actionBadge }}</UBadge>
               <p class="text-body text-muted">{{ DASH_COPY.actionText }}</p>
               <UButton
-                to="/guru/kelas"
+                to="/analitik/kelas"
                 variant="link"
                 class="px-0"
                 data-testid="today-action-link"
