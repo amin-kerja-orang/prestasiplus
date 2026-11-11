@@ -166,8 +166,11 @@ deploy/vps/migration/slot.sh etl migrate:delta --since=<T-dump1> --as-of=... [--
   `etl` checks that uid `PP_MIGRATE_UID` can read `<host dir>/SHA256SUMS` (the extract is made under `umask 077`: give
   read access with the printed `setfacl` line). With `--apply` the api uploads volume (compose volume `apifiles`) is
   mounted at `/var/lib/pretasiplus/files` and `FILE_STORAGE_DIR` is set to it, as for the api.
-- The standalone `migrate:core` and `migrate:activity` are refused, because they take no source lock (cutover plan
-  4.1).
+- `migrate:core` and `migrate:activity` can run alone (staged clone: stage 1 users, schools and classes, then stage 6 practice,
+  wallets, gifts, articles and the other activity entities). They take the same `etl:source:cloud` advisory lock as
+  `migrate:all` (the loaders wrap the run in `withSourceLock`), and `slot.sh` also holds `PP_LOCK_FILE`. Exit 2 from either
+  may mean "busy" (another migration, rollback or backfill holds the source lock), not bad usage: read the message.
+  **Order: core first (stage 1), activity after it (stage 6). Nothing enforces this order**; activity needs the people and classes that core loads.
 - Reports land in `PP_MIGRATION_OUT`, mounted as `apps/api/.migration-out`. They hold aggregates and surrogate ids,
   plus the deleted-at-source ids file, which is real data. Never copy them into GitHub or chat. Deletion dates are in
   the cutover plan, section 7.
