@@ -46,32 +46,34 @@ test.describe('M10 S1 Dashboard Guru', MODULE, () => {
     await gotoApp('/guru')
     await expect(page.getByTestId('guru-dashboard')).toBeVisible({ timeout: 15_000 })
     await expectTabTitle(page, 'Dashboard Guru | PRESTASIPLUS')
-    await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Dashboard Guru')
-    await expect(page.getByTestId('pembelajaran-subtitle')).toContainText('Selamat datang, ')
-    await expect(page.getByTestId('pembelajaran-subtitle')).toContainText('👩‍🏫')
+    // Admin Pusat: Portal Pentadbiran frame. The page sets its own subtitle with the signed-in name (demo account).
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Dashboard Guru')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText('Selamat datang, Admin Demo 👩‍🏫')
 
     await expect(page.getByTestId('checklist-count')).toHaveText('0/3 langkah selesai')
     await expect(page.getByTestId('checklist-percent')).toHaveText('0%')
     await expect(page.getByTestId('checklist-link')).toHaveCount(3)
     await expect(page.getByTestId('checklist-link').nth(2)).toHaveAttribute(
       'href',
-      '/guru/misi-harian/cipta',
+      // PRD 20 FR-GUR-2-2: the checklist row "Misi harian pertama" opens /guru/misi-harian.
+      '/guru/misi-harian',
     )
 
     const values = page.getByTestId('stat-value')
-    await expect(values).toHaveText(['0', '0', '20719', '0'])
-    await expect(page.getByTestId('stat-questions')).toContainText('✅ 19361 diluluskan')
+    await expect(values).toHaveText(['0', '0', '20,719', '0'])
+    await expect(page.getByTestId('stat-questions')).toContainText('✅ 19,361 diluluskan')
     await expect(page.getByTestId('stat-classes')).toContainText('0 jumlah kelas')
 
     const today = page.getByTestId('today-panel')
     await expect(today).toContainText('Fokus guru yang paling penting hari ini')
-    await expect(today).toContainText('Tiada pelajar berkeutamaan tinggi dikesan buat masa ini.')
-    await expect(today).toContainText('Tiada topik kritikal menonjol dikesan daripada data semasa.')
+    await expect(today).toContainText('Tiada pelajar berisiko buat masa ini. 🎉')
+    await expect(today).toContainText('Belum ada data.')
     await expect(page.getByTestId('today-analytics')).toHaveAttribute('href', '/analitik/kelas')
     await expect(page.getByTestId('today-action')).toContainText(
-      'Bina aktiviti pertama untuk pelajar',
+      // V2 guru/dashboard.blade.php:232-234 (the empty-state recommendation).
+      'Semak analitik kelas untuk pecahan prestasi',
     )
-    await expect(page.getByTestId('today-action-link')).toHaveAttribute('href', '/guru/kelas')
+    await expect(page.getByTestId('today-action-link')).toHaveAttribute('href', '/analitik/kelas')
 
     await expect(page.getByTestId('peer-card')).toContainText('Cadangan rakan pembimbing pelajar')
     await expect(page.getByTestId('peer-card').locator('p').first()).toHaveCSS(
@@ -81,7 +83,7 @@ test.describe('M10 S1 Dashboard Guru', MODULE, () => {
     await expect(page.getByTestId('quick-tile')).toHaveCount(4)
     await expect(page.getByTestId('classes-empty')).toHaveText('Belum ada kelas. Cipta sekarang!')
     await expect(page.getByTestId('submissions-empty')).toContainText(
-      'Buat tugasan di kelas untuk lihat penghantaran di sini.',
+      'Belum ada penghantaran tugasan. Buat tugasan di kelas untuk mula mengumpul penghantaran.',
     )
 
     await expectTouchTarget(page.getByTestId('checklist-link').first())
@@ -100,14 +102,15 @@ test.describe('M10 S1 Dashboard Guru', MODULE, () => {
     await expect(page.getByTestId('guide-title')).toHaveText('Mula Di Sini — 3 Langkah Mudah')
     await expect(page.getByTestId('guide-step')).toHaveCount(3)
     await expect(page.getByTestId('guide-link')).toHaveText([
-      'Kelas Saya →',
-      'Pelajar Saya →',
-      'Monitoring →',
+      // V2 guru/dashboard.blade.php:79 renders "{title} →".
+      'Buka Kelas →',
+      'Lihat Pelajar →',
+      'Pantau Prestasi →',
     ])
     await expectNoHorizontalScroll(page)
 
     await page.getByTestId('guide-close').click()
-    await expect(page.getByTestId('guide-show')).toHaveText('Tunjuk panduan Mula Di Sini')
+    await expect(page.getByTestId('guide-show')).toHaveText('Tunjuk panduan mula')
     await gotoApp('/guru')
     await expect(page.getByTestId('guide-show')).toBeVisible()
     await expect(page.getByTestId('guide-card')).toHaveCount(0)

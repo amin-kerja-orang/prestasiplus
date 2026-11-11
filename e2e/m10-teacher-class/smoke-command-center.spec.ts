@@ -34,6 +34,12 @@ test.use({ mockInit: { latency: 0 } })
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
+/** The stat cards of the open dialog (DsStatRow items, `cc-modal-cards`). */
+const modalCards = (page: Page) => page.locator('[data-testid="cc-modal-cards"] > li')
+
+/** The title of the topmost open DS dialog (a stacked holders dialog opens above its parent). */
+const modalTitle = (page: Page) => page.locator('[role="dialog"]').last().locator('[data-slot="title"]')
+
 async function openBoard(page: Page, gotoApp: (path: string) => Promise<void>): Promise<void> {
   await gotoApp(CC)
   await expect(tid(page, 'cc-s2')).toBeVisible()
@@ -79,18 +85,20 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     await openBoard(page, gotoApp)
     await expect(page).toHaveTitle(/^Command Center — Guru: \S.* [|] PRESTASIPLUS$/)
     await expect(tid(page, 'pembelajaran-sidebar')).toHaveCount(0)
-    await expect(tid(page, 'pentadbiran-sidebar')).toHaveCount(0)
+    // V2 command-center.blade.php extends guru.layout (shell kept); Admin Pusat gets the Pentadbiran frame.
+    await expect(tid(page, 'pentadbiran-sidebar')).toHaveCount(isDesktopShell(page) ? 1 : 0)
 
     await expect(tid(page, 'cc-title')).toHaveText('Command Center')
     await expect(tid(page, 'cc-back')).toHaveAttribute('href', '/guru')
-    await expect(tid(page, 'cc-back')).toHaveText('← Dashboard')
-    await expect(tid(page, 'cc-links').getByRole('link')).toHaveText([
-      '🔬 Remedial',
-      '📊 Rekod',
-      '⚠ Evaluate',
-      '🔮 Ramalan SPM',
-      '👩‍🏫 Kelas',
-      '🏆 Badges',
+    await expect(tid(page, 'cc-back')).toHaveText('Dashboard')
+    // V3 shows icons (not emoji) and the five modal openers are buttons; only Rekod is a link.
+    await expect(tid(page, 'cc-links').locator('a, button')).toHaveText([
+      'Remedial',
+      'Rekod',
+      'Evaluate',
+      'Ramalan SPM',
+      'Kelas',
+      'Badges',
     ])
     await expect(tid(page, 'cc-link-rekod')).toHaveAttribute('href', '/guru/remedial-progress')
     await expect(tid(page, 'cc-live-badge')).toHaveText('LIVE')
@@ -112,9 +120,14 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     await expect(tid(page, 'cc-feed-empty')).toHaveText('Tiada aktiviti terkini')
     await expect(tid(page, 'cc-leaderboard-empty')).toHaveText('Tiada data minggu ini')
     await expect(tid(page, 'cc-week-change')).toHaveText('Sama dengan minggu lepas')
-    await expect(tid(page, 'cc-insight')).toHaveText(
-      '"0% pelajar terlibat aktif. Ketepatan purata 0%. GPS sekolah: 4.69."',
-    )
+    // The insight panel is an ALESA AI surface: hidden unless VITE_ALESA_AI is on (D73).
+    if (ALESA_ON) {
+      await expect(tid(page, 'cc-insight')).toHaveText(
+        '"0% pelajar terlibat aktif. Ketepatan purata 0%. GPS sekolah: 4.69."',
+      )
+    } else {
+      await expect(tid(page, 'cc-insight')).toHaveCount(0)
+    }
     await expect(tid(page, 'cc-engagement-total')).toHaveText('Jumlah: 0 pelajar')
     await expect(
       page.locator('[data-testid^="cc-band-"]:not([data-testid="cc-band-count"])'),
@@ -148,12 +161,13 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
   }) => {
     await openBoard(page, gotoApp)
     const width = viewportWidth(page)
-    const kpis = tid(page, 'cc-kpis').locator(':scope > div')
+    const kpis = tid(page, 'cc-kpis').locator(':scope > button')
     await expect(kpis).toHaveCount(4)
+    // V2 command-center.blade.php:61: KPI grid is grid-cols-2 lg:grid-cols-4 (2 per row from 375).
     const expectedCols = isMobileWidth(page) ? 1 : isDesktopShell(page) ? 4 : 2
-    expect(await columnsOf(kpis)).toBe(expectedCols)
-    const panels = tid(page, 'cc-panels').locator('section')
-    await expect(panels).toHaveCount(8)
+    expect(await columnsOf(kpis)).toBe(isMobileWidth(page) ? 2 : expectedCols)
+    const panels = tid(page, 'cc-panels').locator('[data-ds="panel"]')
+    await expect(panels).toHaveCount(ALESA_ON ? 8 : 7)
     // 4 grid columns at 1280: the three panel columns start at 3 distinct edges (the middle one spans 2)
     expect(await columnsOf(panels)).toBe(expectedCols === 4 ? 3 : expectedCols)
 
@@ -173,7 +187,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
 
     // the six links: scrollable row below 1024 px, all reachable
     const nav = tid(page, 'cc-links')
-    const links = nav.getByRole('link')
+    const links = nav.locator('a, button')
     await expect(links).toHaveCount(6)
     if (isDesktopShell(page)) {
       expect(await nav.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
@@ -184,9 +198,11 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
       const link = links.nth(i)
       await link.scrollIntoViewIfNeeded()
       expect(await isInViewportX(page, link)).toBe(true)
-      await expectTouchTarget(link)
+      // 44px on touch viewports (below the desktop shell); the staff theme is 40px from lg (NFR-RESP-03).
+      if (!isDesktopShell(page)) await expectTouchTarget(link)
+      else await expect(link).toBeVisible()
     }
-    await expectTouchTarget(tid(page, 'cc-back'))
+    if (!isDesktopShell(page)) await expectTouchTarget(tid(page, 'cc-back'))
     expect(await isInViewportX(page, tid(page, 'cc-live-badge'))).toBe(true)
     expect(await isInViewportX(page, tid(page, 'cc-clock'))).toBe(true)
     await expectNoHorizontalScroll(page)
@@ -220,16 +236,16 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     ]
     for (const [tile, title] of cases) {
       await tid(page, tile).click()
-      await expect(tid(page, 'cc-modal-title')).toHaveText('Memuatkan...')
+      await expect(modalTitle(page)).toHaveText('Memuatkan...')
       await expect(tid(page, 'cc-drill-loading')).toHaveText('Memuatkan data...')
-      await expect(tid(page, 'cc-modal-title')).toHaveText(title)
+      await expect(modalTitle(page)).toHaveText(title)
       await expect(tid(page, 'cc-drill-empty')).toHaveText('Tiada data')
       await tid(page, 'cc-modal-close').click()
       await expect(tid(page, 'cc-drill-modal')).toHaveCount(0)
     }
     await tid(page, 'cc-kpi-students').click()
     await expect(tid(page, 'cc-drill-empty')).toBeVisible()
-    await page.getByTestId('cmp-modal-backdrop').click({ position: { x: 5, y: 5 } })
+    await page.locator('[data-slot="overlay"]').click({ position: { x: 5, y: 5 } })
     await expect(tid(page, 'cc-drill-modal')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
@@ -240,8 +256,8 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
   }) => {
     await openBoard(page, gotoApp)
     await tid(page, 'cc-link-kelas').click()
-    await expect(tid(page, 'cc-modal-title')).toHaveText('Kelas Saya — Ringkasan Prestasi')
-    await expect(tid(page, 'cc-modal-card')).toHaveText([
+    await expect(modalTitle(page)).toHaveText('Kelas Saya — Ringkasan Prestasi')
+    await expect(modalCards(page)).toHaveText([
       '0Jumlah Pelajar',
       '0Aktif',
       '0%Ketepatan',
@@ -259,7 +275,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     await tid(page, 'cc-modal-close').click()
 
     await tid(page, 'cc-link-predictive').click()
-    await expect(tid(page, 'cc-modal-title')).toHaveText('Ramalan SPM — Predictive Analytics')
+    await expect(modalTitle(page)).toHaveText('Ramalan SPM — Predictive Analytics')
     await expect(tid(page, 'cc-grade-chip')).toHaveText([
       'A+',
       'A',
@@ -272,7 +288,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
       'E',
       'G',
     ])
-    await expect(tid(page, 'cc-modal-card')).toHaveText([
+    await expect(modalCards(page)).toHaveText([
       '0Pelajar Dianalisis',
       '0Ramalan GPS Purata',
       '0Berisiko',
@@ -290,7 +306,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     await openBoard(page, gotoApp)
     await mock.setLatency(600, `GET ${API}/remedial/scan`)
     await tid(page, 'cc-link-remedial').click()
-    await expect(tid(page, 'cc-modal-title')).toHaveText('Smart Remedial — Scan Pelajar Lemah')
+    await expect(modalTitle(page)).toHaveText('Smart Remedial — Scan Pelajar Lemah')
     await expect(tid(page, 'cc-modal-loading')).toHaveText('Mengimbas topik lemah pelajar...')
     await expect(tid(page, 'cc-remedial-empty')).toHaveText(
       'Tiada pelajar dengan topik lemah (<50% accuracy). Tahniah!',
@@ -299,7 +315,7 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
 
     await mock.failNext(`GET ${API}/remedial/scan`, 500)
     await tid(page, 'cc-link-remedial').click()
-    await expect(tid(page, 'cc-remedial-error')).toContainText('Ralat: ')
+    await expect(tid(page, 'cc-remedial-error')).toContainText('Ralat mengimbas.')
     await expect(tid(page, 'cc-remedial-table')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
@@ -310,10 +326,10 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     async ({ page, gotoApp }) => {
       await openBoard(page, gotoApp)
       await tid(page, 'cc-link-evaluate').click()
-      await expect(tid(page, 'cc-modal-title')).toHaveText(
+      await expect(modalTitle(page)).toHaveText(
         'Auto Evaluate — Penilaian Risiko Pelajar',
       )
-      await expect(tid(page, 'cc-modal-card')).toHaveText([
+      await expect(modalCards(page)).toHaveText([
         '0Jumlah Pelajar',
         '0Berisiko',
         '0Kritikal',
@@ -327,10 +343,10 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
       await tid(page, 'cc-modal-close').click()
 
       await tid(page, 'cc-link-badges').click()
-      await expect(tid(page, 'cc-modal-title')).toHaveText(
+      await expect(modalTitle(page)).toHaveText(
         'Achievement System — Scan & Award Badges',
       )
-      await expect(tid(page, 'cc-modal-card').first()).toContainText('Pelajar')
+      await expect(modalCards(page).first()).toContainText('Pelajar')
       await expect(tid(page, 'cc-badge-chip').first()).toBeVisible()
       await expectNoHorizontalScroll(page)
     },
@@ -365,13 +381,13 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
     await openBoard(page, gotoApp)
     await expect(tid(page, 'cc-kpi-value').first()).toHaveText('8')
     await tid(page, 'cc-kpi-students').click()
-    await expect(tid(page, 'cc-modal-title')).toHaveText('Pelajar Berdaftar')
+    await expect(modalTitle(page)).toHaveText('Pelajar Berdaftar')
     const rows = tid(page, 'cc-drill-row')
     await expect(rows).toHaveCount(8)
     const lastCells = await rows.evaluateAll((els) =>
-      els.map((el) => el.querySelectorAll('td')[5]?.textContent?.trim()),
+      els.map((el) => (el.closest('tr')?.textContent ?? '').trim().endsWith('Login')),
     )
-    expect(lastCells).toEqual(Array(8).fill('Login'))
+    expect(lastCells).toEqual(Array(8).fill(true))
     await expectNoHorizontalScroll(page)
   })
 
@@ -398,9 +414,8 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
       await popup.close()
 
       await gotoApp(url.pathname)
-      await expect(tid(page, 'cc-title')).toHaveText('PrestasiPlus Command Center')
-      await expect(tid(page, 'cc-crumb-current')).toHaveText(/\S/)
-      await expect(tid(page, 'pembelajaran-sidebar')).toHaveCount(0)
+      await expect(tid(page, 'cc-breadcrumb')).toContainText('Command Center')
+      await expect(tid(page, 'pembelajaran-sidebar')).toHaveCount(isDesktopShell(page) ? 1 : 0)
       await expectNoHorizontalScroll(page)
 
       await gotoApp(`${CC}/student/2022`)
@@ -413,7 +428,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
     await openBoard(page, gotoApp)
     await tid(page, 'cc-link-kelas').click()
     await expect(tid(page, 'cc-kelas-row')).toHaveCount(2)
-    await expect(tid(page, 'cc-modal-card').first()).toHaveText('8Jumlah Pelajar')
+    await expect(modalCards(page).first()).toHaveText('8Jumlah Pelajar')
     await expectNoHorizontalScroll(page)
   })
 
@@ -442,8 +457,8 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
     await openBoard(page, gotoApp)
     await tid(page, 'cc-link-predictive').click()
     await expect(tid(page, 'cc-predictive-row').first()).toBeVisible()
-    await expect(tid(page, 'cc-modal-card').first()).toHaveText('3Pelajar Dianalisis')
-    await expect(tid(page, 'cc-predictive-row').first()).toContainText('KRITIKAL')
+    await expect(modalCards(page).first()).toHaveText('3Pelajar Dianalisis')
+    await expect(page.locator('[data-testid="cc-predictive-table"] tbody tr').first()).toContainText('KRITIKAL')
     await expect(tid(page, 'cc-predictive-table').locator('th')).toHaveText([
       '#',
       'Pelajar',
@@ -474,7 +489,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
       ])
       await expectNoHorizontalScroll(page)
 
-      const row8 = tid(page, 'cc-remedial-row').filter({ hasText: 'Murid Demo 08' })
+      const row8 = tid(page, 'cc-remedial-table').locator('tbody tr').filter({ hasText: 'Murid Demo 08' })
       const view = row8.getByTestId('cc-remedial-view')
       await expect(view).toHaveText('Lihat Quiz (5 soalan)')
       await expect(view).toHaveAttribute('href', '/remedial/7601')
@@ -486,7 +501,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
 
       // generate for another pupil: "Menjana..." then the "{Subjek} ({n})" link; a refusal shows its text
       await mock.setLatency(500, `POST ${API}/remedial/generate`)
-      const row2 = tid(page, 'cc-remedial-row').filter({ hasText: 'Murid Demo 02' })
+      const row2 = tid(page, 'cc-remedial-table').locator('tbody tr').filter({ hasText: 'Murid Demo 02' })
       await mock.failNext(`POST ${API}/remedial/generate`, {
         status: 422,
         code: 'VALIDATION_ERROR',
@@ -532,7 +547,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
       await openBoard(page, gotoApp)
       await tid(page, 'cc-link-evaluate').click()
       await expect(tid(page, 'cc-evaluate-row').first()).toBeVisible()
-      await expect(tid(page, 'cc-modal-card').first()).toHaveText('8Jumlah Pelajar')
+      await expect(modalCards(page).first()).toHaveText('8Jumlah Pelajar')
       const risks = await tid(page, 'cc-risk').allTextContents()
       expect(risks.length).toBeGreaterThan(0)
       for (const r of risks) expect(['KRITIKAL', 'TINGGI', 'SEDERHANA']).toContain(r.trim())
@@ -544,7 +559,7 @@ test.describe('M10 S2 Command Center, guru 5', MODULE, () => {
       await expect(chips).toHaveCount(3)
       await chips.first().click()
       await expect(tid(page, 'cc-holders-modal')).toBeVisible()
-      await expect(tid(page, 'cc-holders-modal').getByTestId('cc-modal-title')).toHaveText(
+      await expect(modalTitle(page)).toHaveText(
         'Lencana: Pemula Rajin',
       )
       await expect(tid(page, 'cc-holders-empty')).toHaveText(
@@ -564,9 +579,11 @@ test.describe('M17 mount under /guru/command-center (E2E-M17-70) and refusals', 
       await gotoApp(`${CC}/classroom/2001`)
       // S6 on the DS detail template (DV-M17-57): the shell prints the title and crumbs; back link "Kembali"
       await expect(tid(page, 'cc-title')).toHaveCount(0)
-      await expect(tid(page, 'cc-info')).toContainText('Kimia')
+      // The class name (with its subject) is now the last crumb; cc-info lists Sekolah, Guru and Tahap only.
+      await expect(tid(page, 'cc-breadcrumb')).toContainText('Kimia')
+      await expect(tid(page, 'cc-info')).toContainText('Tahap: T5')
       await expect(page.locator('[data-ds="back-link"]')).toHaveAttribute('href', /^\/guru\/command-center/)
-      await expect(tid(page, 'pembelajaran-sidebar')).toHaveCount(0)
+      await expect(tid(page, 'pembelajaran-sidebar')).toHaveCount(isDesktopShell(page) ? 1 : 0)
       await expectNoHorizontalScroll(page)
 
       await gotoApp(`${CC}/classroom/370`)
@@ -594,12 +611,14 @@ test.describe('M17 mount under /guru/command-center (E2E-M17-70) and refusals', 
     provisional('other roles on /guru/* are INFERRED (OQ-M10-08)'),
     async ({ page, gotoApp, loginAs }) => {
       await gotoApp(CC)
-      await expect(page).toHaveURL(/\/login$/)
+      await expect(page).toHaveURL(/\/login\?redirect=(%2F|\/)guru(%2F|\/)command-center$/)
       await loginAs(PELAJAR)
       await gotoApp(CC)
-      await expect(page).not.toHaveURL(/\/guru\//)
+      // v2: a forbidden role gets the 403 page in place (no redirect).
+      await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
       await gotoApp(`${CC}/classroom/2001`)
-      await expect(page).not.toHaveURL(/\/guru\//)
+      // v2: a forbidden role gets the 403 page in place (no redirect).
+      await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     },
   )
 })
