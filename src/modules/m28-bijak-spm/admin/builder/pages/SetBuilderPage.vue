@@ -294,6 +294,8 @@ const unitsIn = (sid: string): SectionUnit[] => unitsBySection.value.get(sid) ??
 const questionCountIn = (sid: string): number => sections.value.find((s) => s.id === sid)?.questionIds.length ?? 0
 const destFull = computed(() => {
   const s = sections.value.find((x) => x.id === dest.value)
+  // An admin-added Bahagian has no Kontrak target: its count follows its placements (so it always equals them), and the admin may add freely (V2). Never "full".
+  if ((s as { adminCreated?: boolean } | undefined)?.adminCreated === true) return false
   return !!s && s.questionIds.length >= s.questionCount && s.rule.type === 'all'
 })
 

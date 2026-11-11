@@ -239,6 +239,17 @@ describe('SetBuilderPage', () => {
     expect(w.find('[data-testid="bank-no-section"]').exists()).toBe(false)
   })
 
+  it('an admin-added empty Bahagian is not "penuh" and takes a bank unit; a full Kontrak Bahagian still is', async () => {
+    const mk = (adminCreated: boolean) => editor(paper({ sections: [{ id: 's1', label: 'QA-A', markBudget: 0, questionCount: adminCreated ? 0 : 1, rule: { type: 'all' }, questionIds: adminCreated ? [] : ['q1'], ...(adminCreated ? { adminCreated: true } : {}) } as never] }))
+    const free = stub({ getEditor: vi.fn().mockResolvedValue(mk(true)) })
+    const w = await render(free.api)
+    expect(w.find('[data-testid="bank-dest-full"]').exists()).toBe(false)
+    w.unmount()
+    const full = stub({ getEditor: vi.fn().mockResolvedValue(mk(false)) })
+    const w2 = await render(full.api)
+    expect(w2.find('[data-testid="bank-dest-full"]').exists()).toBe(true)
+  })
+
   it('Tambah bahagian: a blank label adds the V2 default "Part n"; a duplicate-label refusal shows the server BM line', async () => {
     const empty = editor(paper({ sections: [] }))
     const dup = new BuilderError('invalid', 'Label bahagian ini sudah digunakan dalam kertas ini.')
