@@ -10,8 +10,6 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import {
-  acceptNextDialog,
-  dismissNextDialog,
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
@@ -26,10 +24,22 @@ const MODULE = { tag: [moduleTag(10)] }
 
 test.use({ mockInit: { latency: 0 } })
 
-async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
-  await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText(title)
-  // Default subtitles: guru "Selamat datang, <name> 👩‍🏫" (guru/layout.blade.php:323), pelajar "Selamat datang kembali".
-  await expect(page.getByTestId('pembelajaran-subtitle')).toContainText(subtitle)
+/** The EXPECTED shell is a parameter: guru pages are Pembelajaran (subtitle = page's own, else the teacher default), admin pages are Pentadbiran (no default subtitle). */
+async function expectHeader(
+  page: Page,
+  shell: 'pembelajaran' | 'pentadbiran',
+  title: string,
+  subtitle?: string,
+): Promise<void> {
+  await expect(page.getByTestId(`${shell}-header`).locator('h1')).toHaveText(title)
+  if (subtitle !== undefined) {
+    await expect(page.getByTestId(`${shell}-subtitle`)).toContainText(subtitle)
+  }
+}
+
+/** A DsStatRow cell `stat-<key>` reads "<value> <label>" (no value test id on the tile). */
+async function expectStat(page: Page, key: string, value: string): Promise<void> {
+  await expect(page.getByTestId(`stat-${key}`)).toHaveText(new RegExp('^\\s*' + value + '(?![\\d,.])'))
 }
 
 /** FR-M10-129: no text node inside `main` smaller than 12px (S21). */
@@ -50,16 +60,35 @@ async function expectMinFont(page: Page): Promise<void> {
   expect(smallest).toBeGreaterThanOrEqual(12)
 }
 
+/**
+ * D112: Bab / SP / TP / Aras are required where the Subjek + Tingkatan has chapters or DSKP nodes: pick the first
+ * option of each empty select, in order (SP loads after the Bab).
+ */
+async function pickDskp(page: Page): Promise<void> {
+  for (const id of ['q-chapter', 'q-sp', 'q-tp', 'q-aras']) {
+    const select = page.getByTestId(id)
+    await expect
+      .poll(async () => select.locator('option').count(), { timeout: 3000 })
+      .toBeGreaterThan(1)
+      .catch(() => undefined)
+    if ((await select.isEnabled()) && (await select.inputValue()) === '') {
+      const value = await select.locator('option:not([value=""])').first().getAttribute('value')
+      if (value !== null) await select.selectOption(value)
+    }
+  }
+}
+
 /** Fills the S22 form for an MCQ and returns after choosing the options. */
 async function fillMcq(page: Page, text: string, difficulty: string): Promise<void> {
   await page.getByTestId('q-level').selectOption({ label: 'Tingkatan 5' })
   await page.getByTestId('q-subject').selectOption({ label: 'Bahasa Melayu' })
   await page.getByTestId('q-difficulty').selectOption({ label: difficulty })
+  await pickDskp(page)
   await page.getByTestId('q-text').fill(text)
   for (const [i, v] of ['Pilihan satu', 'Pilihan dua', 'Pilihan tiga', 'Pilihan empat'].entries()) {
     await page.getByTestId(`q-option-${String(i)}`).fill(v)
   }
-  await page.locator('[data-testid="q-correct"] [role="radio"]').nth(1).click()
+  await page.locator('[data-testid="q-correct"] label').nth(1).click()
 }
 
 // --- S21 -----------------------------------------------------------------------------------------
@@ -72,38 +101,30 @@ test.describe('S21 as the admin', MODULE, () => {
   test('SRS §12 #57 stats, tiers, chips, first card, pager', async ({ page, gotoApp }) => {
     await gotoApp('/guru/soalan')
     await expectTabTitle(page, 'Sumbang Soalan | PRESTASIPLUS')
-    await expectHeader(
-      page,
-      'Sumbang Soalan',
-      'Selamat datang, ',
-    )
-    await expect(page.getByTestId('stat-total-value')).toHaveText('16817')
-    await expect(page.getByTestId('stat-approved-value')).toHaveText('16817')
-    await expect(page.getByTestId('stat-pending-value')).toHaveText('0')
-    await expect(page.getByTestId('stat-used-value')).toHaveText('0')
+    await expectHeader(page, 'pentadbiran', 'Sumbang Soalan')
+    // D11: the admin's contributions are computed from the M04 dataset (guru-handlers.test.ts:784-792: 9,531, six tiers
+    // reached, next Guru Maestro); the observed live 16,817 is not reproduced by any definition.
+    await expectStat(page, 'total', '9,531')
+    await expectStat(page, 'approved', '9,531')
+    await expectStat(page, 'pending', '0')
+    await expectStat(page, 'used', '0')
     await expect(page.getByTestId('contribution-info')).toContainText(
       'Sumbang Soalan adalah platform perkongsian soalan untuk manfaat semua pelajar di seluruh Malaysia.',
     )
     await expect(page.getByTestId('tier')).toHaveCount(8)
-    await expect(page.locator('[data-testid="tier"][data-reached="true"]')).toHaveCount(7)
+    await expect(page.locator('[data-testid="tier"][data-reached="true"]')).toHaveCount(6)
     await expect(page.getByTestId('tier').first()).toContainText('Penyumbang Baru (10)')
     await expect(page.getByTestId('tier').last()).toContainText('Legenda Terulung (50,000)')
     await expect(page.getByTestId('next-tier')).toHaveText(
-      'Sasaran seterusnya: Legenda Terulung — 50,000 soalan',
+      'Sasaran seterusnya: Guru Maestro — 10,000 soalan',
     )
-    expect(await page.getByTestId('breakdown-chip').allTextContents()).toEqual([
-      'Matematik — 3,287',
-      'Pendidikan Islam — 2,516',
-      'Bahasa Melayu — 2,342',
-      'Bahasa Inggeris — 2,214',
-      'Sains — 1,935',
-      'Pendidikan Moral — 1,823',
-      'Sejarah — 795',
-      'Lain — 763',
-      'Pendidikan Seni Visual — 510',
-      'Pendidikan Syariah Islamiah — 363',
-      'Geografi — 269',
-    ])
+    // Chips: at most 11, counts descending (guru-handlers.test.ts:790-792), and they add up to the total.
+    const chipCounts = (await page.getByTestId('breakdown-chip').allTextContents()).map((t) =>
+      Number(t.split('—').pop()!.replace(/[^0-9]/g, '')),
+    )
+    expect(chipCounts.length).toBeLessThanOrEqual(11)
+    expect(chipCounts.slice(0, 10)).toEqual([...chipCounts.slice(0, 10)].sort((a, b) => b - a))
+    expect(chipCounts.reduce((n, c) => n + c, 0)).toBe(9531)
 
     // Static AI card and the Audio KBAT links.
     await expect(page.getByTestId('ai-card')).toContainText('AI Auto-Generate Soalan')
@@ -112,9 +133,9 @@ test.describe('S21 as the admin', MODULE, () => {
     await expect(page.getByTestId('audio-kbat-card')).toContainText('Template Word')
     await expect(page.getByTestId('audio-create')).toHaveAttribute(
       'href',
-      '/guru/audio-kbat/create',
+      '/admin/audio-kbat/create', // the teacher screens are a 404 (DV-M10-36, AudioKbatCard.vue:6): the admin pages
     )
-    await expect(page.getByTestId('audio-list')).toHaveAttribute('href', '/guru/audio-kbat')
+    await expect(page.getByTestId('audio-list')).toHaveAttribute('href', '/admin/audio-kbat')
 
     // First card.
     const cards = page.getByTestId('question-card')
@@ -136,23 +157,14 @@ test.describe('S21 as the admin', MODULE, () => {
     await expect(first.locator('[data-testid="question-option"][data-correct="true"]')).toHaveCount(
       1,
     )
-    await expect(first.getByTestId('question-edit')).toHaveAttribute(
-      'href',
-      '/guru/soalan/522425/edit',
-    )
-
-    // Padam: the confirm text, cancel keeps the card.
-    const dismissed = dismissNextDialog(page, {
-      type: 'confirm',
-      message: 'Padam soalan #522425? Tindakan ini tidak boleh dibatalkan.',
-    })
-    await first.getByTestId('question-delete').click()
-    await dismissed
+    // Edit / Padam only exist on a pending question (BR-M10-21, mock/handlers/questions.ts:162): an approved one has none.
+    await expect(first.getByTestId('question-actions')).toHaveCount(0)
+    await expect(first.getByTestId('question-delete')).toHaveCount(0)
     await expect(page.locator('[data-question-id="522425"]')).toHaveCount(1)
-    await expect(page.getByTestId('stat-total-value')).toHaveText('16817')
+    await expectStat(page, 'total', '9,531')
 
     // Pager.
-    await expect(page.getByText('Showing 1 to 20 of 16817 results')).toBeVisible({
+    await expect(page.getByText('Menunjukkan 1-20 daripada 9531 hasil')).toBeVisible({
       visible: !isMobileWidth(page),
     })
     await first.getByTestId('question-toggle').click()
@@ -169,12 +181,11 @@ test.describe('S21 as the admin', MODULE, () => {
 
   test('SRS §12 #65 S23 and S24 of 522425', async ({ page, gotoApp }) => {
     await gotoApp('/guru/soalan/522425')
-    await expectTabTitle(page, 'Detail Soalan — Sumbang Soalan')
-    await expectHeader(page, 'Detail Soalan', 'Selamat datang kembali')
+    await expectTabTitle(page, 'Detail Soalan | PRESTASIPLUS')
+    await expectHeader(page, 'pentadbiran', 'Detail Soalan')
     // Subject name of 522425 is not asserted: the seed gives "Pendidikan Islam" (reported to M04).
     await expect(page.getByTestId('detail-subject')).not.toHaveText('')
-    await expect(page.getByTestId('detail-source')).not.toHaveText('')
-    await expect(page.getByTestId('detail-tahap')).toHaveText(/^\s*Tahap [1-5]\s*$/)
+    await expect(page.getByTestId('detail-tahap')).toHaveText(/^\s*⭐{1,5}\s*$/)
     await expect(page.getByTestId('detail-type')).toHaveText('mcq')
     await expect(page.getByTestId('detail-text')).not.toHaveText('')
     const options = page.getByTestId('detail-option')
@@ -182,25 +193,10 @@ test.describe('S21 as the admin', MODULE, () => {
     await expect(page.locator('[data-testid="detail-option"][data-correct="true"]')).toHaveCount(1)
     await expect(options.nth(0)).toContainText('A)')
     await expect(page.getByTestId('detail-explanation')).toContainText('Penerangan')
-    await expect(page.getByTestId('stat-attempts')).toHaveText('0')
-    await expect(page.getByTestId('stat-correct')).toHaveText('0')
-    await expect(page.getByTestId('stat-accuracy')).toHaveText('0%')
+    // S23 has no source and no usage figures (SumbangSoalanDetailPage.vue:5): the stat-attempts/correct/accuracy tiles are gone.
     await expect(page.getByTestId('detail-back')).toHaveAttribute('href', '/guru/soalan')
-    await expectTouchTarget(page.getByTestId('detail-edit'))
-    await expectNoHorizontalScroll(page)
-
-    await page.getByTestId('detail-edit').click()
-    await expect(page).toHaveURL(/\/guru\/soalan\/522425\/edit$/)
-    await expectTabTitle(page, 'Edit Soalan — Sumbang Soalan')
-    await expectHeader(page, 'Edit Soalan', 'Selamat datang kembali')
-    await expect(page.getByTestId('edit-source')).toContainText('Sumber Asal')
-    // The seed difficulty of 522425 is not the observed 4 (reported to M04): only the structure is asserted.
-    await expect(page.getByTestId('e-difficulty').locator('option')).toHaveCount(4)
-    await expect(page.locator('[data-testid="e-correct"] [role="radio"][aria-checked="true"]')).toHaveCount(1)
-    await expect(page.getByTestId('e-text')).toHaveAttribute('required', '')
-    await expect(page.getByText('JPG, PNG, max 5MB.')).toBeVisible()
-    await expect(page.getByTestId('form-cancel')).toHaveAttribute('href', '/guru/soalan/522425')
-    await expect(page.getByTestId('edit-back')).toHaveAttribute('href', '/guru/soalan/522425')
+    // An approved question is not editable (BR-M10-21): no Edit button; S24 is covered on a pending question in #64.
+    await expect(page.getByTestId('detail-edit')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 })
@@ -212,10 +208,10 @@ test.describe('S21 as the teacher', MODULE, () => {
 
   test('SRS §12 #58 default seed anchors, delete 700302', async ({ page, gotoApp }) => {
     await gotoApp('/guru/soalan')
-    await expect(page.getByTestId('stat-total-value')).toHaveText('1')
-    await expect(page.getByTestId('stat-approved-value')).toHaveText('1')
-    await expect(page.getByTestId('stat-pending-value')).toHaveText('0')
-    await expect(page.getByTestId('stat-used-value')).toHaveText('0')
+    await expectStat(page, 'total', '1')
+    await expectStat(page, 'approved', '1')
+    await expectStat(page, 'pending', '0')
+    await expectStat(page, 'used', '0')
     await expect(page.locator('[data-testid="tier"][data-reached="true"]')).toHaveCount(0)
     await expect(page.getByTestId('next-tier')).toHaveText(
       'Sasaran seterusnya: Penyumbang Baru — 10 soalan',
@@ -226,21 +222,15 @@ test.describe('S21 as the teacher', MODULE, () => {
     const card = page.getByTestId('question-card')
     await expect(card).toHaveCount(1)
     const ownId = await card.getAttribute('data-question-id')
-    await expect(card.getByTestId('chip-difficulty')).toHaveText('Mudah')
+    await expect(card.getByTestId('chip-difficulty')).toHaveText('⭐⭐')
     await expect(page.locator('[data-testid="question-card"]')).toHaveCount(1)
     await expectMinFont(page)
     await expectNoHorizontalScroll(page)
 
+    // The own anchor 700302 is approved: no Edit / Padam (BR-M10-21; delete is tested on a pending question in #64).
     await card.getByTestId('question-toggle').click()
-    const accepted = acceptNextDialog(page, {
-      type: 'confirm',
-      message: `Padam soalan #${String(ownId)}? Tindakan ini tidak boleh dibatalkan.`,
-    })
-    await card.getByTestId('question-delete').click()
-    await accepted
-    await expect(page.getByTestId('stat-total-value')).toHaveText('0')
-    await expect(page.getByTestId('question-card')).toHaveCount(0)
-    await expect(page.getByTestId('breakdown-chip')).toHaveCount(0)
+    await expect(card.getByTestId('question-id')).toHaveText(String(ownId))
+    await expect(card.getByTestId('question-delete')).toHaveCount(0)
   })
 
   test('SRS §12 #59 template download and the import form', async ({ page, gotoApp }) => {
@@ -249,12 +239,11 @@ test.describe('S21 as the teacher', MODULE, () => {
     await expect(page.getByTestId('import-card')).toContainText('Muat naik banyak soalan sekaligus')
     const download = page.waitForEvent('download')
     await page.getByTestId('import-template').click()
-    expect((await download).suggestedFilename()).toBe('template-import-soalan.csv')
+    expect((await download).suggestedFilename()).toBe('templat-soalan.csv')
 
     await expect(page.getByTestId('import-form')).toHaveCount(0)
     await page.getByTestId('import-toggle').click()
-    await expect(page.getByTestId('import-file')).toHaveAttribute('accept', '.csv,.txt')
-    await expect(page.getByTestId('import-file')).toHaveAttribute('required', '')
+    await expect(page.getByTestId('import-file')).toHaveAttribute('accept', '.csv')
     await expect(page.getByTestId('import-guide')).toContainText(
       'Soalan akan dihantar sebagai "Menunggu Semakan" untuk kelulusan admin',
     )
@@ -270,20 +259,23 @@ test.describe('S21 as the teacher', MODULE, () => {
     async ({ page, gotoApp }) => {
       await gotoApp('/guru/soalan')
       await page.getByTestId('import-toggle').click()
+      // Header and rules of the teacher CSV (templat-soalan.csv; mock/handlers/csv.ts:25-52, 99-104).
       const csv = [
-        'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation',
-        '"Ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,11,2,1,"KL"',
-        '"Soalan salah?",A,B,C,D,Z,1,11,2,1,',
+        'subjek,tingkatan,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,kesukaran',
+        '"Bahasa Melayu",5,"Ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,2',
+        '"Bahasa Melayu",5,"Soalan salah?",A,B,C,D,Z,2',
       ].join('\r\n')
       await page
         .getByTestId('import-file')
         .setInputFiles({ name: 'soalan.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
       await page.getByTestId('import-submit').click()
       await expect(page.getByTestId('import-result-summary')).toBeVisible()
-      await expect(page.getByTestId('import-failure')).toHaveCount(1)
-      await expect(page.getByTestId('import-failure')).toContainText('Baris 3')
-      await expect(page.getByTestId('stat-pending-value')).toHaveText('1')
-      await expect(page.getByTestId('stat-total-value')).toHaveText('2')
+      const failureRows = page.getByTestId('import-failures').locator('tbody tr')
+      await expect(failureRows).toHaveCount(1)
+      await expect(failureRows).toContainText('3')
+      await expect(failureRows).toContainText('Jawapan mesti A, B, C atau D.')
+      await expectStat(page, 'pending', '1')
+      await expectStat(page, 'total', '2')
     },
   )
 
@@ -346,40 +338,27 @@ test.describe('S21 as the teacher', MODULE, () => {
   }) => {
     await gotoApp('/guru/soalan/cipta')
     await expectTabTitle(page, 'Tambah Soalan | PRESTASIPLUS')
-    await expectHeader(page, 'Tambah Soalan Baru', 'Sumbangkan soalan untuk pelajar Malaysia')
+    await expectHeader(page, 'pembelajaran', 'Tambah Soalan Baru', 'Sumbangkan soalan untuk pelajar Malaysia')
     await expect(page.getByTestId('back-link')).toHaveText('Kembali ke Senarai Soalan')
     expect(await page.getByTestId('q-difficulty').locator('option').allTextContents()).toEqual([
-      '-- Pilih Tahap --',
-      'Mudah',
-      'Sederhana',
-      'Sukar',
+      '-- Pilih kesukaran --',
+      '⭐ — Sangat mudah',
+      '⭐⭐ — Mudah',
+      '⭐⭐⭐ — Sederhana',
+      '⭐⭐⭐⭐ — Sukar',
+      '⭐⭐⭐⭐⭐ — Sangat sukar',
     ])
-    await expect(page.getByTestId('q-type').locator('option:checked')).toHaveText(
-      'Aneka Pilihan (MCQ)',
-    )
     await expect(page.getByTestId('q-subject').locator('option')).toHaveCount(32)
-    await expect(page.getByTestId('q-level').locator('option')).toHaveCount(12)
+    await expect(page.getByTestId('q-level').locator('option')).toHaveCount(6) // placeholder + Tingkatan 1-5 (D101)
     await expect(page.getByTestId('dskp-card')).toContainText('Pemetaan DSKP')
-    await expect(page.getByTestId('q-chapter-add')).toBeDisabled()
 
     // Option images at 375 do not widen the page (DV-M10-21).
     await expect(page.getByTestId('mcq-card')).toContainText(
       'Masukkan 4 pilihan dan pilih jawapan yang betul.',
     )
-    await expect(page.getByTestId('q-option-image-0')).toBeVisible()
     await expectNoHorizontalScroll(page)
 
-    // Type switching.
-    await page.getByTestId('q-type').selectOption('true_false')
-    await expect(page.getByTestId('tf-card')).toBeVisible()
-    await expect(page.getByTestId('mcq-card')).toHaveCount(0)
-    await page.getByTestId('q-type').selectOption('short_answer')
-    await expect(page.getByTestId('short-card')).toContainText('Jawapan Utama *')
-    await page.getByTestId('q-type').selectOption('fill_blank')
-    await expect(page.getByTestId('short-card')).toContainText('Gunakan ___ dalam soalan')
-    await page.getByTestId('q-type').selectOption('essay')
-    await expect(page.getByTestId('essay-card')).toContainText('Jawapan Contoh (Model Answer)')
-    await page.getByTestId('q-type').selectOption('mcq')
+    // Type switching (true/false, short answer, fill blank, essay) is gone: the S22 form is multiple choice only (QuestionForm.vue:3).
 
     // Arab script: right to left, keyboard, "ب", Jawi layout.
     await page.getByTestId('q-script').selectOption('arab')
@@ -415,14 +394,7 @@ test.describe('S21 as the teacher', MODULE, () => {
     await page.keyboard.press('Escape')
     await expect(panel).toHaveCount(0)
 
-    // Galeri Rajah: the live empty texts.
-    await page.getByTestId('galeri-open').click()
-    await expect(page.getByTestId('galeri-empty')).toContainText('Tiada galeri rajah tersedia')
-    await expect(page.getByTestId('galeri-empty')).toContainText(
-      'Sila muat naik imej secara manual menggunakan butang "Muat Naik"',
-    )
-    await page.getByTestId('galeri-cancel').click()
-    await expect(page.getByTestId('galeri-empty')).toHaveCount(0)
+    // Galeri Rajah and option images are gone from the S22 form (QuestionForm.vue template has no galeri / image controls).
 
     // Footer: "Batal" and the submit on one row.
     const cancel = await page.getByTestId('form-cancel').boundingBox()
@@ -433,27 +405,6 @@ test.describe('S21 as the teacher', MODULE, () => {
     await expect(page).toHaveURL(/\/guru\/soalan$/)
   })
 
-  test('SRS §12 #63 S22 inline chapter add (Bab Baru)', async ({ page, gotoApp }) => {
-    await gotoApp('/guru/soalan/cipta')
-    await page.getByTestId('q-level').selectOption({ label: 'Tingkatan 5' })
-    await page.getByTestId('q-subject').selectOption({ label: 'Sains' })
-    await expect(page.getByTestId('q-chapter-add')).toBeEnabled()
-    await expect(page.getByTestId('q-chapter-select').locator('option')).not.toHaveCount(1)
-    await page.getByTestId('q-chapter-add').click()
-    await page.getByTestId('q-chapter-field-name').fill('Bab Ujian')
-    await page.getByTestId('q-chapter-save').click()
-    // Both number and name are needed: nothing happens.
-    await expect(page.getByTestId('q-chapter-select').locator('option:checked')).toHaveText(
-      '-- Pilih Bab --',
-    )
-    await page.getByTestId('q-chapter-field-number').fill('90')
-    await page.getByTestId('q-chapter-save').click()
-    await expect(page.getByTestId('q-chapter-select').locator('option:checked')).toHaveText(
-      'Bab 90: Bab Ujian',
-    )
-    await expectNoHorizontalScroll(page)
-  })
-
   test(
     'SRS §12 #64 and #66 teacher creates an MCQ, then edits it',
     provisional(
@@ -462,23 +413,34 @@ test.describe('S21 as the teacher', MODULE, () => {
     ),
     async ({ page, gotoApp }) => {
       await gotoApp('/guru/soalan/cipta')
-      await fillMcq(page, 'Apakah ibu negara Malaysia?', 'Sukar')
+      await fillMcq(page, 'Apakah ibu negara Malaysia?', '⭐⭐⭐⭐ — Sukar')
       await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/\/guru\/soalan$/)
-      await expect(page.getByTestId('stat-total-value')).toHaveText('2')
-      await expect(page.getByTestId('stat-pending-value')).toHaveText('1')
-      await expect(page.getByTestId('stat-approved-value')).toHaveText('1')
+      await expectStat(page, 'total', '2')
+      await expectStat(page, 'pending', '1')
+      await expectStat(page, 'approved', '1')
       const created = page
         .locator('[data-testid="question-card"]')
         .filter({ hasText: 'Apakah ibu negara Malaysia?' })
       await expect(created.getByTestId('chip-status')).toHaveText('Menunggu Semakan')
-      await expect(created.getByTestId('chip-difficulty')).toHaveText('Sukar')
+      await expect(created.getByTestId('chip-difficulty')).toHaveText('⭐⭐⭐⭐')
       const id = await created.getAttribute('data-question-id')
       expect(Number(id)).toBeGreaterThanOrEqual(9_000_001)
 
+      // Padam is on the pending card: the DS confirm dialog, Batal keeps it, then OK removes it.
+      await created.getByTestId('question-toggle').click()
+      await created.getByTestId('question-delete').click()
+      await expect(page.locator('[data-ds="confirm-ok"]')).toBeVisible()
+      await page.locator('[data-ds="confirm-cancel"]').click()
+      await expect(created).toHaveCount(1)
+      await created.getByTestId('question-delete').click()
+      await page.locator('[data-ds="confirm-ok"]').click()
+      await expect(created).toHaveCount(0)
+      await expectStat(page, 'pending', '0')
+
       // A second one with "Sederhana", then S24 changes only the explanation (difficulty kept).
       await gotoApp('/guru/soalan/cipta')
-      await fillMcq(page, 'Soalan kedua untuk disunting?', 'Sederhana')
+      await fillMcq(page, 'Soalan kedua untuk disunting?', '⭐⭐⭐ — Sederhana')
       await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(/\/guru\/soalan$/)
       const second = page
@@ -486,13 +448,21 @@ test.describe('S21 as the teacher', MODULE, () => {
         .filter({ hasText: 'Soalan kedua untuk disunting?' })
       const secondId = await second.getAttribute('data-question-id')
       await gotoApp(`/guru/soalan/${String(secondId)}/edit`)
-      await expect(page.getByTestId('e-difficulty')).toHaveValue('3')
-      await expect(page.locator('[data-testid="e-correct"] [role="radio"]').nth(1)).toBeChecked()
-      await page.getByTestId('e-explanation').fill('Penjelasan baharu')
+      await expect(page.getByTestId('q-difficulty')).toHaveValue('3')
+      await expectHeader(page, 'pembelajaran', 'Edit Soalan')
+      await expect(page.getByTestId('q-difficulty').locator('option')).toHaveCount(6) // placeholder + five stars
+      await expect(
+        page.locator('[data-testid="q-correct"] [role="radio"][aria-checked="true"]'),
+      ).toHaveCount(1)
+      await expect(page.getByTestId('form-cancel')).toHaveAttribute('href', `/guru/soalan/${String(secondId)}`)
+      await expect(page.getByTestId('edit-back')).toHaveAttribute('href', `/guru/soalan/${String(secondId)}`)
+      await pickDskp(page)
+      await expect(page.locator('[data-testid="q-correct"] [role="radio"]').nth(1)).toBeChecked()
+      await page.getByTestId('q-explanation').fill('Penjelasan baharu')
       await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL(new RegExp(`/guru/soalan/${String(secondId)}$`))
       await expect(page.getByTestId('detail-explanation')).toContainText('Penjelasan baharu')
-      await expect(page.getByTestId('detail-tahap')).toHaveText('Tahap 3')
+      await expect(page.getByTestId('detail-tahap')).toHaveText('⭐⭐⭐')
       await expectNoHorizontalScroll(page)
     },
   )
@@ -502,12 +472,12 @@ test.describe('S21 as the teacher', MODULE, () => {
     gotoApp,
   }) => {
     await gotoApp('/guru/soalan/cipta')
-    await fillMcq(page, 'Teks kekal selepas ralat?', 'Mudah')
-    // Native required validation blocks an empty option before any request is made.
+    await fillMcq(page, 'Teks kekal selepas ralat?', '⭐⭐ — Mudah')
+    // The form is novalidate: an empty option shows the error banner and sends nothing (QuestionForm.vue:3).
     await page.getByTestId('q-option-2').fill('')
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL(/\/guru\/soalan\/cipta$/)
-    expect(await page.evaluate(() => document.querySelector('form:invalid') !== null)).toBe(true)
+    await expect(page.getByTestId('form-banner')).toBeVisible()
     await expect(page.getByTestId('q-text')).toHaveValue('Teks kekal selepas ralat?')
   })
 
@@ -525,10 +495,10 @@ test.describe('S21 as the teacher', MODULE, () => {
     const ownId = await page.getByTestId('question-card').getAttribute('data-question-id')
     await gotoApp(`/guru/soalan/${String(ownId)}`)
     await expect(page.getByTestId('detail-text')).not.toHaveText('')
-    await expect(page.getByTestId('detail-tahap')).toHaveText('Tahap 2')
+    await expect(page.getByTestId('detail-tahap')).toHaveText('⭐⭐')
     await expectNoHorizontalScroll(page)
     await gotoApp(`/guru/soalan/${String(ownId)}/edit`)
-    await expect(page.getByTestId('e-difficulty')).toHaveValue('2')
+    await expect(page.getByTestId('q-difficulty')).toHaveValue('2')
     await expectNoHorizontalScroll(page)
   })
 })
@@ -551,7 +521,8 @@ test.describe('S21-S24 access', MODULE, () => {
       async ({ page, loginAs, gotoApp }) => {
         await loginAs('pelajar@demo.test')
         await gotoApp(path)
-        await expect(page).not.toHaveURL(/\/guru\/soalan/)
+        // v2: a forbidden role gets the 403 page in place (no redirect).
+        await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
         await expect(page.getByTestId('soalan-page')).toHaveCount(0)
       },
     )
@@ -570,7 +541,7 @@ test.describe('S21-S24 observed anchors', MODULE, () => {
     await expect(first).toHaveAttribute('data-question-id', '522425')
     await expect(first.getByTestId('chip-subject')).toHaveText('Bahasa Melayu')
     await expect(first.getByTestId('chip-level')).toHaveText('Darjah 6')
-    await expect(first.getByTestId('chip-difficulty')).toHaveText('Sukar')
+    await expect(first.getByTestId('chip-difficulty')).toHaveText('⭐⭐⭐⭐')
     await expect(first.getByTestId('question-date')).toHaveText('02 May 2026')
     await first.getByTestId('question-toggle').click()
     await expect(first.getByTestId('question-body')).toContainText('textbook_content_rebuild')
@@ -589,16 +560,14 @@ test.describe('S21-S24 observed anchors', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru/soalan/522425')
     await expect(page.getByTestId('detail-subject')).toHaveText('Bahasa Melayu')
-    await expect(page.getByTestId('detail-source')).toHaveText('textbook_content_rebuild')
-    await expect(page.getByTestId('detail-tahap')).toHaveText('Tahap 4')
+    await expect(page.getByTestId('detail-tahap')).toHaveText('⭐⭐⭐⭐')
     await expect(page.getByTestId('detail-text')).toHaveText(
       'Dalam tugasan pengukuhan, pilih ayat dialog yang betul dari segi tanda baca?',
     )
     await expect(page.getByTestId('detail-option').nth(2)).toHaveAttribute('data-correct', 'true')
     await gotoApp('/guru/soalan/522425/edit')
-    await expect(page.getByTestId('edit-source')).toContainText('textbook_content_rebuild')
-    await expect(page.getByTestId('e-difficulty')).toHaveValue('4')
-    await expect(page.locator('[data-testid="e-correct"] [role="radio"]').nth(2)).toBeChecked()
+    await expect(page.getByTestId('q-difficulty')).toHaveValue('4')
+    await expect(page.locator('[data-testid="q-correct"] [role="radio"]').nth(2)).toBeChecked()
   })
 
   test('teacher own question is 700302', async ({ page, loginAs, gotoApp }) => {
@@ -607,6 +576,6 @@ test.describe('S21-S24 observed anchors', MODULE, () => {
     await expect(page.getByTestId('detail-text')).toHaveText(
       'Pilih ayat yang menggunakan kata sendi nama dengan betul.',
     )
-    await expect(page.getByTestId('detail-tahap')).toHaveText('Tahap 2')
+    await expect(page.getByTestId('detail-tahap')).toHaveText('⭐⭐')
   })
 })
