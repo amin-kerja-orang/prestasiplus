@@ -137,13 +137,14 @@ describe('mock Kuiz server', () => {
 })
 
 describe('Kuiz routes', () => {
-  it('registers /simulasi/kuiz and /simulasi/:paperId/kuiz for students (and Admin Pusat in Mod Pelajar), in-place 403 for others', () => {
+  it('registers /simulasi/kuiz and /simulasi/:paperId/kuiz for students (a plain Admin Pusat is switched into Mod Pelajar first), in-place 403 for others', () => {
     for (const path of ['/simulasi/kuiz', '/simulasi/:paperId/kuiz']) {
       const r = bijakRoutes.find((x) => x.path === path)
       expect(r, path).toBeTruthy()
       expect(r!.meta).toMatchObject({
         access: 'auth',
-        roles: ['student', 'admin'],
+        roles: ['student'],
+        modPelajarForAdmin: true,
         onForbidden: '403',
         layout: 'user',
       })

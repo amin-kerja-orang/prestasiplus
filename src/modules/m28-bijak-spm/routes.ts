@@ -9,14 +9,17 @@ import adminPapers from './routes/admin-papers'
 
 /**
  * Bijak SPM routes (v2 student flow). They sit under `/spm`, so the Murid menu row 13 "SPM" of the
- * role-access matrix (D43) already covers them. Students only (and Admin Pusat in Mod Pelajar);
- * other roles get the in-place 403 (AC-01.4). `layout: 'user'` is the existing student frame; the
- * pages render inside the learner layout once it replaces it.
+ * role-access matrix (D43) already covers them. Students only; a plain Admin Pusat who opens one
+ * directly is taken into Mod Pelajar first (`modPelajarForAdmin`, router guard step 2c) and then lands
+ * on the requested route. Other roles (and an admin whose switch fails) get the in-place 403 (AC-01.4).
+ * `layout: 'user'` is the existing student frame; the pages render inside the learner layout once it
+ * replaces it.
  */
 const base = {
   layout: 'user',
   access: 'auth',
-  roles: ['student', 'admin'],
+  roles: ['student'],
+  modPelajarForAdmin: true,
   onForbidden: '403',
   module: 'M06',
   v2: true,

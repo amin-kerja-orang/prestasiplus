@@ -10,6 +10,10 @@
  *    `mustChangePassword` can open only `/password/change` and `/logout` (one trailing slash
  *    ignored, query and hash ignored; a nested path is not exempt); every other path (login,
  *    register, reset links included) goes to `/password/change`, ahead of the role and scope checks.
+ * 2c. **Mod Pelajar for the admin**: a route flagged `modPelajarForAdmin` (a student-only page) opened
+ *    directly by a plain Admin Pusat first runs `enterModPelajar()`; the role check below then sees the
+ *    student session and lets the requested route load (full path kept). If the switch fails the error
+ *    flash is queued and the role check refuses as usual (403), so there is no retry or redirect loop.
  * 3. **Role**: `roles` set and the role not in it → `onForbidden` (default `403`): `landing` redirects to the
  *    server-given `landingPath` (BR-07); `403` / `404` render the error page in place.
  * 4. **Guest pages have no guard**: `/login` and `/register` render for a logged-in user too
@@ -34,6 +38,7 @@ import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 import { useShellStore } from '@/stores/shell'
+import { enterModPelajar } from '@/shells/shared/mod-pelajar'
 
 import { isFeatureRouteOff } from '../features'
 import {
@@ -67,6 +72,8 @@ export function isSafeRedirect(value: unknown): value is string {
   return !['/login', '/logout', '/register'].includes(path)
 }
 
+export const MOD_PELAJAR_FAILED_MESSAGE = 'Mod Pelajar tidak dapat dibuka. Sila cuba lagi.'
+
 /** Name of the catch-all 404 route (core-routes.ts). */
 const NOT_FOUND_ROUTE_NAME = 'core.not-found'
 
@@ -77,12 +84,71 @@ export interface GuardSession {
   readonly landingPath: string | null
   /** The session is flagged: only `/password/change` and `/logout` may open (AM2-A1). */
   readonly mustChangePassword?: boolean
+  /** Mod Pelajar is already on (the active role is then the student's). */
+  readonly mode?: unknown
 }
 
 export type AccessDecision =
   { kind: 'allow' } | { kind: 'redirect'; to: string } | { kind: 'in-place'; status: RouteOutcome }
 
 const ALLOW: AccessDecision = { kind: 'allow' }
+
+/** Whether the student could open `to` (role, prototype scope and feature switches), judged as a student. */
+function studentCanOpen(to: RouteLocationNormalized, session: GuardSession): boolean {
+  return (
+    decideAccess(to, {
+      ...session,
+      isLoggedIn: true,
+      role: 'student',
+      mustChangePassword: false,
+      mode: undefined,
+    }).kind === 'allow'
+  )
+}
+
+/**
+ * A `modPelajarForAdmin` page the student could not open either (outside the student prototype scope
+ * or switched off) is not reached through Mod Pelajar: the plain admin keeps seeing it as before, so
+ * it is never switched into a mode that would only answer 404.
+ */
+function adminKeepsStudentRoute(to: RouteLocationNormalized, session: GuardSession): boolean {
+  return (
+    to.meta.modPelajarForAdmin === true && session.role === 'admin' && !studentCanOpen(to, session)
+  )
+}
+
+/**
+ * A plain Admin Pusat (not in Mod Pelajar, password not flagged) opening a `modPelajarForAdmin` page
+ * the student may open: the guard switches into Mod Pelajar on arrival, so the page counts as allowed
+ * (a post-login or 401 return keeps it). Shared by the guard and `resolvePostLoginTarget`.
+ */
+export function wouldEnterModPelajar(to: RouteLocationNormalized, session: GuardSession): boolean {
+  return (
+    to.meta.modPelajarForAdmin === true &&
+    session.isLoggedIn &&
+    session.role === 'admin' &&
+    session.mustChangePassword !== true &&
+    !session.mode &&
+    studentCanOpen(to, session)
+  )
+}
+
+/** The switch in flight: concurrent navigations await it instead of starting another. */
+let modSwitch: Promise<void> | null = null
+
+async function switchToModPelajar(session: GuardSession): Promise<void> {
+  modSwitch ??= enterModPelajar()
+    .then(() => undefined)
+    .finally(() => {
+      modSwitch = null
+    })
+  try {
+    await modSwitch
+  } catch {
+    // A concurrent navigation may have succeeded meanwhile: no error flash then.
+    if (session.role === 'admin' && !session.mode) useFlashStore().error(MOD_PELAJAR_FAILED_MESSAGE)
+  }
+}
 
 /** Steps 2–3 of overview §5.4 for an already checked session. Pure, for unit tests. */
 export function decideAccess(to: RouteLocationNormalized, session: GuardSession): AccessDecision {
@@ -102,7 +168,11 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     return { kind: 'redirect', to: LOGIN_PATH }
   }
 
-  if (roles !== undefined && (session.role === null || !roles.includes(session.role))) {
+  if (
+    roles !== undefined &&
+    (session.role === null || !roles.includes(session.role)) &&
+    !adminKeepsStudentRoute(to, session)
+  ) {
     // The server landing of this role is the refused path itself (the API lands a school admin on `/admin`,
     // admin only): send it to its own home, not a 403 (D106, G4 #394). Scope on or off.
     if (
@@ -163,9 +233,12 @@ export function installGuards(router: Router): void {
   // that fails to load) never commits it, so the page still shown keeps its own outcome.
   let pendingOutcome: RouteOutcome | null = null
 
-  router.beforeEach((to): RouteLocationRaw | true => {
+  router.beforeEach(async (to): Promise<RouteLocationRaw | true> => {
     const session = useSessionStore()
     session.check()
+
+    // Step 2c: a plain admin on a student-only route enters Mod Pelajar once, then is judged as the student.
+    if (wouldEnterModPelajar(to, session)) await switchToModPelajar(session)
 
     const decision = decideAccess(to, session)
     pendingOutcome = decision.kind === 'in-place' ? decision.status : null
@@ -238,5 +311,9 @@ export function resolvePostLoginTarget(
   if (!isSafeRedirect(redirect)) return landing
   const resolved = router.resolve(redirect)
   if (resolved.name === NOT_FOUND_ROUTE_NAME) return landing
-  return decideAccess(resolved as RouteLocationNormalized, session).kind === 'allow' ? resolved.fullPath : landing
+  const target = resolved as RouteLocationNormalized
+  // A plain admin returns to a student page too: the guard switches into Mod Pelajar on arrival.
+  return decideAccess(target, session).kind === 'allow' || wouldEnterModPelajar(target, session)
+    ? resolved.fullPath
+    : landing
 }
