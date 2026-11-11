@@ -438,7 +438,8 @@ test.describe('QA navigation reachable from S1 to S5', TAG, () => {
     for (const s of SCREENS.slice(1)) {
       if (isDesktopShell(page)) {
         await expect(page.getByTestId('pembelajaran-nav')).toBeVisible()
-        await page.getByTestId('pembelajaran-nav').locator(`[data-nav-id="${s.nav}"]`).click()
+        // the Pembelajaran menu rows carry no data-nav-id: find the row by its target
+        await page.getByTestId('pembelajaran-nav').locator(`a[href="${navHref(s.nav)}"]`).first().click()
       } else {
         const item = (await openMenu(page)).locator(`a[href="${navHref(s.nav)}"]`)
         await expect(item).toBeVisible()
@@ -480,7 +481,8 @@ test.describe('QA server error state on S2, S4, S5', TAG, () => {
   test('QA-ERR network error on S5 shows an error block as well', async ({ page, gotoApp, mock }) => {
     await signIn(page, P1)
     await open(page, gotoApp, SCREENS[0]!)
-    await mock.networkErrorNext('/api/admin-sekolah/laporan-bulanan')
+    // a GET is retried twice by the client (src/api/client.ts RETRY_DELAYS_MS): arm three faults
+    for (let i = 0; i < 3; i++) await mock.networkErrorNext('/api/admin-sekolah/laporan-bulanan')
     await spaGoto(page, SCREENS[4]!.path)
     await expect(page.getByTestId('lb-error')).toBeVisible({ timeout: 60_000 })
     await expect(page.getByTestId('lb-cards')).toHaveCount(0)
