@@ -45,6 +45,7 @@ Setiap baris mesti lulus dengan bukti sebenar (output ujian, laporan recon, tang
 | KP-18 | Turutan kerja selepas bina semula ke-5 | Diputuskan 11 Nov (PO melalui mandor, mengatasi turutan sebelum ini): (1) siapkan FUNGSI V3 supaya berfungsi dengan data V2 seperti diklon; (2) klon DB V2 baharu ke UAT (kelulusan PO); (3) BARU bersihkan data. Semua kerja pembaikan data DIHENTIKAN sekarang: tiada larian semula sektor di UAT (kanonik, kertas, verify untuk M-B), tiada penyempurnaan ahli group_split (KP-16 ditangguh ke fasa pembersihan), tiada recompute/repoint kertas di UAT. Kod migrasi yang sudah di-commit kekal dalam git tetapi tidak dijalankan semula. Bila V3 gagal pada data V2 yang ganjil, baiki KOD V3 (bacaan bertoleransi, placeholder, tiada 500), jangan ubah data. |
 | KP-19 | Skop peranan UAT | Diputuskan 11 Nov (PO terus dalam sesi LEAD): kekal skop sekarang — murid, guru, admin sekolah, admin pusat. Ibu bapa, PPD/JPN, penaja dan notifikasi murid (/notifikasi + loceng) kekal di luar skop prototaip (D48) buat masa ini; bukan kecacatan dalam audit UAT. |
 | KP-20 | 181 soalan berstruktur diluluskan yang dipaparkan tanpa rajah (pautan stimulus V2 hilang semasa migrasi) | Diputuskan 11 Nov (PO melalui mandor): TIADA peraturan paparan sementara; tunggu klon V2 baharu dengan pemuat yang dibaiki (pautan stimulus sendiri + semakan verify). |
+| KP-21 | Label mod Studio untuk bahagian V2 "working" dan "drawing" | Diluluskan 11 Nov (PO melalui mandor): "Langkah kerja" dan "Lukisan" (V2 tiada nama mod; perkataan V3). |
 
 ## 3. Fasa dan jadual
 
