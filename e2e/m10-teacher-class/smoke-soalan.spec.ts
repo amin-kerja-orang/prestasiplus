@@ -141,6 +141,7 @@ test.describe('S21 as the admin', MODULE, () => {
     const cards = page.getByTestId('question-card')
     await expect(cards).toHaveCount(20)
     const first = cards.first()
+    // data deferred: question id anchor 522425 (questions-spec.ts:685) vs mock 522452
     await expect(first).toHaveAttribute('data-question-id', '522425')
     // Subject / source / text of 522425 differ in the M04 seed from the observed anchor (reported to M04).
     await expect(first.getByTestId('chip-subject')).not.toHaveText('')
@@ -311,13 +312,19 @@ test.describe('S21 as the teacher', MODULE, () => {
     await expect(page.getByTestId('paper-tahun')).toHaveAttribute('max', '2099')
     await expect(page.getByTestId('paper-oleh')).toHaveAttribute('maxlength', '150')
     await expect(page.getByTestId('paper-catatan')).toHaveAttribute('maxlength', '1000')
-    await expect(page.getByTestId('paper-files')).toHaveAttribute(
-      'accept',
-      '.pdf,.doc,.docx,.xls,.xlsx',
-    )
-    await expect(page.getByTestId('paper-drop')).toContainText(
-      'Klik untuk pilih fail PDF (teks), DOCX, XLSX — maks 5 fail, 20MB setiap fail',
-    )
+    // The real API accepts only PDF, DOCX, XLSX (guru-paper-intake.adapter.ts:80-82): V2's .doc/.xls are a recorded backend backlog item.
+    await expect(page.getByTestId('paper-files')).toHaveAttribute('accept', '.pdf,.docx,.xlsx')
+    // DsFileField: label "Klik untuk pilih fail" and the hint (HantarKertasCard.vue:331-332).
+    await expect(page.getByText('Klik untuk pilih fail', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText('PDF (teks), DOCX, XLSX — maks 5 fail, 20MB setiap fail'),
+    ).toBeVisible()
+    await page
+      .getByTestId('paper-files')
+      .setInputFiles([{ name: 'lama.doc', mimeType: 'application/msword', buffer: Buffer.from('x') }])
+    await expect(
+      page.getByText('Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.'),
+    ).toBeVisible()
     await page.getByTestId('paper-files').setInputFiles([
       { name: 'kertas.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(1024 * 1024) },
       { name: 'skema.docx', mimeType: 'application/octet-stream', buffer: Buffer.from('x') },
@@ -538,6 +545,7 @@ test.describe('S21-S24 observed anchors', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/guru/soalan')
     const first = page.getByTestId('question-card').first()
+    // data deferred: question id anchor 522425 (questions-spec.ts:685) vs mock 522452
     await expect(first).toHaveAttribute('data-question-id', '522425')
     await expect(first.getByTestId('chip-subject')).toHaveText('Bahasa Melayu')
     await expect(first.getByTestId('chip-level')).toHaveText('Darjah 6')
