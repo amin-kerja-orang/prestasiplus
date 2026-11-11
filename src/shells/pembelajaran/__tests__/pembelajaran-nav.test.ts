@@ -22,7 +22,16 @@ import {
   sidebarEntries,
 } from '../pembelajaran-nav'
 
-beforeEach(() => vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on'))
+const flags = vi.hoisted(() => ({ tiketBantuan: true }))
+vi.mock('@/app/features', async (orig) => ({
+  ...(await orig<typeof import('@/app/features')>()),
+  isServerFeatureOn: (key: string) => (key === 'tiket-bantuan' ? flags.tiketBantuan : true),
+}))
+
+beforeEach(() => {
+  vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+  flags.tiketBantuan = true
+})
 afterEach(() => vi.unstubAllEnvs())
 
 describe('Pembelajaran shell selection', () => {
@@ -169,6 +178,20 @@ describe('Pembelajaran Nuxt UI menu data', () => {
     for (const role of roles) {
       const labels = accountLinks(role).map((l) => l.label)
       expect(labels, role).toEqual(['Profil Saya', 'Tetapan Peribadi', 'Panduan', 'Tiket Bantuan'])
+    }
+  })
+
+  it('C-25: the Tiket Bantuan link follows the tiket-bantuan flag, with prototype scope on and off', () => {
+    for (const scope of ['on', 'off']) {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', scope)
+      for (const role of roles) {
+        flags.tiketBantuan = true
+        expect(accountLinks(role).map((l) => l.id), `${scope} ${role} flag on`).toContain('tiket')
+        flags.tiketBantuan = false
+        const off = accountLinks(role).map((l) => l.id)
+        expect(off, `${scope} ${role} flag off`).not.toContain('tiket')
+        expect(off, `${scope} ${role} flag off`).toContain('profil')
+      }
     }
   })
 

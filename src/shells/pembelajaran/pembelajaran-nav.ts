@@ -7,6 +7,7 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import type { Router } from 'vue-router'
 
+import { isServerFeatureOn } from '@/app/features'
 import { isPathAllowed, isPrototypeScopeOn } from '@/app/prototype-scope'
 import { FALLBACK_PH, FA_TO_PH } from '@/theme/learn-icons'
 import {
@@ -419,5 +420,8 @@ const ACCOUNT_LINKS: readonly AccountLink[] = [
 
 /** Section A links the role may open (prototype scope); Log Keluar is added by the layout. */
 export function accountLinks(role: Role | null): AccountLink[] {
-  return ACCOUNT_LINKS.filter((l) => isPathAllowed(role, l.to))
+  // D115: the Tiket Bantuan link follows the `tiket-bantuan` flag (its id is 'tiket', not a NAV_FEATURE_KEYS entry).
+  return ACCOUNT_LINKS.filter(
+    (l) => isPathAllowed(role, l.to) && (l.id !== 'tiket' || isServerFeatureOn('tiket-bantuan')),
+  )
 }
