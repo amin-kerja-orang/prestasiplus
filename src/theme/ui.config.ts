@@ -210,9 +210,9 @@ export const uiConfig = {
       // Loading: the leading icon spins (stock); the button shows progress and ignores clicks.
       loading: { true: { base: 'cursor-progress' } },
       size: {
-        // Touch targets: 44px below md, the compact sizes from md.
-        xs: { base: 'min-h-11 px-2.5 text-label md:min-h-9' },
-        sm: { base: 'min-h-11 px-3.5 text-label md:min-h-10' },
+        // Touch targets: 44px everywhere; the compact sizes only on staff surfaces from lg (C-65).
+        xs: { base: 'min-h-11 px-2.5 text-label staff:lg:min-h-9' },
+        sm: { base: 'min-h-11 px-3.5 text-label staff:lg:min-h-10' },
         md: {
           base: 'min-h-11 gap-2 px-4 text-label learner:min-h-13 learner:rounded-md learner:px-5 learner:text-base',
         },

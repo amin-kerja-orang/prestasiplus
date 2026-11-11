@@ -50,3 +50,20 @@ describe('UPagination controls (touch targets, C-64)', () => {
     expect(classes.filter((c) => /^(md:|lg:)(size|min-h|min-w)-/.test(c))).toEqual([])
   })
 })
+
+describe('Compact sizes are staff-from-lg only (C-65)', () => {
+  it.each(['xs', 'sm'])('button %s is 44px, compact only via staff:lg:', (size) => {
+    const classes = sizes[size]!.base.split(/\s+/)
+    expect(minHeightPx(sizes[size]!.base)).toBeGreaterThanOrEqual(44)
+    expect(classes.filter((c) => /^md:min-h-/.test(c))).toEqual([])
+    expect(classes.some((c) => /^staff:lg:min-h-\d+$/.test(c))).toBe(true)
+  })
+
+  it('menu rows are 44px, compact only via staff:lg:', () => {
+    const item = (uiConfig as unknown as { dropdownMenu: { slots: { item: string } } }).dropdownMenu.slots.item
+    const classes = item.split(/\s+/)
+    expect(classes).toContain('min-h-11')
+    expect(classes.filter((c) => /^md:min-h-/.test(c))).toEqual([])
+    expect(classes).toContain('staff:lg:min-h-10')
+  })
+})

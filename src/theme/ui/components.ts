@@ -27,7 +27,7 @@ const panel = 'z-50 rounded-lg bg-default p-1.5 shadow-modal ring-0'
  * focuses its first row on open, and an outline there drew a thick off-centre frame (PO 2026-11-09).
  */
 const item = [
-  'min-h-11 gap-2.5 rounded-sm px-3 py-2 text-label transition-colors duration-fast before:inset-0 before:rounded-sm md:min-h-10',
+  'min-h-11 gap-2.5 rounded-sm px-3 py-2 text-label transition-colors duration-fast before:inset-0 before:rounded-sm staff:lg:min-h-10',
   'data-highlighted:before:bg-elevated data-highlighted:not-data-disabled:before:bg-elevated data-[state=open]:before:bg-elevated',
   'data-[state=checked]:text-primary-t',
   'outline-none',
@@ -40,7 +40,7 @@ const item = [
  * The same row metrics are therefore repeated in every size variant; the label row shares the row's
  * left edge (px-3) so headings and icons line up.
  */
-const itemSize = 'min-h-11 gap-2.5 px-3 py-2 text-label md:min-h-10'
+const itemSize = 'min-h-11 gap-2.5 px-3 py-2 text-label staff:lg:min-h-10'
 const labelSize = 'gap-2.5 px-3 py-2 text-overline'
 const sizes = ['xs', 'sm', 'md', 'lg', 'xl'] as const
 export const menuSizeVariants = Object.fromEntries(
