@@ -48,6 +48,8 @@ ddl="$here/../../../apps/api/src/migration/ddl/staging_cloud.sql"; na="$(grep -c
 sed -i "s/archive_cloud:38 staging_cloud:89/archive_cloud:$na staging_cloud:$ns/; s/archive_cloud:38 staging_cloud:88/archive_cloud:$na staging_cloud:$((ns - 1))/" "$w/bin/docker"
 chmod +x "$w/bin/docker" "$w/bin/hostname"
 pass=0; fail=0
+# slot.sh pins the migrate image to the release: sha and tag agree for every command of this file (the pin itself is tested in test-rebuild-db.sh)
+export PP_RELEASE_SHA=0123456789abcdef0123456789abcdef01234567 PP_IMAGE_TAG=0123456789ab
 manifest() { printf '%s\n' "$1" >"$w/fx/manifest.json"; }
 prod() { printf '%s\n' "$@" >"$w/env/prod.env"; }
 SYN='{"format": "pp-staging-dump/1", "synthetic": true}'

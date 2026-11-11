@@ -30,8 +30,9 @@ case "$1" in
       *" ps "*) exit 0 ;;
       *pg_restore*--list*) cat >/dev/null; printf '1; 1259 1 TABLE DATA public users x\n2; 1259 2 TABLE DATA public schools x\n'; exit 0 ;;
       *" exec "*) [ -t 0 ] || cat >/dev/null; echo "${STUB_PSQL:-0}"; exit 0 ;;
+      # the image tag compose would interpolate into `image:` (the release must be pinned, never the :prod default)
       # the standalone migrate:core / migrate:activity CLIs reject --out-dir (load/command.ts CORE_KNOWN_FLAGS, load/activity/command.ts KNOWN_FLAGS)
-      *" run "*) case "$all" in *"migrate:core "*|*"migrate:activity "*) case "$all" in *" --out-dir"*) echo "unknown flag --out-dir." >&2; exit 2 ;; esac ;; esac; exit 0 ;;
+      *" run "*) echo "PP_IMAGE_TAG=${PP_IMAGE_TAG:-unset}" >>"$DOCKER_LOG"; case "$all" in *"migrate:core "*|*"migrate:activity "*) case "$all" in *" --out-dir"*) echo "unknown flag --out-dir." >&2; exit 2 ;; esac ;; esac; exit 0 ;;
     esac
     exit 0 ;;
   run)
@@ -307,10 +308,10 @@ slot() { # slot EXPECTED_EXIT TEXT ARGS...
   local want="$1" text="$2" rc=0; shift 2
   : >"$DOCKER_LOG"
   # shellcheck disable=SC2086
-  env ${EXTRA_ENV:-} PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash "$vps/migration/slot.sh" "$@" </dev/null >"$w/log" 2>&1 || rc=$?
+  env -u PP_IMAGE_TAG ${EXTRA_ENV:-} PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash "$vps/migration/slot.sh" "$@" </dev/null >"$w/log" 2>&1 || rc=$?
   if [ "$rc" = "$want" ] && grep -qF -- "$text" "$w/log"; then ok "slot.sh exit $rc: $text"; else bad "slot.sh want exit $want + '$text', got exit $rc" "$w/log"; fi
 }
-mkprod; mkdb pp_uat
+mkprod; mkdb pp_uat; printf '%s\n' "${SHA:0:12}" >"$w/state/current.tag"
 slot 0 'ETL STEP migrate:verify exit=0' etl migrate:verify
 if grep -q 'PP_VERIFY_ACCEPT_REJECTS' "$DOCKER_LOG" || grep -q 'WARNING' "$w/log"; then bad 'verify without an allowlist got the variable or a warning anyway'; else ok 'no allowlist configured: nothing passed to the container, no warning'; fi
 EXTRA_ENV="PP_VERIFY_ACCEPT_REJECTS=exam_questions|INVALID_VALUE|stem=3"
@@ -355,6 +356,19 @@ slot 0 'ETL STEP migrate:questions exit=0' etl migrate:questions --plan
 if grep -qF -e '--out-dir /app/apps/api/.migration-out' "$DOCKER_LOG"; then ok 'migrate:questions still gets --out-dir appended'; else bad 'migrate:questions lost --out-dir' "$DOCKER_LOG"; fi
 mnt 0 migrate:questions
 STUB_PSQL=1 slot 2 'ETL STEP migrate:core exit=2' etl migrate:core --out-dir=/x --as-of=2026-11-10   # an explicit --out-dir is the CLI's own rejection (the stub mimics it)
+# image pin: the migrate image is the release, never the compose default :prod (UAT: :prod was a stale build)
+slot 0 'image tag 0123456789ab' etl migrate:questions --plan
+if grep -qx 'PP_IMAGE_TAG=0123456789ab' "$DOCKER_LOG"; then ok 'no PP_IMAGE_TAG: current.tag is exported to the compose run'; else bad 'compose run did not get the current.tag' "$DOCKER_LOG"; fi
+EXTRA_ENV="PP_IMAGE_TAG=0123456789ab" slot 0 'image tag 0123456789ab' etl migrate:questions --plan
+if grep -qx 'PP_IMAGE_TAG=0123456789ab' "$DOCKER_LOG"; then ok 'an explicit matching PP_IMAGE_TAG is honoured'; else bad 'explicit tag lost' "$DOCKER_LOG"; fi
+EXTRA_ENV="PP_IMAGE_TAG=aaaaaaaaaaaa" slot 2 'is not the release 0123456789ab' etl migrate:questions --plan
+if grep -q '^PP_IMAGE_TAG=' "$DOCKER_LOG"; then bad 'a mismatching explicit tag still ran the container' "$DOCKER_LOG"; else ok 'a mismatching explicit tag starts nothing'; fi
+printf 'aaaaaaaaaaaa\n' >"$w/state/current.tag"; slot 2 'is not the release 0123456789ab' etl migrate:core --dry-run --as-of=2026-11-10
+rm -f "$w/state/current.tag"; slot 2 'current.tag is missing or empty' etl migrate:questions --plan
+: >"$w/state/current.tag"; slot 2 'current.tag is missing or empty' etl migrate:questions --plan
+printf '%s\n' "${SHA:0:12}" >"$w/state/current.tag"
+EXTRA_ENV="STUB_IMG_PRESENT=0" slot 2 'pretasiplus-api-migrate:0123456789ab is not on this server' etl migrate:questions --plan
+EXTRA_ENV=""
 mkprod; EXTRA_ENV="PP_RELEASE_SHA=zz" slot 3 'cannot determine the release sha' etl migrate:core --as-of=2026-11-10; EXTRA_ENV=""
 slot 2 'etl COMMAND' etl migrate:nothing
 
