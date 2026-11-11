@@ -35,6 +35,7 @@ import {
 } from '../repository/guru-structured'
 import { structuredRepo } from '../repository/structured'
 import type { StructuredQuestion } from '../repository/types'
+import { structuredRubricRoutes } from './structured-rubric'
 import { adminOnly, excerpt, nameLookup, queryFilterId, userRef } from './workflow-common'
 
 /** API-GUR-26 (S6-T17): teacher read mount; the admin routes below are unchanged. */
@@ -298,4 +299,5 @@ export const structuredRoutes: RouteDef[] = [
     },
     { params: { id: int() } },
   ),
+  ...structuredRubricRoutes,
 ]
