@@ -242,7 +242,7 @@ const TITLES: TitleCase[] = [
     who: 'admin',
     path: '/leaderboard',
     title: 'Papan Pendahulu',
-    subtitle: 'Siapa juara minggu ini?',
+    subtitle: 'Kedudukan pelajar terbaik mengikut syiling',
   },
   {
     who: 'admin',

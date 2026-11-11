@@ -104,10 +104,13 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
           await gotoApp(url)
           await expect(rowsOf(page)).toHaveCount(46)
           await expectTabTitle(page, 'Papan Pendahulu | PRESTASIPLUS')
-          await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveText('Papan Pendahulu')
-          await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText(
-            'Siapa juara minggu ini?',
+          await expect(page.locator('[data-testid=pentadbiran-header] :is(h1, [data-testid=shell-title])')).toHaveText('Papan Pendahulu')
+          await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
+            'Kedudukan pelajar terbaik mengikut syiling',
           )
+          // V2 pelajar/leaderboard.blade.php:53-62 hero banner (title + tagline); restored by C-28 fa26c0da9, subtitle per C-29.
+          await expect(page.getByTestId('leaderboard-hero')).toContainText('Papan Pendahulu')
+          await expect(page.getByTestId('leaderboard-hero')).toContainText('Siapa kumpul syiling paling banyak?')
           await expect(page.locator('[data-testid=leaderboard-tabs] a')).toHaveText([
             'Semua Masa',
             'Minggu Ini',
@@ -116,7 +119,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
           await expect(activeTab(page)).toHaveText(['Minggu Ini'])
 
           await expect(page.getByTestId('me-rank')).toContainText('#-')
-          await expect(page.getByTestId('me-coins')).toHaveText('0')
+          await expect(page.getByTestId('me-coins')).toHaveText('0Syiling')
           await expect(page.getByTestId('me-sessions')).toHaveText('0')
           await expect(page.getByTestId('me-accuracy')).toHaveText('0%')
 
@@ -159,7 +162,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       await expect(rowsOf(page)).toHaveCount(50)
       await expect(activeTab(page)).toHaveText(['Semua Masa'])
       await expect(page.getByTestId('me-rank')).toContainText('#1050')
-      await expect(page.getByTestId('me-coins')).toHaveText('26')
+      await expect(page.getByTestId('me-coins')).toHaveText('26Syiling')
       await expect(page.getByTestId('me-sessions')).toHaveText('4')
       await expect(page.getByTestId('me-accuracy')).toHaveText('22%')
       // The live 101% is shown capped (DV-07, FR-M08-124).
@@ -207,8 +210,9 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
         '98%',
       ])
       await expect(page.getByTestId('leaderboard-footer')).toContainText('50 peserta bersaing')
-      // The subtitle stays for every period.
-      await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText('Siapa juara minggu ini?')
+      // The hero text stays for every period (V2 hero banner, see above).
+      await expect(page.getByTestId('leaderboard-hero')).toContainText('Siapa kumpul syiling paling banyak?')
+      await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText('Kedudukan pelajar terbaik mengikut syiling')
       await expectNoHorizontalScroll(page)
     })
 
@@ -279,7 +283,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
         await gotoApp('/leaderboard')
         await expect(rowsOf(page)).toHaveCount(46)
         await expect(page.getByTestId('me-rank')).toContainText('#39')
-        await expect(page.getByTestId('me-coins')).toHaveText('70')
+        await expect(page.getByTestId('me-coins')).toHaveText('70Syiling')
         await expect(page.getByTestId('me-sessions')).toHaveText('4')
         await expect(page.getByTestId('me-accuracy')).toHaveText('65%')
         await expect(rowsOf(page).nth(38).getByTestId('row-name')).toHaveText('Pelajar Demo')
@@ -295,10 +299,10 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       },
     )
 
-    test('S19 is open to every role: the same national list', async ({ page, gotoApp }) => {
+    test('S19 is open to the pupil: rank cards and the Sekitar anda neighbours (the old 3-row national list is gone)', async ({ page, gotoApp }) => {
       await gotoApp('/ranking')
-      await expect(page.getByTestId('ranking-row')).toHaveCount(3)
-      await expect(page.getByTestId('ranking-footer')).toHaveText('Menunjukkan 3 dari 3 pelajar')
+      await expect(page.getByTestId('ranking-cards')).toBeVisible()
+      await expect(page.getByTestId('ranking-nearby-row').first()).toBeVisible()
       await expectNoHorizontalScroll(page)
     })
   })
