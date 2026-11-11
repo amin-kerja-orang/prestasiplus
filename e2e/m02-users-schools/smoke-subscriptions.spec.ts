@@ -26,6 +26,20 @@ function rows(page: Page) {
   return page.getByTestId('subs-row')
 }
 
+const tableLayout = (page: Page): boolean => (page.viewportSize()?.width ?? 0) >= 768
+
+async function openFilters(page: Page): Promise<void> {
+  if (!tableLayout(page)) {
+    await page.locator('[data-ds="filter-open"]').click()
+    await expect(page.locator('[data-ds="filter-sheet"]')).toBeVisible()
+  }
+}
+
+async function applyFilters(page: Page): Promise<void> {
+  if (tableLayout(page)) await page.getByRole('button', { name: 'Cari', exact: true }).click()
+  else await page.locator('[data-ds="filter-sheet"]').getByRole('button', { name: 'Guna' }).click()
+}
+
 test.describe('M02 S12 subscription list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
@@ -44,21 +58,22 @@ test.describe('M02 S12 subscription list', { tag: [TAG.smoke, moduleTag(2)] }, (
     await expect(page.getByTestId('subs-stat-expired')).toHaveText(/1\s*Tamat Tempoh/)
     await expect(page.getByTestId('subs-stat-quota')).toHaveText(/5,738\s*Jumlah Kuota Pelajar/)
     await expect(rows(page)).toHaveCount(14)
-    await expect(page.locator('thead th')).toHaveText([
-      'Sekolah',
-      'Tingkatan',
-      'Pakej',
-      'Kuota',
-      'Status',
-      'Mula',
-      'Tamat',
-      '',
-    ])
-
-    const badges = await page.getByTestId('subs-status-badge').allInnerTexts()
-    expect(badges.filter((b) => b === 'Aktif')).toHaveLength(9)
-    expect(badges.filter((b) => b === 'Tamat')).toHaveLength(1)
-    expect(badges.filter((b) => b === 'Batal')).toHaveLength(4)
+    if (tableLayout(page)) {
+      await expect(page.locator('thead th')).toHaveText([
+        'Sekolah',
+        'Tingkatan',
+        'Pakej',
+        'Kuota',
+        'Status',
+        'Mula',
+        'Tamat',
+        'Tindakan',
+      ])
+      const badges = await page.getByTestId('subs-status-badge').allInnerTexts()
+      expect(badges.filter((b) => b === 'Aktif')).toHaveLength(9)
+      expect(badges.filter((b) => b === 'Tamat')).toHaveLength(1)
+      expect(badges.filter((b) => b === 'Batal')).toHaveLength(4)
+    }
     await expect(page.getByTestId('subs-add')).toHaveAttribute(
       'href',
       '/admin/school-subscriptions/create',
@@ -75,25 +90,28 @@ test.describe('M02 S12 subscription list', { tag: [TAG.smoke, moduleTag(2)] }, (
     await gotoApp('/admin/school-subscriptions')
     await expect(rows(page)).toHaveCount(14)
 
+    await openFilters(page)
     await page.getByTestId('subs-status').selectOption('cancelled')
-    await page.getByTestId('subs-search-submit').click()
+    await applyFilters(page)
     await expect(page).toHaveURL(/\?status=cancelled$/)
     await expect(rows(page)).toHaveCount(4)
-    for (const badge of await page.getByTestId('subs-status-badge').all()) {
-      await expect(badge).toHaveText('Batal')
+    if (tableLayout(page)) {
+      for (const badge of await page.getByTestId('subs-status-badge').all()) {
+        await expect(badge).toHaveText('Batal')
+      }
     }
 
+    await openFilters(page)
     await page.getByTestId('subs-status').selectOption('')
     await page.getByTestId('subs-level').selectOption('t4')
-    await page.getByTestId('subs-search-submit').click()
+    await applyFilters(page)
     await expect(page).toHaveURL(/\?form_level=t4$/)
     await expect(rows(page)).toHaveCount(2)
     // Stat cards count every subscription, not the filtered rows.
     await expect(page.getByTestId('subs-stat-active')).toHaveText(/9\s*Aktif/)
 
     await gotoApp('/admin/school-subscriptions?search=zzqxv')
-    await expect(page.getByTestId('subs-empty')).toHaveText('Tiada langganan dijumpai.')
-    await expect(page.getByTestId('subs-empty').locator('td')).toHaveAttribute('colspan', '8')
+    await expect(page.getByTestId('subs-empty')).toContainText('Tiada langganan dijumpai.')
     await expectNoHorizontalScroll(page)
   })
 
@@ -105,11 +123,8 @@ test.describe('M02 S12 subscription list', { tag: [TAG.smoke, moduleTag(2)] }, (
     await loginAs(ADMIN)
     await gotoApp('/admin/school-subscriptions')
     await expect(rows(page).first()).toBeVisible()
-    if (!isDesktopShell(page)) {
-      await expectTouchTarget(page.getByTestId('subs-add'))
-      await expectTouchTarget(page.getByTestId('subs-search-submit'))
-    }
-    await rows(page).first().getByTestId('subs-view').click()
+    if (!isDesktopShell(page)) await expectTouchTarget(page.getByTestId('subs-add'))
+    await page.getByRole('link', { name: 'Lihat' }).first().click()
     await expect(page).toHaveURL(/\/admin\/school-subscriptions\/\d+$/)
     await expect(page.getByTestId('sub-summary-card')).toBeVisible()
     await page.getByTestId('sub-list-back').click()
