@@ -14,10 +14,11 @@ import type { Locator, Page } from '@playwright/test'
 
 import { expect } from '../fixtures/test'
 
-/** The Portal Pentadbiran navbar names the page; a page subtitle comes only from `DsPageHeader`. */
-export async function expectAdminHeader(page: Page, title: string): Promise<void> {
+/** The Portal Pentadbiran navbar names the page; it prints a subtitle only when the page owns one (no role default). */
+export async function expectAdminHeader(page: Page, title: string, subtitle?: string): Promise<void> {
   await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText(title)
-  await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
+  if (subtitle === undefined) await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
+  else await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(subtitle)
 }
 
 /** `{shell header title} | PRESTASIPLUS` (docs/design/v2-copy-glossary.md, "Tab title"). */

@@ -86,7 +86,7 @@ test.describe('M14 S14 /gamification/leaderboard', MODULE, () => {
     await gotoApp('/gamification/leaderboard')
     await expect(page.getByTestId('lb-podium-card')).toHaveCount(3)
     await expectTabTitle(page, tabTitle('Papan Pendahulu'))
-    await expectAdminHeader(page, 'Papan Pendahulu')
+    await expectAdminHeader(page, 'Papan Pendahulu', 'Kedudukan pelajar terbaik mengikut syiling')
     await expect(page.getByTestId('leaderboard-hero')).toContainText('🏆 Papan Pendahulu')
     await expect(page.getByTestId('leaderboard-hero')).toContainText('Siapa paling rajin belajar?')
 
@@ -206,8 +206,8 @@ test.describe('M14 S15 /gamification/achievements', MODULE, () => {
   }) => {
     await gotoApp('/gamification/achievements')
     await expect(page.getByTestId('badge-card')).toHaveCount(25)
-    await expectTabTitle(page, tabTitle('Pencapaian Anda'))
-    await expectAdminHeader(page, 'Pencapaian Anda')
+    await expectTabTitle(page, tabTitle('Pencapaian'))
+    await expectAdminHeader(page, 'Pencapaian', 'Lencana yang anda telah buka sepanjang perjalanan belajar') // V2 gamifikasi-achievements.blade.php:3-4
     await expect(page.getByTestId('achievements-hero')).toContainText('🏅 Pencapaian Anda')
     await expect(page.getByTestId('achievements-subtitle')).toHaveText(
       'Kumpul lencana dan capai pencapaian — 0/25 dicapai',
@@ -336,8 +336,8 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
   test('SRS §12 #40 render, copy code, copy link, share links', async ({ page, gotoApp }) => {
     await gotoApp('/gamification/referral')
     await expect(page.getByTestId('referral-code')).toHaveText('4JURJTT')
-    await expectTabTitle(page, tabTitle('Rujuk Kawan, Dapat Syiling!'))
-    await expectAdminHeader(page, 'Rujuk Kawan, Dapat Syiling!')
+    await expectTabTitle(page, tabTitle('Rujuk Kawan'))
+    await expectAdminHeader(page, 'Rujuk Kawan', 'Jemput kawan sertai PrestasiPlus dan dapatkan syiling bonus') // V2 gamifikasi-referral.blade.php:3-4
     await expect(page.getByTestId('referral-hero')).toContainText('🤝 Rujuk Kawan, Dapat Syiling!')
     await expect(page.getByTestId('referral-hero')).toContainText(
       'Jemput kawan sertai PrestasiPlus dan dapatkan syiling bonus',
@@ -427,7 +427,7 @@ test.describe('M14 S18 /gamification/kad-kongsi', MODULE, () => {
     await gotoApp('/gamification/kad-kongsi')
     await expect(page.getByTestId('kad-profil-card')).toBeVisible()
     await expectTabTitle(page, tabTitle('Kad Kongsi'))
-    await expectAdminHeader(page, 'Kad Kongsi')
+    await expectAdminHeader(page, 'Kad Kongsi', 'Kongsi pencapaian anda')
     await expect(page.getByTestId('kad-tabs').getByRole('button')).toHaveText([
       'Profil',
       'Kombo',

@@ -74,7 +74,7 @@ test.describe('M15 S10 Kedai Hadiah Digital', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/hadiah')
     await expectTabTitle(page, 'Kedai Hadiah Digital | PRESTASIPLUS')
-    await expectAdminHeader(page, 'Kedai Hadiah Digital')
+    await expectAdminHeader(page, 'Kedai Hadiah Digital', 'Selamat datang kembali')
     await expect(page.getByTestId('digital-title')).toHaveText('🎁 Kedai Hadiah Digital')
     await expect(
       page.getByText('Tukar token kepada hadiah digital — terus dihantar, tanpa pos.'),
@@ -208,7 +208,7 @@ test.describe('M15 S11 Tebusan Saya', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/hadiah/saya')
     await expectTabTitle(page, 'Tebusan Saya | PRESTASIPLUS')
-    await expectAdminHeader(page, 'Tebusan Saya')
+    await expectAdminHeader(page, 'Tebusan Saya', 'Selamat datang kembali')
     await expect(page.getByTestId('redemptions-title')).toHaveText('📋 Tebusan Saya')
     await expect(page.getByTestId('redemptions-to-shop')).toHaveText('🎁 Kedai Hadiah')
     await expect(page.getByTestId('redemptions-to-shop')).toHaveAttribute('href', '/cikgu/hadiah')
