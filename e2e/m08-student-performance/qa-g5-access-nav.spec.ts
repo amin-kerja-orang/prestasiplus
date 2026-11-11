@@ -192,9 +192,9 @@ const TITLES: TitleCase[] = [
     who: 'admin',
     path: '/prestasi/kelas/228',
     title: 'ALFA - Bahasa Inggeris',
-    subtitle: /· Bahasa Inggeris · 2026$/,
+    subtitle: /· Bahasa Inggeris · 2026 · Kod: UDL749$/,
   },
-  { who: 'admin', path: '/prestasi/kelas/516', title: '4 Simulasi', subtitle: /· 2026$/ },
+  { who: 'admin', path: '/prestasi/kelas/516', title: '4 Simulasi', subtitle: /· 2026 · Kod: DEMO-4S$/ },
   {
     who: 'admin',
     path: '/analitik/pelajar',
@@ -209,7 +209,7 @@ const TITLES: TitleCase[] = [
   },
   {
     who: 'admin',
-    path: '/analisa-item/sekolah',
+    path: '/analisa-item/sekolah/8880',
     title: 'Analisa Item — Sekolah',
     subtitle: SEKOLAH,
   },
@@ -269,7 +269,12 @@ const TITLES: TitleCase[] = [
     title: 'Headcount — Prestasi Individu',
     subtitle: 'Selamat datang kembali',
   },
-  { who: 'admin', path: '/ranking', title: 'Kedudukan', subtitle: 'Selamat datang kembali' },
+  {
+    who: 'admin',
+    path: '/ranking',
+    title: 'Kedudukan',
+    subtitle: 'Di mana anda berdiri — dalam kelas, sekolah, negeri dan seluruh negara',
+  },
   {
     who: 'admin',
     path: '/headcount/213/summary',
@@ -353,7 +358,7 @@ test.describe(
     })
 
     for (const path of [
-      '/prestasi/tingkatan/t3',
+      '/prestasi/tingkatan/t0',
       '/prestasi/tingkatan/t6',
       '/prestasi/99999999',
       '/headcount/student/99999999',
@@ -413,7 +418,7 @@ test.describe(
       ['admin@demo.test', '/analisa-item/kelas'],
       ['guru@demo.test', '/analisa-item/kelas'],
       ['adminsekolah@demo.test', '/analisa-item/sekolah'],
-      ['pelajar@demo.test', '/dashboard'],
+      ['pelajar@demo.test', '/analisa-item'],
     ]
     for (const [who, target] of rows) {
       test(`${who} -> ${target}`, async ({ page, gotoApp, loginAs }) => {
@@ -433,7 +438,6 @@ test.describe(
     test.use({ mockInit: { latency: 0 } })
 
     for (const path of [
-      '/headcount',
       '/headcount/dashboard',
       '/headcount/create',
       '/analisa-item/kelas',
@@ -446,6 +450,14 @@ test.describe(
         await expectForbidden(page)
       })
     }
+
+    // S10-T09 / PRD AC-CHAIN-5, V2 routes/web.php:1280-1287: the pupil has her own /headcount and /analisa-item pages.
+    test('pelajar /headcount is the own read view, not the 403 page', async ({ page, gotoApp, loginAs }) => {
+      await loginAs('pelajar@demo.test')
+      await gotoApp('/headcount')
+      await expectTabTitle(page, 'Headcount | PRESTASIPLUS')
+      await expect(page.locator('[data-page=forbidden]')).toHaveCount(0)
+    })
 
     test('pelajar cannot open another pupil prestasi (/prestasi/3001)', async ({
       page,
