@@ -75,9 +75,10 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
     await expectTabTitle(page, '5 MARIKH - Kimia — Dashboard Kelas | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('5 MARIKH - Kimia')
-    // FR-M08-03: the subtitle is "{school} · {subject} · {year}" (no class code).
+    // FR-M08-31: "{sekolah} · {subjek} · {tahun} · Kod: {joinCode}" (C-47). Two nodes carry class-sub (page subtitle and the shell line): the first is the in-page one.
     await expect(header(page).subtitle).toContainText('· Kimia · 2026')
-    await expect(page.getByTestId('class-sub')).toContainText('· Kimia · 2026')
+    await expect(page.getByTestId('class-sub').first()).toContainText('· Kimia · 2026 · Kod: DMO101')
+    await expect(page.getByTestId('class-code')).toHaveText('DMO101')
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/prestasi/kelas')
 
     // V2 shows whole percents on the class card and the student rows (TeacherController.php:817, :75, :749).
@@ -215,7 +216,9 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/prestasi/kelas/4')
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
-    await expect(page.getByTestId('class-sub')).toContainText('Bahasa Melayu · 2026')
+    await expect(page.getByTestId('class-sub').first()).toContainText('Bahasa Melayu · 2026')
+    await expect(page.getByTestId('class-sub').first()).toContainText('Kod: KCC904')
+    await expect(page.getByTestId('class-code')).toHaveText('KCC904')
     await expect(statValues(page)).toHaveText(['58', '0%', '0', '0', '0m', '0'])
     await expect(page.getByTestId('attention-count')).toHaveText('(58)')
     await expect(page.getByTestId('trend-empty')).toContainText(
@@ -236,7 +239,8 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/prestasi/kelas/516')
     await expect(page.getByTestId('class-name')).toHaveText('4 Simulasi')
     // FR-M08-03: "{school} · {year}" for a class without subject.
-    await expect(page.getByTestId('class-sub')).toContainText('SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG · 2026')
+    await expect(page.getByTestId('class-sub').first()).toContainText('SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG · 2026 · Kod: DEMO-4S')
+    await expect(page.getByTestId('class-code')).toHaveText('DEMO-4S')
     await expect(page.getByTestId('hc-on')).toHaveText(/^7\s*On Track \/ Above$/)
     await expect(page.getByTestId('hc-below')).toHaveText(/^8\s*Below Target$/)
     await expect(page.getByTestId('hc-none')).toHaveText(/^0\s*Tiada Data$/)

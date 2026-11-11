@@ -70,8 +70,9 @@ test.describe('M08 G5 headcount gaps (admin)', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/prestasi/kelas/516')
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
     const t = await text(page)
-    // The class code (Kod) is not part of the subtitle (FR-M08-03, t7-class); the year is.
-    await expect(page.getByTestId('class-sub')).toContainText('2026')
+    // FR-M08-31: "{sekolah} · {subjek} · {tahun} · Kod: {joinCode}" (V2 has no per-class page, so V1/SRS applies). C-47 shows Kod.
+    await expect(page.getByTestId('class-sub').first()).toContainText('· 2026 · Kod: DEMO-4S')
+    await expect(page.getByTestId('class-code')).toHaveText('DEMO-4S')
     for (const f of ['📈 Headcount — Ringkasan Kelas', '0 Tiada Data', 'Purata TOV: 62.1%', 'Purata ETR: 71.9%', 'Lihat Penuh →']) {
       expect(t, f).toContain(f)
     }
