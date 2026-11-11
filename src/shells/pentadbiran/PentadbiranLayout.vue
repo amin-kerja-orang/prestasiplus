@@ -24,7 +24,7 @@ import { enterModPelajar } from '@/shells/shared/mod-pelajar'
 import { useShellTabTitle } from '@/shells/shared/useShellTabTitle'
 import { useThemeMode } from '@/theme/color-mode'
 
-import { PENTADBIRAN_FULL_MENU, activeItem, groupOf } from './menu'
+import { PENTADBIRAN_FULL_MENU, activeItem, groupOf, onMount } from './menu'
 import { redirectsFrom, renderMenu } from './menu/render'
 import { buildNavGroups, buildSearchGroups, sectionTabs } from './menu-nav'
 
@@ -84,9 +84,13 @@ const groups = computed(() =>
 const tabs = computed(() => {
   const sub = current.value?.nested ? undefined : current.value?.sub
   return sub
-    ? sectionTabs(menu, sub).map((t) => ({ key: t.to, label: t.label, to: t.to }))
+    ? sectionTabs(menu, sub).map((t) => {
+        const to = onMount(t.to, route.path)
+        return { key: to, label: t.label, to }
+      })
     : []
 })
+const activeTab = computed(() => (current.value ? onMount(current.value.to, route.path) : null))
 const searchGroups = buildSearchGroups(menu)
 
 const switching = ref(false)
@@ -137,7 +141,7 @@ const accountItems = computed<DsShellAccountItem[][]>(() => [
     <DsPillNav
       v-if="tabs.length > 0"
       :items="tabs"
-      :active="current?.to ?? null"
+      :active="activeTab"
       label="Bahagian Kirkpatrick"
       testid-prefix="section-tab"
       data-testid="pentadbiran-section-tabs"

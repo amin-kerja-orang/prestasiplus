@@ -72,9 +72,9 @@ describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
     )
   })
 
-  it('has the tab strip with T2 current and no filter form', async () => {
+  it('has no page tab strip on /admin (the shell draws it) and no filter form', async () => {
     const w = await open()
-    expect(t(w, 'kirk-tab-learning').attributes('data-active')).toBe('true')
+    expect(has(w, 'kirk-tabs')).toBe(false)
     expect(has(w, 'kirk-filter')).toBe(false)
   })
 
@@ -142,6 +142,6 @@ describe('S3 school table (AC-M12-13.1..13.3)', () => {
     const w = await open('/guru/kirkpatrick')
     expect(t(w, 'kirk-schools-scroller').attributes('data-ds')).toBe('data-table')
     expect(all(w, 'kirk-school-link')[0]!.attributes('href')).toBe('/guru/monitoring/sekolah/8880')
-    expect(t(w, 'kirk-tab-overview').attributes('href')).toBe('/guru/kirkpatrick')
+    expect(has(w, 'kirk-tabs')).toBe(false)
   })
 })

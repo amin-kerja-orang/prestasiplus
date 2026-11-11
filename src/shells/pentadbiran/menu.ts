@@ -206,8 +206,31 @@ export function groupOf(itemId: string): PentadbiranGroup | undefined {
   return PENTADBIRAN_MENU.find((g) => g.items.some((i) => i.id === itemId))
 }
 
+/**
+ * The Kirkpatrick screens are also mounted at `/guru/kirkpatrick` (layout `user`), which Admin Pusat
+ * opens in this portal. The menu lists the `/admin` pages only, so such a path resolves on its `/admin`
+ * twin (`adminTwin`) and the layout puts the section tabs back on the mount (`onMount`).
+ */
+const GURU_KIRKPATRICK = '/guru/kirkpatrick'
+const ADMIN_KIRKPATRICK = '/admin/kirkpatrick'
+
+function adminTwin(path: string): string {
+  return path === GURU_KIRKPATRICK || path.startsWith(`${GURU_KIRKPATRICK}/`)
+    ? ADMIN_KIRKPATRICK + path.slice(GURU_KIRKPATRICK.length)
+    : path
+}
+
+/** `to` (a menu target) moved onto the mount `path` is on: `/admin/kirkpatrick/x` -> `/guru/kirkpatrick/x` on a /guru path. */
+export function onMount(to: string, path: string): string {
+  if (adminTwin(path) === path) return to
+  return to === ADMIN_KIRKPATRICK || to.startsWith(`${ADMIN_KIRKPATRICK}/`)
+    ? GURU_KIRKPATRICK + to.slice(ADMIN_KIRKPATRICK.length)
+    : to
+}
+
 /** The active item: the longest `to` that equals the path or contains it at a `/` boundary. */
-export function activeItem(path: string): PentadbiranItem | undefined {
+export function activeItem(rawPath: string): PentadbiranItem | undefined {
+  const path = adminTwin(rawPath)
   let best: PentadbiranItem | undefined
   for (const item of ALL_ITEMS) {
     const hit = path === item.to || path.startsWith(`${item.to}/`)

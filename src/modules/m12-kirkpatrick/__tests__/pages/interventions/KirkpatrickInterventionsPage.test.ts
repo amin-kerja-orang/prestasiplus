@@ -91,9 +91,12 @@ describe('S7 KPIs and empty list (AC-M12-28.1, 28.3)', () => {
     expect(w.text()).not.toContain('Ambil Tindakan')
   })
 
-  it('has the tab strip with Intervensi active', async () => {
+  it('has no page tab strip on /admin; the school-admin mount marks Intervensi active', async () => {
     const w = await open()
-    expect(t(w, 'kirk-tab-interventions').attributes('data-active')).toBe('true')
+    expect(has(w, 'kirk-tabs')).toBe(false)
+    w.unmount()
+    const sa = await open('/admin-sekolah/kirkpatrick')
+    expect(t(sa, 'kirk-tab-interventions').attributes('data-active')).toBe('true')
   })
 })
 

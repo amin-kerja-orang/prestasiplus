@@ -51,33 +51,40 @@ describe('S2 T1 Reaksi (AC-M12-10.1, 10.2, 01.3)', () => {
     expect(has(w, 'kirk-filter')).toBe(false)
   })
 
-  it('shows the six tabs with T1 current and no "Rantaian Impak"', async () => {
-    const w = await open()
+  it('draws no page tab strip on the /admin and /guru mounts (their shell has one, C-53)', async () => {
+    const admin = await open()
+    expect(has(admin, 'kirk-tabs')).toBe(false)
+    admin.unmount()
+    const guru = await open('/guru/kirkpatrick')
+    expect(has(guru, 'kirk-tabs')).toBe(false)
+  })
+
+  it('school-admin mount: the six V2 tabs with T1 current and no "Rantaian Impak"', async () => {
+    const w = await open('/admin-sekolah/kirkpatrick')
     const tabs = t(w, 'kirk-tabs').findAll('a')
     expect(tabs.map((a) => squash(a.text()))).toEqual([
       'Overview',
-      'Tahap 1: Reaksi',
-      'Tahap 2: Pembelajaran',
-      'Tahap 3: Tingkah Laku',
-      'Tahap 4: Hasil',
+      'T1: Reaksi',
+      'T2: Pembelajaran',
+      'T3: Tingkah Laku',
+      'T4: Hasil',
       'Intervensi',
     ])
     expect(tabs.map((a) => a.attributes('href'))).toEqual([
-      '/admin/kirkpatrick',
-      '/admin/kirkpatrick/reaction',
-      '/admin/kirkpatrick/learning',
-      '/admin/kirkpatrick/behavior',
-      '/admin/kirkpatrick/results',
-      '/admin/kirkpatrick/interventions',
+      '/admin-sekolah/kirkpatrick',
+      '/admin-sekolah/kirkpatrick/reaction',
+      '/admin-sekolah/kirkpatrick/learning',
+      '/admin-sekolah/kirkpatrick/behavior',
+      '/admin-sekolah/kirkpatrick/results',
+      '/admin-sekolah/kirkpatrick/interventions',
     ])
     const current = tabs.filter((a) => a.attributes('data-active') === 'true')
     expect(current).toHaveLength(1)
     expect(current[0]!.attributes('data-testid')).toBe('kirk-tab-reaction')
   })
 
-  it('tabs are unfiltered even with ?school_id and the call carries no scope', async () => {
-    const w = await open('/guru/kirkpatrick', '?school_id=8080')
-    expect(t(w, 'kirk-tab-learning').attributes('href')).toBe('/guru/kirkpatrick/learning')
+  it('the call carries no scope even with ?school_id', async () => {
+    await open('/guru/kirkpatrick', '?school_id=8080')
     expect(api.fetchKirkpatrickReaction).toHaveBeenCalledTimes(1)
     expect(api.fetchKirkpatrickReaction).toHaveBeenCalledWith({ signal: expect.anything() })
   })

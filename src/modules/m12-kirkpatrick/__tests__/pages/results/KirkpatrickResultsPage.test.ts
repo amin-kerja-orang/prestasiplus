@@ -138,11 +138,16 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
     expect(has(w, 'res-grades')).toBe(false)
   })
 
-  it('KPI grid is 2 columns, 3 from md and the tab strip marks T4 active', async () => {
+  it('KPI grid is 2 columns, 3 from md and the page draws no tab strip on /admin', async () => {
     const { wrapper: w } = await open()
     expect(t(w, 'res-kpis').classes()).toEqual(
       expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3']),
     )
+    expect(has(w, 'kirk-tabs')).toBe(false)
+  })
+
+  it('school-admin mount: the page strip marks T4 active', async () => {
+    const { wrapper: w } = await open('/admin-sekolah/kirkpatrick')
     expect(t(w, 'kirk-tab-results').attributes('data-active')).toBe('true')
   })
 })

@@ -123,10 +123,13 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
     )
   })
 
-  it('has the tab strip with "Tahap 3: Tingkah Laku" active', async () => {
+  it('has no page tab strip on /admin; the school-admin mount marks T3 active', async () => {
     const { wrapper: w } = await open()
-    expect(t(w, 'kirk-tab-behavior').attributes('data-active')).toBe('true')
-    expect(t(w, 'kirk-tab-results').attributes('data-active')).toBe('false')
+    expect(has(w, 'kirk-tabs')).toBe(false)
+    w.unmount()
+    const { wrapper: sa } = await open('/admin-sekolah/kirkpatrick')
+    expect(t(sa, 'kirk-tab-behavior').attributes('data-active')).toBe('true')
+    expect(t(sa, 'kirk-tab-results').attributes('data-active')).toBe('false')
   })
 })
 
