@@ -412,7 +412,8 @@ test.describe('cards', MODULE, () => {
   }) => {
     await gotoApp('/login')
     await switchTo(page, mock, gotoApp, POPULATED)
-    await expect(page.getByTestId('sd-grades')).toBeVisible()
+    // the populated school is computed from large owner datasets: allow the first answer time (as open() does)
+    await expect(page.getByTestId('sd-grades')).toBeVisible({ timeout: 60_000 })
     const perf = await m08(page)
     const values = page.getByTestId('sd-card-value')
     await expect(values.nth(0)).toHaveText(ms(perf.stats.students))
@@ -420,7 +421,7 @@ test.describe('cards', MODULE, () => {
     await expect(values.nth(2)).toHaveText(ms(perf.stats.classes))
     // a second school admin of another school
     await switchTo(page, mock, gotoApp, AZLAN)
-    await expect(page.getByTestId('sd-banner-name')).toHaveText('SMK Demo Seri Putra')
+    await expect(page.getByTestId('sd-banner-name')).toHaveText('SMK Demo Seri Putra', { timeout: 60_000 })
     const perf2 = await m08(page)
     await expect(page.getByTestId('sd-card-value').nth(0)).toHaveText(ms(perf2.stats.students))
     await expect(page.getByTestId('sd-card-value').nth(2)).toHaveText(ms(perf2.stats.classes))
