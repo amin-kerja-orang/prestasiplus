@@ -69,11 +69,13 @@ watch(
   <DsPage
     data-testid="kirk-pelajar"
     :title="data?.student.name"
-    :subtitle="subtitle"
     :show-title="true"
     title-testid="pel-name"
     subtitle-testid="pel-school"
   >
+    <!-- A slot, not the `subtitle` prop: DsPageHeader lifts a plain-text subtitle into the shell header, and the
+         shell header is "Kirkpatrick — {nama}" with no subtitle (DV-M12-03, DV-SH-03). The slot must exist from setup. -->
+    <template #subtitle>{{ subtitle }}</template>
     <template v-if="data" #actions>
       <DsBackLink :to="paths.behavior" label="Kembali ke Tahap 3" data-testid="pel-back" />
     </template>
