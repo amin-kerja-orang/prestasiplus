@@ -372,6 +372,16 @@ export const uiConfig = {
       label: 'text-label',
       description: 'text-caption text-muted',
     },
+    // Below lg the switch element itself is a 44x44 touch box: the extra size is a transparent border
+    // and the track is painted on the padding box only (`bg-clip-padding`), so the visible track and
+    // thumb keep their stock size (md 36x20, sm 32x18, lg 40x22); from lg nothing changes.
+    variants: {
+      size: {
+        sm: { base: 'max-lg:w-11 max-lg:border-x-6 max-lg:border-y-[13px] max-lg:p-0.5 max-lg:bg-clip-padding' },
+        md: { base: 'max-lg:w-11 max-lg:border-x-4 max-lg:border-y-12 max-lg:p-0.5 max-lg:bg-clip-padding' },
+        lg: { base: 'max-lg:w-11 max-lg:border-x-2 max-lg:border-y-[11px] max-lg:p-0.5 max-lg:bg-clip-padding' },
+      },
+    },
   },
   navigationMenu: {
     slots: {
