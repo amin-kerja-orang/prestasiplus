@@ -185,7 +185,7 @@ export const componentDefaults = {
     slots: {
       list: 'gap-1',
       link: [
-        'min-h-9 gap-1.5 rounded-sm px-1.5 text-label transition-colors duration-fast',
+        'min-h-11 gap-1.5 rounded-sm px-1.5 text-label staff:lg:min-h-9 transition-colors duration-fast',
         'hover:text-highlighted',
         focusRing,
       ].join(' '),

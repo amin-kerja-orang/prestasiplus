@@ -67,3 +67,13 @@ describe('Compact sizes are staff-from-lg only (C-65)', () => {
     expect(classes).toContain('staff:lg:min-h-10')
   })
 })
+
+describe('Breadcrumb link (C-66)', () => {
+  it('is 44px, compact only via staff:lg:', () => {
+    const link = (uiConfig as unknown as { breadcrumb: { slots: { link: string } } }).breadcrumb.slots.link
+    const classes = link.split(/\s+/)
+    expect(classes).toContain('min-h-11')
+    expect(classes).not.toContain('min-h-9')
+    expect(classes).toContain('staff:lg:min-h-9')
+  })
+})

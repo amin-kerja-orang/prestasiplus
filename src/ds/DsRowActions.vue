@@ -98,7 +98,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       type="button"
         color="neutral"
         variant="ghost"
-        :class="a.icon ? undefined : 'min-h-11 lg:min-h-9'"
+        :class="a.icon ? undefined : 'min-h-11 staff:lg:min-h-9'"
         :icon="a.icon ? iconClass(a.icon) : undefined"
         :label="a.icon ? undefined : a.label"
       :aria-label="a.icon ? a.label : undefined"
