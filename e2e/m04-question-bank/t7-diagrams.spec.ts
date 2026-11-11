@@ -77,7 +77,9 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(pills.nth(9)).toHaveText('Pendidikan Moral: 60')
 
     await expect(page.getByTestId('diagrams-subject').locator('option')).toHaveCount(32)
-    await expect(page.getByTestId('diagrams-school').locator('option')).toHaveCount(10221)
+    // D72 hides primary schools: GET /api/schools?all=1 lists the secondary schools only (SMK 2,441, mock/datasets/schools-spec.ts:10;
+    // schoolsRepo.options(), mock/repository/schools.ts:266-275) plus the 'Semua Sekolah' placeholder option. Live 10,221 = SK 7,779 + SMK 2,441 + 1.
+    await expect(page.getByTestId('diagrams-school').locator('option')).toHaveCount(2441 + 1)
     await expect(page.getByTestId('diagrams-filter').getByRole('button', { name: 'Tapis' })).toHaveText('Tapis')
 
     await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText('MCQ (6144)')
