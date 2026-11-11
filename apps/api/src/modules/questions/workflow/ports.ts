@@ -191,6 +191,11 @@ export interface QuestionBrief {
 }
 
 /** One question as the quality score function (SRS 6.12 `score(q)`) reads it. */
+export interface QualityAggregate {
+  groups: { subjectId: string | null; subjectName: string | null; educationLevelId: string | null; levelName: string | null; score: number | null; n: number }[]
+  action: { q: QualityQuestion; score: number }[]
+}
+
 export interface QualityQuestion {
   id: string
   stemText: string
@@ -287,6 +292,12 @@ export interface QuestionBankPort {
    * `visit` is called once per batch, in order. Never load the whole bank into one array.
    */
   forEachQualityBatch(visit: (batch: QualityQuestion[]) => Promise<void>, size?: number): Promise<void>
+
+  /**
+   * Optional fast path of the quality dashboard (the real bank): the stored-score groups of every question and the newest `limit` action rows, in two
+   * statements. A bank without it (a test double) is walked with `forEachQualityBatch`.
+   */
+  qualityAggregate?(actionMax: number, limit: number): Promise<QualityAggregate>
 
   /** Every question in one array. Small banks and tests only: production code uses `forEachQualityBatch`. */
   listForQuality(): Promise<QualityQuestion[]>

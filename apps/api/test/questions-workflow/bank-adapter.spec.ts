@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../src/common/errors/api-error'
 import { QuestionsRepository, QuestionsService, type QuestionCreateInput } from '../../src/modules/questions'
+import { QualityService } from '../../src/modules/questions/workflow/quality'
 import { QuestionBankAdapter, QuestionWorkflowPorts, QuestionWorkflowService } from '../../src/modules/questions/workflow'
 import { answeredSession, bootWorkflowApp, count, loginAll, type Client, type WorkflowTestApp } from './helpers'
 import { uploadClient } from './imports-support'
@@ -221,5 +222,18 @@ describe('question bank adapter (real BE-09 bank)', () => {
     expect(res.body.data).toEqual({ imported: 1, errors: [{ row: 3, message: 'Jawapan mesti A, B, C atau D.' }] })
     expect(await questions()).toBe(before)
     expect(await count(t.db, `select count(*) n from intake_items i join intake_batches b on b.id = i.batch_id where b.source = 'guru' and b.owner_user_id = $1::bigint and i.review_state = 'needs_review'`, [teacher.userId])).toBe(1)
+  })
+
+  it('KP-18 perf: the quality summary from the two-statement aggregate equals the streamed walk (with scores, and before any audit)', async () => {
+    const quality = t.app.get(QualityService)
+    expect(await quality.summary()).toEqual(await quality.summaryStreaming())
+    const audit = await c.admin.post('/api/question-quality/audit', {})
+    expect(audit.status, JSON.stringify(audit.body)).toBeLessThan(300)
+    // a few rows that score low, so the action list and the bands are not empty
+    await t.db.query("update question_quality_scores set score = 40, bucket = 'lemah' where question_id in (select question_id from question_quality_scores order by question_id limit 3)")
+    const aggregated = await quality.summary()
+    expect(aggregated.total).toBeGreaterThan(0)
+    expect(aggregated.activeActionCount).toBeGreaterThanOrEqual(3)
+    expect(aggregated).toEqual(await quality.summaryStreaming())
   })
 })

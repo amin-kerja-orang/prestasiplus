@@ -551,6 +551,44 @@ export class QuestionsRepository {
     }))
   }
 
+  /**
+   * The quality dashboard in two statements instead of a walk over the whole bank (UAT: 229 keyset batches of stems, 25 s): the questions of the
+   * `qualityBatch` base grouped by (subject, level, stored score), and the newest `limit` rows whose stored score is at most `actionMax`.
+   * A question with no stored score has `score` null (it is counted in the total only).
+   */
+  async qualityAggregate(actionMax: number, limit: number): Promise<{ groups: { subjectId: string | null; educationLevelId: string | null; score: number | null; n: number }[]; action: (QualityRow & { score: number })[] }> {
+    const baseFrom = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+       LEFT JOIN question_quality_scores sc ON sc.question_id = q.id
+       WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}`
+    const [groups, rows] = await Promise.all([
+      this.db.$queryRaw<{ subject_id: bigint | null; education_level_id: bigint | null; score: number | null; n: number }[]>(
+        Prisma.sql`SELECT v.subject_id, v.education_level_id, sc.score, count(*)::int AS n ${baseFrom} GROUP BY 1, 2, 3`,
+      ),
+      this.db.$queryRaw<
+        { id: bigint; stem_ms: string | null; stem_en: string | null; explanation_ms: string | null; explanation_en: string | null; source_type: string | null; subject_id: bigint | null; education_level_id: bigint | null; set_label: string | null; has_sp: boolean; score: number }[]
+      >(Prisma.sql`
+        SELECT q.id, v.stem_ms, v.stem_en, v.explanation_ms, v.explanation_en, q.source_type, v.subject_id, v.education_level_id, v.set_label,
+               EXISTS (SELECT 1 FROM question_version_sp_nodes s WHERE s.question_version_id = v.id) AS has_sp, sc.score
+          ${baseFrom} AND sc.score <= ${actionMax} ORDER BY q.id DESC LIMIT ${limit}`),
+    ])
+    return {
+      groups: groups.map((g) => ({ subjectId: g.subject_id === null ? null : idToString(g.subject_id), educationLevelId: g.education_level_id === null ? null : idToString(g.education_level_id), score: g.score, n: g.n })),
+      action: rows.map((r) => ({
+        id: idToString(r.id),
+        stemMs: r.stem_ms,
+        stemEn: r.stem_en,
+        explanationMs: r.explanation_ms,
+        explanationEn: r.explanation_en,
+        sourceType: r.source_type,
+        subjectId: r.subject_id === null ? null : idToString(r.subject_id),
+        educationLevelId: r.education_level_id === null ? null : idToString(r.education_level_id),
+        setLabel: r.set_label,
+        hasSp: r.has_sp,
+        score: r.score,
+      })),
+    }
+  }
+
   /** `listIds` without the totals and status counts: one page (newest first) of the admin filter, by keyset (`idBelow`). */
   /**
    * Targets of a filter-based bulk action over the LATEST version: the rows of the filter (`matched`, the total the list shows), the

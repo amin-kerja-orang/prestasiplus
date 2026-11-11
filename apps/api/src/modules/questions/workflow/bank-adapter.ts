@@ -35,6 +35,7 @@ import type {
   DiagramCandidate,
   ExplanationSource,
   ImportedQuestionInput,
+  QualityAggregate,
   QualityQuestion,
   QuestionBankPort,
   QuestionBrief,
@@ -308,6 +309,34 @@ export class QuestionBankAdapter implements QuestionBankPort {
         })),
       )
       if (rows.length < size) return
+    }
+  }
+
+  async qualityAggregate(actionMax: number, limit: number): Promise<QualityAggregate> {
+    const [{ subjects, levels }, { groups, action }] = await Promise.all([this.names(), this.repo.qualityAggregate(actionMax, limit)])
+    return {
+      groups: groups.map((g) => ({
+        ...g,
+        subjectName: g.subjectId === null ? null : (subjects.get(g.subjectId) ?? null),
+        levelName: g.educationLevelId === null ? null : (levels.get(g.educationLevelId) ?? null),
+      })),
+      action: action.map((r) => ({
+        score: r.score,
+        q: {
+          id: r.id,
+          stemText: r.stemMs ?? r.stemEn ?? '',
+          explanation: r.explanationMs ?? r.explanationEn,
+          untagged: !r.hasSp,
+          sourceType: r.sourceType,
+          quarantinedOrRejected: false,
+          isLegacy: false,
+          subjectId: r.subjectId,
+          subjectName: r.subjectId === null ? null : (subjects.get(r.subjectId) ?? null),
+          educationLevelId: r.educationLevelId,
+          levelName: r.educationLevelId === null ? null : (levels.get(r.educationLevelId) ?? null),
+          sourceSet: r.setLabel,
+        },
+      })),
     }
   }
 

@@ -12,7 +12,7 @@ import { idFromString, idToString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
 import { CurriculumRepository } from '../../../curriculum'
 import type { QualityQuestion } from '../ports'
-import { QuestionWorkflowPorts } from '../ports'
+import { QuestionWorkflowPorts, type QuestionBankPort } from '../ports'
 import type { WorkflowActor } from '../actor'
 import { bucketOfScore, scoreQuestion } from './quality-score'
 
@@ -44,8 +44,14 @@ export class QualityService {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  /** `GET /question-quality`: every figure is counted from the stored scores and the question store (streamed in keyset batches). */
+  /** `GET /question-quality`: the answer. The real bank answers from two statements (`qualityAggregate`); a bank without it is streamed in keyset batches (`summaryStreaming`). */
   async summary(): Promise<QuestionQualitySummary> {
+    const bank = this.ports.questionBank
+    return bank.qualityAggregate ? this.summaryAggregated(bank.qualityAggregate.bind(bank)) : this.summaryStreaming()
+  }
+
+  /** Every figure counted from the stored scores and the question store, streamed in keyset batches (the oracle of `summaryAggregated`). */
+  async summaryStreaming(): Promise<QuestionQualitySummary> {
     const subjects = new Map<string, { name: string; count: number; sum: number; excellent: number }>()
     const levelAgg = new Map<string, { count: number; sum: number }>()
     // Bounded top-K of the action rows (id descending): trimmed to ACTION_LIST_MAX whenever it doubles, so memory is O(K).
@@ -97,6 +103,66 @@ export class QualityService {
         }
       }
     }, AUDIT_BATCH)
+    return this.finish({ subjects, levelAgg, action, actionCount, total, scoredCount, sum, excellentCount, baik, lemah, kritikal, legacyGeneric })
+  }
+
+  /** The same figures from the grouped counts (one row per subject, level and stored score) and the newest action rows. */
+  private async summaryAggregated(aggregate: NonNullable<QuestionBankPort['qualityAggregate']>): Promise<QuestionQualitySummary> {
+    const { groups, action: actionRows } = await aggregate(QUESTION_QUALITY_ACTION_MAX_SCORE, ACTION_LIST_MAX)
+    const subjects = new Map<string, { name: string; count: number; sum: number; excellent: number }>()
+    const levelAgg = new Map<string, { count: number; sum: number }>()
+    let actionCount = 0
+    let total = 0
+    let scoredCount = 0
+    let sum = 0
+    let excellentCount = 0
+    let baik = 0
+    let lemah = 0
+    let kritikal = 0
+    for (const g of groups) {
+      total += g.n
+      if (g.score === null) continue
+      scoredCount += g.n
+      sum += g.score * g.n
+      const band = bucketOfScore(g.score)
+      if (band === 'cemerlang') excellentCount += g.n
+      else if (band === 'baik') baik += g.n
+      else if (band === 'lemah') lemah += g.n
+      else if (band === 'kritikal') kritikal += g.n
+      if (g.score <= QUESTION_QUALITY_ACTION_MAX_SCORE) actionCount += g.n
+      if (g.subjectId !== null) {
+        const e = subjects.get(g.subjectId) ?? { name: g.subjectName ?? '', count: 0, sum: 0, excellent: 0 }
+        e.count += g.n
+        e.sum += g.score * g.n
+        if (band === 'cemerlang') e.excellent += g.n
+        subjects.set(g.subjectId, e)
+      }
+      if (g.educationLevelId !== null) {
+        const e = levelAgg.get(g.educationLevelId) ?? { count: 0, sum: 0 }
+        e.count += g.n
+        e.sum += g.score * g.n
+        levelAgg.set(g.educationLevelId, e)
+      }
+    }
+    const action: Scored[] = actionRows.map((r) => ({ q: r.q, score: r.score }))
+    return this.finish({ subjects, levelAgg, action, actionCount, total, scoredCount, sum, excellentCount, baik, lemah, kritikal, legacyGeneric: 0 })
+  }
+
+  private async finish(a: {
+    subjects: Map<string, { name: string; count: number; sum: number; excellent: number }>
+    levelAgg: Map<string, { count: number; sum: number }>
+    action: Scored[]
+    actionCount: number
+    total: number
+    scoredCount: number
+    sum: number
+    excellentCount: number
+    baik: number
+    lemah: number
+    kritikal: number
+    legacyGeneric: number
+  }): Promise<QuestionQualitySummary> {
+    const { subjects, levelAgg, action, actionCount, total, scoredCount, sum, excellentCount, baik, lemah, kritikal, legacyGeneric } = a
     const share = (n: number): number => (scoredCount === 0 ? 0 : round1((n * 100) / scoredCount))
 
     const bySubject = [...subjects.entries()]
