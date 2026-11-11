@@ -482,6 +482,32 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
             icon="i-ph-pencil-simple"
             aria-label="Edit"
           />
+          <form
+            v-if="!isPrimary(row as unknown as AdminSchool)"
+            method="post"
+            @submit.prevent="toggle(row as unknown as AdminSchool)"
+          >
+            <UButton
+              type="submit"
+              color="neutral"
+              variant="ghost"
+              square
+              class="min-h-11 min-w-11 justify-center"
+              :title="row.isActive ? 'Nyahaktif' : 'Aktifkan'"
+              :aria-label="row.isActive ? 'Nyahaktif' : 'Aktifkan'"
+              :loading="toggling === row.id"
+              :disabled="toggling !== null"
+              data-testid="school-toggle"
+            >
+              <UIcon
+                v-if="toggling !== row.id"
+                :name="row.isActive ? 'i-ph-toggle-right' : 'i-ph-toggle-left'"
+                class="size-5"
+                aria-hidden="true"
+                data-testid="school-toggle-icon"
+              />
+            </UButton>
+          </form>
         </div>
       </template>
     </DsDataTable>

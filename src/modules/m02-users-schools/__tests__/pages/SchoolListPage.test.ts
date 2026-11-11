@@ -278,6 +278,44 @@ describe('SchoolListPage (M02 S9)', () => {
     })
   })
 
+  it('below 768px the card shows the same toggle and it takes the same toggle path', async () => {
+    const original = window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+      onchange: null,
+    })) as unknown as typeof window.matchMedia
+    try {
+      api.toggleSchool.mockResolvedValue({
+        data: { isActive: false },
+        status: 'Status sekolah berjaya dikemaskini.',
+      })
+      const confirm = vi.spyOn(window, 'confirm')
+      const w = await render()
+      expect(w.find('tbody').exists()).toBe(false)
+      const toggles = w.findAll('[data-testid=school-toggle]')
+      expect(toggles).toHaveLength(2)
+      expect(toggles[0]?.attributes('title')).toBe('Nyahaktif')
+      expect(toggles[0]?.attributes('aria-label')).toBe('Nyahaktif')
+      expect(toggles[1]?.attributes('aria-label')).toBe('Aktifkan')
+      expect(w.findAll('[data-testid=school-toggle-icon]')).toHaveLength(2)
+      const calls = api.fetchAdminSchools.mock.calls.length
+      await toggles[0]?.trigger('submit')
+      await flushPromises()
+      expect(confirm).not.toHaveBeenCalled()
+      expect(api.toggleSchool).toHaveBeenCalledWith(1)
+      expect(api.fetchAdminSchools.mock.calls.length).toBe(calls + 1)
+      expect(useFlashStore().current?.message).toBe('Status sekolah berjaya dikemaskini.')
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
   it('shows the Kod Daftar column and rotates the code after the V2 confirm', async () => {
     api.rotateSchoolJoinCode.mockResolvedValue({
       data: { joinCode: 'NEWCODE2' },
