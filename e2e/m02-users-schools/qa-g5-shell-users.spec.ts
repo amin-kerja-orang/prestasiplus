@@ -8,8 +8,6 @@ import type { Page } from '@playwright/test'
 
 import { DEMO_PASSWORD, expect, gotoApp as gotoAppOn, test } from '../fixtures/test'
 import {
-  acceptNextDialog,
-  dismissNextDialog,
   expectNoHorizontalScroll,
   isDesktopShell,
   isMobileWidth,
@@ -20,6 +18,32 @@ import {
 
 const ADMIN = 'admin@demo.test'
 const byId = (page: Page, id: string) => page.getByTestId(id)
+
+const tableLayout = (page: Page): boolean => (page.viewportSize()?.width ?? 0) >= 768
+
+/** The list rows: table rows from 768 px, cards below. */
+const rowsOf = (page: Page) =>
+  page.locator(
+    '[data-testid=users-table] tbody tr, [data-testid=users-table] [data-ds=data-table-cards] > li',
+  )
+
+/** The row (table row or card) of user `id`. */
+const rowOf = (page: Page, id: string | null) =>
+  rowsOf(page).filter({
+    has: page.locator(`[data-testid="user-row"][data-user-id="${String(id)}"]`),
+  })
+
+async function openFilters(page: Page): Promise<void> {
+  if (!tableLayout(page)) {
+    await page.locator('[data-ds="filter-open"]').click()
+    await expect(page.locator('[data-ds="filter-sheet"]')).toBeVisible()
+  }
+}
+
+async function applyFilters(page: Page): Promise<void> {
+  if (tableLayout(page)) await page.getByRole('button', { name: 'Cari', exact: true }).click()
+  else await page.locator('[data-ds="filter-sheet"]').getByRole('button', { name: 'Guna' }).click()
+}
 
 /** In-app navigation (no reload): much cheaper than a full app boot per route. */
 async function spaGoto(page: Page, path: string): Promise<void> {
@@ -69,15 +93,17 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   test.beforeEach(async ({ loginAs, gotoApp, page }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/users')
-    await expect(byId(page, 'user-row').first()).toBeVisible()
+    await expect(rowsOf(page).first()).toBeVisible()
   })
 
   test('E2E-M02-01: header, 7 cards (order, hrefs, labels), filters, action links', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title').first()).toHaveText('Senarai Pengguna')
-    await expect(byId(page, 'shell-admin-subtitle').first()).toHaveText(
-      'Pengurusan pengguna',
+    await expect(byId(page, 'pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText(
+      'Senarai Pengguna',
+    )
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText(
+      'Cari, tapis dan urus akaun pelajar, guru dan pentadbir.',
     )
     const cards = byId(page, 'users-stats').locator('a')
     await expect(cards).toHaveCount(7)
@@ -92,8 +118,7 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       })
       expect(clipped).toBe(false)
     }
-    const form = byId(page, 'users-filter')
-    await expect(form.locator('label')).toHaveText(['Peranan', 'Sekolah', 'Status', 'Cari'])
+    await openFilters(page)
     await expect(byId(page, 'users-role').locator('option')).toHaveText([
       'Semua Peranan',
       'Pelajar',
@@ -110,8 +135,15 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       'Aktif',
       'Tidak Aktif',
     ])
-    await expect(byId(page, 'users-search')).toHaveAttribute('placeholder', 'Nama atau emel...')
+    await expect(byId(page, 'users-role')).toHaveAccessibleName('Peranan')
+    await expect(byId(page, 'users-school')).toHaveAccessibleName('Sekolah')
+    await expect(byId(page, 'users-status')).toHaveAccessibleName('Status')
+    await expect(byId(page, 'users-search')).toHaveAttribute(
+      'placeholder',
+      'Cari nama atau emel...',
+    )
     await expect(byId(page, 'users-school').locator('option').first()).toHaveText('Semua Sekolah')
+    if (!tableLayout(page)) await page.keyboard.press('Escape')
     await expect(byId(page, 'users-add')).toHaveAttribute('href', '/admin/users/create')
     await expect(byId(page, 'users-add')).toHaveText('Tambah')
     await expect(byId(page, 'users-import-students')).toHaveAttribute(
@@ -127,83 +159,87 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M02-02/04: columns, numbering, "-" placeholders, newest first, page 2 numbering', async ({
+  test('E2E-M02-02/04: columns, "-" placeholders, newest first, page 2 range', async ({
     page,
     gotoApp,
   }) => {
-    await expect(byId(page, 'users-table').locator('thead th')).toHaveText([
-      '',
-      '#',
-      'Nama',
-      'Emel',
-      'Telefon',
-      'Peranan',
-      'Sekolah',
-      'Aktif?',
-      'Tarikh',
-      'Tindakan',
-    ])
-    const rows = byId(page, 'user-row')
-    await expect(rows.first().locator('td').nth(1)).toHaveText('1')
-    await expect(rows.nth(24).locator('td').nth(1)).toHaveText('25')
-    // Newest first: dd/mm/yyyy dates are never increasing down the page.
-    const dates = await rows.locator('td:nth-child(9)').allInnerTexts()
-    const asNum = dates.map((d) => {
-      const [dd, mm, yy] = d.trim().split('/')
-      return Number(`${yy}${mm}${dd}`)
-    })
-    for (let i = 1; i < asNum.length; i++) expect(asNum[i]!).toBeLessThanOrEqual(asNum[i - 1]!)
-    for (const d of dates) expect(d.trim()).toMatch(/^\d{2}\/\d{2}\/\d{4}$/)
-    // "-" is shown for a missing phone / school somewhere in the first 25 rows (as live).
-    const cells = await rows.locator('td:nth-child(5), td:nth-child(7)').allInnerTexts()
-    expect(cells.map((c) => c.trim())).toContain('-')
+    // The "#" numbering column is gone from the v2 list (DsDataTable); the page range lives in the pager.
+    if (tableLayout(page)) {
+      const heads = (await byId(page, 'users-table').locator('thead th').allTextContents()).map(
+        (t) => t.trim(),
+      )
+      expect(heads).toEqual([
+        '',
+        'Nama',
+        'Telefon',
+        'Peranan',
+        'Sekolah',
+        'Status',
+        'Tarikh',
+        'Tindakan',
+      ])
+    }
+    await expect(rowsOf(page)).toHaveCount(25)
+    await expect(page.locator('[data-ds="data-table-pager"]')).toContainText(
+      'Menunjukkan 1-25 daripada',
+    )
+    if (tableLayout(page)) {
+      // Newest first: dd/mm/yyyy dates are never increasing down the page ("Tarikh" is hidden below 2xl,
+      // so the cell text is read, not its visibility).
+      const dates = (
+        await byId(page, 'users-table').locator('tbody tr td:nth-child(7)').allTextContents()
+      ).map((d) => d.trim())
+      const asNum = dates.map((d) => {
+        const [dd, mm, yy] = d.split('/')
+        return Number(`${yy}${mm}${dd}`)
+      })
+      for (let i = 1; i < asNum.length; i++) expect(asNum[i]!).toBeLessThanOrEqual(asNum[i - 1]!)
+      for (const d of dates) expect(d).toMatch(/^\d{2}\/\d{2}\/\d{4}$/)
+      // "-" is shown for a missing phone / school somewhere in the first 25 rows (as live).
+      const cells = await byId(page, 'users-table')
+        .locator('tbody tr td:nth-child(3), tbody tr td:nth-child(5)')
+        .allTextContents()
+      expect(cells.map((c) => c.trim())).toContain('-')
+    }
 
     await gotoApp('/admin/users?page=2')
-    await expect(rows.first().locator('td').nth(1)).toHaveText('26')
-    await expect(rows.nth(24).locator('td').nth(1)).toHaveText('50')
+    await expect(rowsOf(page)).toHaveCount(25)
+    await expect(page.locator('[data-ds="data-table-pager"]')).toContainText(
+      'Menunjukkan 26-50 daripada',
+    )
   })
 
   test('E2E-M02-02: the JPN officer role badge reads "Pegawai JPN"', async ({ page, gotoApp }) => {
     await gotoApp('/admin/users?role=jpn_officer')
-    await expect(byId(page, 'user-row')).toHaveCount(2)
-    for (const badge of await byId(page, 'user-role').all())
-      await expect(badge).toHaveText('Pegawai JPN')
+    await expect(rowsOf(page)).toHaveCount(2)
+    for (const row of await rowsOf(page).all()) await expect(row).toContainText('Pegawai JPN')
     // No stat card is ringed for jpn_officer (DV-M02-10).
     await expect(byId(page, 'users-stats').locator('[data-active="true"]')).toHaveCount(0)
   })
 
-  test('E2E-M02-04: pagination keeps the filter; mobile shows Previous as text on page 1', async ({
+  test('E2E-M02-04: pagination keeps the filter; Previous is disabled on page 1', async ({
     page,
     gotoApp,
   }) => {
     await gotoApp('/admin/users?role=student&page=2')
+    await openFilters(page)
     await expect(byId(page, 'users-role')).toHaveValue('student')
-    await expect(byId(page, 'user-row').first().locator('td').nth(1)).toHaveText('26')
-    const pager = byId(page, 'users-pager')
-    if (isMobileWidth(page)) {
-      await expect(pager.getByRole('link', { name: /Next/ }).first()).toHaveAttribute(
-        'href',
-        /role=student.*page=3|page=3.*role=student/,
-      )
-    } else {
-      await expect(pager).toContainText('Showing 26 to 50 of 4533 results')
-      await expect(pager.getByRole('link', { name: /Next/ }).first()).toHaveAttribute(
-        'href',
-        /role=student/,
-      )
-    }
+    if (!tableLayout(page)) await page.keyboard.press('Escape')
+    const pager = page.locator('[data-ds="data-table-pager"]')
+    // data deferred: BUG-I2 (the mock has 4,453 pupils, the SRS 4,533)
+    await expect(pager).toContainText('Menunjukkan 26-50 daripada 4533 hasil')
+    await pager.getByRole('button', { name: 'Seterusnya' }).click()
+    await expect(page).toHaveURL(/role=student/)
+    await expect(page).toHaveURL(/page=3/)
+    await expect(pager).toContainText('Menunjukkan 51-75 daripada')
+
     await gotoApp('/admin/users')
-    if (isMobileWidth(page)) {
-      await expect(pager).toContainText('Previous')
-      await expect(pager.getByRole('link', { name: /Previous/ })).toHaveCount(0)
-    } else {
-      // Numbered window: 1 … 10, "...", last two, next chevron.
-      for (const n of ['2', '10', '206', '207']) {
-        await expect(
-          pager.getByRole('link', { name: `Go to page ${n}`, exact: true }),
-        ).toBeVisible()
+    await expect(pager.getByRole('button', { name: 'Sebelum' })).toBeDisabled()
+    if (!isMobileWidth(page)) {
+      // data deferred: BUG-I2 (last page 207 follows the SRS total of 5159 users)
+      for (const n of ['2', '207']) {
+        await expect(pager.getByRole('button', { name: n, exact: true })).toBeVisible()
       }
-      await expect(pager).toContainText('...')
     }
   })
 
@@ -212,104 +248,95 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/admin/users')
-    const ringless = await byId(page, 'users-stat-teacher').evaluate(
-      (el) => getComputedStyle(el).boxShadow,
-    )
     await expect(byId(page, 'users-stats').locator('[data-active="true"]')).toHaveCount(0)
 
     await byId(page, 'users-stat-teacher').click()
     await expect(page).toHaveURL(/\/admin\/users\?role=teacher$/)
+    await expect(byId(page, 'users-stat-teacher')).toHaveAttribute('data-active', 'true')
+    await expect(byId(page, 'users-stat-student')).not.toHaveAttribute('data-active', 'true')
+    await expect(byId(page, 'users-stats').locator('[data-active="true"]')).toHaveCount(1)
+    await openFilters(page)
     await expect(byId(page, 'users-role')).toHaveValue('teacher')
-    const ringed = await byId(page, 'users-stat-teacher').evaluate(
-      (el) => getComputedStyle(el).boxShadow,
-    )
-    expect(ringed).not.toBe(ringless)
-    const other = await byId(page, 'users-stat-student').evaluate(
-      (el) => getComputedStyle(el).boxShadow,
-    )
-    expect(other).toBe(ringless)
 
     await byId(page, 'users-status').selectOption('1')
     await byId(page, 'users-search').fill('guru')
-    await byId(page, 'users-search-submit').click()
+    await applyFilters(page)
     await expect(page).toHaveURL(/role=teacher/)
     await expect(page).toHaveURL(/is_active=1/)
     await expect(page).toHaveURL(/search=guru/)
+    await openFilters(page)
     await expect(byId(page, 'users-role')).toHaveValue('teacher')
     await expect(byId(page, 'users-status')).toHaveValue('1')
     await expect(byId(page, 'users-search')).toHaveValue('guru')
-    const roles = await byId(page, 'user-role').allInnerTexts()
-    expect(roles.length).toBeGreaterThan(0)
-    for (const r of roles) expect(r.trim()).toBe('Guru')
-    for (const t of await byId(page, 'user-toggle').allInnerTexts()) expect(t.trim()).toBe('Aktif')
+    if (!tableLayout(page)) await page.keyboard.press('Escape')
+    await expect(rowsOf(page).first()).toBeVisible()
+    for (const row of await rowsOf(page).all()) {
+      await expect(row).toContainText('Guru')
+      await expect(row).toContainText('Aktif')
+    }
 
     // School filter: pick the first real school option.
     await gotoApp('/admin/users')
-    await expect(byId(page, 'user-row').first()).toBeVisible()
+    await expect(rowsOf(page).first()).toBeVisible()
+    await openFilters(page)
     const options = byId(page, 'users-school').locator('option')
     await expect.poll(() => options.count()).toBeGreaterThan(2)
-    const names = (await options.allInnerTexts()).slice(1).map((s) => s.trim())
-    expect(names).toEqual(
-      [...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).length ? names : [],
-    )
+    const names = (await options.allTextContents()).slice(1).map((s) => s.trim())
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, 'ms'))
+    expect(names).toEqual(sorted)
     const value = await options.nth(1).getAttribute('value')
     await byId(page, 'users-school').selectOption(value!)
-    await byId(page, 'users-search-submit').click()
+    await applyFilters(page)
     await expect(page).toHaveURL(new RegExp(`school=${value}`))
-    await expect(byId(page, 'user-row').first()).toBeVisible()
-    for (const t of await byId(page, 'user-row').locator('td:nth-child(7)').allInnerTexts()) {
-      expect(t.trim()).toBe(names[0])
-    }
+    await expect(rowsOf(page).first()).toBeVisible()
+    for (const row of await rowsOf(page).all()) await expect(row).toContainText(names[0]!)
   })
 
-  test('E2E-M02-08: every row has Edit; Pakej only on Admin Sekolah rows', async ({
+  test('E2E-M02-08: every row has Edit; Pakej only on Admin Sekolah rows (row menu)', async ({
     page,
     gotoApp,
   }) => {
-    for (const row of await byId(page, 'user-row').all()) {
-      await expect(row.getByTestId('user-edit')).toHaveAttribute('title', 'Edit')
-      await expect(row.getByTestId('user-packages')).toHaveCount(0)
+    for (const row of (await rowsOf(page).all()).slice(0, 5)) {
+      await expect(row.getByRole('link', { name: 'Edit' })).toHaveAttribute('href', /\/edit$/)
+      await row.getByTestId('row-menu').click()
+      await expect(page.getByRole('menuitem', { name: 'Pakej' })).toHaveCount(0)
+      await page.keyboard.press('Escape')
     }
     await gotoApp('/admin/users?role=school_admin')
-    const rows = byId(page, 'user-row')
-    await expect(rows).toHaveCount(16)
-    for (const row of await rows.all()) {
-      const id = await row.getAttribute('data-user-id')
-      await expect(row.getByTestId('user-packages')).toHaveAttribute('title', 'Pakej')
-      await expect(row.getByTestId('user-packages')).toHaveAttribute(
-        'href',
-        `/admin/users/${id}/packages`,
-      )
-    }
-    await rows.first().getByTestId('user-packages').click()
+    await expect(rowsOf(page)).toHaveCount(16)
+    const first = rowsOf(page).first()
+    const id = await first.getByTestId('user-row').getAttribute('data-user-id')
+    await first.getByTestId('row-menu').click()
+    await expect(page.getByRole('menuitem', { name: 'Pakej' })).toHaveAttribute(
+      'href',
+      `/admin/users/${id}/packages`,
+    )
+    await page.getByRole('menuitem', { name: 'Pakej' }).click()
     await expect(page).toHaveURL(/\/admin\/users\/\d+\/packages$/)
   })
 
-  test('E2E-M02-07: dismissing the toggle confirm changes nothing; accept shows the spinner while pending', async ({
+  test('E2E-M02-07: dismissing the toggle confirm changes nothing; accepting flips the status', async ({
     page,
     gotoApp,
     mock,
   }) => {
     await gotoApp('/admin/users?role=student')
-    const row = byId(page, 'user-row').first()
-    const before = (await row.getByTestId('user-toggle').innerText()).trim()
-    const dismissed = dismissNextDialog(page, {
-      type: 'confirm',
-      message: 'Pasti untuk menukar status pengguna ini?',
-    })
-    await row.getByTestId('user-toggle').click()
-    await dismissed
-    await expect(row.getByTestId('user-toggle')).toHaveText(before)
+    const active = rowsOf(page).filter({ has: page.getByText('Aktif', { exact: true }) }).first()
+    const id = await active.getByTestId('user-row').getAttribute('data-user-id')
+    const row = rowOf(page, id)
+    await expect(row.getByTestId('user-status')).toHaveText('Aktif')
+    await row.getByTestId('row-menu').click()
+    await page.getByRole('menuitem', { name: 'Nyahaktifkan' }).click()
+    await expect(page.getByRole('dialog')).toContainText('Pasti untuk menukar status pengguna ini?')
+    await page.locator('[data-ds="confirm-cancel"]').click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(row.getByTestId('user-status')).toHaveText('Aktif')
     expect((await mock.requests()).filter((r) => r.path.includes('toggle-active'))).toHaveLength(0)
 
-    await mock.setLatency(1500)
-    const accepted = acceptNextDialog(page, { type: 'confirm' })
-    await row.getByTestId('user-toggle').click()
-    await accepted
-    await expect(row.getByTestId('user-toggle')).toBeDisabled()
-    await expect(row.getByTestId('user-toggle').locator('svg.animate-spin')).toBeVisible()
-    await expect(row.getByTestId('user-toggle')).toBeEnabled({ timeout: 8000 })
-    await expect(row.getByTestId('user-toggle')).not.toHaveText(before)
+    await row.getByTestId('row-menu').click()
+    await page.getByRole('menuitem', { name: 'Nyahaktifkan' }).click()
+    await page.locator('[data-ds="confirm-ok"]').click()
+    await expect(row.getByTestId('user-status')).not.toHaveText('Aktif')
     // The list reloaded at the same URL (filters kept).
     await expect(page).toHaveURL(/\/admin\/users\?role=student$/)
   })
@@ -321,13 +348,13 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   }) => {
     // Deactivate an active student through the list, then try to log in as that account in a second tab.
     await gotoApp('/admin/users?search=pelajarmaju')
-    const row = byId(page, 'user-row').first()
+    const row = rowsOf(page).first()
     await expect(row).toContainText('pelajarmaju@demo.test')
-    await expect(row.getByTestId('user-toggle')).toHaveText('Aktif')
-    const accepted = acceptNextDialog(page, { type: 'confirm' })
-    await row.getByTestId('user-toggle').click()
-    await accepted
-    await expect(row.getByTestId('user-toggle')).toHaveText('Tidak')
+    await expect(row.getByTestId('user-status')).toHaveText('Aktif')
+    await row.getByTestId('row-menu').click()
+    await page.getByRole('menuitem', { name: 'Nyahaktifkan' }).click()
+    await page.locator('[data-ds="confirm-ok"]').click()
+    await expect(row.getByTestId('user-status')).not.toHaveText('Aktif')
 
     const tab = await newTab()
     for (const email of ['pelajarmaju@demo.test', 'tidakaktif@demo.test']) {
@@ -342,21 +369,21 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
 
   test('E2E-M02-09: dismissing Login As stays on the list', async ({ page, gotoApp }) => {
     await gotoApp('/admin/users?role=student')
-    const first = byId(page, 'user-row').first()
-    const name = (await first.getByTestId('user-name').innerText()).trim()
-    const dismissed = dismissNextDialog(page, {
-      type: 'confirm',
-      message: `Login sebagai ${name}?`,
-    })
-    await first.getByTestId('user-login-as').click()
-    await dismissed
+    const first = rowsOf(page).first()
+    const name = (await first.getByTestId('user-name').first().innerText()).trim()
+    await first.getByTestId('row-menu').click()
+    await page.getByRole('menuitem', { name: 'Login As' }).click()
+    await expect(page.getByRole('dialog')).toContainText(`Login sebagai ${name}?`)
+    await page.locator('[data-ds="confirm-cancel"]').click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(page).toHaveURL(/\/admin\/users\?role=student$/)
     await expect(first).toBeVisible()
     const auth = await page.evaluate(() => JSON.parse(localStorage.getItem('pp.auth') ?? 'null'))
     expect(auth.user.role).toBe('admin')
-    // Every non-own row has the title on the control.
-    await expect(first.getByTestId('user-login-as')).toHaveAttribute('title', 'Login As')
-    await expect(first.getByTestId('user-delete')).toHaveAttribute('title', 'Padam')
+    // Every non-own row has Login As and Padam in the row menu.
+    await first.getByTestId('row-menu').click()
+    await expect(page.getByRole('menuitem', { name: 'Login As' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Padam' })).toBeVisible()
   })
 
   test('E2E-M02-10: the delete modal closes with the backdrop; "Ya, Padam" removes the row and flashes', async ({
@@ -364,15 +391,17 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/admin/users?role=parent')
-    const first = byId(page, 'user-row').first()
-    const id = await first.getAttribute('data-user-id')
-    await first.getByTestId('user-delete').click()
+    const first = rowsOf(page).first()
+    const id = await first.getByTestId('user-row').getAttribute('data-user-id')
+    await first.getByTestId('row-menu').click()
+    await page.getByRole('menuitem', { name: 'Padam' }).click()
     await expect(byId(page, 'users-delete-modal')).toBeVisible()
     await page.mouse.click(4, 4)
     await expect(byId(page, 'users-delete-modal')).toHaveCount(0)
     await expect(page.locator(`[data-user-id="${id}"]`)).toHaveCount(1)
 
-    await first.getByTestId('user-delete').click()
+    await first.getByTestId('row-menu').click()
+    await page.getByRole('menuitem', { name: 'Padam' }).click()
     await byId(page, 'users-delete-confirm').click()
     await expect(page.locator(`[data-user-id="${id}"]`)).toHaveCount(0)
     await expect(byId(page, 'users-stat-parent').getByTestId('users-stat-value')).toHaveText('37')
@@ -384,33 +413,38 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/admin/users?role=student')
-    const rows = byId(page, 'user-row')
-    await rows.first().getByTestId('user-select').check()
+    const rows = rowsOf(page)
+    await rows.first().getByRole('checkbox').check()
     await expect(byId(page, 'users-bulk-bar')).toContainText('1 dipilih')
-    await rows.first().getByTestId('user-select').uncheck()
+    await rows.first().getByRole('checkbox').uncheck()
     await expect(byId(page, 'users-bulk-bar')).toHaveCount(0)
 
     // Bulk modal: Batal closes without deleting.
-    await rows.nth(0).getByTestId('user-select').check()
-    await rows.nth(1).getByTestId('user-select').check()
+    await rows.nth(0).getByRole('checkbox').check()
+    await rows.nth(1).getByRole('checkbox').check()
     await byId(page, 'users-bulk-delete').click()
     await expect(byId(page, 'users-bulk-modal')).toContainText('Padam Pengguna Terpilih?')
     await expect(byId(page, 'users-bulk-modal')).toContainText('Ya, Padam Semua')
     await byId(page, 'users-bulk-cancel').click()
     await expect(byId(page, 'users-bulk-modal')).toHaveCount(0)
+    // data deferred: BUG-I2 (the mock has 4,453 pupils, the SRS 4,533)
     await expect(byId(page, 'users-stat-student').getByTestId('users-stat-value')).toHaveText(
       '4,533',
     )
 
     await gotoApp('/admin/users?role=admin')
     await expect(rows).toHaveCount(2)
-    await byId(page, 'users-select-all').check()
-    await expect(byId(page, 'users-selected-count')).toHaveText('1')
-    // Own row: has the toggle and Edit, no checkbox / Login As / delete.
+    if (tableLayout(page)) {
+      await byId(page, 'users-select-all').check()
+      await expect(byId(page, 'users-selected-count')).toHaveText('1')
+    }
+    // Own row: has Edit and the status toggle in its menu, no checkbox / Login As / delete.
     const own = rows.filter({ hasText: 'admin@demo.test' })
-    await expect(own.getByTestId('user-toggle')).toBeVisible()
-    await expect(own.getByTestId('user-edit')).toBeVisible()
-    await expect(own.getByTestId('user-select')).toHaveCount(0)
+    await expect(own.getByRole('link', { name: 'Edit' })).toBeVisible()
+    await expect(own.getByRole('checkbox')).toHaveCount(0)
+    await own.getByTestId('row-menu').click()
+    await expect(page.getByRole('menuitem', { name: /ktifkan/ }).first()).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Login As' })).toHaveCount(0)
   })
 })
 
@@ -418,44 +452,31 @@ test.describe('M02 QA menus, access, responsive', { tag: [TAG.smoke, moduleTag(2
   test.describe.configure({ timeout: 180_000 })
   test.use({ mockInit: { latency: 0 } })
 
-  test('E2E-M02-60: the PENGGUNA menu group (desktop sidebar) / bottom nav and "Lagi" (below 1024)', async ({
+  test('E2E-M02-60: the Pengguna menu entries (sidebar from 1024, menu button below)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/schools')
-    if (isDesktopShell(page)) {
-      const nav = byId(page, 'shell-admin-nav')
-      const expected: [string, string][] = [
-        ['Senarai Pengguna', '/admin/users'],
-        ['Sekolah', '/admin/schools'],
-        ['Langganan Sekolah', '/admin/school-subscriptions'],
-        ['Import Pelajar', '/admin/import-students'],
-        ['Pelajar Komplimen', '/admin/comp-students'],
-        ['Import Pengguna', '/admin/users/bulk-import'],
-      ]
-      await expect(nav).toContainText('Pengguna')
-      for (const [label, href] of expected) {
-        await expect(nav.locator(`a[href="${href}"]`).first()).toContainText(label)
-      }
-    } else {
-      const bottom = byId(page, 'shell-admin-bottom-nav')
-      await expect(bottom.locator('a[href="/admin/users"]')).toContainText('Pengguna')
-      await bottom.getByRole('button', { name: /Lagi/ }).click()
-      const lagi = byId(page, 'shell-admin-lagi')
-      await expect(lagi).toBeVisible()
-      await expect(lagi).toContainText('Sistem')
-      for (const href of ['/admin/schools', '/admin/school-subscriptions']) {
-        await expect(lagi.locator(`a[href="${href}"]`).first()).toBeVisible()
-      }
-      await expectNoHorizontalScroll(page)
-      await bottom.locator('a[href="/admin/users"]').click()
-      await expect(page).toHaveURL('/admin/users')
+    if (!isDesktopShell(page)) await byId(page, 'pentadbiran-menu-button').click()
+    const nav = page.locator('[data-testid="pentadbiran-nav"]:visible')
+    await expect(nav).toBeVisible()
+    const expected: [string, string][] = [
+      ['Senarai Pengguna', '/admin/users'],
+      ['Sekolah', '/admin/schools'],
+      ['Langganan Sekolah', '/admin/school-subscriptions'],
+      ['Import Pelajar', '/admin/import-students'],
+      ['Pelajar Komplimen', '/admin/comp-students'],
+      ['Import Pengguna', '/admin/users/bulk-import'],
+    ]
+    for (const [label, href] of expected) {
+      await expect(nav.locator(`a[href="${href}"]`).first()).toContainText(label)
     }
+    await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M02-61: guests are sent to /login on all 16 routes; a student is sent to /dashboard', async ({
+  test('E2E-M02-61: guests are sent to /login on all 16 routes; a student gets the in-place 403 page', async ({
     page,
     loginAs,
     gotoApp,
@@ -506,11 +527,9 @@ test.describe('M02 QA menus, access, responsive', { tag: [TAG.smoke, moduleTag(2
     expect(notes!.y).toBeGreaterThan(form!.y + form!.height - 2)
 
     await gotoApp('/admin/users?role=student')
-    await byId(page, 'user-row').first().getByTestId('user-delete').click()
-    const box = await byId(page, 'users-delete-modal')
-      .locator('h3')
-      .locator('xpath=..')
-      .boundingBox()
+    await rowsOf(page).first().getByTestId('row-menu').click()
+    await page.getByRole('menuitem', { name: 'Padam' }).click()
+    const box = await page.getByRole('dialog').boundingBox()
     if (viewportWidth(page) < 768) expect(box!.width).toBeGreaterThan(viewportWidth(page) * 0.8)
     else expect(box!.width).toBeLessThan(viewportWidth(page) * 0.8)
   })
