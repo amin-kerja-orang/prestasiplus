@@ -25,6 +25,22 @@ const ADMIN = 'admin@demo.test'
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(15)] }
 
+/** Leaves the screen and opens it again in-app (no reload), so the page re-reads state set by a page-memory hook. */
+async function spaReopen(page: Page, path: string): Promise<void> {
+  await page.evaluate(async (to) => {
+    const app = document.querySelector('#app') as
+      | (Element & {
+          __vue_app__?: {
+            config: { globalProperties: { $router: { push: (p: string) => Promise<unknown> } } }
+          }
+        })
+      | null
+    const router = app!.__vue_app__!.config.globalProperties.$router
+    await router.push('/gamification/rewards')
+    await router.push(to)
+  }, path)
+}
+
 // These tests boot the app up to seven times and one boot may take the 15 s budget of `gotoApp`, so
 // the default 30 s only fits an idle machine. A longer limit, not a retry.
 test.describe.configure({ timeout: 90_000 })
@@ -56,7 +72,7 @@ test.describe('M15 S5 Kedai Hadiah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/gamification/rewards')
     await expectTabTitle(page, 'Kedai Hadiah | PRESTASIPLUS')
-    await expectAdminHeader(page, 'Kedai Hadiah')
+    await expectAdminHeader(page, 'Kedai Hadiah', 'Selamat datang kembali')
     const h1 = page.getByTestId('shop-title')
     await expect(h1).toHaveText('🎁 Kedai Hadiah')
     await expect(page.getByText('Tebus token anda untuk hadiah menarik!')).toBeVisible()
@@ -125,7 +141,7 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/gamification/mystery-box')
     await expectTabTitle(page, 'Kotak Misteri | PRESTASIPLUS')
-    await expectAdminHeader(page, 'Kotak Misteri')
+    await expectAdminHeader(page, 'Kotak Misteri', 'Selamat datang kembali')
     await expect(page.getByTestId('box-title')).toHaveText('📦 Kotak Misteri')
     await expect(
       page.getByText('Buka kotak & menang ganjaran rawak — nasib baik menanti!'),
@@ -170,6 +186,7 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
     provisional('needs the M14 hook setWallet'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
+      await gotoApp('/gamification/mystery-box') // the hooks need a booted page (window.__mock)
       await mock.hook('setWallet', 1, { syiling: 40 })
       await gotoApp('/gamification/mystery-box')
       await expect(page.getByTestId('box-short')).toHaveText(
@@ -190,6 +207,7 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
     provisional('needs the M14 hooks setWallet, getWallet and ledger'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
+      await gotoApp('/gamification/mystery-box') // the hooks need a booted page (window.__mock)
       await mock.hook('setWallet', 1, { syiling: 80 })
       await gotoApp('/gamification/mystery-box')
       // The next-prize override lives in the page, so it is set after the reload.
@@ -250,11 +268,15 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
     provisional('needs the M15 hook m15SetMysteryBox'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
+      await gotoApp('/gamification/mystery-box') // the hooks need a booted page (window.__mock)
       await mock.hook('setWallet', 1, { syiling: 80 })
+      await gotoApp('/gamification/mystery-box')
+      // The box state lives in the page (like the next-prize override), so it is set after the last reload and the
+      // screen is re-opened in-app.
       await mock.hook('m15SetMysteryBox', {
         stocks: Object.fromEntries(ODDS.map(([prize]) => [prize, 0])),
       })
-      await gotoApp('/gamification/mystery-box')
+      await spaReopen(page, '/gamification/mystery-box')
       await expect(page.getByTestId('box-unavailable')).toHaveText(
         'Kotak tidak tersedia buat masa ini.',
       )
@@ -270,9 +292,11 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
     provisional('needs the M14 hook setWallet and the M15 hook m15SetMysteryBox'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
+      await gotoApp('/gamification/mystery-box') // the hooks need a booted page (window.__mock)
       await mock.hook('setWallet', 1, { syiling: 500 })
-      await mock.hook('m15SetMysteryBox', { dailyMax: 1 })
       await gotoApp('/gamification/mystery-box')
+      await mock.hook('m15SetMysteryBox', { dailyMax: 1 })
+      await spaReopen(page, '/gamification/mystery-box')
       await page.getByTestId('box-btn').click()
       await page.getByTestId('box-confirm-ok').click()
       await page.getByTestId('box-result-close').click()
@@ -294,7 +318,7 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/cabutan')
     await expectTabTitle(page, 'Cabutan Bertuah | PRESTASIPLUS')
-    await expectAdminHeader(page, 'Cabutan Bertuah')
+    await expectAdminHeader(page, 'Cabutan Bertuah', 'Selamat datang kembali')
     await expect(page.getByTestId('cabutan-title')).toHaveText('🎟️ Cabutan Bertuah')
     await expect(
       page.getByText('Guna syiling untuk beli tiket & menangi hadiah hebat!'),
@@ -390,9 +414,11 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
       )
       expect(ledger[0]).toMatchObject({ description: 'Tiket Cabutan: Cabutan Demo' })
       expect(Math.abs(ledger[0]!.amount)).toBe(50)
+      await gotoApp('/gamification/mystery-box') // the hooks need a booted page (window.__mock)
       await mock.hook('setWallet', 1, { syiling: 40 })
       await gotoApp('/cabutan')
       await expect(page.getByTestId('draw-buy')).toBeDisabled()
+      await gotoApp('/gamification/mystery-box') // the hooks need a booted page (window.__mock)
       await mock.hook('setWallet', 1, { syiling: 1000 })
       await mock.setNow('2026-10-01T08:00:00+08:00')
       await gotoApp('/cabutan')
