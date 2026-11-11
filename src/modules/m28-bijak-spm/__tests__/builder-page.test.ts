@@ -235,7 +235,7 @@ describe('SetBuilderPage', () => {
     await flushPromises()
     expect(m.addSection).toHaveBeenCalledWith('p1', 'Bahagian Baru')
     expect(m.pool).toHaveBeenCalled()
-    expect(m.pool.mock.calls[0]![1]).toBe('sN')
+    expect(m.pool!.mock.calls[0]![1]).toBe('sN')
     expect(w.find('[data-testid="bank-no-section"]').exists()).toBe(false)
   })
 
