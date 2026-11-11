@@ -990,16 +990,18 @@ test.describe(
         await gotoApp(`${ALIAS}/reaction`)
         await expect(page.getByTestId('kirk-reaction-page')).toBeVisible()
         await expectHeader(page, 'pembelajaran', TITLES.s2)
-        // C-53: this mount has no shell section strip, so it keeps the page strip, with the V2 labels (not "Tahap N").
+        // C-53: this mount has no shell section strip, so it keeps the page strip. Its labels read "Tahap N: …"
+        // (DV-M12-39, urs/M12-kirkpatrick.md:2047, user decision 2026-10-31: "T1–T4" clashes with Tingkatan 1–5);
+        // only the Pentadbiran menu and shell strip keep the V2 "T1: Reaksi" (D77). Restored in 36807fa9b.
         await expect(page.getByTestId('pentadbiran-section-tabs')).toHaveCount(0)
         const tabs = page.getByTestId('kirk-tabs')
         await expect(tabs).toBeVisible()
         await expect(tabs.getByRole('link')).toHaveText(
-          ['Overview', 'T1: Reaksi', 'T2: Pembelajaran', 'T3: Tingkah Laku', 'T4: Hasil', 'Intervensi'],
+          ['Overview', 'Tahap 1: Reaksi', 'Tahap 2: Pembelajaran', 'Tahap 3: Tingkah Laku', 'Tahap 4: Hasil', 'Intervensi'],
           TEXT,
         )
-        await expect(tabs.getByRole('link', { name: 'T1: Reaksi' })).toHaveAttribute('href', `${ALIAS}/reaction`)
-        await expect(tabs.getByRole('link', { name: 'T4: Hasil' })).toHaveAttribute('href', `${ALIAS}/results`)
+        await expect(tabs.getByRole('link', { name: 'Tahap 1: Reaksi' })).toHaveAttribute('href', `${ALIAS}/reaction`)
+        await expect(tabs.getByRole('link', { name: 'Tahap 4: Hasil' })).toHaveAttribute('href', `${ALIAS}/results`)
         await gotoApp(`${ALIAS}/learning`)
         await expect(page.getByTestId('kirk-learning-page')).toBeVisible()
         await expectHeader(page, 'pembelajaran', TITLES.s3)
