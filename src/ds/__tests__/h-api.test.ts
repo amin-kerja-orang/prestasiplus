@@ -363,3 +363,38 @@ describe('copy defaults come from copy.ts (R10)', () => {
     expect(hl.find('[data-ds="heat-loading"]').exists()).toBe(true)
   })
 })
+
+describe('DsHeatGrid card layout below md (C-36)', () => {
+  const narrow = (): void => {
+    window.matchMedia = ((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+    })) as unknown as typeof window.matchMedia
+  }
+
+  it('prints the cell label (SP code) in place of the column header when given, else the header', async () => {
+    narrow()
+    const w = mount(DsHeatGrid, {
+      props: {
+        label: 'L',
+        columns: ['1', '2', '3'],
+        rows: [{ id: 'r', label: 'R', cells: [10, null, 80], cellLabels: ['1.1.1', null, '1.1.3'] }],
+      },
+    })
+    await w.vm.$nextTick()
+    const cards = w.findAll('[data-ds="heat-cards"] li li')
+    expect(cards.map((c) => c.text())).toEqual(['1.1.110%', '2-', '1.1.380%'])
+  })
+
+  it('without cellLabels the cards still show the column headers (other callers unchanged)', async () => {
+    narrow()
+    const w = mount(DsHeatGrid, {
+      props: { label: 'L', columns: ['Bab 1', 'Bab 2'], rows: [{ id: 'r', label: 'R', cells: [10, 95] }] },
+    })
+    await w.vm.$nextTick()
+    expect(w.findAll('[data-ds="heat-cards"] li li').map((c) => c.text())).toEqual(['Bab 110%', 'Bab 295%'])
+  })
+})

@@ -16,6 +16,8 @@ export interface HeatRow {
   label: string
   /** One value (0-100, or null for no data) per column. */
   cells: (number | null)[]
+  /** Optional text per cell for the card layout below md (e.g. an SP code), shown in place of the column header. */
+  cellLabels?: (string | null)[]
 }
 
 const props = withDefaults(
@@ -138,7 +140,7 @@ function detail(row: HeatRow, c: number): string {
             class="flex flex-col gap-1 rounded-chip p-2"
             :class="[bg(row.cells[i] ?? null), fg(row.cells[i] ?? null)]"
           >
-            <span class="truncate text-caption">{{ c }}</span>
+            <span class="truncate text-caption">{{ row.cellLabels?.[i] ?? c }}</span>
             <span class="tabular text-label font-bold">{{ text(row.cells[i] ?? null) }}</span>
           </li>
         </ul>

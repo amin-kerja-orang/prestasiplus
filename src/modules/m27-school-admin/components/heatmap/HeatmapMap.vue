@@ -41,6 +41,7 @@ const rows = computed<HeatRow[]>(() =>
       id: `${String(b.id)}-${String(n)}`,
       label: n === 0 ? (b.code ? `${b.code} ${b.name}` : b.name) : '…',
       cells: columns.value.map((_, c) => b.sp[n * MAX_COLUMNS + c]?.pct ?? null),
+      cellLabels: columns.value.map((_, c) => b.sp[n * MAX_COLUMNS + c]?.code ?? null),
     }))
   }),
 )
