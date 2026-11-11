@@ -165,7 +165,7 @@ describe('S6 Analisis Item: teacher table (E2E-M11-44, provisional)', () => {
       find: (sel: string) => w.find(`${sel}[data-question-id="${id}"]`),
     })
 
-    expect(byId(5).get('[data-testid="item-pct"]').text()).toBe('13%')
+    expect(byId(5).get('[data-testid="item-pct"]').text()).toBe('12.5%')
     expect(byId(5).get('[data-testid="item-dot"]').attributes('data-band')).toBe('sukar')
     expect(byId(5).get('[data-testid="item-disc"]').text()).toBe('-0.50')
     expect(byId(5).get('[data-testid="item-disc-note"]').text()).toBe('semak semula')

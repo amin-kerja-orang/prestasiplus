@@ -57,19 +57,20 @@ describe('S1 trend chart config', () => {
 })
 
 describe('S6 table helpers', () => {
-  it('pctLabel is the whole number rounded half up (decision 11)', () => {
+  it('pctLabel is one decimal with the zero fraction dropped (V2 round(x, 1))', () => {
     expect(pctLabel(75)).toBe('75%')
-    expect(pctLabel(12.5)).toBe('13%')
-    expect(pctLabel(57.9)).toBe('58%')
-    expect(pctLabel(33.333)).toBe('33%')
+    expect(pctLabel(12.5)).toBe('12.5%')
+    expect(pctLabel(57.9)).toBe('57.9%')
+    expect(pctLabel(33.3)).toBe('33.3%')
   })
 
-  it('tahapOf bands the whole-number % (AC-GUR-6-11)', () => {
+  it('tahapOf bands the unrounded % (V2 raw > 70 and >= 40)', () => {
     expect(tahapOf(71)).toBe('mudah')
     expect(tahapOf(70)).toBe('sederhana')
-    expect(tahapOf(70.4)).toBe('sederhana')
+    expect(tahapOf(70.4)).toBe('mudah')
     expect(tahapOf(40)).toBe('sederhana')
-    expect(tahapOf(39.5)).toBe('sederhana')
+    expect(tahapOf(39.5)).toBe('sukar')
+    expect(tahapOf(49.6)).toBe('sederhana')
     expect(tahapOf(39)).toBe('sukar')
   })
 

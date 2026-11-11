@@ -1,3 +1,5 @@
+import { formatNumber } from '@/lib/number'
+
 import type { ItemAnalysisRow } from '../../api/types'
 import { ITEM_COPY } from './copy'
 
@@ -14,13 +16,13 @@ export function clip80(text: string): string {
   return chars.length > 80 ? `${chars.slice(0, 80).join('')}…` : chars.join('')
 }
 
-/** "% betul" as a whole number rounded half up (decision 11, XS-5): 57.9 → "58%", 12.5 → "13%". */
-export const pctLabel = (p: number): string => `${String(Math.round(p))}%`
+/** "% betul" with one decimal, zero fraction dropped (V2 round(x, 1), TeacherAnalyticsController.php:177): 12.5 → "12.5%", 75 → "75%". */
+export const pctLabel = (p: number): string =>
+  `${formatNumber(p, { decimals: 1, dropZeroFraction: true })}%`
 
-/** One Tahap rule on the whole-number % betul (DV-GUR-6-1, AC-GUR-6-11): > 70 Mudah, 40–70 Sederhana, < 40 Sukar. */
+/** One Tahap rule on the unrounded % betul shown (V2 raw SQL > 70, API bandOf): > 70 Mudah, 40–70 Sederhana, < 40 Sukar. */
 export function tahapOf(p: number): ItemAnalysisRow['band'] {
-  const whole = Math.round(p)
-  return whole > 70 ? 'mudah' : whole >= 40 ? 'sederhana' : 'sukar'
+  return p > 70 ? 'mudah' : p >= 40 ? 'sederhana' : 'sukar'
 }
 
 /** D to 2 decimals; "Data Tidak Mencukupi" when it cannot be computed (fewer than 10 pupils, D113). */
