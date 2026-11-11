@@ -60,6 +60,7 @@ describe('LeaderboardPage (M08 S20)', () => {
     expect(w.get('h1').text()).toBe('Papan Pendahulu')
     expect(w.get('[data-ds=page-header]').text()).toContain('Kedudukan pelajar terbaik mengikut syiling')
     const hero = w.get('[data-testid=leaderboard-hero]')
+    expect(hero.find('.text-overline').exists()).toBe(false)
     expect(hero.attributes('data-ds')).toBe('hero-card')
     expect(hero.text()).toContain('Papan Pendahulu')
     expect(hero.text()).toContain('Siapa kumpul syiling paling banyak?')

@@ -12,7 +12,7 @@ import DsScoreRing from './DsScoreRing.vue'
 
 const props = withDefaults(
   defineProps<{
-    overline: string
+    overline?: string
     title: string
     subtitle?: string
     /** Progress 0 to 100 for the ring; omit to hide the ring. */
@@ -23,6 +23,7 @@ const props = withDefaults(
     ctaLabel?: string
   }>(),
   {
+    overline: undefined,
     subtitle: undefined,
     progress: undefined,
     ringLabel: undefined,
@@ -52,7 +53,7 @@ const hasRing = () => props.progress !== undefined && !!props.ringLabel
       <DsArt3D :name="art" size="lg" float class="pointer-events-none absolute right-4 top-2 sm:right-28 sm:top-6" />
     </template>
     <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
-      <span class="text-overline">{{ overline }}</span>
+      <span v-if="overline" class="text-overline">{{ overline }}</span>
       <h3 :id="titleId" class="font-display text-subheading font-bold text-primary-on">{{ title }}</h3>
       <p v-if="subtitle" class="text-label font-medium">{{ subtitle }}</p>
       <slot name="cta">

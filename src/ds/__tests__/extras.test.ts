@@ -109,6 +109,12 @@ describe('DsHeroCard', () => {
     expect(w.find('img').exists()).toBe(false)
     expect(w.find('[data-ds="hero-cta"]').exists()).toBe(false)
   })
+  it('renders the overline only when given', () => {
+    const none = mount(DsHeroCard, { props: { title: 't' } })
+    expect(none.find('.text-overline').exists()).toBe(false)
+    const some = mount(DsHeroCard, { props: { overline: 'Sambung', title: 't' } })
+    expect(some.get('.text-overline').text()).toBe('Sambung')
+  })
 })
 
 describe('DsRewardChip', () => {

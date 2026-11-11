@@ -92,7 +92,6 @@ const columns: TableColumn<Row>[] = [
   <DsPage title="Papan Pendahulu" subtitle="Kedudukan pelajar terbaik mengikut syiling" data-testid="leaderboard-page">
     <!-- V2 hero (leaderboard.blade.php:53-62): trophy, "Papan Pendahulu", "Siapa kumpul syiling paling banyak?" -->
     <DsHeroCard
-      overline="Syiling"
       title="Papan Pendahulu"
       subtitle="Siapa kumpul syiling paling banyak?"
       art="trophy"
