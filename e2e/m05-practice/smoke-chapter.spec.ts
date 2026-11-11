@@ -72,8 +72,9 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
   test('Q2 starts from an open chapter', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJAR)
     await gotoApp('/practice/chapter/MATH')
-    await tid(page, 'chapter-count-1-5').click()
-    await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/1\/quiz\?count=5$/)
+    const firstId = (await openChapterIds(page))[0] ?? ''
+    await tid(page, `chapter-count-${firstId}-5`).click()
+    await expect(page).toHaveURL(new RegExp(`/practice/chapter/MATH/${firstId}/quiz\\?count=5$`))
     await expect(tid(page, 'quiz-title')).toContainText('Bab 1:')
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
     await expectTabTitle(page, 'Kuiz Matematik | PRESTASIPLUS')
