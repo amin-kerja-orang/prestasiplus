@@ -51,10 +51,12 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'avgScore', header: 'Skor Purata' },
   { accessorKey: 'subjects', header: 'Subjek' },
 ]
+/** Below md the card repeats every column of the table; `slotted` draws the cell slot (the school link, the colour). */
 const cardFields = [
+  { key: 'name', label: 'Sekolah', slotted: true },
   { key: 'students', label: 'Pelajar' },
   { key: 'answers', label: 'Soalan' },
-  { key: 'accuracyText', label: 'Ketepatan' },
+  { key: 'accuracyText', label: 'Ketepatan', slotted: true },
   { key: 'avgScore', label: 'Skor Purata' },
   { key: 'subjects', label: 'Subjek' },
 ]
@@ -73,7 +75,7 @@ const pageSize = ref(20)
       :data="rows"
       :columns="columns"
       caption="Pembelajaran mengikut sekolah"
-      card-title="name"
+      card-title="index"
       :card-fields="cardFields"
       data-testid="kirk-schools-scroller"
     >

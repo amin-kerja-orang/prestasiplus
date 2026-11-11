@@ -10,7 +10,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { DsDataTable, DsPanel } from '@/ds'
 
 import { gps } from '../common/kirkpatrick-format'
-import { gpsText } from './results-format'
+import ResultsTrendValue from './ResultsTrendValue.vue'
 import type { ResultsTrend } from './results-types'
 
 const props = defineProps<{ trend: ResultsTrend }>()
@@ -38,13 +38,14 @@ const rows = computed<Row[]>(() =>
   }),
 )
 
+/** The GPS number and its label of year column `c` (slot rows are untyped). */
+const valueOf = (row: Row, c: number) => row[`v${c}`] as number | null
+const textOf = (row: Row, c: number) => row[`t${c}`] as string
+
 const columns = computed<TableColumn<Row>[]>(() => [
   { accessorKey: 'name', header: 'Subjek' },
   ...props.trend.years.map((y, c) => ({ accessorKey: `t${c}`, header: String(y) })),
   { accessorKey: 'trend', header: 'Trend' },
-])
-const cardFields = computed(() => [
-  ...props.trend.years.map((y, c) => ({ key: `t${c}`, label: String(y) })),
 ])
 
 /** Paged at 20 rows. */
@@ -61,8 +62,6 @@ const pageSize = ref(20)
       :data="rows"
       :columns="columns"
       caption="Trend GPS mengikut subjek"
-      card-title="name"
-      :card-fields="cardFields"
     >
       <template #name-cell="{ row }">
         <span
@@ -72,16 +71,29 @@ const pageSize = ref(20)
         >
       </template>
       <template v-for="(_, c) in trend.years" :key="c" #[`t${c}-cell`]="{ row }">
-        <span
-          :class="[
-            'text-label',
-            row.original[`v${c}`] === null
-              ? 'text-dimmed'
-              : gpsText(row.original[`v${c}`] as number),
-          ]"
-          data-testid="res-trend-cell"
-          >{{ row.original[`t${c}`] }}</span
+        <ResultsTrendValue :value="valueOf(row.original, c)" :text="textOf(row.original, c)" />
+      </template>
+      <template #card="{ row }">
+        <UButton
+          type="button"
+          color="neutral"
+          variant="link"
+          class="h-auto min-h-11 justify-start p-0 text-start text-label whitespace-normal"
         >
+          <span
+            :class="['text-label', row.first ? 'text-primary-t' : 'text-highlighted']"
+            data-testid="res-trend-row"
+            >{{ row.name }}</span
+          >
+        </UButton>
+        <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
+          <div v-for="(year, c) in trend.years" :key="c" class="min-w-0">
+            <dt class="text-caption text-muted">{{ year }}</dt>
+            <dd class="tabular text-body break-words whitespace-normal">
+              <ResultsTrendValue :value="valueOf(row, c)" :text="textOf(row, c)" />
+            </dd>
+          </div>
+        </dl>
       </template>
       <template #trend-cell>
         <UIcon name="i-ph-arrow-up" class="size-4 text-success" />

@@ -63,14 +63,16 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'score', header: 'Skor' },
   { accessorKey: 'tahapText', header: 'Tahap' },
 ]
+/** Below md the card repeats every column of the table; `slotted` draws the cell slot (school link, colours, badge). */
 const cardFields = [
-  { key: 'students', label: 'Pelajar' },
-  { key: 'activeText', label: 'Aktif' },
-  { key: 'answers', label: 'Soalan' },
-  { key: 'sessions', label: 'Sesi' },
-  { key: 'perActive', label: 'Purata/Aktif' },
-  { key: 'score', label: 'Skor' },
-  { key: 'tahapText', label: 'Tahap' },
+  { key: 'name', label: 'Sekolah', slotted: true },
+  { key: 'students', label: 'Pelajar', slotted: true },
+  { key: 'activeText', label: 'Aktif', slotted: true },
+  { key: 'answers', label: 'Soalan', slotted: true },
+  { key: 'sessions', label: 'Sesi', slotted: true },
+  { key: 'perActive', label: 'Purata/Aktif', slotted: true },
+  { key: 'score', label: 'Skor', slotted: true },
+  { key: 'tahapText', label: 'Tahap', slotted: true },
 ]
 
 /** Paged at 20 rows. */
@@ -87,7 +89,7 @@ const pageSize = ref(20)
       :data="data"
       :columns="columns"
       caption="Engagement mengikut sekolah"
-      card-title="name"
+      card-title="index"
       :card-fields="cardFields"
     >
       <template #name-cell="{ row }">

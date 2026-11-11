@@ -55,11 +55,13 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'accuracy', header: 'Ketepatan' },
   { accessorKey: 'grade', header: 'Anggaran Gred' },
 ]
+/** Below md the card repeats every column of the table; `slotted` draws the cell slot (links, colour, badge). */
 const cardFields = [
-  { key: 'schoolName', label: 'Sekolah' },
+  { key: 'name', label: 'Pelajar', slotted: true },
+  { key: 'schoolName', label: 'Sekolah', slotted: true },
   { key: 'answers', label: 'Soalan' },
-  { key: 'accuracy', label: 'Ketepatan' },
-  { key: 'grade', label: 'Anggaran Gred' },
+  { key: 'accuracy', label: 'Ketepatan', slotted: true },
+  { key: 'grade', label: 'Anggaran Gred', slotted: true },
 ]
 
 /** 50 rows a page (D9 deviation above). */
@@ -81,7 +83,7 @@ const pageSize = ref(50)
       :data="data"
       :columns="columns"
       caption="Ramalan prestasi pelajar aktif"
-      card-title="name"
+      card-title="index"
       :card-fields="cardFields"
     >
       <template #name-cell="{ row }">

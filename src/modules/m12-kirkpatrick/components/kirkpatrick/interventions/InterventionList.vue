@@ -116,14 +116,19 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'status', header: 'Status' },
   { accessorKey: 'review', header: 'Semakan' },
 ]
+/**
+ * Below md the card repeats every column of the table; `slotted` draws the cell slot (student, status badge, review).
+ * Description and action stay plain text: their cell has `min-w-44`, wider than a half-width card field.
+ */
 const cardFields = [
+  { key: 'studentId', label: 'Pelajar (ID)', slotted: true },
   { key: 'alert', label: 'Jenis Amaran' },
   { key: 'description', label: 'Penerangan Amaran' },
   { key: 'action', label: 'Tindakan Diambil' },
-  { key: 'before', label: 'Ketepatan Sebelum (%)' },
-  { key: 'after', label: 'Ketepatan Selepas (%)' },
-  { key: 'status', label: 'Status' },
-  { key: 'review', label: 'Semakan' },
+  { key: 'before', label: 'Ketepatan Sebelum (%)', slotted: true },
+  { key: 'after', label: 'Ketepatan Selepas (%)', slotted: true },
+  { key: 'status', label: 'Status', slotted: true },
+  { key: 'review', label: 'Semakan', slotted: true },
 ]
 
 /** Paged at 20 rows. */
