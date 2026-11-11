@@ -894,8 +894,8 @@ test.describe('M12 S6 Rantaian Impak (admin)', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
-    // V2 admin/kirkpatrick/chain.blade.php:26-27, 41-42: 4 columns and the arrows from 768. The app switches at lg
-    // (ChainCards.vue: lg:flex-row, hidden lg:flex arrows), so the 768 tablet shows a single column without arrows.
+    // V2 admin/kirkpatrick/chain.blade.php:26-27, 41-42: 4 columns and the arrows from 768 (C-63: the app switches at md,
+    // ChainCards.vue), one column without arrows below 768.
     await loginAs(ADMIN)
     await gotoApp(S6)
     const cols = await columns(page.locator('[data-testid^="chain-t"]:not([data-testid="chain-tabs"])'))
