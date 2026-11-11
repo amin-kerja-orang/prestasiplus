@@ -134,6 +134,7 @@ test.describe('M15 QA student rows', MODULE, () => {
     mock,
   }) => {
     await loginAs(PELAJAR)
+    await gotoApp('/gamification/history') // the mock handle needs a booted app before a hook call
     await mock.hook('setWallet', PELAJAR_ID, { syiling: 40 })
     await gotoApp('/gamification/mystery-box')
     const btn = page.getByTestId('box-btn')
