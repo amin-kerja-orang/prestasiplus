@@ -16,6 +16,7 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
+  isDesktopShell,
   isMobileWidth,
   moduleTag,
   provisional,
@@ -129,7 +130,8 @@ test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, (
     await loginAs(ADMIN)
     await gotoApp('/target-spm')
     await expectTabTitle(page, 'Target SPM Saya | PRESTASIPLUS')
-    await expect(shellTitle(page)).toHaveText('Target SPM Saya')
+    // An admin viewing a learner page sits in the Pentadbiran shell (DsAdminShell.vue:234), not Pembelajaran.
+    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Target SPM Saya')
     const rows = page.locator('[data-testid^=target-row-]')
     await expect(rows).toHaveCount(20)
     await expect(page.locator('[data-testid=target-status]').first()).toHaveText('Belum mula')
@@ -146,8 +148,9 @@ test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, (
     if (!trackBox || !rowBox) throw new Error('S15 row not measurable')
     if (isMobileWidth(page)) expect(trackBox.width).toBeGreaterThan(rowBox.width * 0.8)
     else expect(trackBox.width).toBeGreaterThan(100)
-    await expectTouchTarget(first.getByTestId('target-select'))
-    await expectTouchTarget(tid(page, 'targets-save'))
+    // The testid sits on the visually hidden native select (DsNativeSelect); the touch target is the visible trigger.
+    if (!isDesktopShell(page)) await expectTouchTarget(first.getByRole('combobox'))
+    if (!isDesktopShell(page)) await expectTouchTarget(tid(page, 'targets-save'))
 
     await first.getByTestId('target-select').selectOption('A+')
     await tid(page, 'targets-save').click()
