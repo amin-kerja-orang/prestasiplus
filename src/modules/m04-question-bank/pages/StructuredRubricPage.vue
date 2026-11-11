@@ -15,9 +15,11 @@ import { useRouter } from 'vue-router'
 import { ApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
+import RichText from '@/components/question-display/RichText.vue'
 import { DsBackLink, DsFormField, DsLoadError, DsPage, DsPanel, DsText } from '@/ds'
 
 import { fetchStructuredRubric, saveStructuredRubric, type StructuredRubric } from '../api/structured-rubric'
+import { mathmlToLatex } from '../lib/mathml'
 import { LOAD_ERROR, isNotFound } from '../lib/ui-errors'
 
 const props = defineProps<{ id: string }>()
@@ -124,7 +126,7 @@ async function submit(): Promise<void> {
           Soalan #{{ loaded.question.id }} · {{ loaded.question.subject ?? 'Subjek' }}{{ loaded.question.level ? ` · ${loaded.question.level}` : '' }} ·
           {{ loaded.question.totalMarks }} markah
         </p>
-        <p class="mt-3 text-body break-words whitespace-pre-line text-highlighted" data-testid="rubric-stimulus">{{ loaded.question.stimulus }}</p>
+        <p class="mt-3 text-body break-words whitespace-pre-line text-highlighted" data-testid="rubric-stimulus"><RichText :text="mathmlToLatex(loaded.question.stimulus)" /></p>
         <UCard variant="subtle" class="mt-4">
           <p class="text-body text-default">
             Rubrik di sini yang menentukan pemarkahan automatik. Setiap <strong>poin</strong> ialah satu isi yang diberi markah (contoh:
@@ -144,7 +146,7 @@ async function submit(): Promise<void> {
         <DsPanel v-for="sub in loaded.subs" :key="sub.id" data-testid="rubric-sub">
           <div class="flex items-start gap-3">
             <span class="shrink-0 text-body font-semibold text-primary" data-testid="rubric-sub-number">{{ sub.number }}</span>
-            <p class="min-w-0 flex-1 text-body break-words text-highlighted">{{ sub.body }}</p>
+            <p class="min-w-0 flex-1 text-body break-words text-highlighted"><RichText :text="mathmlToLatex(sub.body)" /></p>
             <UBadge color="neutral" variant="subtle" :label="`${sub.marks}m`" class="shrink-0" />
           </div>
 

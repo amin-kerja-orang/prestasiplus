@@ -48,6 +48,11 @@ export const KESUKARAN = [1, 2, 3, 4, 5].map((value) => ({ value, label: DIFFICU
 export interface StudioDraft {
   /** Stored question TP of a question whose parts carry no TP (intake-born): the parts inherit it, a save keeps it. */
   inheritedTp?: number | null
+  /**
+   * A migrated question whose parts the Studio cannot hold (rubric points, marks scheme, nesting): its own parts and TP go back
+   * verbatim on save, so the other fields stay editable and savable without losing the scheme (K10). The scheme is edited in Subjektif.
+   */
+  lockedParts?: { parts: unknown[]; tp: number | null }
   subjectId: string
   educationLevelId: string
   kertas: Kertas
@@ -369,8 +374,8 @@ export function toRequestBody(d: StudioDraft, opts: { sendScript?: boolean } = {
     difficultyLevel: d.difficulty,
     questionType: 'essay',
     questionText: d.stem.trim(),
-    parts: d.leaves.map(leafToPart),
-    tag: { unitId: d.unitId, spIds: d.spIds, tp: draftTp(d) },
+    parts: d.lockedParts === undefined ? d.leaves.map(leafToPart) : d.lockedParts.parts,
+    tag: { unitId: d.unitId, spIds: d.spIds, tp: d.lockedParts === undefined ? draftTp(d) : d.lockedParts.tp },
     curriculumChapterId: d.chapterId === '' ? null : d.chapterId,
     kertas: d.kertas === '' ? null : d.kertas,
     numberLabel: d.numberLabel.trim() === '' ? null : d.numberLabel.trim(),
@@ -546,6 +551,7 @@ export function hydrate(q: WireQuestion): Hydrated {
     explanationEn: q.explanationEn ?? null,
     scriptType: q.scriptType ?? 'rumi',
     ...(leafTp === null && storedTp !== null ? { inheritedTp: storedTp } : {}),
+    ...(unsupported.length > 0 ? { lockedParts: { parts: q.parts ?? [], tp: storedTp } } : {}),
   }
   return { draft, unsupported }
 }

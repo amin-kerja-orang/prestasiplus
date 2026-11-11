@@ -143,7 +143,9 @@ onBeforeUnmount(() => clearTimeout(keepTimer))
 const SERVING = ['approved', 'published']
 /** An approved or published question is read-only until "Edit sebagai draf" (V2 S1.3); that button writes the draft version. */
 const unlocked = computed(() => !SERVING.includes(status.value))
-const readOnly = computed(() => !unlocked.value || unsupported.value.length > 0)
+/** Only the part tree is locked for an unsupported question; every other field edits and saves (the parts go back verbatim). */
+const readOnly = computed(() => !unlocked.value)
+const partsLocked = computed(() => !unlocked.value || unsupported.value.length > 0)
 /** The form differs from what is stored: a status move would act on the stored version. */
 const dirty = computed(() => saved.value !== null && !sameDraft(draft.value, saved.value))
 const subjectName = computed(() => subjects.value.find((x) => x.id === draft.value.subjectId)?.name ?? '')
@@ -395,6 +397,9 @@ async function save(): Promise<void> {
       />
       <DsCallout v-if="unsupported.length > 0" tone="warning" title="Soalan ini belum boleh disunting di Studio" data-testid="studio-unsupported">
         <DsText v-for="u in unsupported" :key="u" variant="body">{{ u }}</DsText>
+        <DsText v-if="props.id !== undefined" variant="body">
+          Skema dan rubrik disunting di <RouterLink :to="`/admin/spm/subjektif/${props.id}/sunting`" class="underline" data-testid="studio-unsupported-subjektif">Sunting Subjektif</RouterLink>; medan lain boleh disunting dan disimpan di sini.
+        </DsText>
       </DsCallout>
 
       <StudioPictureBanner v-if="edit" :flags="pictureFlags.flags" :image-held="pictureFlags.held" />
@@ -482,12 +487,12 @@ async function save(): Promise<void> {
             :model-value="leaf"
             :testid="`studio-leaf-${i}`"
             :can-remove="draft.leaves.length > 1"
-            :disabled="readOnly"
+            :disabled="partsLocked"
             :errors="fieldProblems"
             @update:model-value="draft.leaves[i] = $event"
             @remove="removeLeaf(leaf.uid)"
           />
-          <UButton type="button" color="neutral" variant="soft" :disabled="readOnly" data-testid="studio-add-leaf" @click="addLeaf">
+          <UButton type="button" color="neutral" variant="soft" :disabled="partsLocked" data-testid="studio-add-leaf" @click="addLeaf">
             + Sub-bahagian
           </UButton>
           <DsFormField v-slot="{ id: fid }" native label="Penjelasan" for="studio-explanation" hint="Penjelasan akan ditunjukkan kepada pelajar selepas menjawab" :error="fieldProblems.explanation">

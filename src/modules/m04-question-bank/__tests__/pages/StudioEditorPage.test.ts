@@ -407,15 +407,24 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(router.currentRoute.value.fullPath).toBe('/admin/studio/questions/create')
   })
 
-  it('does not let an essay question be saved from here (nothing is dropped silently)', async () => {
+  it('a migrated essay question edits and saves its other fields and sends its own parts back verbatim (K10)', async () => {
+    const parts = [{ label: 'a', prompt: { ms: 'Terangkan.' }, mode: 'essay', marks: 10, key: { kind: 'points', marks: 10, points: ['isi 1'] } }]
     studio.fetchStudioQuestion.mockResolvedValue({
       id: '600', status: 'draft', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Terangkan proses fotosintesis dengan lengkap.',
-      questionImage: null, curriculumChapterId: null, stimulusGroup: null, tag: { unitId: null, spIds: [], tp: null },
-      parts: [{ label: 'a', prompt: { ms: 'Terangkan.' }, mode: 'essay', marks: 10, key: { kind: 'rubric' } }],
+      questionImage: null, curriculumChapterId: null, stimulusGroup: null, tag: { unitId: null, spIds: [], tp: 4 }, parts,
     })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '600', status: 'draft' }, status: 'ok' })
     const w = await render('/admin/studio/questions/600/sunting', '600')
     expect(t(w, 'studio-unsupported').text()).toContain('(a)')
-    expect(t(w, 'studio-save-bar').find('button[type="submit"]').attributes('disabled')).toBeDefined()
+    expect(t(w, 'studio-unsupported-subjektif').attributes('href')).toBe('/admin/spm/subjektif/600/sunting')
+    expect(t(w, 'studio-stem').attributes('disabled')).toBeUndefined()
+    expect(t(w, 'studio-add-leaf').attributes('disabled')).toBeDefined()
+    expect(t(w, 'studio-save-bar').find('button[type="submit"]').attributes('disabled')).toBeUndefined()
+    await t(w, 'studio-save-bar').find('button[type="submit"]').trigger('click')
+    await flushPromises()
+    const body = studio.updateStudioQuestion.mock.calls[0]?.[1] as { parts: unknown; tag: { tp: number | null } }
+    expect(body.parts).toEqual(parts)
+    expect(body.tag.tp).toBe(4)
   })
 
   it('an approved question is read-only until "Edit sebagai draf" writes the draft at once', async () => {

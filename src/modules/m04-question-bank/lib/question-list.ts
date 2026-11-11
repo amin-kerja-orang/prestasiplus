@@ -7,6 +7,8 @@ import type { DsStatus } from '@/ds'
 
 import { isHttpMode } from '@/api'
 
+import { mathmlToLatex } from './mathml'
+
 import {
   NO_WIRE_BULK_ACTIONS,
   NO_WIRE_STATUS_FILTERS,
@@ -127,7 +129,9 @@ export function tileName(name: string): string {
 }
 
 /** Question text in the list: cut to 80 characters + "..." (FR-M04-08). */
-export function excerpt(text: string): string {
+export function excerpt(raw: string): string {
+  // A migrated question's baked MathML would print as markup: read it as its LaTeX source before cutting.
+  const text = mathmlToLatex(raw)
   return text.length > 80 ? `${text.slice(0, 80)}...` : text
 }
 
