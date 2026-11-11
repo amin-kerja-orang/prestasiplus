@@ -19,6 +19,25 @@ const header = (page: Page) => ({
   subtitle: page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]'),
 })
 
+/** The value of each tile of a DsStatRow, in order (the value span is the tabular number of the tile). */
+const statValues = (page: Page) =>
+  page.locator('[data-testid=stat-cards] li span.tabular:not([data-ds=stat-tile-delta])')
+
+/** Items of a Nuxt UI select (opens the listbox, reads the options, closes it). */
+async function selectItems(page: Page, testid: string): Promise<string[]> {
+  await page.getByTestId(testid).click()
+  const options = page.getByRole('option')
+  await page.waitForTimeout(300)
+  const texts = (await options.allTextContents()).map((t) => t.trim())
+  await page.keyboard.press('Escape')
+  return texts
+}
+
+async function pickItem(page: Page, testid: string, label: string): Promise<void> {
+  await page.getByTestId(testid).click()
+  await page.getByRole('option', { name: label, exact: true }).click()
+}
+
 test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
@@ -48,22 +67,16 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
     await expectTabTitle(page, '5 MARIKH - Kimia — Dashboard Kelas | PRESTASIPLUS')
     await expect(header(page).title).toHaveText('5 MARIKH - Kimia')
+    // FR-M08-03: the subtitle is "{school} · {subject} · {year}" (no class code).
     await expect(header(page).subtitle).toContainText('· Kimia · 2026')
-    await expect(page.getByTestId('class-sub')).toContainText('Kod: DMO101')
+    await expect(page.getByTestId('class-sub')).toContainText('· Kimia · 2026')
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/prestasi/kelas')
 
-    await expect(page.locator('[data-testid=stat-cards] p.text-2xl')).toHaveText([
-      '8',
-      '42.6%',
-      '11',
-      '68',
-      '6.1m',
-      '6',
-    ])
+    await expect(statValues(page)).toHaveText(['8', '42.6%', '11', '68', '6.1m', '6'])
 
-    await expect(page.getByTestId('hc-on')).toHaveText('0')
-    await expect(page.getByTestId('hc-below')).toHaveText('1')
-    await expect(page.getByTestId('hc-none')).toHaveText('7')
+    await expect(page.getByTestId('hc-on')).toHaveText(/^0\s*On Track \/ Above$/)
+    await expect(page.getByTestId('hc-below')).toHaveText(/^1\s*Below Target$/)
+    await expect(page.getByTestId('hc-none')).toHaveText(/^7\s*Tiada Data$/)
     await expect(page.getByTestId('hc-tov')).toHaveText('Purata TOV: 50%')
     await expect(page.getByTestId('hc-etr')).toHaveText('Purata ETR: 65%')
     await expect(page.getByTestId('hc-full')).toHaveAttribute('href', '/headcount/504/summary')
@@ -85,7 +98,8 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
   test('S5 the class select switches class', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/kelas/2001')
     await expect(page.getByTestId('switch-class')).toBeVisible()
-    await page.getByTestId('switch-class').selectOption('/prestasi/kelas/2002')
+    await pickItem(page, 'switch-class', '5 MARIKH - Sejarah')
+    await expect(page).toHaveURL(/\/prestasi\/kelas\/2002$/)
     await expect(page.getByTestId('class-name')).toHaveText('5 MARIKH - Sejarah')
     await expect(page.getByTestId('stat-sesi')).toContainText('3')
   })
@@ -134,8 +148,13 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/analitik/kelas?classroom_id=2001&subject_id=10')
-    await expect(page.getByTestId('filter-kelas').locator('option')).toHaveCount(2)
-    await page.getByTestId('filter-risiko').selectOption('critical')
+    // V2 "Semua Kelas" + the two own classes.
+    expect(await selectItems(page, 'filter-kelas')).toEqual([
+      'Semua Kelas',
+      '5 MARIKH - Kimia',
+      '5 MARIKH - Sejarah',
+    ])
+    await pickItem(page, 'filter-risiko', 'Kritikal')
     await expect(page.locator('[data-testid^=student-row-]')).toHaveCount(2)
     const q = new URL(page.url()).searchParams
     expect(q.get('classroom_id')).toBe('2001')
@@ -187,23 +206,17 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/prestasi/kelas/4')
     await expect(page.getByTestId('prestasi-kelas-detail-page')).toBeVisible()
-    await expect(page.getByTestId('class-sub')).toContainText('Kod: KCC904')
     await expect(page.getByTestId('class-sub')).toContainText('Bahasa Melayu · 2026')
-    await expect(page.locator('[data-testid=stat-cards] p.text-2xl')).toHaveText([
-      '58',
-      '0%',
-      '0',
-      '0',
-      '0m',
-      '0',
-    ])
+    await expect(statValues(page)).toHaveText(['58', '0%', '0', '0', '0m', '0'])
     await expect(page.getByTestId('attention-count')).toHaveText('(58)')
     await expect(page.getByTestId('trend-empty')).toContainText(
       'Belum ada aktiviti dalam 30 hari terakhir.',
     )
     await expect(page.getByTestId('headcount-block')).toHaveCount(0)
-    await expect(page.getByTestId('switch-class').locator('option')).toHaveCount(1)
-    await expect(page.locator('[data-testid^=rank-row-]')).toHaveCount(58)
+    expect(await selectItems(page, 'switch-class')).toEqual([])
+    // 25 rows per page (DsDataTable pager); the pager holds the 58 members.
+    await expect(page.locator('[data-testid^=rank-row-]')).toHaveCount(25)
+    await expect(page.getByTestId('ranking-card').locator('[data-ds=data-table-pager]')).toContainText('daripada 58 hasil')
     await expectNoHorizontalScroll(page)
   })
 
@@ -213,10 +226,11 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/prestasi/kelas/516')
     await expect(page.getByTestId('class-name')).toHaveText('4 Simulasi')
-    await expect(page.getByTestId('class-sub')).toContainText('· 2026 · Kod: DEMO-4S')
-    await expect(page.getByTestId('hc-on')).toHaveText('7')
-    await expect(page.getByTestId('hc-below')).toHaveText('8')
-    await expect(page.getByTestId('hc-none')).toHaveText('0')
+    // FR-M08-03: "{school} · {year}" for a class without subject.
+    await expect(page.getByTestId('class-sub')).toContainText('SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG · 2026')
+    await expect(page.getByTestId('hc-on')).toHaveText(/^7\s*On Track \/ Above$/)
+    await expect(page.getByTestId('hc-below')).toHaveText(/^8\s*Below Target$/)
+    await expect(page.getByTestId('hc-none')).toHaveText(/^0\s*Tiada Data$/)
     await expect(page.getByTestId('hc-tov')).toHaveText('Purata TOV: 62.1%')
     await expect(page.getByTestId('hc-etr')).toHaveText('Purata ETR: 71.9%')
     await expect(page.getByTestId('hc-full')).toHaveAttribute('href', '/headcount/213/summary')
@@ -225,14 +239,7 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
 
   test('S5 class 228: 93 · 77.6% · 1618 · 34882 · 10.4m · 2', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/kelas/228')
-    await expect(page.locator('[data-testid=stat-cards] p.text-2xl')).toHaveText([
-      '93',
-      '77.6%',
-      '1618',
-      '34882',
-      '10.4m',
-      '2',
-    ])
+    await expect(statValues(page)).toHaveText(['93', '77.6%', '1618', '34882', '10.4m', '2'])
     await expectNoHorizontalScroll(page)
   })
 
@@ -254,8 +261,9 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
   }) => {
     await gotoApp('/analitik/kelas?classroom_id=4')
     await expect(page.getByTestId('student-table')).toBeVisible()
-    await expect(page.getByTestId('filter-kelas').locator('option')).toHaveCount(0)
-    await expect(page.getByTestId('filter-subjek').locator('option')).toHaveCount(10)
+    // V2 "Semua Kelas" / "Semua Subjek" lead each select; the admin has no own classes.
+    expect(await selectItems(page, 'filter-kelas')).toEqual(['Semua Kelas'])
+    expect(await selectItems(page, 'filter-subjek')).toHaveLength(11)
     await expect(page.getByTestId('sum-pelajar')).toContainText('6')
     await expect(page.getByTestId('sum-ketepatan')).toContainText('0.0%')
     await expect(page.getByTestId('sum-berisiko')).toContainText('0')
@@ -263,7 +271,7 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.locator('[data-testid=student-table] tbody tr').first()).toContainText(
       'E – B',
     )
-    await page.getByTestId('filter-risiko').selectOption('low')
+    await pickItem(page, 'filter-risiko', 'Rendah')
     await expect(page.locator('[data-testid^=student-row-]')).toHaveCount(4)
     await expectNoHorizontalScroll(page)
   })
@@ -275,8 +283,9 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
 
   test('S8 without a class: the empty state', async ({ page, gotoApp }) => {
     await gotoApp('/analitik/kelas')
+    // V2 analitik-kelas: "Tiada pelajar sepadan dengan tapisan ini."
     await expect(page.getByTestId('analitik-empty')).toContainText(
-      'Tiada data analitik untuk kelas dan subjek ini.',
+      'Tiada pelajar sepadan dengan tapisan ini.',
     )
     await expectNoHorizontalScroll(page)
   })
@@ -302,8 +311,9 @@ test.describe('M08 T7 pelajar', { tag: [moduleTag(8)] }, () => {
     await expect(page.locator('[data-page=not-found]')).toBeVisible()
   })
 
-  test('S4 shows the empty state', async ({ page, gotoApp }) => {
+  test('S4 is the in-place 403 page (a pupil owns no class)', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/kelas')
-    await expect(page.getByTestId('kelas-empty')).toBeVisible()
+    await expect(page).toHaveURL(/\/prestasi\/kelas$/)
+    await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
   })
 })
