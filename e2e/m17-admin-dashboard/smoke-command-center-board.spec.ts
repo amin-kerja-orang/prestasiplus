@@ -194,7 +194,7 @@ test.describe('S2 admin', MODULE, () => {
     if (ALESA_ON) await expect(tid(page, 'cc-alesa')).toHaveText('Memuatkan wawasan...')
     await mock.clearLatency(LIVE)
     await mock.advanceTime(61_000)
-    await expect(tid(page, 'cc-kpi-value').nth(3)).toHaveText('83%')
+    await expect(tid(page, 'cc-kpi-value').nth(3)).toHaveText('82.9%')
     if (ALESA_ON) await expect(tid(page, 'cc-alesa')).not.toHaveText('Memuatkan wawasan...')
     else await expect(tid(page, 'cc-panel-alesa')).toHaveCount(0)
   })
@@ -204,7 +204,7 @@ test.describe('S2 admin', MODULE, () => {
     gotoApp,
   }) => {
     await openBoard(page, gotoApp, CC)
-    await expect(tid(page, 'cc-kpi-value')).toHaveText(['9', '3,152', '477,743', '83%'])
+    await expect(tid(page, 'cc-kpi-value')).toHaveText(['9', '3,152', '477,743', '82.9%'])
     await expect(tid(page, 'cc-kpi-sub')).toHaveText([
       'langganan aktif',
       '1,563 aktif menjawab',
@@ -260,7 +260,7 @@ test.describe('S2 admin', MODULE, () => {
     await openBoard(page, gotoApp, CC)
     const kirk = tid(page, 'cc-kirk-text')
     await expect(kirk.nth(0)).toHaveText('★★★★★ 4.6/5')
-    await expect(kirk.nth(1)).toHaveText('83% ketepatan')
+    await expect(kirk.nth(1)).toHaveText('82.9% ketepatan')
     // T3 is the computed 30-day engaged count (the login / activity seed is an owner gap): number + label
     await expect(kirk.nth(2)).toHaveText(/^\d+ aktif 30h$/)
     await expect(kirk.nth(3)).toHaveText('GPS 2.880')
@@ -275,7 +275,7 @@ test.describe('S2 admin', MODULE, () => {
     if (ALESA_ON) {
       await expect(tid(page, 'cc-alesa')).toHaveText(
         '"Platform menunjukkan penurunan 67% minggu ini. 3.6% pelajar terlibat aktif. ' +
-          'Ketepatan purata 83% dengan 9 sekolah aktif. GPS keseluruhan: 2.88."',
+          'Ketepatan purata 82.9% dengan 9 sekolah aktif. GPS keseluruhan: 2.88."',
       )
     } else {
       await expect(tid(page, 'cc-panel-alesa')).toHaveCount(0)

@@ -379,7 +379,7 @@ test.describe('breadcrumb', MODULE, () => {
     expect(await current.evaluate((e) => e.tagName)).not.toBe('A')
     expect(
       Number(await current.evaluate((e) => getComputedStyle(e).fontWeight)),
-    ).toBeGreaterThanOrEqual(700)
+    ).toBeGreaterThanOrEqual(600) // v2: the emphasis weight is font-semibold (600)
     const y = async (id: string) => (await page.getByTestId(id).boundingBox())!.y
     expect(await y('sd-perutusan')).toBeLessThan(await y('sd-breadcrumb'))
     expect(await y('sd-breadcrumb')).toBeLessThan(await y('sd-banner'))
