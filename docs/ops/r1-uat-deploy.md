@@ -145,11 +145,24 @@ cp -p "$f" "$f.sha256" "$d/" && (cd "$d" && sha256sum -c "$(basename "$f").sha25
 
 `backup.sh` retention only looks at the top level of `PP_BACKUP_DIR` (`find -maxdepth 1`), so the `staged-clone/` subfolder is never rotated away. The copy is a whole-database dump, so it holds personal data and, once raw data is in the database, raw `.cloud` data: it is purged with the rest (table below).
 
+**Check step of each stage.** After each stage, run the verify for that stage's sector (`slot.sh` passes the flags to `migrate:verify` unchanged):
+
+| Stage | What it loads | Check after the stage |
+|---|---|---|
+| 1 | core (users, schools, classes) | `deploy/vps/migration/slot.sh etl migrate:verify --sector core` |
+| 2 | questions | `deploy/vps/migration/slot.sh etl migrate:verify --sector questions` |
+| 3 | structured | `deploy/vps/migration/slot.sh etl migrate:verify --sector structured` |
+| 4 | papers | `deploy/vps/migration/slot.sh etl migrate:verify --sector papers` |
+| 5 | terbit | `deploy/vps/migration/slot.sh etl migrate:verify --sector terbit` |
+| 6 | activity | `deploy/vps/migration/slot.sh etl migrate:verify --sector activity` |
+
+`migrate:verify` also takes `--entities a,b` to check named entities only. Entities outside the stage's sector show "not in this stage" and do not fail the run. After stage 6, run ONE final full `deploy/vps/migration/slot.sh etl migrate:verify` with no flag: it must pass before the final step below.
+
 **Retention decision (PO, KP-23).** The raw V2 dump and the per-stage dumps on UAT are kept until the staged clone is complete and verified, then DELETED 7 days after stage 6 finishes.
 
 **Step 0, at stage 1: set a PROVISIONAL purge date.** `PP_RAW_PURGE_BY` defaults to 2026-11-06, which is already past, so as soon as raw data is on the host `restore-point.sh raw-check` exits 1 every night and `backup.sh` sends "RAW DATA RETENTION OVERDUE". At the start of stage 1 set `PP_RAW_PURGE_BY=<planned stage-6 date + 7 days>` in `prod.env`. When stage 6 passes, reset it to the actual date + 7 days (final step below). `raw-check` also lists the copied pre-stage dumps in `staged-clone/` as raw copies.
 
-**Final step, once stage 6 has passed its verification.**
+**Final step, once stage 6 and the final full verify have passed.**
 
 1. Reset the purge date in `prod.env` from the provisional value to the real one: `PP_RAW_PURGE_BY=<date stage 6 finished + 7 days>` (`YYYY-MM-DD`, for example `date -u -d '+7 days' +%F` run on the day stage 6 passed). From that date `restore-point.sh raw-check` turns every remaining raw copy into a `RAW RETENTION OVERDUE` warning (exit 1), and the nightly `backup.sh` sends the alert "RAW DATA RETENTION OVERDUE". Before that date it only reports.
 2. Do nothing else until the date; the copies stay as the fallback for the 7 days.
