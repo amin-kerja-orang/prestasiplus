@@ -237,8 +237,7 @@ test.describe('content (QA extras)', MODULE, () => {
     await expect(page).toHaveURL(/\/prestasi\/sekolah$/)
     await page.goBack()
     await expect(page.getByTestId('sd-page')).toBeVisible({ timeout: 60_000 })
-    await page.locator('[data-testid="sd-breadcrumb"] a').click()
-    await expect(page).toHaveURL(/\/dashboard$/)
+    // The "← Papan Pemuka" breadcrumb to /dashboard was removed (T-C11 ruling): the school admin's landing is /admin-sekolah.
     await expect(page.locator('[data-page=forbidden]')).toHaveCount(0)
     await expect(page.locator('[data-page=not-found]')).toHaveCount(0)
   })
@@ -374,14 +373,15 @@ test.describe('presentation (QA extras)', MODULE, () => {
     mock,
   }) => {
     await signIn(page, AZLAN)
-    await open(page, gotoApp)
-    await spaGoto(page, '/admin-sekolah/pilih-sekolah')
+    // First load of S0 without cached data: open another school-admin page first (S0 never loaded in this session;
+    // a reload would reset the in-memory mock and drop the injected fault), then go to S0 inside the app.
+    await gotoApp('/admin-sekolah/pelajar')
     await mock.networkErrorNext('/api/admin-sekolah/dashboard')
     await spaGoto(page, PAGE)
     await expect(page.getByTestId('sd-error')).toBeVisible()
     await expect(page.getByTestId('sd-cards')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
-    await spaGoto(page, '/admin-sekolah/pilih-sekolah')
+    await spaGoto(page, '/admin-sekolah/pelajar')
     await mock.failNext('/api/admin-sekolah/dashboard', 500)
     await spaGoto(page, PAGE)
     await expect(page.getByTestId('sd-error')).toBeVisible()
