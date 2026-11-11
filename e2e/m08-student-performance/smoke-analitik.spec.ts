@@ -299,13 +299,14 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await expectContrast(page.getByTestId('hero-name'))
   })
 
-  test('S6 /prestasi/3001: 3 sessions, 14 answers, 85.7%, 14m; Kimia 89% and Sejarah 80%', async ({
+  test('S6 /prestasi/3001: 3 sessions, 14 answers, 86%, 14m; Kimia 89% and Sejarah 80%', async ({
     page,
     gotoApp,
   }) => {
     await gotoApp('/prestasi/3001')
     await expect(page.getByTestId('prestasi360-page')).toBeVisible()
-    await expect(statValues(page)).toHaveText(['3', '85.7%', '14', '14m'])
+    // V2 Prestasi 360 overall is a whole percent (StudentController.php ~489, (int) round).
+    await expect(statValues(page)).toHaveText(['3', '86%', '14', '14m'])
     const chem = page.getByTestId('mastery-CHEM')
     await expect(chem).toContainText('CH')
     await expect(chem).toContainText('Kimia')
@@ -359,7 +360,8 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     const cards = page.getByTestId('headcount-block').locator('[data-testid^=headcount-]:not([data-testid=headcount-block])')
     await expect(cards).toHaveCount(5)
     const order = ['Sejarah', 'Matematik', 'Bahasa Melayu', 'Sains', 'Bahasa Inggeris']
-    const pills = ['Below', 'Below', 'On Track', '—', 'On Track']
+    // Targets are computed (HC-2, lib/headcount/otr.ts:12-29); Sejarah AR3 56 >= target 56 is On Track (headcount.rules.ts:91-96).
+    const pills = ['On Track', 'On Track', 'On Track', 'On Track', 'On Track']
     for (let i = 0; i < 5; i++) {
       await expect(cards.nth(i).locator('h3')).toHaveText(order[i]!)
       await expect(cards.nth(i)).toContainText('4 Simulasi · 2026')
@@ -367,7 +369,7 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     }
     await expect(cards.nth(0).getByTestId('chip')).toHaveText(['TOV: 67%', 'OTR3: 56%', 'ETR: 56%'])
     await expect(cards.nth(3).getByTestId('chip')).toHaveText(['TOV: 70%', 'OTR3: 61%', 'ETR: 61%'])
-    await expect(cards.nth(3).getByTestId('chip').nth(1)).toHaveClass(/error/)
+    await expect(cards.nth(3).getByTestId('chip').nth(1)).toHaveClass(/success/)
     await expect(cards.nth(2).getByTestId('chip').nth(1)).toHaveClass(/success/)
 
     await expect(page.getByTestId('badges-card')).toContainText('Lencana (3)')
@@ -379,9 +381,8 @@ test.describe('M08 T2 S6 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('suggestions')).toContainText(
       'Belum ada sesi latihan lagi. Mulakan dengan subjek yang paling kamu minati!',
     )
-    await expect(page.getByTestId('suggestions')).toContainText(
-      'Sejarah OTR3: markah sebenar (56.00) masih 26 mata di bawah sasaran (82.00). Fokus latihan untuk kejar target.',
-    )
+    // V2 StudentController.php:577-612: the headcount suggestion fires only when AR < ETR; Sejarah AR3 56 = ETR 56, so none.
+    await expect(page.getByTestId('suggestions')).not.toContainText('di bawah sasaran')
     await expectNoHorizontalScroll(page)
   })
 

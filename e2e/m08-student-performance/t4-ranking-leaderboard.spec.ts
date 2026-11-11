@@ -120,8 +120,8 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
 
           await expect(page.getByTestId('me-rank')).toContainText('#-')
           await expect(page.getByTestId('me-coins')).toHaveText('0Syiling')
-          await expect(page.getByTestId('me-sessions')).toHaveText('0')
-          await expect(page.getByTestId('me-accuracy')).toHaveText('0%')
+          await expect(page.getByTestId('me-sessions')).toHaveText('0Sesi')
+          await expect(page.getByTestId('me-accuracy')).toHaveText('0%Ketepatan')
 
           // Visual order 2-1-3: accuracies 89 / 98 / 99, coins 1,215 / 1,547 / 787.
           expect(await podiumText(page, '[data-testid=podium-accuracy]')).toEqual([
@@ -163,8 +163,8 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       await expect(activeTab(page)).toHaveText(['Semua Masa'])
       await expect(page.getByTestId('me-rank')).toContainText('#1050')
       await expect(page.getByTestId('me-coins')).toHaveText('26Syiling')
-      await expect(page.getByTestId('me-sessions')).toHaveText('4')
-      await expect(page.getByTestId('me-accuracy')).toHaveText('22%')
+      await expect(page.getByTestId('me-sessions')).toHaveText('4Sesi')
+      await expect(page.getByTestId('me-accuracy')).toHaveText('22%Ketepatan')
       // The live 101% is shown capped (DV-07, FR-M08-124).
       expect(await podiumText(page, '[data-testid=podium-accuracy]')).toEqual([
         '100% ketepatan',
@@ -284,8 +284,8 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
         await expect(rowsOf(page)).toHaveCount(46)
         await expect(page.getByTestId('me-rank')).toContainText('#39')
         await expect(page.getByTestId('me-coins')).toHaveText('70Syiling')
-        await expect(page.getByTestId('me-sessions')).toHaveText('4')
-        await expect(page.getByTestId('me-accuracy')).toHaveText('65%')
+        await expect(page.getByTestId('me-sessions')).toHaveText('4Sesi')
+        await expect(page.getByTestId('me-accuracy')).toHaveText('65%Ketepatan')
         await expect(rowsOf(page).nth(38).getByTestId('row-name')).toHaveText('Pelajar Demo')
         await expect(page.getByTestId('participants')).toHaveText('46')
         expect((await texts(page.getByTestId('row-accuracy'))).slice(0, 5)).toEqual([
