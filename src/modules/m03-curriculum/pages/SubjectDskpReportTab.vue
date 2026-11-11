@@ -49,7 +49,7 @@ const columns: TableColumn<Row>[] = [
 // Below 768 px the table is cards: the state must show there too (FR-ADM-C04.0).
 const cardFields: CardField[] = [
   { key: 'levelName', label: 'Tingkatan' },
-  { key: 'state', label: 'Status' },
+  { key: 'state', label: 'Status', slotted: true },
   { key: 'bab', label: 'Bab' },
   { key: 'sk', label: 'SK' },
   { key: 'sp', label: 'SP' },

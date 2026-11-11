@@ -162,6 +162,26 @@ describe('LevelListPage (M03 S9)', () => {
     )
   })
 
+  it('C-46b: below md every desktop cell shows in the card with the same test ids', async () => {
+    window.matchMedia = ((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+    })) as unknown as typeof window.matchMedia
+    const w = await render()
+    Reflect.deleteProperty(window, 'matchMedia') // jsdom has none; later tests render the table
+    const cards = w.findAll('[data-ds=data-table-cards] > li')
+    expect(cards).toHaveLength(3)
+    const first = cards[0]!
+    expect(first.findAll('[data-testid=level-stage]')).toHaveLength(1)
+    expect(first.findAll('[data-testid=level-questions]')).toHaveLength(1)
+    expect(first.findAll('[data-testid=level-subjects]')).toHaveLength(1)
+    const labels = first.findAll('dt').map((d) => d.text())
+    expect(labels).toEqual(['#', 'Nama (EN)', 'Kod', 'Peringkat', 'Kurikulum', 'Soalan', 'Subjek'])
+  })
+
   it('flips the switch at once and PATCHes without a dialog', async () => {
     api.setLevelActive.mockResolvedValue({ id: 1, isActive: false })
     const w = await render()

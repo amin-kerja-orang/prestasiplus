@@ -78,10 +78,14 @@ const columns: TableColumn<SubjectRow>[] = [
   { id: 'actions', header: 'Tindakan' },
 ]
 const cardFields: CardField[] = [
-  { key: 'code', label: 'Kod' },
+  { key: 'id', label: '#' },
+  { key: 'icon', label: 'Ikon', slotted: true },
   { key: 'nameEn', label: 'Nama (EN)' },
-  { key: 'questionCount', label: 'Soalan' },
   { key: 'levels', label: 'Tahap', slotted: true },
+  { key: 'code', label: 'Kod', slotted: true },
+  { key: 'color', label: 'Warna', slotted: true },
+  { key: 'isCore', label: 'Teras?', slotted: true },
+  { key: 'questionCount', label: 'Soalan', slotted: true },
 ]
 
 /** Rows whose PATCH is in flight: further clicks on them are ignored (no race). */

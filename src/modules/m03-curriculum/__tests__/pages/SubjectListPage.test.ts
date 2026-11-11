@@ -152,6 +152,31 @@ describe('SubjectListPage (M03 S6)', () => {
     expect(rows[1]?.find('[data-testid=subject-levels]').exists()).toBe(false)
   })
 
+  it('C-46b: below md every desktop cell shows in the card with the same test ids', async () => {
+    window.matchMedia = ((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+    })) as unknown as typeof window.matchMedia
+    const w = await render()
+    Reflect.deleteProperty(window, 'matchMedia') // jsdom has none; later tests render the table
+    const first = w.findAll('[data-ds=data-table-cards] > li')[0]!
+    for (const id of ['subject-code', 'subject-core', 'subject-questions', 'subject-levels'])
+      expect(first.findAll(`[data-testid=${id}]`), id).toHaveLength(1)
+    expect(first.findAll('dt').map((d) => d.text())).toEqual([
+      '#',
+      'Ikon',
+      'Nama (EN)',
+      'Tahap',
+      'Kod',
+      'Warna',
+      'Teras?',
+      'Soalan',
+    ])
+  })
+
   it('shows Teras / Elektif, the colour as stored and the question count', async () => {
     const w = await render()
     const rows = w.findAll('tbody tr')

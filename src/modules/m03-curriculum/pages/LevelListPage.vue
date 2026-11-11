@@ -80,9 +80,12 @@ const columns: TableColumn<LevelRow>[] = [
   { id: 'actions', header: 'Tindakan' },
 ]
 const cardFields: CardField[] = [
-  { key: 'code', label: 'Kod' },
+  { key: 'id', label: '#' },
   { key: 'nameEn', label: 'Nama (EN)' },
+  { key: 'code', label: 'Kod', slotted: true },
+  { key: 'stage', label: 'Peringkat', slotted: true },
   { key: 'curriculum', label: 'Kurikulum' },
+  { key: 'questionCount', label: 'Soalan', slotted: true },
   { key: 'subjectCount', label: 'Subjek', slotted: true },
 ]
 
