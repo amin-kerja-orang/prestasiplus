@@ -471,13 +471,19 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect(math.levels.every((l) => l.count > 0)).toBe(true)
   })
 
-  it('#7 lists the subjects with chapters, with chapter and question counts (MATH 6,538)', async () => {
+  it('#7 lists the subjects with chapters, with chapter and question counts (the S4 count = the chapter questions, D91)', async () => {
     const r = await getAs<ListBody<ChapterSubject>>(runtime, GURU, '/api/practice/chapter-subjects')
     expect(r.status).toBe(200)
     const codes = r.body.data.map((s) => s.code)
     expect(codes.slice(0, 3)).toEqual(['BM', 'BI', 'MATH'])
     const math = r.body.data.find((s) => s.code === 'MATH')
-    expect(math?.questionCount).toBe(6_538)
+    // The S4 count is the sum of the chapter questions, the same figure the S5 level options show.
+    const detail = await data<ChapterSubjectDetail>(GURU, '/api/practice/chapter-subjects/MATH')
+    const optionsTotal = detail.levels.reduce((n, l) => n + l.count, 0)
+    expect(math?.questionCount).toBe(optionsTotal)
+    expect(math?.levels?.reduce((n, l) => n + l.questionCount, 0)).toBe(optionsTotal)
+    for (const l of math?.levels ?? [])
+      expect(l.questionCount).toBe(detail.levels.find((o) => o.id === l.id)?.count)
     expect(math?.chapterCount).toBeGreaterThanOrEqual(8)
     // Subjects with no chapter at an offered level are not listed (BR-15).
     expect(codes).not.toContain('PHY')

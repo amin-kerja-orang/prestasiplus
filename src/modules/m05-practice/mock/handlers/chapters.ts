@@ -16,10 +16,17 @@ import {
   offeredLevelIds,
   practiceChapters,
   practiceSubjects,
-  practiceLevelCount,
   round,
   userIdOf,
 } from './common'
+
+/**
+ * The S4 tile / level count: the chapter questions of the level, the sum of the per-chapter counts (the same
+ * definition the S5 level options use). API: overview.service.ts chapterSubjects (FR-M05-58, D91); V2: latihTubiBab.
+ */
+function chapterLevelCount(subjectId: number, levelId: number): number {
+  return practiceChapters(subjectId, levelId).reduce((a, c) => a + questions.count('Q-CHAPTER', c.id), 0)
+}
 
 export const chapterRoutes: RouteDef[] = [
   route('GET', '/api/practice/chapter-subjects', [requireAuth()], () => {
@@ -35,8 +42,8 @@ export const chapterRoutes: RouteDef[] = [
         icon: s.icon,
         color: s.color,
         chapterCount,
-        // FR-M05-58: the practice-drawable questions of the offered levels (D72).
-        questionCount: levels.reduce((a, l) => a + practiceLevelCount(s.id, l), 0),
+        // FR-M05-58, D91: the chapter questions of the offered levels (the sum of the chapter counts).
+        questionCount: levels.reduce((a, l) => a + chapterLevelCount(s.id, l), 0),
         levels: levels.flatMap((id) => {
           const level = curriculum.level(id)
           const n = practiceChapters(s.id, id).length
@@ -47,7 +54,7 @@ export const chapterRoutes: RouteDef[] = [
                   code: level.code,
                   name: level.name,
                   chapterCount: n,
-                  questionCount: practiceLevelCount(s.id, id),
+                  questionCount: chapterLevelCount(s.id, id),
                 },
               ]
             : []
