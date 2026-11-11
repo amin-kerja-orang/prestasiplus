@@ -39,3 +39,14 @@ describe('UButton sizes (touch targets)', () => {
     expect(minHeightPx(sizes[size]!.base)).toBeGreaterThanOrEqual(44)
   })
 })
+
+describe('UPagination controls (touch targets, C-64)', () => {
+  const slots = (uiConfig as unknown as { pagination: { slots: Record<string, string> } }).pagination.slots
+
+  it.each(['item', 'first', 'prev', 'next', 'last', 'ellipsis'])('%s is 44px, 40px only on staff from lg', (slot) => {
+    const classes = slots[slot]!.split(/\s+/)
+    expect(classes).toEqual(expect.arrayContaining(['size-11', 'min-h-11', 'min-w-11']))
+    expect(classes).toEqual(expect.arrayContaining(['staff:lg:size-10', 'staff:lg:min-h-10', 'staff:lg:min-w-10']))
+    expect(classes.filter((c) => /^(md:|lg:)(size|min-h|min-w)-/.test(c))).toEqual([])
+  })
+})

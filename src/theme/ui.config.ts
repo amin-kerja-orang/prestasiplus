@@ -44,7 +44,7 @@ const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staf
 
 /** One pager control: equal square, centred glyph, medium weight, text colour for icons too. */
 const pagerButton =
-  'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:size-10 md:min-h-10 md:min-w-10 hover:bg-elevated hover:text-highlighted'
+  'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none staff:lg:size-10 staff:lg:min-h-10 staff:lg:min-w-10 hover:bg-elevated hover:text-highlighted'
 
 const squareStaff = 'justify-center p-0 size-11 min-h-11 min-w-11 staff:lg:size-10 staff:lg:min-h-10 staff:lg:min-w-10'
 const squareButton = {
@@ -274,7 +274,7 @@ export const uiConfig = {
   pinInput: { defaultVariants: { variant: 'soft' }, variants: { variant: { soft: filled } } },
 
   // Pager wraps instead of overflowing on narrow screens (S-08 / S-09).
-  // Calm pager: every control is the same square (44px touch, 40px from md), ghost neutral with a
+  // Calm pager: every control is the same square (44px touch and on learner pages, 40px on staff from lg), ghost neutral with a
   // clear hover; the current page is a flat primary tint (no gradient, no shadow). Icons share the
   // label's weight and colour. The active page is styled through Reka's `data-selected`.
   pagination: {
