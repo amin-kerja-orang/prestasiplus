@@ -337,8 +337,23 @@ export type M15ConflictCode =
 
 // --- L43 Kedai Hadiah Digital (SRS M15 v1.6 §7 #19, #20; BR-M15-26…28) ---------------------------------
 
-/** #19 item: the list is empty for every account and every `cat` (BR-M15-26), so no item shape exists. */
-export type DigitalShopItem = never
+/** #19 item (FD-MUR-33, V2 pupil shop): an active gift of the shared catalogue; a sold-out gift stays listed with `inStock` false. */
+export interface DigitalShopItem {
+  id: string
+  category: HadiahCategory
+  vendor: string
+  title: string
+  description: string | null
+  iconEmoji: string | null
+  imageUrl: string | null
+  denominationRm: number
+  tokenCost: number
+  /** `null` is unlimited stock. */
+  stockQuantity: number | null
+  inStock: boolean
+  termsText: string | null
+  requiresParentConsent: boolean
+}
 
 /** #20 item: empty for every account (BR-M15-28). */
 export type DigitalRedemptionItem = never

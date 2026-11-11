@@ -7,6 +7,10 @@ export const SHOP_COPY = {
   emptyIcon: '🎁',
   emptyTitle: 'Tiada Hadiah Tersedia',
   emptyBody: 'Hadiah akan ditambah tidak lama lagi. Tunggu ya!',
+  /** V2 gift card (gamifikasi-rewards.blade): face value, stock and the sold-out label. */
+  faceValue: (rm: string) => `Nilai muka RM${rm}`,
+  stock: (n: number) => `Stok: ${String(n)}`,
+  soldOut: 'Habis stok',
 } as const
 
 /** Kotak Misteri (48 GAME-23, 10-murid R1-MUR-35). Exact BM; `{n}` etc. are filled by the helpers below. */

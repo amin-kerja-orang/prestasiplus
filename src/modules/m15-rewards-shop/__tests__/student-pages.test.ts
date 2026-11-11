@@ -30,6 +30,7 @@ const api = vi.hoisted(() => ({
   fetchMysteryBoxes: vi.fn(),
   openMysteryBox: vi.fn(),
   fetchCabutan: vi.fn(),
+  fetchDigitalItems: vi.fn(),
   buyCabutanTicket: vi.fn(),
 }))
 vi.mock('../api', () => api)
@@ -125,7 +126,27 @@ describe('routes', () => {
   })
 })
 
+const NO_GIFTS = { data: [], meta: { page: 1, pageSize: 1, totalItems: 0, totalPages: 1, from: null, to: null, activeCat: 'all' } }
+
 describe('S5 RewardsShopPage', () => {
+  beforeEach(() => {
+    api.fetchDigitalItems.mockResolvedValue(NO_GIFTS)
+  })
+
+  it('lists the gifts of the catalogue and flags a sold-out gift "Habis stok"', async () => {
+    wallet.fetchGamificationWallet.mockResolvedValue({ currentSyiling: 0, tokenBalance: 50, xp: 0, level: 1 })
+    const gift = { id: '1', category: 'ewallet', vendor: 'Vendor', title: 'Baucar RM10', description: null, iconEmoji: null, imageUrl: null, denominationRm: 10, tokenCost: 20, termsText: null, requiresParentConsent: false }
+    api.fetchDigitalItems.mockResolvedValue({ ...NO_GIFTS, data: [{ ...gift, stockQuantity: 4, inStock: true }, { ...gift, id: '2', title: 'Baucar Habis', stockQuantity: 0, inStock: false }] })
+    const w = await mountPage(RewardsShopPage)
+    expect(w.find('[data-testid="shop-empty"]').exists()).toBe(false)
+    const cards = w.findAll('[data-testid="shop-card"]')
+    expect(cards).toHaveLength(2)
+    expect(cards[0]?.text()).toContain('Baucar RM10')
+    expect(cards[0]?.text()).toContain('Stok: 4')
+    expect(cards[0]?.text()).toContain('Nilai muka RM10.00')
+    expect(cards[1]?.get('[data-testid="shop-card-stock"]').text()).toBe('Habis stok')
+  })
+
   it('shows the hero, the token balance and the empty state', async () => {
     wallet.fetchGamificationWallet.mockResolvedValue({
       currentSyiling: 256,
@@ -143,7 +164,7 @@ describe('S5 RewardsShopPage', () => {
     expect(empty.text()).toContain('Hadiah akan ditambah tidak lama lagi. Tunggu ya!')
   })
 
-  it('keeps the empty state with a positive balance (no shop is built)', async () => {
+  it('keeps the empty state with a positive balance when the catalogue has no gift', async () => {
     wallet.fetchGamificationWallet.mockResolvedValue({
       currentSyiling: 0,
       tokenBalance: 50,

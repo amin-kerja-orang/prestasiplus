@@ -8598,6 +8598,84 @@
           }
         }
       },
+      "ShopDigitalItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "category": {
+            "$ref": "#/components/schemas/RewardCategory"
+          },
+          "vendor": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "iconEmoji": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "denominationRm": {
+            "type": "number",
+            "minimum": 0
+          },
+          "tokenCost": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stockQuantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "inStock": {
+            "type": "boolean",
+            "description": "False when stockQuantity is 0; null stock is unlimited and in stock."
+          },
+          "termsText": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requiresParentConsent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "vendor",
+          "title",
+          "description",
+          "iconEmoji",
+          "imageUrl",
+          "denominationRm",
+          "tokenCost",
+          "stockQuantity",
+          "inStock",
+          "termsText",
+          "requiresParentConsent"
+        ]
+      },
       "ShopDigitalItemsMeta": {
         "type": "object",
         "properties": {
@@ -8668,8 +8746,9 @@
         "properties": {
           "data": {
             "type": "array",
-            "items": {},
-            "maxItems": 0
+            "items": {
+              "$ref": "#/components/schemas/ShopDigitalItem"
+            }
           },
           "meta": {
             "$ref": "#/components/schemas/ShopDigitalItemsMeta"
@@ -107204,7 +107283,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Empty list.",
+            "description": "The active gifts, cheapest first; out-of-stock gifts stay listed.",
             "content": {
               "application/json": {
                 "schema": {

@@ -259,7 +259,7 @@ export const shopScenarios: Scenario[] = [
     },
   },
   {
-    id: 'shop-api/Kedai Hadiah Digital is empty for every account and reads its chip from cat',
+    id: 'shop-api/Kedai Hadiah Digital lists the active catalogue and reads its chip from cat',
     domain: 'shop',
     targets: API_ONLY,
     async run(ctx) {
@@ -267,7 +267,7 @@ export const shopScenarios: Scenario[] = [
         const client = await ctx.as(role)
         const items = await client.request('GET', '/hadiah-digital/items?cat=ewallet')
         ctx.expectStatus(items, 200)
-        ctx.check(listOf(items).length === 0 && (items.body as { meta?: { activeCat?: string } }).meta?.activeCat === 'ewallet', 'items are always empty and echo cat')
+        ctx.check(listOf(items).every((i) => (i as { category?: string; isActive?: boolean }).category === 'ewallet') && (items.body as { meta?: { activeCat?: string } }).meta?.activeCat === 'ewallet', 'items are of the asked category and echo cat')
         const unknown = (await client.request('GET', '/hadiah-digital/items?cat=nope')).body as { meta?: { activeCat?: unknown } }
         ctx.check(unknown.meta !== undefined && unknown.meta.activeCat === null, 'an unknown cat must give activeCat null')
         ctx.check(listOf(await client.request('GET', '/hadiah-digital/redemptions')).length === 0, 'the digital redemptions are always empty')

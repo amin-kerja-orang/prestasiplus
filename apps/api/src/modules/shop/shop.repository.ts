@@ -75,6 +75,11 @@ export class ShopRepository {
     return this.db.reward.findMany({ orderBy: [{ category: 'asc' }, { title: 'asc' }, { id: 'asc' }] })
   }
 
+  /** The pupil shop (V2 `gifts` where status = aktif): the active gifts, optionally of one category, by token cost then title. */
+  activeRewards(category: string | undefined): Promise<Reward[]> {
+    return this.db.reward.findMany({ where: { isActive: true, ...(category ? { category } : {}) }, orderBy: [{ tokenCost: 'asc' }, { title: 'asc' }, { id: 'asc' }] })
+  }
+
   countRewards(where: { category?: string; isActive?: boolean } = {}): Promise<number> {
     return this.db.reward.count({ where })
   }

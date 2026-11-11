@@ -79,6 +79,7 @@ import {
   RewardRedemptionStatusSchema,
   RewardTicketBoughtSchema,
   RewardTicketRequestSchema,
+  ShopDigitalItemSchema,
   ShopDigitalItemsMetaSchema,
   ShopDigitalItemsQuerySchema,
   ShopDigitalItemsResponseSchema,
@@ -225,6 +226,7 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   RewardTicketBought: RewardTicketBoughtSchema,
   RewardTicketRequest: RewardTicketRequestSchema,
   ShopDigitalItemsQuery: ShopDigitalItemsQuerySchema,
+  ShopDigitalItem: ShopDigitalItemSchema,
   ShopDigitalItemsMeta: ShopDigitalItemsMetaSchema,
   ShopDigitalItemsResponse: ShopDigitalItemsResponseSchema,
   ShopDigitalRedemptionsResponse: ShopDigitalRedemptionsResponseSchema,
@@ -748,7 +750,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     summary: 'Kedai Hadiah Digital: items',
     description: 'Always an empty list for every account and every cat. meta is the unpaged list meta plus activeCat.',
     request: { query: ShopDigitalItemsQuerySchema },
-    responses: { 200: json(ShopDigitalItemsResponseSchema, 'Empty list.'), 401: UNAUTHORIZED },
+    responses: { 200: json(ShopDigitalItemsResponseSchema, 'The active gifts, cheapest first; out-of-stock gifts stay listed.'), 401: UNAUTHORIZED },
   })
 
   registry.registerPath({

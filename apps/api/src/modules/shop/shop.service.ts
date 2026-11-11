@@ -246,10 +246,31 @@ export class ShopService {
 
   // --- #19, #20 Kedai Hadiah Digital (empty for every account) ---------------------------------------
 
-  digitalItems(cat: unknown): ShopDigitalItemsResponse {
+  /**
+   * #19 FD-MUR-33 (R-02, V2 parity): the active gifts of the shared `rewards` catalogue, by token cost then title. An unknown
+   * `cat` gives `activeCat` null and the whole list (V2 ignores a category it does not know). A gift with 0 stock stays
+   * listed and is flagged `inStock: false` ("Habis stok"); null stock is unlimited.
+   */
+  async digitalItems(cat: unknown): Promise<ShopDigitalItemsResponse> {
     const activeCat =
       cat === undefined ? 'all' : typeof cat !== 'string' ? null : cat === 'all' || (REWARD_CATEGORIES as readonly string[]).includes(cat) ? (cat as ShopDigitalItemsResponse['meta']['activeCat']) : null
-    return { data: [], meta: { ...listMeta(1, 1, 0), activeCat } }
+    const rows = await this.repo.activeRewards(activeCat !== null && activeCat !== 'all' ? activeCat : undefined)
+    const data: ShopDigitalItemsResponse['data'] = rows.map((r) => ({
+      id: idToString(r.id),
+      category: r.category as ShopDigitalItemsResponse['data'][number]['category'],
+      vendor: r.vendor,
+      title: r.title,
+      description: r.description,
+      iconEmoji: r.iconEmoji,
+      imageUrl: r.imageUrl,
+      denominationRm: r.denominationRm.toNumber(),
+      tokenCost: r.tokenCost,
+      stockQuantity: r.stockQuantity,
+      inStock: r.stockQuantity === null || r.stockQuantity > 0,
+      termsText: r.termsText,
+      requiresParentConsent: r.requiresParentConsent,
+    }))
+    return { data, meta: { ...listMeta(1, Math.max(1, data.length), data.length), activeCat } }
   }
 
   digitalRedemptions(): ShopDigitalRedemptionsResponse {

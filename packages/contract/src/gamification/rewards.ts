@@ -496,9 +496,32 @@ export const ShopDigitalItemsMetaSchema = ListMetaSchema.extend({
 }).meta({ id: 'ShopDigitalItemsMeta' })
 export type ShopDigitalItemsMeta = z.infer<typeof ShopDigitalItemsMetaSchema>
 
-/** `data` is always `[]` (the reward store is never read), so no item shape exists. */
+/**
+ * One gift of the pupil shop (FD-MUR-33, V2 `gifts` where status = aktif). Out-of-stock gifts stay listed with `inStock` false
+ * (V2 shows "Habis stok"); `stockQuantity` null is unlimited stock.
+ */
+export const ShopDigitalItemSchema = z
+  .object({
+    id: IdSchema,
+    category: RewardCategorySchema,
+    vendor: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    iconEmoji: z.string().nullable(),
+    imageUrl: z.string().nullable(),
+    denominationRm: z.number().min(0),
+    tokenCost: z.number().int().min(0),
+    stockQuantity: count.nullable(),
+    inStock: z.boolean().meta(FIELD('False when stockQuantity is 0; null stock is unlimited and in stock.')),
+    termsText: z.string().nullable(),
+    requiresParentConsent: z.boolean(),
+  })
+  .meta({ id: 'ShopDigitalItem' })
+export type ShopDigitalItem = z.infer<typeof ShopDigitalItemSchema>
+
+/** The active gifts of the shared `rewards` catalogue, ordered by token cost then title (the V2 pupil shop order). */
 export const ShopDigitalItemsResponseSchema = z
-  .object({ data: z.array(z.unknown()).max(0), meta: ShopDigitalItemsMetaSchema })
+  .object({ data: z.array(ShopDigitalItemSchema), meta: ShopDigitalItemsMetaSchema })
   .meta({ id: 'ShopDigitalItemsResponse' })
 export type ShopDigitalItemsResponse = z.infer<typeof ShopDigitalItemsResponseSchema>
 

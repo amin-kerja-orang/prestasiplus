@@ -282,11 +282,15 @@ describe('student redeem, Kotak Misteri, Cabutan', () => {
 })
 
 describe('Kedai Hadiah Digital', () => {
-  it('is always an empty list with the unpaged meta', () => {
+  const gift = { id: '5', category: 'ewallet', vendor: 'Vendor Contoh', title: 'Baucar E-Dompet RM10', description: null, iconEmoji: null, imageUrl: null, denominationRm: 10, tokenCost: 20, stockQuantity: 0, inStock: false, termsText: null, requiresParentConsent: false }
+  it('lists the shop gifts (a sold-out gift stays listed) with the unpaged meta', () => {
     expect(ShopDigitalItemsResponseSchema.safeParse({ data: [], meta: { ...unpagedEmpty, activeCat: 'all' } }).success).toBe(true)
     expect(ShopDigitalItemsResponseSchema.safeParse({ data: [], meta: { ...unpagedEmpty, activeCat: 'telco' } }).success).toBe(true)
     expect(ShopDigitalItemsResponseSchema.safeParse({ data: [], meta: { ...unpagedEmpty, activeCat: null } }).success).toBe(true)
-    expect(ShopDigitalItemsResponseSchema.safeParse({ data: [item], meta: { ...unpagedEmpty, activeCat: 'all' } }).success).toBe(false)
+    expect(ShopDigitalItemsResponseSchema.safeParse({ data: [gift], meta: { ...unpagedEmpty, activeCat: 'all' } }).success).toBe(true)
+    expect(ShopDigitalItemsResponseSchema.safeParse({ data: [{ ...gift, stockQuantity: null, inStock: true }], meta: { ...unpagedEmpty, activeCat: 'all' } }).success).toBe(true)
+    expect(ShopDigitalItemsResponseSchema.safeParse({ data: [{ ...gift, inStock: undefined }], meta: { ...unpagedEmpty, activeCat: 'all' } }).success).toBe(false)
+    expect(ShopDigitalItemsResponseSchema.safeParse({ data: [{ ...gift, category: 'bogus' }], meta: { ...unpagedEmpty, activeCat: 'all' } }).success).toBe(false)
     expect(ShopDigitalItemsResponseSchema.safeParse({ data: [], meta: unpagedEmpty }).success).toBe(false)
     expect(ShopDigitalRedemptionsResponseSchema.safeParse({ data: [], meta: unpagedEmpty }).success).toBe(true)
     expect(ShopDigitalRedemptionsResponseSchema.safeParse({ data: [{}], meta: unpagedEmpty }).success).toBe(false)

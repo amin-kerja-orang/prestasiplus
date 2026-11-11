@@ -160,15 +160,31 @@ describe('M15 student routes (BE-23)', () => {
     })
   })
 
-  describe('Kedai Hadiah Digital reads (always empty)', () => {
-    it('lists nothing and reads the chip from cat', async () => {
+  describe('Kedai Hadiah Digital reads (FD-MUR-33: the shared catalogue, V2 pupil shop)', () => {
+    it('lists the active gifts by token cost then title, keeps a sold-out gift flagged, hides inactive ones and reads the chip from cat', async () => {
       const api = await as(STUDENT)
+      await insertReward(t, { title: 'Zeta Mahal', category: 'streaming', tokenCost: 90, stock: 5 })
+      await insertReward(t, { title: 'Beta Habis', category: 'streaming', tokenCost: 30, stock: 0 })
+      await insertReward(t, { title: 'Alfa Murah', category: 'streaming', tokenCost: 30, stock: null })
+      await insertReward(t, { title: 'Tidak Aktif', category: 'streaming', tokenCost: 1, stock: 9, active: false })
+      const streaming = ShopDigitalItemsResponseSchema.parse((await api.get('/hadiah-digital/items?cat=streaming')).body)
+      const titles = streaming.data.map((i) => i.title)
+      expect(titles.filter((x) => ['Alfa Murah', 'Beta Habis', 'Zeta Mahal', 'Tidak Aktif'].includes(x))).toEqual(['Alfa Murah', 'Beta Habis', 'Zeta Mahal'])
+      expect(streaming.data.find((i) => i.title === 'Beta Habis')).toMatchObject({ stockQuantity: 0, inStock: false })
+      expect(streaming.data.find((i) => i.title === 'Alfa Murah')).toMatchObject({ stockQuantity: null, inStock: true })
+      expect(streaming.data.every((i) => i.category === 'streaming')).toBe(true)
+      expect(streaming.meta).toMatchObject({ totalItems: streaming.data.length, activeCat: 'streaming' })
       const all = ShopDigitalItemsResponseSchema.parse((await api.get('/hadiah-digital/items')).body)
-      expect(all.data).toEqual([])
-      expect(all.meta).toMatchObject({ page: 1, pageSize: 1, totalItems: 0, totalPages: 1, from: null, to: null, activeCat: 'all' })
-      expect(ShopDigitalItemsResponseSchema.parse((await api.get('/hadiah-digital/items?cat=ewallet')).body).meta.activeCat).toBe('ewallet')
-      expect(ShopDigitalItemsResponseSchema.parse((await api.get('/hadiah-digital/items?cat=nope')).body).meta.activeCat).toBeNull()
+      expect(all.meta.activeCat).toBe('all')
+      expect(all.data.length).toBeGreaterThanOrEqual(streaming.data.length)
+      const unknown = ShopDigitalItemsResponseSchema.parse((await api.get('/hadiah-digital/items?cat=nope')).body)
+      expect(unknown.meta.activeCat).toBeNull()
+      expect(unknown.data.length).toBe(all.data.length)
       expect(ShopDigitalItemsResponseSchema.parse((await api.get('/hadiah-digital/items?cat=ewallet&cat=telco')).body).meta.activeCat).toBeNull()
+    })
+
+    it('the digital redemptions stay empty', async () => {
+      const api = await as(STUDENT)
       const red = ShopDigitalRedemptionsResponseSchema.parse((await api.get('/hadiah-digital/redemptions')).body)
       expect(red.data).toEqual([])
     })

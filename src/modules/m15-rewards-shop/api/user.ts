@@ -3,7 +3,7 @@
  * change it. Errors reach the caller as `ApiError`: `401`, `404 NOT_FOUND`, `409` with a module code
  * (`INSUFFICIENT_TOKENS`, `DRAW_CLOSED`, `TICKET_LIMIT`, `INSUFFICIENT_BALANCE`, `CONFLICT`; see
  * `M15ConflictCode`), 5xx. Balances for S5 / S6 / S7 headers come from #10 / #12 or M14 #17.
- * #18 (student shop) is not built (user decision OQ-M15-01): S5 shows the empty state.
+ * #19 is the pupil shop catalogue (FD-MUR-33, R-02): S5 shows its gifts; there is no claim control yet.
  */
 
 import { api } from '@/api'
@@ -33,8 +33,8 @@ const deferredRejection = <T>(): Promise<T> =>
   Promise.reject(new Error('Fungsi ini belum tersedia dalam mod API sebenar.'))
 
 /**
- * #19 `GET /api/hadiah-digital/items` (`?cat=`; S10): `data` is always `[]`; `meta.activeCat` says which
- * chip is active (`null` = none). Balances and the tier rate come from M14 #17.
+ * #19 `GET /api/hadiah-digital/items` (`?cat=`; S5, S10): the active gifts of the shared catalogue by token cost,
+ * a sold-out gift flagged `inStock: false`; `meta.activeCat` says which chip is active (`null` = none). Balances and the tier rate come from M14 #17.
  */
 export function fetchDigitalItems(
   query: DigitalItemsQuery = {},
