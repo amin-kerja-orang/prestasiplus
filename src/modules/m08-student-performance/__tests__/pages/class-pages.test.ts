@@ -301,7 +301,7 @@ describe('S8 AnalitikKelasPage (R1-GUR-5, R1-AS-5)', () => {
     )
     expect(api.fetchClassAnalytics.mock.calls[0]?.[0]).toEqual({ classroomId: 2001, riskLevel: '' })
     expect(t(w, 'sum-pelajar').text()).toContain('2')
-    expect(t(w, 'sum-ketepatan').text()).toContain('42%')
+    expect(t(w, 'sum-ketepatan').text()).toContain('41.8%')
     expect(num(w, 'sum-berisiko')).toBe('1')
     expect(t(w, 'sum-baik').text()).toContain('1')
     expect(tr(w, 'student-row-3001').text()).toContain('89%')

@@ -17,7 +17,7 @@ import { fetchClassAnalytics } from '../api/class'
 import type { ClassRiskLevel, ClassTrend, RiskLevel } from '../api/types'
 import { TREND_ICON, TREND_TEXT } from '../lib/analitik'
 import { usePhIcon } from '../lib/icons'
-import { DASH, pctWhole } from '../lib/prestasi/format'
+import { DASH, pctTrim, pctWhole } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
@@ -147,7 +147,7 @@ const summary = computed<StatSpec[]>(() => {
   if (!s) return []
   return [
     { id: 'pelajar', label: 'Jumlah Pelajar', value: s.students, icon: 'users' },
-    { id: 'ketepatan', label: 'Purata Ketepatan', value: pctWhole(s.accuracy), icon: 'target' },
+    { id: 'ketepatan', label: 'Purata Ketepatan', value: s.accuracy === null ? DASH : pctTrim(s.accuracy), icon: 'target' },
     {
       id: 'berisiko',
       label: 'Pelajar Berisiko',
