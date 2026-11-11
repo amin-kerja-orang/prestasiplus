@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * S1 "Perbandingan Sebelum & Selepas" (FN-M12-2.4.1..2.4.4; FR-M12-26..28): subtitle, the SEBELUM / SELEPAS
- * panels (side by side from `md`), four delta tiles (2 x 2 below `md`) and the "Ringkasan:" box. A panel
+ * panels (side by side from `md`), four delta tiles (2 x 2 below `md`) and the
+ * "Ringkasan:" box (V2 sentence, ringkasan.ts). A panel
  * without data shows "-" ranges and 0 values; no data at all gives the "Tiada Data vs Tiada Data" state. When one side has
  * no answers `delta` is `null`: the delta tiles print a neutral "\u2014" (no arrow, no tone; FR-X4-3) and the box carries only the sentence
  * "Data tidak mencukupi untuk perbandingan.".
@@ -12,6 +13,7 @@ import { DsPanel } from '@/ds'
 
 import type { Comparison, ComparisonPanel } from '../../../api/types'
 import { count, dateEn, plain, accuracyPct } from '../common'
+import { ringkasanText } from './ringkasan'
 
 const props = defineProps<{ comparison: Comparison }>()
 
@@ -33,15 +35,11 @@ const metrics = (p: ComparisonPanel | null): Metric[] => [
 /** "+56" for a gain, "-11" for a loss, "0" otherwise (no separator, as live). */
 const signed = (n: number) => (n > 0 ? `+${plain(n)}` : plain(n))
 
-/** The API sentence "Jumlah jawapan meningkat 465500%." is unreadable when the base is tiny: print the absolute change instead. */
+/** C-54: the V2 sentence, built from the deltas; without a delta (one side has no answers) the API's single sentence. */
 const summary = computed(() =>
-  props.comparison.sentences
-    .map((s) => {
-      const m = /^Jumlah jawapan meningkat ([0-9.]+)%.$/.exec(s)
-      const n = props.comparison.delta?.answers ?? 0
-      return m && Number(m[1]) >= 1000 && n > 0 ? `Jumlah jawapan bertambah ${count(n)}.` : s
-    })
-    .join(' '),
+  props.comparison.delta === null
+    ? props.comparison.sentences.join(' ')
+    : ringkasanText(props.comparison.delta),
 )
 
 const deltas = computed(() => {
