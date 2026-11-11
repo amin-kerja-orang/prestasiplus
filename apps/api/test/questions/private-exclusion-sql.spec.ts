@@ -273,7 +273,7 @@ describe('DM-42 (security M1): a by-id read with bankOnly does not find a privat
 describe('DM-42 (security H1): a private question answered wrongly in a mission is not served in Ulang Kaji', () => {
   it('Be09PracticeQuestionSource.live drops a private question unless the caller is a mission session', async () => {
     const rec = { id: '5', isActive: true, groupId: null, version: { status: 'approved', visibility: 'teacher_private' } }
-    const questions = { getMany: () => Promise.resolve([rec]) }
+    const questions = { getMany: () => Promise.resolve([rec]), unservableAmong: () => Promise.resolve(new Set<string>()) }
     const source = new Be09PracticeQuestionSource(questions as never, {} as never, [])
     expect((await source.live(['5'])).size).toBe(0)
     expect((await source.live(['5'], 'bab')).size).toBe(0)
