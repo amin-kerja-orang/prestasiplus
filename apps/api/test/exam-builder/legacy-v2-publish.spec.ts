@@ -137,4 +137,49 @@ describe('KP-14: publishLegacyV2', () => {
     expect(out.ok).toBe(false)
     expect((await q('select status from papers where id = $1', [id]))[0]?.status).toBe('draft')
   })
+
+  describe('a NEW paper (normal Terbit): V2 parity on status and is_active', () => {
+    /** A complete paper: A has 3 questions, B 1 (pool MAT2-B), C the two 2-mark ones; `a` fills Bahagian A. */
+    async function fullPaper(a: string[]): Promise<string> {
+      const res = await admin.post('/api/admin/papers', { title: 'Set baru', subject: 'MAT', kertas: 2 })
+      const id = Created.parse(res.body).data.id
+      const e = Editor.parse((await admin.get(`/api/admin/papers/${id}`)).body).data
+      const [sa, sb, sc] = e.paper.sections.map((x) => x.id) as [string, string, string]
+      const b = await mk()
+      await q(`insert into question_tags (question_id, kind, code) values ($1, 'pool', 'MAT2-B')`, [b])
+      const put = async (section: string, list: string[]) => {
+        for (const [i, qid] of list.entries()) await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, $3)`, [section, qid, i + 1])
+      }
+      await put(sa, a)
+      await put(sb, [b])
+      await put(sc, [ids.c1, ids.c2])
+      return id
+    }
+    const publish = async (id: string) => Publish.parse((await admin.post(`/api/admin/papers/${id}/publish`)).body).data
+
+    it('an approved but inactive question does NOT stop Terbit', async () => {
+      const inactive = await mk()
+      await q(`update questions set is_active = false where id = $1`, [inactive])
+      const id = await fullPaper([await mk(), await mk(), inactive])
+      const out = await publish(id)
+      expect(out, JSON.stringify(out)).toMatchObject({ ok: true })
+      expect((await q('select is_active from questions where id = $1', [inactive]))[0]?.is_active).toBe(false)
+    })
+
+    it('a draft question is still refused', async () => {
+      const id = await fullPaper([await mk(), await mk(), ids.draft])
+      expect((await publish(id)).ok).toBe(false)
+    })
+
+    it('a held picture is refused, whether the question is active or inactive', async () => {
+      for (const active of [true, false]) {
+        const held = await mk()
+        await q(`update question_versions v set import_issues = '[{"code": "legacy_image_unresolved"}]'::jsonb from questions qq where qq.id = v.question_id and qq.live_version_no = v.version_no and qq.id = $1`, [held])
+        if (!active) await q(`update questions set is_active = false where id = $1`, [held])
+        const out = await publish(await fullPaper([await mk(), await mk(), held]))
+        expect(out.ok, `active=${String(active)}`).toBe(false)
+        expect(out.errors.some((line) => line.includes(held))).toBe(true)
+      }
+    })
+  })
 })

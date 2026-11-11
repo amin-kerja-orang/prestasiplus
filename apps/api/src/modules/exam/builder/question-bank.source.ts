@@ -146,6 +146,11 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       out.set(q.id.toString(), {
         id: q.id.toString(),
         versionNo,
+        versionStatus: statusOf({
+          isActive: true,
+          liveStatus: q.liveVersionNo === null ? null : (byKey.get(`${q.id}:${q.liveVersionNo}`)?.status ?? null),
+          latestStatus: byKey.get(`${q.id}:${q.latestVersionNo}`)?.status ?? null,
+        }),
         status: statusOf({
           isActive: q.isActive,
           liveStatus: q.liveVersionNo === null ? null : (byKey.get(`${q.id}:${q.liveVersionNo}`)?.status ?? null),

@@ -43,7 +43,7 @@ export class PaperImportSectionLimitError extends PaperImportError {
   }
 }
 
-/** M2: a question of the input cannot be placed (a held or unresolved picture, a withdrawn question no published paper pins; see `placementBlockers`). */
+/** M2: a question of the input cannot be placed (a held or unresolved picture; see `placementBlockers`). */
 export class PaperImportBlockedError extends PaperImportError {
   readonly code = 'QUESTION_NOT_SERVABLE'
   constructor(

@@ -97,6 +97,13 @@ describe('M2 group rules (real database)', () => {
     await mk('Draf separa', 'draft', [d1])
     expect((await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [d1, d2] })).status).toBe(409)
 
+    // R-2: a draft paper holding the whole group in the right order is allowed and listed with its status
+    const [r1, r2] = [await served('Soalan kumpulan tujuh. Dua belas.'), await served('Soalan kumpulan lapan. Tiga belas.')]
+    await mk('Draf betul', 'draft', [r1, r2])
+    const draftOk = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [r1, r2] })
+    expect(draftOk.status, JSON.stringify(draftOk.body)).toBe(200)
+    expect(draftOk.body.meta.affectedPapers).toEqual([expect.objectContaining({ title: 'Draf betul', status: 'draft' })])
+
     // an unplaced member: grouped, no warning
     const ok = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [free] })
     expect(ok.status, JSON.stringify(ok.body)).toBe(200)

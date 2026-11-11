@@ -120,13 +120,14 @@ describe('M2: placement blockers', () => {
     expect(fixed.placeholder.get(ids.held)).toBe('held')
   })
 
-  it('addPlacement by id: a held question and a withdrawn one are refused (422, nothing written); a clean one is placed', async () => {
+  it('addPlacement by id: a held question is refused (422, nothing written); a clean one and an inactive approved one are placed', async () => {
     const p = await newPaper()
     expectError(await post(p.id, p.sectionId, ids.held), 'VALIDATION_ERROR', 422, PLACE.notServable(ids.held, PLACEMENT_BLOCK_TEXT.held))
     expectError(await post(p.id, p.sectionId, ids.heldPinned), 'VALIDATION_ERROR', 422, PLACE.notServable(ids.heldPinned, PLACEMENT_BLOCK_TEXT.held))
-    expectError(await post(p.id, p.sectionId, ids.inactive), 'VALIDATION_ERROR', 422, PLACE.notServable(ids.inactive, PLACE.statusArchived))
     expect(await q(`select 1 from paper_placements where paper_section_id = $1`, [p.sectionId])).toHaveLength(0)
     expect((await post(p.id, p.sectionId, ids.ok)).status).toBe(201)
+    // V2 parity: an approved but inactive question is Terbit by its stored status, so it can be placed too
+    expect((await post(p.id, p.sectionId, ids.inactive)).status).toBe(201)
   })
 
   it('replace-placements (PUT): a new held question is refused; one already on the paper is kept (never re-judged)', async () => {

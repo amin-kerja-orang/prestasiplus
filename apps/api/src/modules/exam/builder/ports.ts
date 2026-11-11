@@ -37,6 +37,11 @@ export interface BuilderQuestionInfo {
   versionNo: number
   /** Current lifecycle status (D54a, ADR-0027); `approved` = Terbit (the only servable status). */
   status: BijakBuilderQuestionStatus
+  /**
+   * The status of the version in force as stored (live, else latest), WITHOUT the inactive-to-archived demotion of `status`. Terbit and placement judge this one:
+   * V2 does not check `is_active` at Terbit, so an approved but inactive question is Terbit. Absent = `status`.
+   */
+  versionStatus?: BijakBuilderQuestionStatus
   /** Bijak subject code (MAT, SN, SEJ ...), as `curriculum.subject` of the question. */
   subject: string
   kertas: number

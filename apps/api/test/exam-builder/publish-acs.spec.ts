@@ -179,7 +179,9 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       // S3-T01: the Kontrak is Disahkan here, so INELIGIBLE is hard.
       expect(res.blockerDetails).toContainEqual(expect.objectContaining({ code: 'INELIGIBLE', questionId: ids[0], overridable: false }))
       expect(res.canOverride).toBe(false)
-      await q(`update questions set is_active = false where id = $1`, [ids[1]])
+      // V2 parity: a withdrawn (inactive) approved question is still Terbit; archiving the version (status archived, no live version) is what makes it NOT_PUBLISHED.
+      await q(`update question_versions set status = 'archived' where question_id = $1`, [ids[1]])
+      await q(`update questions set live_version_no = null where id = $1`, [ids[1]])
       res = await publish(paper)
       expect(codes(res)).toEqual(expect.arrayContaining(['NOT_PUBLISHED']))
       expect(res.blockerDetails!.find((b) => b.code === 'NOT_PUBLISHED')).toMatchObject({ overridable: false })

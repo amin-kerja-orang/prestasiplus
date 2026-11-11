@@ -112,6 +112,8 @@ type Info = ReadonlyMap<string, BuilderQuestionInfo>
 
 /** Terbit waits on the question rows of a concurrent edit or delete (FOR SHARE) and reads the bank inside: more than Prisma's 5 s default (else a P2028 is a 500). */
 const PUBLISH_TX = { timeout: 20_000, maxWait: 10_000 } as const
+/** The status Terbit and placement judge: the version's stored one (V2 parity: `is_active` is not part of it). */
+const isTerbitStatus = (q: BuilderQuestionInfo | undefined): boolean => q !== undefined && isServableStatus(q.versionStatus ?? q.status)
 /** KP-14: the audit reason of `publishLegacyV2`. */
 export const LEGACY_V2_PUBLISH_REASON = 'Kertas diterbitkan di V2 (KP-14): status soalan asal dikekalkan'
 const MAX_KERTAS = 32767
@@ -354,7 +356,7 @@ export class BuilderService {
         marksOf: (id) => marks.get(id) ?? 0,
         groupOf: (id) => info.get(id)?.groupId ?? undefined,
         membersOf: (g) => groups.get(g)?.questionIds ?? placed.filter((id) => info.get(id)?.groupId === g),
-        isLive: (id) => isServableStatus(info.get(id)?.status ?? ''),
+        isLive: (id) => isTerbitStatus(info.get(id)),
         // D93 is about stimulus groups: a group the bank emits without a stimulus is still a unit (D90) but stays outside the minimum.
         isStimulusGroup: (g) => groups.get(g)?.stimulus !== undefined,
       })
@@ -435,7 +437,7 @@ export class BuilderService {
   private notServedOf(q: BuilderQuestionInfo | undefined, report: ServabilityReport | undefined) {
     const sim = report?.activities.find((a) => a.activity === 'simulasi_paper')
     const fromReport = (sim?.reasons ?? []).filter((r) => r.code !== 'not_on_published_paper')
-    const legacy = !q ? PLACE.notFound : isServableStatus(q.status) ? null : this.statusText(q.status)
+    const legacy = !q ? PLACE.notFound : isTerbitStatus(q) ? null : this.statusText(q.versionStatus ?? q.status)
     // The builder places approved questions only (D54a): a status that is not servable is reported with the same cause and fix copy
     // as "Dilihat murid di", even where a published paper would keep serving an archived version.
     const reasons: { code: string; message: string; detail?: string }[] =
@@ -1001,7 +1003,7 @@ export class BuilderService {
           placedNow.filter((qid) => {
             const info = ev.info.get(qid)
             const r = reasons.get(qid)
-            return (info !== undefined && !isServableStatus(info.status)) || r?.inactive === true || r?.mediaUnresolved === true
+            return (info !== undefined && !isTerbitStatus(info)) || r?.mediaUnresolved === true
           }),
         )
         const byCause = (b: (typeof all)[number]): boolean =>
@@ -1133,9 +1135,17 @@ export class BuilderService {
     const facts = await this.factsFor(subject, paper.kertas)
     const labelOf = (pos: number) => std.sections.find((s) => s.position === pos)?.label ?? `Bahagian ${String(pos)}`
     const lines = violationLines(verifyComposition(std, composed, facts), labelOf)
+    // V2 parity: Terbit does not check `is_active`. The candidate pool is active-only, so an approved but inactive placed question is "missing from the pool" there; that
+    // line is dropped for it (the question is Terbit by its stored status). Held or unresolved media still refuses elsewhere (`attemptBlockers`).
+    const placedIds = composed.flatMap((c) => c.questionIds)
+    const reasons = await unservableReasonsOf(this.prisma.client, placedIds)
+    const inactiveTerbit = new Set(placedIds.filter((qid) => reasons.get(qid)?.inactive === true && isTerbitStatus(ev.info.get(qid))))
+    const keep = (b: BlockerDraft): boolean => !(b.questionId !== undefined && inactiveTerbit.has(b.questionId) && (b.code === 'UNKNOWN_QUESTION' || b.code === 'INELIGIBLE'))
+    const blockerIssues = lines.blockerIssues.filter(keep)
+    const fixedIssues = lines.fixedIssues.filter(keep)
     // The frozen report needs a clean composition; the contract line alone does not stop it (an override publishes with it).
-    const report = lines.blockerIssues.length === 0 && lines.fixedIssues.length === 0 ? buildStandardReport(std, composed, facts, { seed: 0, solverVersion: SOLVER_VERSION }) : null
-    return { blockers: lines.blockerIssues, contract, fixed: lines.fixedIssues, notes: lines.notes, report, contractDisahkan }
+    const report = blockerIssues.length === 0 && fixedIssues.length === 0 ? buildStandardReport(std, composed, facts, { seed: 0, solverVersion: SOLVER_VERSION }) : null
+    return { blockers: blockerIssues, contract, fixed: fixedIssues, notes: lines.notes, report, contractDisahkan }
   }
 
   /**
@@ -1274,7 +1284,7 @@ export class BuilderService {
         if (seen.has(id)) continue
         seen.add(id)
         const q = ev.info.get(id)
-        if (!q || !isServableStatus(q.status)) continue
+        if (!q || !isTerbitStatus(q)) continue
         const sim = reports.get(id)?.activities.find((a) => a.activity === 'simulasi_paper')
         // A Kertas Subjektif names a missing scheme with its own blocker (`subjektifBlockers`), so it is not repeated here.
         const reason = (sim?.reasons ?? []).find((r) => r.code !== 'not_on_published_paper' && !(paper.surface === 'subjektif' && r.code === 'no_scheme'))
@@ -1325,13 +1335,13 @@ export class BuilderService {
       if (!q) throw invalid(MESSAGES.invalidQuestion)
       const g = st.groupOf(q.id)
       const members = g ? st.membersOf(g) : [q.id]
-      // M2: the same rule as every other placement writer (`placementBlockers`): a held or unresolved picture, or a withdrawn question no published paper pins.
+      // M2: the same rule as every other placement writer (`placementBlockers`): a held or unresolved picture. Status is the version's stored one (`isTerbitStatus`): V2 does not check `is_active`.
       const blocked = await placementBlockers(this.prisma.client, members)
       const reasonOf = (id: string): string | null => {
         const m = st.info.get(id)
         if (!m) return PLACE.notFound
         if (m.subject !== bijakSubject) return PLACE.otherSubject
-        if (!isServableStatus(m.status)) return this.statusText(m.status)
+        if (!isTerbitStatus(m)) return this.statusText(m.versionStatus ?? m.status)
         const block = blocked.get(id)
         return block === undefined ? null : PLACEMENT_BLOCK_TEXT[block]
       }

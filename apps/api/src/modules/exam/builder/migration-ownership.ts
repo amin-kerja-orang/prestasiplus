@@ -1,6 +1,7 @@
 /**
- * The ONE definition of "this paper is migration-owned and unedited" (KP-14). Shared by `BuilderService.publishLegacyV2` and the migration's papers recompute
- * (`migration/load/papers/papers-recompute.ts`): nothing an admin touched is ever changed by the migration.
+ * The ONE definition of "this paper is migration-owned and unedited" (KP-14). Used by `BuilderService.publishLegacyV2`; the migration's papers recompute
+ * (`migration/load/papers/papers-recompute.ts`) keeps its own copy of the same rule for now and is meant to switch to this helper: nothing an admin touched is
+ * ever changed by the migration.
  *
  * Importable WITHOUT Nest: the only import is the plain `AUDIT_ACTIONS` constant table. Deep import path for the migration:
  * `apps/api/src/modules/exam/builder/migration-ownership` (not the `exam/builder` index, which pulls the Nest services).
