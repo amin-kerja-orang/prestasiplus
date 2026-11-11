@@ -214,10 +214,15 @@ test.describe('M10 S2 Command Center, admin mirror', MODULE, () => {
     expect(await minFontSize(page, 'cc-s2')).toBeGreaterThanOrEqual(12)
     expect(await minFontSize(page, 'cc-drill-modal')).toBeGreaterThanOrEqual(12)
     // the panel scales in (F-15): measure the button once the transition has ended
-    await expect
-      .poll(async () => (await tid(page, 'cc-modal-close').boundingBox())?.width ?? 0)
-      .toBeGreaterThanOrEqual(43.9)
-    await expectTouchTarget(tid(page, 'cc-modal-close'))
+    // 44px only on touch viewports; the staff theme is 40px from lg (NFR-RESP-03).
+    if (!isDesktopShell(page)) {
+      await expect
+        .poll(async () => (await tid(page, 'cc-modal-close').boundingBox())?.height ?? 0)
+        .toBeGreaterThanOrEqual(43.9)
+      await expectTouchTarget(tid(page, 'cc-modal-close'))
+    } else {
+      await expect(tid(page, 'cc-modal-close')).toBeVisible()
+    }
     await expectNoHorizontalScroll(page)
   })
 
