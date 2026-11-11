@@ -19,7 +19,7 @@ export const DESIGNED_LEARNERS: readonly number[] = [
   2, 4, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008,
 ]
 
-const FIRST_NAME = (name: string): string => name.trim().split(/s+/)[0] ?? ''
+const FIRST_NAME = (name: string): string => name.trim().split(/\s+/)[0] ?? ''
 
 /** "Sekitar anda": up to this many pupils on each side. */
 const NEARBY = 2
