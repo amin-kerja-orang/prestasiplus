@@ -4,7 +4,7 @@
  * ini." The snapshot is the form state only (text, ids, tokens of pictures already uploaded), read back with a strict shape
  * check so a damaged or foreign value is ignored. Pure over a storage-like object.
  */
-import { LEAF_MODES, SCRIPT_TYPES, newUid, type LeafDraft, type StudioDraft } from './draft'
+import { LEAF_MODES, SCRIPT_TYPES, blankEssay, newUid, type EssayDraft, type LeafDraft, type StudioDraft } from './draft'
 import { isCognitive } from './dskp-tags'
 
 export const RECOVERY_MESSAGE = 'Terdapat kerja yang belum disimpan daripada sesi sebelum ini.'
@@ -26,7 +26,7 @@ export const recoveryKey = (userId: string, questionId?: string): string =>
 export const contentOf = (d: StudioDraft): string => {
   // `inheritedTp` null / undefined / absent all mean "none", so they compare equal whatever the key order.
   const { inheritedTp, ...rest } = d
-  return JSON.stringify({ ...rest, inheritedTp: inheritedTp ?? null, leaves: d.leaves.map((l) => ({ ...l, uid: '' })) })
+  return JSON.stringify({ ...rest, inheritedTp: inheritedTp ?? null, leaves: d.leaves.map((l) => ({ ...l, uid: '', essay: { ...l.essay, points: l.essay.points.map((pt) => ({ ...pt, uid: '' })) } })) })
 }
 
 export const sameDraft = (a: StudioDraft, b: StudioDraft): boolean => contentOf(a) === contentOf(b)
@@ -34,6 +34,17 @@ export const sameDraft = (a: StudioDraft, b: StudioDraft): boolean => contentOf(
 const isStr = (v: unknown): v is string => typeof v === 'string'
 const isNullStr = (v: unknown): v is string | null => v === null || typeof v === 'string'
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/** The scheme of an essay leaf in a stored snapshot; a snapshot from before the mode existed has none. */
+function essayOf(v: unknown): EssayDraft {
+  if (!isObj(v) || !isStr(v.modelText) || !Array.isArray(v.points)) return blankEssay()
+  const points = []
+  for (const pt of v.points) {
+    if (!isObj(pt) || !isStr(pt.id) || !isStr(pt.text) || typeof pt.marks !== 'number') return blankEssay()
+    points.push({ uid: newUid(), id: pt.id, text: pt.text, marks: pt.marks })
+  }
+  return { modelText: v.modelText, points, raw: isObj(v.raw) ? v.raw : null }
+}
 
 function leafOf(v: unknown): LeafDraft | null {
   if (!isObj(v)) return null
@@ -50,6 +61,7 @@ function leafOf(v: unknown): LeafDraft | null {
   return {
     uid: newUid(), label: v.label, mode, prompt: v.prompt, marks: v.marks, tp: v.tp, cognitive: v.cognitive,
     options, correct: v.correct, accepted: v.accepted, numeric: { value: num.value, tolerance: num.tolerance, unit: num.unit },
+    essay: essayOf(v.essay),
   }
 }
 

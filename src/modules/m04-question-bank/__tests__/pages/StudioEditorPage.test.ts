@@ -427,6 +427,31 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(body.tag.tp).toBe(4)
   })
 
+  it('a migrated V2 structured question opens with no banner, edits its marks and points and saves them in the stored shape (K10)', async () => {
+    const parts = [
+      { label: '(a)', prompt: { ms: 'Namakan satu bahan.' }, marks: 3, mode: 'essay', key: { kind: 'points', marks: 3, modelText: 'Skema (a).', points: [{ id: 'p1', code: 'P', label: 'Air', marks: 1, text: { ms: 'Air' } }, { id: 'p2', code: 'P', label: 'Gas', marks: 2, text: { ms: 'Gas' } }] } },
+    ]
+    studio.fetchStudioQuestion.mockResolvedValue({
+      id: '610', status: 'draft', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan berstruktur tentang pencemaran.',
+      questionImage: null, curriculumChapterId: null, stimulusGroup: null, tag: { unitId: null, spIds: [], tp: 3 }, parts,
+    })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '610', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/610/sunting', '610')
+    expect(w.find('[data-testid="studio-unsupported"]').exists()).toBe(false)
+    expect(t(w, 'studio-leaf-0-point-1-marks').attributes('disabled')).toBeUndefined()
+    await t(w, 'studio-leaf-0-marks').setValue('4')
+    await t(w, 'studio-leaf-0-point-1-marks').setValue('3')
+    await t(w, 'studio-leaf-0-point-1-text').setValue('Gas karbon')
+    await t(w, 'studio-save-bar').find('button[type="submit"]').trigger('click')
+    await flushPromises()
+    const body = studio.updateStudioQuestion.mock.calls[0]?.[1] as { parts: { marks: number; key: { marks: number; modelText: string; points: Record<string, unknown>[] } }[] }
+    expect(body.parts[0]?.marks).toBe(4)
+    expect(body.parts[0]?.key.marks).toBe(4)
+    expect(body.parts[0]?.key.modelText).toBe('Skema (a).')
+    expect(body.parts[0]?.key.points[0]).toEqual(parts[0]!.key.points[0])
+    expect(body.parts[0]?.key.points[1]).toEqual({ id: 'p2', code: 'P', label: 'Gas karbon', marks: 3, text: { ms: 'Gas karbon' } })
+  })
+
   it('an approved question is read-only until "Edit sebagai draf" writes the draft at once', async () => {
     const approved = {
       id: '700', status: 'approved', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan yang sudah diterbitkan kepada murid.',

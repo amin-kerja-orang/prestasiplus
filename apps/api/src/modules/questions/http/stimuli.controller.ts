@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 import {
-  QuestionCreateRequestSchema,
+  questionCreateSchemaFor,
   STIMULUS_MESSAGES,
   StimulusCreateRequestSchema,
   StimulusGroupCreateRequestSchema,
@@ -189,7 +189,7 @@ export class StimuliController {
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async createQuestion(@Actor() actor: HttpActor, @Param('id') id: string, @Body() body: unknown) {
     await this.stimuli.getGroup(id)
-    const input = parseBody(QuestionCreateRequestSchema, body)
+    const input = parseBody(questionCreateSchemaFor(body), body)
     const created = await this.stimuli.createQuestionInGroup(id, input, actor)
     await this.write(actor, AUDIT_ACTIONS.QUESTION_CREATED, 'question', created.id, { status: created.version.status, groupId: id })
     return flash(questionView(created), STIMULUS_MESSAGES.questionAdded)

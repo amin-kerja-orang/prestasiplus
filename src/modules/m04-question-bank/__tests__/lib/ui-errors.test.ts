@@ -5,11 +5,19 @@ import { ApiError } from '@/api'
 
 import { pageOf, queryText } from '../../lib/route-query'
 import { saveBlob } from '@/lib/save-blob'
-import { errorLines, fieldErrors, GENERIC_ERROR, isNotFound, LOAD_ERROR } from '../../lib/ui-errors'
+import { errorLines, fieldErrors, GENERIC_ERROR, isNotFound, LOAD_ERROR, RAW_ENGLISH_BM, readable } from '../../lib/ui-errors'
 
 describe('ui-errors', () => {
   it('uses the SRS load-failure copy', () => {
     expect(LOAD_ERROR).toBe('Maaf, berlaku ralat. Sila cuba semula.')
+  })
+
+  it('a raw English validation text never reaches the user: it is shown as BM, BM messages stay as they are', () => {
+    const raw = 'Too small: expected string to have >=1 characters'
+    expect(readable(raw)).toBe(RAW_ENGLISH_BM)
+    expect(readable('Sila pilih subjek.')).toBe('Sila pilih subjek.')
+    expect(errorLines(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Data tidak sah.', fields: { 'parts.0.prompt.ms': raw } }))).toEqual([RAW_ENGLISH_BM])
+    expect(fieldErrors(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'x', fields: { a: raw } }))).toEqual({ a: RAW_ENGLISH_BM })
   })
 
   it('errorLines prefers field messages, then the message, then the generic text', () => {

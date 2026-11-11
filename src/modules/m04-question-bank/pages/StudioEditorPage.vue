@@ -398,7 +398,7 @@ async function save(): Promise<void> {
       <DsCallout v-if="unsupported.length > 0" tone="warning" title="Soalan ini belum boleh disunting di Studio" data-testid="studio-unsupported">
         <DsText v-for="u in unsupported" :key="u" variant="body">{{ u }}</DsText>
         <DsText v-if="props.id !== undefined" variant="body">
-          Skema dan rubrik disunting di <RouterLink :to="`/admin/spm/subjektif/${props.id}/sunting`" class="underline" data-testid="studio-unsupported-subjektif">Sunting Subjektif</RouterLink>; medan lain boleh disunting dan disimpan di sini.
+          Bahagian ini boleh disunting di <RouterLink :to="`/admin/spm/subjektif/${props.id}/sunting`" class="underline" data-testid="studio-unsupported-subjektif">Sunting Subjektif</RouterLink>; medan lain boleh disunting dan disimpan di sini.
         </DsText>
       </DsCallout>
 

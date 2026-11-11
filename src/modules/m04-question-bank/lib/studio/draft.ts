@@ -6,11 +6,16 @@
 import { DIFFICULTY_LABELS } from '../question-list'
 import { dskpItems, isCognitive, isKbat, leafName, questionTp, type CognitiveValue } from './dskp-tags'
 
-export type LeafMode = 'mcq' | 'short_text' | 'numeric'
+export type LeafMode = 'mcq' | 'short_text' | 'numeric' | 'essay' | 'working' | 'drawing'
+/** The modes whose answer is a marking scheme (`points` key): the loaders give a migrated structured sub-question `working` (1 to 2 marks) or `essay`. */
+export const isSchemeMode = (m: LeafMode): boolean => m === 'essay' || m === 'working' || m === 'drawing'
 export const LEAF_MODES: readonly { value: LeafMode; label: string }[] = [
   { value: 'mcq', label: 'Aneka pilihan' },
   { value: 'short_text', label: 'Jawapan pendek' },
   { value: 'numeric', label: 'Nombor' },
+  { value: 'essay', label: 'Struktur / Esei' },
+  { value: 'working', label: 'Langkah kerja' },
+  { value: 'drawing', label: 'Lukisan' },
 ]
 
 export const MIN_OPTIONS = 3
@@ -24,6 +29,28 @@ export interface OptionDraft {
   /** Public token of an uploaded option picture. */
   imageToken: string | null
 }
+
+/** One mark-scheme point of an `essay` leaf: `text` is what the pupil's answer is marked against. */
+export interface PointDraft {
+  /** Local key only; never sent. */
+  uid: string
+  /** The stored point id (`p1`); '' for a point added in the form. */
+  id: string
+  text: string
+  marks: number
+}
+
+/**
+ * The scheme of an `essay` leaf (a V2 structured sub-question or an essay): `Skema` text and the marking points. `raw` is the stored
+ * part as it was read: a save writes the form's values over it, so whatever the form does not show stays as it was (KP-14).
+ */
+export interface EssayDraft {
+  modelText: string
+  points: PointDraft[]
+  raw: Record<string, unknown> | null
+}
+
+export const blankEssay = (): EssayDraft => ({ modelText: '', points: [{ uid: newUid(), id: '', text: '', marks: 1 }], raw: null })
 
 export interface LeafDraft {
   /** Local key only; never sent. */
@@ -39,6 +66,7 @@ export interface LeafDraft {
   /** Accepted answers, one per line. */
   accepted: string
   numeric: { value: string; tolerance: string; unit: string }
+  essay: EssayDraft
 }
 
 export type Kertas = '' | '1' | '2' | '3' | '4'
@@ -108,6 +136,7 @@ export function blankLeaf(label = 'a', mode: LeafMode = 'mcq'): LeafDraft {
     correct: '',
     accepted: '',
     numeric: { value: '', tolerance: '', unit: '' },
+    essay: blankEssay(),
   }
 }
 
@@ -134,7 +163,7 @@ export function blankDraft(): StudioDraft {
 /** Switching the mode keeps the label, marks, prompt and tags, and starts the answer fields afresh. */
 export function withMode(leaf: LeafDraft, mode: LeafMode): LeafDraft {
   if (leaf.mode === mode) return leaf
-  return { ...leaf, mode, options: mode === 'mcq' ? blankOptions() : [], correct: '', accepted: '', numeric: { value: '', tolerance: '', unit: '' } }
+  return { ...leaf, mode, options: mode === 'mcq' ? blankOptions() : [], correct: '', accepted: '', numeric: { value: '', tolerance: '', unit: '' }, essay: blankEssay() }
 }
 
 /** Next free option label; null at the maximum. */
@@ -207,6 +236,10 @@ export function draftGaps(d: StudioDraft, levelName = '', facts: GapFacts = {}):
     if (l.mode === 'mcq') {
       if (l.options.some((o) => o.text.trim() === '' && o.imageToken === null)) gaps.push({ ...leaf, message: `${name} ada pilihan kosong.` })
       if (!l.options.some((o) => o.label === l.correct)) gaps.push({ ...leaf, message: `${name} mempunyai 0 pilihan betul — mesti tepat 1.` })
+    } else if (isSchemeMode(l.mode)) {
+      const given = l.essay.points.filter((pt) => pt.text.trim() !== '' || pt.id !== '')
+      if (given.length === 0) gaps.push({ ...leaf, message: `${name} tiada poin skema.` })
+      else if (given.reduce((n, pt) => n + (Number.isFinite(pt.marks) ? pt.marks : 0), 0) !== Math.trunc(l.marks)) gaps.push({ ...leaf, message: `${name}: jumlah markah poin tidak sama dengan markah bahagian.` })
     } else if (l.mode === 'short_text') {
       if (acceptedValues(l).length === 0) gaps.push({ ...leaf, message: `${name} tiada skema jawapan.` })
     } else if (!Number.isFinite(Number(l.numeric.value)) || l.numeric.value.trim() === '') {
@@ -334,6 +367,52 @@ export const acceptedValues = (l: Pick<LeafDraft, 'accepted'>): string[] =>
 
 type Json = Record<string, unknown>
 
+const POINT_LABEL_MAX = 120
+const shorten = (v: string): string => ([...v].length <= POINT_LABEL_MAX ? v : [...v].slice(0, POINT_LABEL_MAX).join('').trimEnd())
+const msOf = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'object' && v !== null && typeof (v as { ms?: unknown }).ms === 'string' ? (v as { ms: string }).ms : '')
+
+/**
+ * The part of an `essay` leaf: the stored part (when there is one) with the form's values written over it, so every field the form
+ * does not show (code, label of an untouched point, English text, scheme version) is kept as it was read (KP-14).
+ */
+function essayToPart(l: LeafDraft, base: Json): Json {
+  const raw = l.essay.raw ?? {}
+  const rawKey = (raw.key ?? {}) as Json
+  const rawPoints = Array.isArray(rawKey.points) ? (rawKey.points as Json[]) : []
+  const used = new Set(l.essay.points.map((pt) => pt.id).filter((id) => id !== ''))
+  let n = 0
+  const freshId = (): string => {
+    do n += 1
+    while (used.has(`p${String(n)}`))
+    used.add(`p${String(n)}`)
+    return `p${String(n)}`
+  }
+  const points = l.essay.points
+    .filter((pt) => pt.text.trim() !== '' || pt.id !== '')
+    .map((pt) => {
+      const old = rawPoints.find((r) => r.id === pt.id)
+      const marks = Math.max(0, Math.trunc(pt.marks))
+      if (old === undefined) return { id: freshId(), code: 'P', label: shorten(pt.text.trim()), marks, text: { ms: pt.text.trim() } }
+      if (pt.text.trim() === msOf(old.text).trim()) return { ...old, marks }
+      return { ...old, marks, label: shorten(pt.text.trim()), text: { ...(typeof old.text === 'object' && old.text !== null ? old.text : {}), ms: pt.text.trim() } }
+    })
+  const model = l.essay.modelText.trim()
+  const rawModel = rawKey.modelText
+  const modelText = model === '' ? undefined : typeof rawModel === 'object' && rawModel !== null ? { ...rawModel, ms: model } : model
+  // Assigning over the stored key keeps its field order; only the Skema is removed when it was emptied.
+  const outKey: Json = { ...rawKey, kind: 'points', marks: Math.max(0, Math.trunc(l.marks)), points }
+  if (modelText === undefined) delete outKey.modelText
+  else outKey.modelText = modelText
+  const rawPrompt = typeof raw.prompt === 'object' && raw.prompt !== null ? (raw.prompt as Json) : {}
+  return {
+    ...raw,
+    ...base,
+    prompt: { ...rawPrompt, ms: l.prompt.trim() },
+    mode: l.mode,
+    key: outKey,
+  }
+}
+
 function leafToPart(l: LeafDraft): Json {
   const base: Json = {
     label: l.label.trim(),
@@ -350,6 +429,7 @@ function leafToPart(l: LeafDraft): Json {
       key: { kind: 'option', correct: l.correct },
     }
   }
+  if (isSchemeMode(l.mode)) return essayToPart(l, base)
   if (l.mode === 'short_text') return { ...base, mode: 'short_text', key: { kind: 'accepted', values: acceptedValues(l) } }
   const tol = l.numeric.tolerance.trim()
   const unit = l.numeric.unit.trim()
@@ -434,6 +514,28 @@ export interface Hydrated {
 const LEAF_KEYS = new Set(['label', 'prompt', 'marks', 'mode', 'options', 'key', 'difficultyTp', 'cognitiveLevel', 'kbat'])
 const isSet = (v: unknown): boolean => v !== undefined && v !== null
 
+const ESSAY_KEY = new Set(['kind', 'marks', 'points', 'modelText'])
+const ESSAY_POINT = new Set(['id', 'code', 'label', 'marks', 'text'])
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/** What of an `essay` leaf's scheme the form cannot show or keep consistent (grouped points, bonus, alternatives, English text...). */
+function essayLoss(key: Record<string, unknown>): string[] {
+  const lost: string[] = []
+  if (key.kind !== 'points') lost.push('key.kind')
+  for (const k of Object.keys(key)) if (!ESSAY_KEY.has(k) && isSet(key[k])) lost.push(`key.${k}`)
+  if (isObj(key.modelText) && Object.keys(key.modelText).some((k) => k !== 'ms')) lost.push('key.modelText')
+  if (!Array.isArray(key.points) || key.points.length === 0) lost.push('key.points')
+  else {
+    for (const pt of key.points) {
+      if (!isObj(pt) || Object.keys(pt).some((k) => !ESSAY_POINT.has(k) && isSet(pt[k])) || (isSet(pt.text) && (!isObj(pt.text) || Object.keys(pt.text).some((k) => k !== 'ms')))) {
+        lost.push('key.points')
+        break
+      }
+    }
+  }
+  return lost
+}
+
 /** Everything on a stored leaf that `leafToPart` would not write back (so a save would drop it). Empty = lossless. */
 function lossOf(p: WirePart): string[] {
   const lost: string[] = []
@@ -441,7 +543,9 @@ function lossOf(p: WirePart): string[] {
   if (isSet(p.prompt?.en)) lost.push('prompt.en')
   for (const o of p.options ?? []) if (isSet(o.body?.en) || Object.keys(o).some((k) => !['label', 'body', 'imageId'].includes(k))) lost.push('options')
   const key = p.key
-  if (key) {
+  if (key && (p.mode === 'essay' || p.mode === 'working' || p.mode === 'drawing')) {
+    lost.push(...essayLoss(key))
+  } else if (key) {
     for (const k of Object.keys(key)) if (!['kind', 'correct', 'values', 'caseSensitive', 'anyOrder'].includes(k)) lost.push(`key.${k}`)
     if (key.caseSensitive === true) lost.push('key.caseSensitive')
     if (key.anyOrder === true) lost.push('key.anyOrder')
@@ -508,7 +612,7 @@ export function hydrate(q: WireQuestion): Hydrated {
     }
     const lost = lossOf(p)
     if (lost.length > 0) {
-      unsupported.push(`Bahagian (${p.label}) mempunyai tetapan yang belum boleh disunting di Studio (${lost.join(', ')}).`)
+      unsupported.push(`Bahagian (${p.label}) mempunyai tetapan khas yang belum boleh disunting di Studio.`)
       continue
     }
     const leaf = blankLeaf(p.label)
@@ -530,8 +634,17 @@ export function hydrate(q: WireQuestion): Hydrated {
       leaf.mode = 'numeric'
       leaf.options = []
       leaf.numeric = { value: String(v.v), tolerance: v.tol === undefined ? '' : String(v.tol), unit: v.unit ?? '' }
+    } else if ((p.mode === 'essay' || p.mode === 'working' || p.mode === 'drawing') && p.key?.kind === 'points') {
+      const k = p.key as unknown as { marks?: number; points: { id: string; text?: { ms?: string }; marks: number }[]; modelText?: unknown }
+      leaf.mode = p.mode
+      leaf.options = []
+      leaf.essay = {
+        modelText: msOf(k.modelText),
+        points: k.points.map((pt) => ({ uid: newUid(), id: pt.id, text: pt.text?.ms ?? '', marks: pt.marks })),
+        raw: JSON.parse(JSON.stringify(p)) as Record<string, unknown>,
+      }
     } else {
-      unsupported.push(`Bahagian (${p.label}) berjenis ${p.mode ?? '?'} yang belum boleh disunting di Studio.`)
+      unsupported.push(`Bahagian (${p.label}) berjenis jawapan yang belum boleh disunting di Studio.`)
       continue
     }
     leaves.push(leaf)

@@ -7,12 +7,14 @@
 import { DsBadge, DsCluster, DsFormField, DsGrid, DsNativeSelect, DsStack, DsSurface } from '@/ds'
 
 import {
+  isSchemeMode,
   LEAF_MODES,
   withMode,
   type LeafDraft,
   type LeafMode,
 } from '../../lib/studio/draft'
 import { COGNITIVE_OPTIONS, isCognitive, isKbat, TP_VALUES } from '../../lib/studio/dskp-tags'
+import EssayLeafForm from './EssayLeafForm.vue'
 import McqLeafForm from './McqLeafForm.vue'
 import NumericLeafForm from './NumericLeafForm.vue'
 import ShortTextLeafForm from './ShortTextLeafForm.vue'
@@ -56,6 +58,7 @@ const err = (k: string): string | undefined => props.errors?.[k]
       </DsFormField>
 
       <McqLeafForm v-if="leaf.mode === 'mcq'" v-model="leaf" :testid="testid" :disabled="disabled" :errors="errors" />
+      <EssayLeafForm v-else-if="isSchemeMode(leaf.mode)" v-model="leaf" :testid="testid" :disabled="disabled" />
       <ShortTextLeafForm v-else-if="leaf.mode === 'short_text'" v-model="leaf" :testid="testid" :disabled="disabled" />
       <NumericLeafForm v-else v-model="leaf" :testid="testid" :disabled="disabled" />
 

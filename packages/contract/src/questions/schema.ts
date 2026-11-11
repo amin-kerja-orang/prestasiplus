@@ -505,6 +505,27 @@ export const QuestionCreateRequestSchema = baseInput
   })
   .meta({ id: 'QuestionCreateRequest' })
 
+/**
+ * What the create routes parse with: the request above, with parts read leniently as on update. The service holds every NEW part to the strict
+ * write rules, except that an empty prompt.ms is accepted (V2 parts.*.prompt_text is nullable; carried-prompt.ts), so a sub-bahagian
+ * without an instruction no longer fails with the raw 'Too small' message. Not part of the OpenAPI document (the request schema is).
+ */
+export const QuestionCreateWriteSchema = QuestionCreateRequestSchema.safeExtend({
+  parts: z.array(QuestionPartReadV3Schema as unknown as typeof QuestionWritePartSchema).min(1).optional(),
+})
+
+const hasEmptyPrompt = (p: unknown): boolean => {
+  if (typeof p !== 'object' || p === null) return false
+  const o = p as { prompt?: { ms?: unknown }; children?: unknown }
+  return o.prompt?.ms === '' || (Array.isArray(o.children) && o.children.some(hasEmptyPrompt))
+}
+
+/** The create schema for a body: the strict request, or the lenient one only when a part leaves its instruction empty (every other error keeps its strict shape). */
+export const questionCreateSchemaFor = (body: unknown): typeof QuestionCreateRequestSchema =>
+  typeof body === 'object' && body !== null && Array.isArray((body as { parts?: unknown }).parts) && (body as { parts: unknown[] }).parts.some(hasEmptyPrompt)
+    ? (QuestionCreateWriteSchema as unknown as typeof QuestionCreateRequestSchema)
+    : QuestionCreateRequestSchema
+
 /** PUT body: the four required fields must be sent; other fields are a patch (`''`/null clears). `questionType` is ignored. */
 export const QuestionUpdateRequestSchema = baseInput
   // `parts` parse leniently here: the service holds new and changed parts to the strict write rules and lets a part echoed

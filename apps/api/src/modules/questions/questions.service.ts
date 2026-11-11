@@ -35,6 +35,7 @@ import {
   languageToStore,
   partsFromFlat,
   paperCodeWithKertas,
+  difficultyLevelOf,
   toPublic,
   type FlatSource,
   type FlatType,
@@ -163,8 +164,11 @@ interface Normalized {
   educationLevelId: string
   /** 1..6, stored in `difficulty_tp`; null when no `tag.tp` is sent (TP is separate from Kesukaran, #685). */
   tp: number | null
-  /** DM-47: the typed Kesukaran 1..5, stored in `difficulty_level` on every save. */
-  difficultyLevel: number
+  /**
+   * DM-47: the typed Kesukaran 1..5, stored in `difficulty_level` on every save. NULL only when an update re-sends the level the read
+   * rule showed for a stored NULL (a migrated V2 row): an untouched value is not written, so a no-change save leaves the row as it was (KP-14).
+   */
+  difficultyLevel: number | null
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
   textbookRef?: TextbookRef | null | undefined
   /** DM-54: a value sets the scheme rules, null clears them, undefined keeps what is stored. */
@@ -746,7 +750,7 @@ export class QuestionsService {
     const input = {
       subjectId: v.subjectId ?? '',
       educationLevelId: v.educationLevelId ?? '',
-      difficultyLevel: v.difficultyLevel ?? 1,
+      difficultyLevel: difficultyLevelOf(v),
       questionText: v.stemMs ?? '',
       parts,
     } as unknown as QuestionUpdateInput
@@ -1131,7 +1135,7 @@ export class QuestionsService {
     if (!subject) fields.subjectId = QUESTION_MESSAGES.subject
     // Secondary-only (D72): a Darjah (primary-stage) level cannot be written; same refusal as an unknown level.
     if (!level || level.stage === 'primary') fields.educationLevelId = QUESTION_MESSAGES.level
-    if ((n.tp !== null && (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6)) || !Number.isInteger(n.difficultyLevel) || n.difficultyLevel < 1 || n.difficultyLevel > 5) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
+    if ((n.tp !== null && (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6)) || (n.difficultyLevel !== null && (!Number.isInteger(n.difficultyLevel) || n.difficultyLevel < 1 || n.difficultyLevel > 5))) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
 
     // Curriculum tag: unit (kind unit), 1 to 3 SP nodes (kind sp), all of this subject and level.
     let unitKey: bigint | null = null
@@ -1391,7 +1395,7 @@ export class QuestionsService {
       educationLevelId: opts.keepSubject ? (v.educationLevelId ?? input.educationLevelId) : input.educationLevelId,
       // TP is separate from Kesukaran (#685; lead ruling on #783): a body without `tag.tp` keeps the stored TP.
       tp: input.tag?.tp ?? v.difficultyTp,
-      difficultyLevel: input.difficultyLevel,
+      difficultyLevel: v.difficultyLevel === null && input.difficultyLevel === difficultyLevelOf(v) ? null : input.difficultyLevel,
       textbookRef: input.textbookRef,
       schemeRules: input.schemeRules,
       stem: input.questionText,

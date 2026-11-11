@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
-import { QUESTION_MESSAGES, QuestionBulkGroupRequestSchema, QuestionCreateRequestSchema, QuestionUpdateRequestSchema } from '@pp/contract'
+import { QUESTION_MESSAGES, QuestionBulkGroupRequestSchema, questionCreateSchemaFor, QuestionUpdateRequestSchema } from '@pp/contract'
 
 import { AuditService } from '../../../common/audit'
 import { Roles } from '../../../common/guards'
@@ -140,7 +140,7 @@ export class AdminQuestionsController {
   @Post()
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async create(@Actor() actor: HttpActor, @Body() body: unknown) {
-    const input = parseBody(QuestionCreateRequestSchema, body)
+    const input = parseBody(questionCreateSchemaFor(body), body)
     const created = await this.questions.create(input, actor)
     await this.audit.created(actor, created.id, created.version.status)
     return flash(questionView(created), QUESTION_MESSAGES.added)

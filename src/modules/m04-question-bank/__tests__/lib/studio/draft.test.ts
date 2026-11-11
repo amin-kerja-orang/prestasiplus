@@ -382,3 +382,76 @@ describe('a locked save never clears a stored TP (K10)', () => {
     expect((toRequestBody(h.draft) as { parts: unknown }).parts).toEqual([essay])
   })
 })
+
+describe('migrated V2 structured and essay parts open and save in the Studio (K10)', () => {
+  // The shape of `buildPointsKey` (ETL): points with code P, label, marks and text.ms; `modelText` is a string.
+  const structured = [
+    {
+      label: '(a)', prompt: { ms: 'Namakan satu bahan.' }, marks: 3, mode: 'essay',
+      key: { kind: 'points', marks: 3, modelText: 'Skema (a).', points: [{ id: 'p1', code: 'P', label: 'Air', marks: 1, text: { ms: 'Air' } }, { id: 'p2', code: 'P', label: 'Gas', marks: 2, text: { ms: 'Gas' } }] },
+    },
+    { label: '(b)', prompt: { ms: 'Terangkan.' }, marks: 2, mode: 'essay', key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'P', label: 'Mengikut skema', marks: 2 }] } },
+  ]
+  const wireOf = (parts: unknown[]) =>
+    ({ subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan berstruktur tentang pencemaran.', questionImage: null, curriculumChapterId: null, parts, tag: { unitId: null, spIds: [], tp: 3 } }) as never
+  const partsOf = (d: StudioDraft) => (toRequestBody(d) as { parts: Record<string, unknown>[] }).parts
+
+  it('shows no banner for them and writes them back byte-identical when nothing is touched', () => {
+    const h = hydrate(wireOf(structured))
+    expect(h.unsupported).toEqual([])
+    expect(h.draft.lockedParts).toBeUndefined()
+    expect(h.draft.leaves.map((l) => l.mode)).toEqual(['essay', 'essay'])
+    expect(JSON.stringify(partsOf(h.draft))).toBe(JSON.stringify(structured))
+  })
+
+  it('edits the part marks, a point (text and marks) and the Skema; everything else stays as stored', () => {
+    const h = hydrate(wireOf(structured))
+    const a = h.draft.leaves[0]!
+    a.marks = 4
+    a.prompt = 'Namakan dua bahan.'
+    a.essay.modelText = 'Skema baharu.'
+    a.essay.points[1]!.marks = 3
+    a.essay.points[1]!.text = 'Gas karbon'
+    a.essay.points[0]!.marks = 1
+    const out = partsOf(h.draft)[0]! as { marks: number; prompt: { ms: string }; key: { marks: number; modelText: string; points: Record<string, unknown>[] } }
+    expect(out.marks).toBe(4)
+    expect(out.prompt.ms).toBe('Namakan dua bahan.')
+    expect(out.key).toMatchObject({ kind: 'points', marks: 4, modelText: 'Skema baharu.' })
+    expect(out.key.points[0]).toEqual(structured[0]!.key.points[0]) // untouched point identical
+    expect(out.key.points[1]).toEqual({ id: 'p2', code: 'P', label: 'Gas karbon', marks: 3, text: { ms: 'Gas karbon' } })
+    expect(JSON.stringify(partsOf(h.draft)[1])).toBe(JSON.stringify(structured[1])) // part (b) untouched
+  })
+
+  it('opens a 1 to 2 mark sub-question (mode working, the loader shape) and an essay of 1 mark the same way', () => {
+    const parts = [
+      { label: '(a)', prompt: { ms: 'Berapakah x?' }, marks: 2, mode: 'working', key: { kind: 'points', marks: 2, modelText: 'x = 4', points: [{ id: 'p1', code: 'P', label: 'x = 4', marks: 2, text: { ms: 'x = 4' } }] } },
+      { label: '1', prompt: { ms: 'Huraikan.' }, marks: 1, mode: 'essay', key: { kind: 'points', marks: 1, points: [{ id: 'p1', code: 'P', label: 'Jawapan model', marks: 1, text: { ms: 'Jawapan model' } }], modelText: 'Jawapan model' } },
+    ]
+    const h = hydrate(wireOf(parts))
+    expect(h.unsupported).toEqual([])
+    expect(h.draft.leaves.map((l) => l.mode)).toEqual(['working', 'essay'])
+    expect(JSON.stringify(partsOf(h.draft))).toBe(JSON.stringify(parts))
+    h.draft.leaves[0]!.marks = 3
+    h.draft.leaves[0]!.essay.points[0]!.marks = 3
+    expect(partsOf(h.draft)[0]).toMatchObject({ mode: 'working', marks: 3, key: { marks: 3, points: [{ id: 'p1', marks: 3 }] } })
+  })
+
+  it('adds a point with a fresh id and drops a removed one', () => {
+    const h = hydrate(wireOf(structured))
+    const a = h.draft.leaves[0]!
+    a.essay.points.push({ uid: 'x', id: '', text: 'Habuk', marks: 0 })
+    a.essay.points.splice(0, 1)
+    const key = (partsOf(h.draft)[0] as { key: { points: { id: string; code: string; text: { ms: string } }[] } }).key
+    expect(key.points.map((p) => p.id)).toEqual(['p2', 'p1'])
+    expect(key.points[1]).toMatchObject({ code: 'P', text: { ms: 'Habuk' } })
+  })
+
+  it('flags a total that does not match the points, and a scheme the form cannot hold stays plain BM without field names', () => {
+    const h = hydrate(wireOf(structured))
+    h.draft.leaves[0]!.marks = 9
+    expect(draftGaps(h.draft).some((g) => g.message.includes('jumlah markah poin'))).toBe(true)
+    const odd = hydrate(wireOf([{ ...structured[0]!, key: { ...structured[0]!.key, groups: [{ id: 'g', anyN: 1, pointIds: ['p1'] }] } }]))
+    expect(odd.unsupported).toHaveLength(1)
+    expect(odd.unsupported[0]).not.toMatch(/key\.|groups|points/)
+  })
+})

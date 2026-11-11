@@ -761,6 +761,99 @@ describe('structured and subjective (essay) questions', () => {
       expect(JSON.stringify(refused.body), `gate of ${id}`).not.toContain('Sila pilih tahap kesukaran')
     }
   })
+
+  it('B5: a new MCQ without an Arahan sub-bahagian is created (V2 prompt_text is nullable), over POST and over PUT, with no raw validation message', async () => {
+    const body: Wire = {
+      subjectId: cur.subject, educationLevelId: cur.level, difficultyLevel: 3, questionType: 'essay', questionText: 'Soalan aneka pilihan tanpa arahan sub-bahagian.',
+      parts: [{ label: 'a', prompt: { ms: '' }, marks: 1, mode: 'mcq', options: [{ label: 'A', body: { ms: 'Satu' } }, { label: 'B', body: { ms: 'Dua' } }, { label: 'C', body: { ms: 'Tiga' } }], key: { kind: 'option', correct: 'B' } }],
+      tag: { unitId: null, spIds: [], tp: null },
+    }
+    const made = await admin.post('/api/questions', body)
+    expect(made.status, said(made)).toBe(201)
+    expect(JSON.stringify(made.body)).not.toContain('Too small')
+    expect((await get(made.body.data.id)).parts[0].prompt.ms).toBe('')
+    const edited = await admin.put('/api/questions/' + String(made.body.data.id), { ...body, questionText: 'Soalan aneka pilihan tanpa arahan, disunting.' })
+    expect(edited.status, said(edited)).toBe(200)
+  })
+
+  it('KP-14: a no-change Studio save of a migrated question with a NULL difficulty_level leaves the stored row as it was (null stays null)', async () => {
+    const ids = [structuredIds['1'] as string, q(901)]
+    for (const id of ids) {
+      const latest = async () => (await rows<Wire>(`select * from question_versions where question_id = $1::bigint order by version_no desc limit 1`, [id]))[0] as Wire
+      const lastId = (await latest()).id
+      await pool.query(`update question_versions set difficulty_level = null where id = $1::bigint`, [lastId])
+      const stored = await latest()
+      expect(stored.difficulty_level).toBeNull()
+      const before = await get(id)
+      expect(before.difficultyLevel, 'the read rule shows a level for the NULL').toBeGreaterThanOrEqual(1)
+      // The body the Studio form sends for an untouched question: every field as the form read it.
+      const body: Wire = {
+        subjectId: before.subjectId,
+        educationLevelId: before.educationLevelId,
+        difficultyLevel: before.difficultyLevel,
+        questionType: 'essay',
+        questionText: before.questionText,
+        parts: before.parts,
+        tag: { unitId: before.tag?.unitId ?? null, spIds: before.tag?.spIds ?? [], tp: before.tag?.tp ?? null },
+        curriculumChapterId: before.curriculumChapterId ?? null,
+        kertas: before.kertas ?? null,
+        numberLabel: before.numberLabel ?? null,
+        explanation: before.explanation ?? null,
+      }
+      const res = await admin.put(`/api/questions/${id}`, body)
+      expect(res.status, `PUT ${id} ${said(res)}`).toBe(200)
+      const now = await latest()
+      expect(now.difficulty_level, `difficulty_level of ${id} stays NULL`).toBeNull()
+      const SKIP = new Set(['id', 'version_no', 'status', 'created_at', 'updated_at', 'submitted_at', 'reviewed_at', 'approved_at', 'published_at', 'created_by', 'updated_by', 'reviewed_by', 'approved_by', 'last_editor', 'decision_reason', 'reject_reason'])
+      const changed = Object.keys(stored).filter((k) => !SKIP.has(k) && JSON.stringify(stored[k]) !== JSON.stringify(now[k]))
+      expect(changed, `columns of ${id} that a no-change save changed`).toEqual([])
+      expect((await get(id)).parts, `parts of ${id}`).toEqual(before.parts)
+    }
+  })
+
+  it('K10: editing the marks, a point and the text of a migrated structured question and of an essay saves, persists, passes the gate, is approved and shows to the pupil (untouched fields identical, KP-14)', async () => {
+    const service = t.app.get(QuestionsService, { strict: false })
+    for (const id of [structuredIds['1'] as string, q(901)]) {
+      const before = await get(id)
+      const parts = JSON.parse(JSON.stringify(before.parts)) as Wire[]
+      const first = parts[0] as Wire
+      expect(['essay', 'working', 'drawing'], `mode of the first part of ${id}`).toContain(first.mode)
+      // What the Studio form writes over a stored essay part: part marks + key.marks, one point's marks and text, the prompt.
+      first.marks += 1
+      first.key.marks = first.marks
+      first.prompt = { ...first.prompt, ms: `${String(first.prompt.ms)} (disunting)` }
+      const lastPoint = first.key.points[first.key.points.length - 1] as Wire
+      lastPoint.marks += 1
+      lastPoint.text = { ...(lastPoint.text ?? {}), ms: `${String(lastPoint.text?.ms ?? lastPoint.label)} (disunting)` }
+      lastPoint.label = String(lastPoint.text.ms).slice(0, 120)
+      const body: Wire = {
+        subjectId: before.subjectId,
+        educationLevelId: before.educationLevelId,
+        difficultyLevel: before.difficultyLevel,
+        questionType: 'essay',
+        questionText: `${String(before.questionText)}`,
+        parts,
+        tag: { unitId: before.tag?.unitId ?? null, spIds: before.tag?.spIds ?? [], tp: before.tag?.tp ?? null },
+      }
+      const res = await admin.put(`/api/questions/${id}`, body)
+      expect(res.status, `PUT ${id} ${said(res)}`).toBe(200)
+      const after = await get(id)
+      expect(after.parts, `edits of ${id} persist`).toEqual(parts)
+      // Every part and point the edit did not touch is byte-identical to what was stored.
+      expect(JSON.stringify((after.parts as Wire[]).slice(1))).toBe(JSON.stringify((before.parts as Wire[]).slice(1)))
+      expect(JSON.stringify(after.parts[0].key.points.slice(0, -1))).toBe(JSON.stringify(before.parts[0].key.points.slice(0, -1)))
+      await tagThroughStudio(id)
+      expect(await gate(id, 'submit'), `submit gate of ${id}`).toEqual([])
+      expect(await gate(id), `approve gate of ${id}`).toEqual([])
+      await move(id, 'review')
+      await move(id, 'approved')
+      expect(await latestStatus(id)).toBe('approved')
+      const pub = await service.getPublicForLearner(id)
+      const served = (pub.parts as Wire[]).reduce((n, p) => n + (p.marks as number), 0)
+      expect((pub.parts as Wire[] | undefined)?.[0]?.marks, `pupil sees the new marks of ${id}`).toBe(first.marks)
+      expect(pub.pointsValue, `pupil total of ${id}`).toBe(served)
+    }
+  })
 })
 
 describe('what the pupil gets: a Latih Tubi session over the Studio-approved migrated questions', () => {
