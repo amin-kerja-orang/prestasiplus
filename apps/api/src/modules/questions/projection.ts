@@ -15,7 +15,6 @@
  * - Constants of the 7 "not carried" fields live in `constantFields` (data model Appendix B).
  */
 import {
-  QuestionPublicPartSchema,
   QuestionPublicSchema,
   type QuestionCognitiveLevel,
   type QuestionPart,
@@ -325,16 +324,36 @@ export function constantFields(record: QuestionRecord): {
 
 // --- learner projection (Q-3) -----------------------------------------------------------------------
 
+interface PromptNode {
+  prompt?: { ms?: unknown } | undefined
+  children?: unknown
+}
+
+const PROMPT_PLACEHOLDER = '~~empty-prompt~~'
+
+/** Copy of a part tree whose empty `prompt.ms` is replaced by a placeholder (`mask`) or put back (`!mask`), same shape and order. */
+function swapEmptyPrompts(node: unknown, mask: boolean): unknown {
+  const n = node as PromptNode
+  const out: Record<string, unknown> = { ...(n as Record<string, unknown>) }
+  if (n.prompt && (mask ? n.prompt.ms === '' : n.prompt.ms === PROMPT_PLACEHOLDER)) out.prompt = { ...n.prompt, ms: mask ? PROMPT_PLACEHOLDER : '' }
+  if (Array.isArray(n.children)) out.children = n.children.map((c) => swapEmptyPrompts(c, mask))
+  return out
+}
+
 /**
  * What a learner may receive. Built field by field (never by spreading the record) and then parsed
  * with `QuestionPublicSchema`, whose part schemas drop `key`. The flat answer fields, explanation,
  * model answer and source never enter the object.
+ *
+ * A migrated V2 question that has only a stem is stored with an EMPTY leaf prompt (S4-T04) and the public schema demands
+ * `prompt.ms` min 1, so parsing it raised a ZodError (500 on the item-analysis pages). The empty prompt is kept as stored:
+ * everything else is still checked strictly with a placeholder, then the empty text is put back.
  */
 export function toPublic(record: QuestionRecord): PublicQuestion {
   const v = record.version
   const flat = flatFromVersion(v)
-  const parts = v.parts.map((p) => QuestionPublicPartSchema.parse(p))
-  return QuestionPublicSchema.parse({
+  const parts = v.parts.map((p) => swapEmptyPrompts(p, true))
+  const parsed = QuestionPublicSchema.parse({
     id: record.id,
     questionText: flat.questionText,
     questionType: flat.questionType,
@@ -345,5 +364,6 @@ export function toPublic(record: QuestionRecord): PublicQuestion {
     pointsValue: flat.pointsValue,
     parts,
   })
+  return { ...parsed, parts: parsed.parts?.map((p) => swapEmptyPrompts(p, false) as NonNullable<PublicQuestion['parts']>[number]) }
 }
 
