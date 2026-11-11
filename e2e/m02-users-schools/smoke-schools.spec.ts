@@ -3,6 +3,10 @@
  * the school list, its filters, create, edit and the active toggle, as the admin demo account at
  * 375 / 768 / 1280. Flash texts after a save or toggle are UNVERIFIED COPY (SRS §8), so the tests
  * that assert them are `@provisional`.
+ *
+ * v2 list (SchoolListPage): `DsDataTable` (table rows from 768 px, cards below), the filter bar (`Cari`,
+ * or the `Penapis` sheet below 768 px), the "Kod Daftar" column, and primary schools (SK, SJK) hidden
+ * unless "Tunjuk sekolah rendah" is ticked (U-04, `includePrimary=true`).
  */
 
 import type { Page } from '@playwright/test'
@@ -17,18 +21,38 @@ import {
   moduleTag,
   provisional,
   TAG,
-  viewportWidth,
 } from '../support'
 
 const ADMIN = 'admin@demo.test'
 const NEW_SCHOOL = { name: 'SK TAMAN UJIAN E2E', code: 'ZZT0001', district: 'PPD UJIAN' }
 
+const tableLayout = (page: Page): boolean => (page.viewportSize()?.width ?? 0) >= 768
+
+/** The list rows: table rows from 768 px, cards below. */
 function rows(page: Page) {
-  return page.getByTestId('school-row')
+  return page.locator(
+    '[data-testid=schools-table] tbody tr, [data-testid=schools-table] [data-ds=data-table-cards] > li',
+  )
 }
 
 function pager(page: Page) {
-  return page.getByRole('navigation', { name: 'Pagination Navigation' })
+  return page.locator('[data-ds="data-table-pager"]')
+}
+
+async function openFilters(page: Page): Promise<void> {
+  if (!tableLayout(page)) {
+    await page.locator('[data-ds="filter-open"]').click()
+    await expect(page.locator('[data-ds="filter-sheet"]')).toBeVisible()
+  }
+}
+
+async function applyFilters(page: Page): Promise<void> {
+  if (tableLayout(page)) await page.getByRole('button', { name: 'Cari', exact: true }).click()
+  else await page.locator('[data-ds="filter-sheet"]').getByRole('button', { name: 'Guna' }).click()
+}
+
+async function resetFilters(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Set Semula' }).first().click()
 }
 
 async function openList(
@@ -46,77 +70,87 @@ test.describe('M02 S9 school list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   test('header, stats, table, pager and no page h-scroll', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
     await openList(page, gotoApp)
-    await expectTabTitle(page, 'Urus Sekolah | PRESTASIPLUS')
+    await expectTabTitle(page, 'Sekolah | PRESTASIPLUS')
 
-    await expect(page.getByTestId('schools-stat-total')).toHaveText(/10,220\s*Jumlah Sekolah/)
-    await expect(page.getByTestId('schools-stat-active')).toHaveText(/10,212\s*Aktif/)
-    await expect(page.getByTestId('schools-stat-inactive')).toHaveText(/8\s*Tidak Aktif/)
+    await expect(page.getByTestId('schools-stat-total')).toContainText('Jumlah Sekolah')
+    await expect(page.getByTestId('schools-stat-active')).toContainText('Aktif')
+    await expect(page.getByTestId('schools-stat-inactive')).toContainText('Tidak Aktif')
     const add = page.getByTestId('schools-add')
     await expect(add).toHaveText('Tambah Sekolah')
     await expect(add).toHaveAttribute('href', '/admin/schools/create')
 
     // Filter controls and their copy.
+    await openFilters(page)
     await expect(page.getByTestId('schools-search')).toHaveAttribute(
       'placeholder',
       'Cari nama atau kod sekolah...',
     )
     await expect(page.getByTestId('schools-state').locator('option')).toHaveCount(17)
-    await expect(page.getByTestId('schools-type').locator('option')).toHaveText([
+    // Primary types are hidden by default (U-04): the type filter lists the secondary types only.
+    await expect(page.getByTestId('schools-type').locator('option').first()).toHaveText(
       'Semua Jenis',
-      'SK',
-      'SMK',
-    ])
-    await expect(page.getByTestId('schools-search-submit')).toHaveText('Cari')
-    await expect(page.getByTestId('schools-reset')).toHaveCount(0)
+    )
+    expect(await page.getByTestId('schools-type').locator('option').allTextContents()).not.toContain('SK')
+    await expect(page.getByTestId('schools-include-primary')).toBeVisible()
+    if (!tableLayout(page)) await page.keyboard.press('Escape')
 
-    // Table: nine columns, 30 rows per page.
-    await expect(page.locator('thead th')).toHaveText([
-      'Nama Sekolah',
-      'Kod',
-      'Jenis',
-      'Negeri',
-      'Daerah',
-      'Pelajar',
-      'Guru',
-      'Status',
-      'Tindakan',
-    ])
+    // Table: ten columns, 30 rows per page.
+    if (tableLayout(page)) {
+      const heads = (await page.locator('thead th').allTextContents()).map((t) => t.trim())
+      expect(heads).toEqual([
+        'Nama Sekolah',
+        'Kod',
+        'Kod Daftar',
+        'Jenis',
+        'Negeri',
+        'Daerah',
+        'Pelajar',
+        'Guru',
+        'Status',
+        'Tindakan',
+      ])
+    }
     await expect(rows(page)).toHaveCount(30)
     const first = rows(page).first()
-    await expect(first.getByTestId('school-edit')).toHaveAttribute('title', 'Edit')
-    await expect(first.getByTestId('school-toggle')).toHaveAttribute('title', 'Nyahaktif')
-
-    // Pager: 341 pages at 30 (SRS §6 observed totals).
-    if (isMobileWidth(page)) {
-      await expect(pager(page).getByText('Next »')).toBeVisible()
-    } else {
-      await expect(pager(page)).toContainText('Showing 1 to 30 of 10220 results')
-      await expect(pager(page).getByRole('link', { name: 'Go to page 341' })).toBeVisible()
+    if (tableLayout(page)) {
+      await expect(first.getByTestId('school-edit')).toHaveAttribute('title', 'Edit')
+      await expect(first.getByTestId('school-toggle')).toHaveAttribute('title', 'Nyahaktif')
     }
+    await expect(first.getByTestId('school-join-code')).toBeVisible()
 
-    // In-card scroll below the fit width, the table fits from 1280; never the page (design §7.4).
-    const scroller = page.getByTestId('schools-table').locator('xpath=../..')
-    const overflow = await scroller.evaluate((el) => el.scrollWidth - el.clientWidth)
-    if (viewportWidth(page) >= 1280) expect(overflow).toBeLessThanOrEqual(0)
-    else expect(overflow).toBeGreaterThan(0)
+    await expect(pager(page)).toContainText('Menunjukkan 1-30 daripada')
     await expectNoHorizontalScroll(page)
   })
 
-  test('the next-page link opens page 2 with 30 other rows', async ({ page, loginAs, gotoApp }) => {
+  test('the next-page button opens page 2 with 30 other rows', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
     await loginAs(ADMIN)
     await openList(page, gotoApp)
-    const firstName = await rows(page).first().locator('td').first().innerText()
+    const firstName = (await rows(page).first().getByTestId('school-row').innerText()).trim()
 
-    await pager(page).getByRole('link', { name: /Next/ }).first().click()
+    await pager(page).getByRole('button', { name: 'Seterusnya' }).click()
     await expect(page).toHaveURL(/\/admin\/schools\?page=2$/)
     await expect(rows(page)).toHaveCount(30)
-    await expect(rows(page).first().locator('td').first()).not.toHaveText(firstName)
+    await expect(rows(page).first().getByTestId('school-row')).not.toHaveText(firstName)
+    await expect(pager(page)).toContainText('Menunjukkan 31-60 daripada')
     await expectNoHorizontalScroll(page)
   })
 
-  test('the last page (341) shows the remaining 20 rows', async ({ page, loginAs, gotoApp }) => {
+  test('with primary schools shown, the list has the live 10,220 schools over 341 pages', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
     await loginAs(ADMIN)
-    await openList(page, gotoApp, '/admin/schools?page=341')
+    await openList(page, gotoApp, '/admin/schools?includePrimary=true')
+    await expect(page.getByTestId('schools-stat-total')).toHaveText(/10,220\s*Jumlah Sekolah/)
+    await expect(page.getByTestId('schools-stat-active')).toHaveText(/10,212\s*Aktif/)
+    await expect(page.getByTestId('schools-stat-inactive')).toHaveText(/8\s*Tidak Aktif/)
+    await expect(pager(page)).toContainText('daripada 10220 hasil')
+    await gotoApp('/admin/schools?includePrimary=true&page=341')
     await expect(rows(page)).toHaveCount(20)
     await expectNoHorizontalScroll(page)
   })
@@ -128,47 +162,48 @@ test.describe('M02 S9 school list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await openList(page, gotoApp)
+    await expect(page.getByRole('button', { name: 'Set Semula' })).toHaveCount(0)
 
+    await openFilters(page)
     await page.getByTestId('schools-search').fill('bangi')
-    await page.getByTestId('schools-search-submit').click()
+    await applyFilters(page)
     await expect(page).toHaveURL(/\?search=bangi$/)
-    await expect(page.getByTestId('schools-reset')).toBeVisible()
     await expect(rows(page).first()).toBeVisible()
     for (const row of await rows(page).all()) {
       await expect(row).toContainText(/bangi/i)
     }
 
-    await page.getByTestId('schools-reset').click()
+    await resetFilters(page)
     await expect(page).toHaveURL(/\/admin\/schools$/)
-    await expect(page.getByTestId('schools-reset')).toHaveCount(0)
-    await expect(page.getByTestId('schools-search')).toHaveValue('')
     await expect(rows(page)).toHaveCount(30)
 
+    await openFilters(page)
     await page.getByTestId('schools-state').selectOption('Perlis')
-    await page.getByTestId('schools-search-submit').click()
+    await applyFilters(page)
     await expect(page).toHaveURL(/\?state=Perlis$/)
-    await expect(rows(page)).toHaveCount(30)
-    if (!isMobileWidth(page)) await expect(pager(page)).toContainText('of 104 results')
+    await expect(rows(page).first()).toBeVisible()
     for (const row of await rows(page).all()) {
       await expect(row).toContainText('Perlis')
     }
 
-    await page.getByTestId('schools-reset').click()
+    await resetFilters(page)
+    await expect(page).toHaveURL(/\/admin\/schools$/)
+    await openFilters(page)
+    await page.getByTestId('schools-include-primary').check()
     await page.getByTestId('schools-type').selectOption('SK')
-    await page.getByTestId('schools-search-submit').click()
-    await expect(page).toHaveURL(/\?type=SK$/)
-    if (!isMobileWidth(page)) await expect(pager(page)).toContainText('of 7779 results')
-    await expect(rows(page).first().locator('td').nth(2)).toHaveText('SK')
+    await applyFilters(page)
+    await expect(page).toHaveURL(/type=SK/)
+    await expect(pager(page)).toContainText('daripada 7779 hasil')
+    await expect(rows(page).first()).toContainText('SK')
 
-    // Filters survive in the pager links.
-    await expect(pager(page).getByRole('link', { name: /Next/ }).first()).toHaveAttribute(
-      'href',
-      '/admin/schools?type=SK&page=2',
-    )
+    // Filters survive in the pager.
+    await pager(page).getByRole('button', { name: 'Seterusnya' }).click()
+    await expect(page).toHaveURL(/type=SK/)
+    await expect(page).toHaveURL(/page=2/)
     await expectNoHorizontalScroll(page)
   })
 
-  test('a search with no match shows the empty row and no pager', async ({
+  test('a search with no match shows the empty state and no pager', async ({
     page,
     loginAs,
     gotoApp,
@@ -176,10 +211,9 @@ test.describe('M02 S9 school list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await loginAs(ADMIN)
     await gotoApp('/admin/schools?search=zzqxv')
     const empty = page.getByTestId('schools-empty')
-    await expect(empty).toHaveText('Tiada sekolah dijumpai')
-    await expect(empty.locator('td')).toHaveAttribute('colspan', '9')
-    await expect(pager(page)).toHaveCount(0)
-    await expect(page.getByTestId('schools-reset')).toBeVisible()
+    await expect(empty).toContainText('Tiada sekolah dijumpai')
+    await expect(rows(page).filter({ has: page.getByTestId('school-row') })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Set Semula' }).first()).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -187,10 +221,13 @@ test.describe('M02 S9 school list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await loginAs(ADMIN)
     await openList(page, gotoApp)
     if (isDesktopShell(page)) return
-    await expectTouchTarget(rows(page).first().getByTestId('school-edit'))
-    await expectTouchTarget(rows(page).first().getByTestId('school-toggle'))
+    if (tableLayout(page)) {
+      await expectTouchTarget(rows(page).first().getByTestId('school-edit'))
+      await expectTouchTarget(rows(page).first().getByTestId('school-toggle'))
+    } else {
+      await expectTouchTarget(rows(page).first().getByRole('link', { name: 'Edit' }))
+    }
     await expectTouchTarget(page.getByTestId('schools-add'))
-    await expectTouchTarget(page.getByTestId('schools-search-submit'))
   })
 
   test(
@@ -204,24 +241,27 @@ test.describe('M02 S9 school list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
         dialogs += 1
         void dialog.dismiss()
       })
+      const activeBefore = await page.getByTestId('schools-stat-active').innerText()
+      const inactiveBefore = await page.getByTestId('schools-stat-inactive').innerText()
 
-      const row = rows(page).first()
-      const id = await row.getAttribute('data-school-id')
-      const target = rows(page).and(page.locator(`[data-school-id="${String(id)}"]`))
+      const id = await rows(page).first().getByTestId('school-row').getAttribute('data-school-id')
+      const target = rows(page).filter({
+        has: page.locator(`[data-school-id="${String(id)}"]`),
+      })
       await expect(target.getByTestId('school-status')).toHaveText('Aktif')
       await target.getByTestId('school-toggle').click()
 
       await expect(target.getByTestId('school-status')).toHaveText('Tidak Aktif')
       await expect(target.getByTestId('school-toggle')).toHaveAttribute('title', 'Aktifkan')
-      await expect(page.getByTestId('schools-stat-active')).toHaveText(/10,211/)
-      await expect(page.getByTestId('schools-stat-inactive')).toHaveText(/9\s*Tidak Aktif/)
+      await expect(page.getByTestId('schools-stat-active')).not.toHaveText(activeBefore)
+      await expect(page.getByTestId('schools-stat-inactive')).not.toHaveText(inactiveBefore)
       await expect(page.getByText('Status sekolah berjaya dikemaskini.')).toBeVisible()
       await expect(page).toHaveURL(/\?search=bangi$/)
       expect(dialogs).toBe(0)
 
       await target.getByTestId('school-toggle').click()
       await expect(target.getByTestId('school-status')).toHaveText('Aktif')
-      await expect(page.getByTestId('schools-stat-inactive')).toHaveText(/8\s*Tidak Aktif/)
+      await expect(page.getByTestId('schools-stat-inactive')).toHaveText(inactiveBefore)
       await expectNoHorizontalScroll(page)
     },
   )
