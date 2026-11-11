@@ -375,6 +375,10 @@ rp 0 'staged-clone copy stage-1/pp-backup-x.dump'
 if grep -q 'sha256' "$w/log"; then bad 'the checksum sidecar was listed as a copy'; else ok 'only the dump is listed, not its .sha256'; fi
 mkprod "PP_RAW_PURGE_BY=2020-01-01"; rp 1 'RAW RETENTION OVERDUE (purge by 2020-01-01): staged-clone copy stage-1/pp-backup-x.dump'
 rp 1 'RAW CHECK OVERDUE: 1 copy'
+# a directory-format dump (pg_dump -Fd) sits deeper than stage-N/<file>: the whole tree is scanned (every file, not the .sha256 sidecars)
+mkdir -p "$w/backup/staged-clone/stage-2/dumpdir/sub"; printf t >"$w/backup/staged-clone/stage-2/dumpdir/sub/1234.dat.gz"; printf t >"$w/backup/staged-clone/stage-2/dumpdir/toc.dat"
+rp 1 'staged-clone copy stage-2/dumpdir/sub/1234.dat.gz'
+rp 1 'RAW CHECK OVERDUE: 3 copy'
 rm -rf "$w/backup/staged-clone"; rp 0 'RAW CHECK OK'
 mkprod
 
