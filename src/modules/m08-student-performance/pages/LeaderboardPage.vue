@@ -2,7 +2,7 @@
 /**
  * S20 `/leaderboard` "Papan Pendahulu" (M08-T4; FR-M08-113..118, BR-M08-28; FN-M08-7.2.*).
  *
- * - Hero (V2 text "Siapa kumpul syiling paling banyak?"; the shell subtitle "Siapa juara minggu ini?" stays for every period) and the period links
+ * - Hero (V2 text "Siapa kumpul syiling paling banyak?"; the shell subtitle "Kedudukan pelajar terbaik mengikut syiling" (V2 subheading, leaderboard.blade.php:4) stays for every period) and the period links
  *   "Semua Masa" / "Minggu Ini" / "Bulan Ini"; no or unknown `period` is the week.
  * - "Kedudukan Anda": the viewer's rank, coins, sessions and accuracy ("#-", 0, 0, 0% when unranked).
  * - Podium (top 3, order 2-1-3) and a table of at most 50 rows: # / Pelajar / Koin, Sesi from 768px,
@@ -89,7 +89,7 @@ const columns: TableColumn<Row>[] = [
 </script>
 
 <template>
-  <DsPage title="Papan Pendahulu" subtitle="Siapa juara minggu ini?" data-testid="leaderboard-page">
+  <DsPage title="Papan Pendahulu" subtitle="Kedudukan pelajar terbaik mengikut syiling" data-testid="leaderboard-page">
     <!-- V2 hero (leaderboard.blade.php:53-62): trophy, "Papan Pendahulu", "Siapa kumpul syiling paling banyak?" -->
     <DsHeroCard
       overline="Syiling"

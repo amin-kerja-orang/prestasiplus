@@ -31,7 +31,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Papan Pendahulu - PRESTASIPLUS',
-      header: { title: 'Papan Pendahulu', subtitle: 'Siapa juara minggu ini?' },
+      header: { title: 'Papan Pendahulu', subtitle: 'Kedudukan pelajar terbaik mengikut syiling' },
       module: 'M08',
       v2: true,
     },

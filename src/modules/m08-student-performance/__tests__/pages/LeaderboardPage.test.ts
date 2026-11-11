@@ -58,7 +58,7 @@ describe('LeaderboardPage (M08 S20)', () => {
   it('shows the hero and the period links, the week active by default', async () => {
     const w = await render()
     expect(w.get('h1').text()).toBe('Papan Pendahulu')
-    expect(w.get('[data-ds=page-header]').text()).toContain('Siapa juara minggu ini?')
+    expect(w.get('[data-ds=page-header]').text()).toContain('Kedudukan pelajar terbaik mengikut syiling')
     const hero = w.get('[data-testid=leaderboard-hero]')
     expect(hero.attributes('data-ds')).toBe('hero-card')
     expect(hero.text()).toContain('Papan Pendahulu')
