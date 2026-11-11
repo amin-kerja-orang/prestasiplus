@@ -69,15 +69,17 @@ async function m08(page: Page): Promise<SchoolPerf> {
   await expect(page.getByTestId('grade-card')).toBeVisible()
   await expect(page.getByTestId('stat-murid')).toBeVisible()
   const stat = async (id: string) =>
-    (await page.locator(`[data-testid="stat-${id}"] [data-testid="stat-value"]`).innerText()).trim()
+    (await page.getByTestId(`stat-${id}`).innerText()).split('\n')[0]!.trim() // the tile prints the figure first, then the label
   const gpsText = (await page.getByTestId('gps-value').innerText()).trim()
   const band = page.getByTestId('gps-band')
   const levelPct = async (code: string) =>
-    num((await page.getByTestId(`level-card-${code}`).locator('span.text-xl').innerText()).trim())
+    num((await page.getByTestId(`level-card-${code}`).locator('span.tabular').first().innerText()).trim())
   const distribution = await page.locator('[data-testid^="grade-row-"]').evaluateAll((rows) =>
     rows.map((row) => {
       const spans = [...row.querySelectorAll('span')].map((e) => (e.textContent ?? '').trim())
-      return { grade: spans[0] ?? '', count: spans[1] ?? '', pct: spans[2] ?? '' }
+      // the row is two spans: the grade, then "{count} · {pct}%"
+      const [c = '', pc = ''] = (spans[1] ?? '').split('·')
+      return { grade: spans[0] ?? '', count: c, pct: pc }
     }),
   )
   const perf: SchoolPerf = {
@@ -271,7 +273,7 @@ test.describe('banner', MODULE, () => {
     await expect(page.getByTestId('sd-banner-name')).toHaveText('SMK Demo Seri Putra')
     const remaining = await page.getByTestId('sd-page').evaluate((root) => {
       const clone = root.cloneNode(true) as HTMLElement
-      for (const id of ['sd-banner-name', 'sd-perutusan', 'sd-grade-row']) {
+      for (const id of ['sd-banner-name', 'sd-perutusan']) {
         clone.querySelectorAll(`[data-testid="${id}"]`).forEach((e) => e.remove())
       }
       return clone.textContent ?? ''
@@ -365,73 +367,42 @@ test.describe('Perutusan card', MODULE, () => {
 })
 
 test.describe('breadcrumb', MODULE, () => {
-  test('E2E-M27-14 "← Papan Pemuka" link to /dashboard, then bold "Dashboard Sekolah" as text, between card and banner', async ({
+  test('E2E-M27-14 the landing page has no breadcrumb and no "Papan Pemuka" link (FR-AS-2-4); Perutusan sits above the banner', async ({
     page,
     gotoApp,
   }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    const back = page.locator('[data-testid="sd-breadcrumb"] a')
-    await expect(back).toHaveText('Papan Pemuka')
-    await expect(back).toHaveAttribute('href', '/dashboard')
-    const current = page.locator('[data-testid="sd-breadcrumb"] [aria-current="page"]')
-    await expect(current).toHaveText('Dashboard Sekolah')
-    expect(await current.evaluate((e) => e.tagName)).not.toBe('A')
-    expect(
-      Number(await current.evaluate((e) => getComputedStyle(e).fontWeight)),
-    ).toBeGreaterThanOrEqual(600) // v2: the emphasis weight is font-semibold (600)
+    await expect(page.getByTestId('sd-breadcrumb')).toHaveCount(0)
+    await expect(page.getByTestId('sd-page').getByRole('link', { name: 'Papan Pemuka' })).toHaveCount(0)
     const y = async (id: string) => (await page.getByTestId(id).boundingBox())!.y
-    expect(await y('sd-perutusan')).toBeLessThan(await y('sd-breadcrumb'))
-    expect(await y('sd-breadcrumb')).toBeLessThan(await y('sd-banner'))
-  })
-
-  test('E2E-M27-15 click "← Papan Pemuka": URL ends with /dashboard and M05 S1 renders for school_admin', async ({
-    page,
-    gotoApp,
-  }) => {
-    await signIn(page, AZLAN)
-    await open(page, gotoApp)
-    await page.locator('[data-testid="sd-breadcrumb"] a').click()
-    await expect(page).toHaveURL(/\/dashboard$/)
-    await expect(page.getByTestId('dashboard-page')).toBeVisible()
-    await expect(page.locator('[data-page=forbidden]')).toHaveCount(0)
-    await expect(page.getByTestId('sd-page')).toHaveCount(0)
+    expect(await y('sd-perutusan')).toBeLessThan(await y('sd-banner'))
   })
 })
 
 test.describe('cards', MODULE, () => {
-  test('E2E-M27-16 four cards: order, labels, tints, icon tile top-left, foot bar, none a link', async ({
+  test('E2E-M27-16 four cards: order, labels; Pelajar, Guru and Kelas are links to their lists, Langganan is not', async ({
     page,
     gotoApp,
   }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    await expect(page.getByTestId('sd-card-label')).toHaveText(
-      ['JUMLAH PELAJAR', 'JUMLAH GURU', 'KELAS AKTIF', 'LANGGANAN'],
-      { useInnerText: true },
-    )
-    const cards = page.getByTestId('sd-cards').locator('> div')
-    await expect(cards).toHaveCount(4)
-    for (const key of ['pupils', 'teachers', 'classes', 'subscription']) {
-      const card = page.getByTestId(`sd-card-${key}`)
-      await expect(card.getByTestId('sd-card-icon')).toBeVisible()
-      await expect(card.getByTestId('sd-card-bar')).toBeVisible()
-      await expect(card.locator('a')).toHaveCount(0)
-      const [cb, tb] = [
-        await card.boundingBox(),
-        await card.getByTestId('sd-card-tile').boundingBox(),
-      ]
-      expect(tb!.x - cb!.x).toBeLessThan(30)
-      expect(tb!.y - cb!.y).toBeLessThan(30)
+    await expect(page.getByTestId('sd-card-label')).toHaveText([
+      'Jumlah Pelajar',
+      'Jumlah Guru',
+      'Kelas Aktif',
+      'Langganan',
+    ])
+    await expect(page.getByTestId('sd-cards').locator('> li')).toHaveCount(4)
+    const hrefs: Record<string, string> = {
+      pupils: '/admin-sekolah/pelajar',
+      teachers: '/admin-sekolah/guru',
+      classes: '/admin-sekolah/kelas',
     }
-    const bg = (key: string) =>
-      page.getByTestId(`sd-card-${key}`).evaluate((e) => getComputedStyle(e).backgroundImage)
-    const tints = await Promise.all(['pupils', 'teachers', 'classes', 'subscription'].map(bg))
-    expect(new Set(tints).size).toBe(4)
-    await expect(page.getByTestId('sd-card-pupils')).toHaveClass(/blue/)
-    await expect(page.getByTestId('sd-card-teachers')).toHaveClass(/teal/)
-    await expect(page.getByTestId('sd-card-classes')).toHaveClass(/rose/)
-    await expect(page.getByTestId('sd-card-subscription')).toHaveClass(/slate/)
+    for (const [key, href] of Object.entries(hrefs)) {
+      await expect(page.getByTestId(`sd-card-${key}`).locator('a')).toHaveAttribute('href', href)
+    }
+    await expect(page.getByTestId('sd-card-subscription').locator('a')).toHaveCount(0)
   })
 
   test('E2E-M27-26 count cards equal the owner counts (ms-MY format) and differ between schools', async ({
@@ -470,8 +441,7 @@ test.describe('cards', MODULE, () => {
       await signIn(page, AZLAN)
       await open(page, gotoApp)
       await expect(page.getByTestId('sd-card-subscription')).toContainText('Belum Ada')
-      await expect(page.getByTestId('sd-card-subscription')).toHaveClass(/slate/)
-    },
+      },
   )
 
   test.describe('profile subscriptions-extra', () => {
@@ -488,7 +458,6 @@ test.describe('cards', MODULE, () => {
         await loginAs(ADMIN_SEKOLAH)
         await open(page, gotoApp)
         await expect(page.getByTestId('sd-card-subscription')).toContainText('Tempoh Ihsan')
-        await expect(page.getByTestId('sd-card-subscription')).toHaveClass(/green/)
       },
     )
   })
@@ -579,7 +548,7 @@ test.describe('responsive and text size', MODULE, () => {
     await expectNoHorizontalScroll(page)
     const width = viewportWidth(page)
 
-    const cardTops = await rowsOf(page.getByTestId('sd-cards').locator('> div'))
+    const cardTops = await rowsOf(page.getByTestId('sd-cards').locator('> li'))
     const cardRows = new Set(cardTops.map((t) => Math.round(t))).size
     expect(cardRows).toBe(width >= 768 ? 1 : 2)
 
@@ -779,13 +748,10 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     await open(page, gotoApp)
     const perf = await m08(page)
     await expect(page.getByTestId('sd-grades-heading')).toHaveText('Taburan Gred (Anggaran)')
-    await expect(page.getByTestId('sd-grade-letter')).toHaveText(GRADES)
-    await expect(page.getByTestId('sd-grade-count')).toHaveText(
-      perf.distribution.map((d) => ms(d.count)),
-    )
-    await expect(page.getByTestId('sd-grade-pct')).toHaveText(
-      perf.distribution.map((d) => `${pct1(d.pct)}%`),
-    )
+    const gradeCells = (col: number) =>
+      page.getByTestId('sd-grades-chart').locator('[data-ds="chart-table"] tbody tr').locator(`td:nth-child(${col})`)
+    await expect(gradeCells(1)).toHaveText(perf.distribution.map((d) => `${d.grade} (${pct1(d.pct)}%)`))
+    await expect(gradeCells(2)).toHaveText(perf.distribution.map((d) => String(d.count)))
     const total = perf.distribution.reduce((s, d) => s + d.count, 0)
     await expect(page.getByTestId('sd-grades-total')).toHaveText(`Jumlah: ${ms(total)} rekod`)
     const full = page.getByTestId('sd-grades-full')
@@ -811,8 +777,9 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
       await expect(page.getByTestId('sd-practice-accuracy')).toHaveText('—')
       await expect(page.getByTestId('sd-practice-counts')).toHaveText('0 sesi · 0 soalan')
       await expect(page.getByTestId('sd-level-row')).toHaveCount(2)
-      await expect(page.getByTestId('sd-grade-row')).toHaveCount(10)
-      await expect(page.getByTestId('sd-grade-count')).toHaveText(GRADES.map(() => '0'))
+      const rows = page.getByTestId('sd-grades-chart').locator('[data-ds="chart-table"] tbody tr')
+      await expect(rows).toHaveCount(10)
+      await expect(rows.locator('td:nth-child(2)')).toHaveText(GRADES.map(() => '0'))
       await expect(page.getByTestId('sd-grades-total')).toHaveText('Jumlah: 0 rekod')
     },
   )
