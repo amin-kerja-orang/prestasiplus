@@ -1,6 +1,6 @@
 /** The mock Kandungan reads agree with each other: hub card total = lane rows, subjects come with the lane response (REQ-B-047, REQ-A-016). */
 import { SERVABILITY_REASON_MS } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { api as appApi } from '@/api'
 import { issueSession } from '@/mock/core-data'
@@ -11,6 +11,7 @@ import m03 from '@/modules/m03-curriculum/mock'
 import m04, { structured } from '@/modules/m04-question-bank/mock'
 
 import { createMockKandungan } from '../admin/kandungan/local-kandungan'
+import { bijakAdminServer } from '../server/client'
 
 let runtime: MockRuntime
 // The Subjektif lane and its hub card read M04's structured store, so the M04 mock is booted.
@@ -41,6 +42,51 @@ describe('mock Kandungan reads', () => {
     expect(card('subjektif')?.attention).toBe(0)
     expect(card('bijak-spm')?.total).toBe(papers.total)
     expect(card('bijak-spm')?.attention).toBe(papers.rows.filter((r) => r.attention.length > 0).length)
+  })
+
+  it('one failing card does not take the hub down: Subjektif is the API failed card, the others stay (SR-3)', async () => {
+    const api = createMockKandungan()
+    const healthy = await api.overview()
+    const real = appApi.request.bind(appApi)
+    const spy = vi.spyOn(appApi, 'request').mockImplementation((method, path, ...rest) =>
+      path.includes('/servability/lanes/subjektif') ? Promise.reject(new Error('M04 mock not booted')) : real(method, path, ...rest))
+    try {
+      const overview = await api.overview()
+      expect(overview.cards.map((c) => c.lane)).toEqual(healthy.cards.map((c) => c.lane))
+      const subjektif = overview.cards.find((c) => c.lane === 'subjektif')
+      expect(subjektif).toMatchObject({ failed: true, total: 0, attention: 0, attentionLines: [] })
+      const { title, description, attentionLabel } = healthy.cards.find((c) => c.lane === 'subjektif')!
+      expect(subjektif).toMatchObject({ title, description, attentionLabel })
+      for (const c of overview.cards.filter((x) => x.lane !== 'subjektif')) {
+        expect(c.failed).toBeUndefined()
+        expect(c).toEqual(healthy.cards.find((h) => h.lane === c.lane))
+      }
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('a failing Tracking A read is the API failed card too; the other cards stay (SR-3)', async () => {
+    const api = createMockKandungan()
+    const lane = await api.trackingLane({ page: 1, pageSize: 5 })
+    const subjectId = lane.setSubjects.find((s) => s.id === 'MAT')?.id ?? lane.setSubjects[0]?.id ?? ''
+    await api.createTrackingSet({ subjectId, year: 2026, setNo: 1 })
+    const healthy = await api.overview()
+    const admin = bijakAdminServer()
+    const real = admin.listBank.bind(admin)
+    // The overview reads the bank first (a plain read, rejects like the API); the Tracking A card reads it again for its units.
+    let calls = 0
+    const spy = vi.spyOn(admin, 'listBank').mockImplementation((...args) => (++calls === 1 ? real(...args) : Promise.reject(new Error('tracking read failed'))))
+    try {
+      const overview = await api.overview()
+      expect(overview.cards.find((c) => c.lane === 'tracking-a')).toMatchObject({ failed: true, total: 0, attention: 0, attentionLines: [] })
+      for (const c of overview.cards.filter((x) => x.lane !== 'tracking-a')) {
+        expect(c.failed).toBeUndefined()
+        expect(c).toEqual(healthy.cards.find((h) => h.lane === c.lane))
+      }
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('lane responses carry the Subjek options, independent of the filters', async () => {

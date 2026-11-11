@@ -294,11 +294,27 @@ export function createMockKandungan(): KandunganApi {
 
   const api: KandunganApi = {
     async overview(): Promise<ServabilityOverview> {
-      const [rows, allPapers, subjektifLanePage] = await Promise.all([bank(), admin.listAdminPapers(), subjektifRead({ page: 1, pageSize: 1 })])
+      // As the API's `soft()`: only the Tracking A and Subjektif reads are isolated (SR-3); a failing bank or paper read rejects the overview.
+      const soft = async <T>(read: () => Promise<T>): Promise<T | null> => {
+        try {
+          return await read()
+        } catch {
+          return null
+        }
+      }
+      const [rows, allPapers, subjektifLanePage, trackingRead] = await Promise.all([
+        bank(),
+        admin.listAdminPapers(),
+        soft(() => subjektifRead({ page: 1, pageSize: 1 })),
+        soft(() => trackingRows({})),
+      ])
+      const tracking = trackingRead ?? []
+      const failedLanes = new Set<ServabilityHubLane>()
+      if (trackingRead === null) failedLanes.add('tracking-a')
+      if (subjektifLanePage === null) failedLanes.add('subjektif')
       const approved = rows.filter((r) => r.status === 'terbit').length
       const papers = allPapers.filter((p) => p.status === 'terbit')
       const cells = latihTubiCells(rows, {})
-      const tracking = await trackingRows({})
       /** Lanes the mock has rows for, Tracking A aside; Kertas Subjektif has none. */
       const cardRows: Partial<Record<ServabilityHubLane, { attention: readonly unknown[] }[]>> = {
         databank: databankRows(rows, {}),
@@ -325,8 +341,10 @@ export function createMockKandungan(): KandunganApi {
           }
         }),
         cards: SERVABILITY_HUB_LANES.map((lane) => {
+          // The API's failed card: the lane's own copy with 0 / 0 and `failed: true`.
+          if (failedLanes.has(lane)) return { ...cardOf(lane, [], 0, 0), failed: true as const }
           // The Subjektif card is measured on M04's structured store, the same rows as its lane (D11).
-          if (lane === 'subjektif') return cardOf(lane, [], subjektifLanePage.total, subjektifLanePage.attention)
+          if (lane === 'subjektif' && subjektifLanePage) return cardOf(lane, [], subjektifLanePage.total, subjektifLanePage.attention)
           return cardOf(lane, laneRouteOf(lane) === KANDUNGAN_ROUTES.trackingA ? tracking : (cardRows[lane] ?? []), lane === 'latih-tubi' ? cells.reduce((sum, c) => sum + c.total, 0) : undefined)
         }),
       }
