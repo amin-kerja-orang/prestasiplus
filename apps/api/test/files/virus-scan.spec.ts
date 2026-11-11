@@ -77,6 +77,13 @@ describe('clamd client (INSTREAM over TCP, fake clamd)', () => {
     expect(parseScanReply('stream: Win.Test.EICAR_HDB-1 FOUND')).toEqual({ clean: false, signature: 'Win.Test.EICAR_HDB-1' })
     expect(() => parseScanReply('Some problem ERROR')).toThrow(ScannerUnavailableError)
     expect(() => parseScanReply('')).toThrow(ScannerUnavailableError)
+    // adversarial: never "clean" unless the whole reply is exactly OK
+    expect(parseScanReply('stream: OK FOUND')).toEqual({ clean: false, signature: 'OK' })
+    expect(() => parseScanReply('stream: OK\nstream: Evil FOUND')).toThrow(ScannerUnavailableError)
+    expect(() => parseScanReply('stream: Evil FOUND\nstream: OK')).toThrow(ScannerUnavailableError)
+    expect(() => parseScanReply('stream: OKAY')).toThrow(ScannerUnavailableError)
+    expect(() => parseScanReply('xstream: OK')).toThrow(ScannerUnavailableError)
+    expect(parseScanReply('stream: OK\n')).toEqual({ clean: true })
   })
 })
 

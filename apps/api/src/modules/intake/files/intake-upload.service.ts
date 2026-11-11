@@ -345,7 +345,9 @@ export class IntakeUploadService {
 
     const shas = checked.map((c) => c.sha256)
     const dup = await db.intakeFile.findFirst({
-      where: { sha256: { in: shas }, OR: [{ batchId }, { batch: { status: { notIn: ['failed', 'cancelled'] } } }] },
+      // Same scope as the pre-scan isDuplicate: this batch plus (for a non-admin) only the caller's own live batches; Admin Pusat sees all.
+      // A teacher therefore cannot learn that another user's batch holds the same file.
+      where: { sha256: { in: shas }, OR: [{ batchId }, { batch: { status: { notIn: ['failed', 'cancelled'] }, ...visibleBatches(auth) } }] },
       select: { id: true },
     })
     if (dup) throw invalid(INTAKE_FILE_MESSAGES.duplicate)

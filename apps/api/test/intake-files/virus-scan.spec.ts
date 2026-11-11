@@ -1,4 +1,4 @@
-import type { RoleGrant } from '@pp/contract'
+import { INTAKE_FILE_MESSAGES, type RoleGrant } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import type { AuthContext } from '../../src/common/scope/auth-context'
@@ -180,21 +180,39 @@ describe('intake upload virus scan with a configured scanner', () => {
     expect(audit.map((r) => r.detail)).toEqual([expect.objectContaining({ signature, kind: mode === 'encrypted' ? 'encrypted' : 'limits_exceeded' })])
   })
 
-  it('the pre-scan duplicate check does not reveal the uploads of other people: a teacher uploading a file an admin already has is scanned (the later rule still refuses it)', async () => {
+  it('duplicates are scoped to the caller: a teacher uploading a file an admin already has is NOT told (scanned and accepted); the admin is refused a file a teacher has', async () => {
     const bytes = textPdf(1, 814)
     const ba = await createBatch(admin)
     await uploadOk(admin, ba.id, [{ bytes }])
     const scansBefore = clamd.scans
     const bt = await createBatch(teacher)
     const res = await uploadFiles(teacher, bt.id, [{ bytes }])
-    expect(res.status).toBe(422)
-    expect(clamd.scans).toBe(scansBefore + 1) // reached the scanner: the pre-scan check did not match the admin's batch
-    // the same teacher's own repeat is still refused before the scan
+    expect(res.status, JSON.stringify(res.body)).toBe(201) // no "already imported" answer that would reveal another user's batch
+    expect(clamd.scans).toBe(scansBefore + 1)
+    // the same teacher's own repeat is refused before the scan
     const own = textPdf(1, 815)
     await uploadOk(teacher, bt.id, [{ bytes: own }])
     const scans = clamd.scans
     expect((await uploadFiles(teacher, bt.id, [{ bytes: own }])).status).toBe(422)
     expect(clamd.scans).toBe(scans)
+    // Admin Pusat keeps the global rule: a file already in any live batch is refused
+    const ba2 = await createBatch(admin)
+    expectFilesError(await uploadFiles(admin, ba2.id, [{ bytes: own }]), INTAKE_FILE_MESSAGES.duplicate)
+  })
+
+  it('a file over CLAMAV_MAX_STREAM_MB is refused as too large to scan BEFORE anything is sent to clamd', async () => {
+    const config = (t.app.get(IntakeUploadService) as unknown as { scanner: { config: { maxStreamMb: number } } }).scanner.config
+    const original = config.maxStreamMb
+    config.maxStreamMb = 1
+    try {
+      const b = await createBatch(admin)
+      const big = Buffer.concat([textPdf(1, 816), Buffer.alloc(1_200_000)])
+      expectFilesError(await uploadFiles(admin, b.id, [{ bytes: big }]), INTAKE_SCAN_MESSAGES.tooLarge(1))
+      expect(clamd.scans).toBe(0)
+      await nothingStored(t)
+    } finally {
+      config.maxStreamMb = original
+    }
   })
 
   it('a duplicate is refused before the scan (no clamd call for the repeat)', async () => {
