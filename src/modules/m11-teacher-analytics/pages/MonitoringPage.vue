@@ -120,7 +120,6 @@ const FORM_ID = 'mon-filters-form'
 const filters = useMonitoringFilters(query, (next) => void apply(next))
 /** Reset is a link to the bare prefix on live (FR-M11-32). */
 const resetFilters = () => void router.push(paths.value.overview)
-const SUBTITLE = 'Pantau penglibatan sekolah & pelajar dalam platform'
 
 const tab = ref<TabKey>('pelajar')
 const TAB_OF: Record<string, string> = {
@@ -151,7 +150,7 @@ async function goto(sectionId: string) {
 </script>
 
 <template>
-  <DsPage data-testid="monitoring-page" :subtitle="SUBTITLE">
+  <DsPage data-testid="monitoring-page">
     <!-- Live copy: "Tapis" and "Reset" (FR-M11-31, 32). -->
     <DsFilterBar
       :id="FORM_ID"

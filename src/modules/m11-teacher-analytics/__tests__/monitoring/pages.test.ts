@@ -1122,6 +1122,12 @@ describe('FR-GUR-10-8 / R1-AS-10 labels', () => {
     expect(tid('mon-table-student')?.text()).toContain('Analisis Penglibatan Pelajar')
     expect(valuesIn('mon-kpis')).toHaveLength(9)
   })
+
+  it('C-33: the page prints no second subtitle; the route header carries the V2 one', async () => {
+    api.fetchMonitoringOverview.mockResolvedValue(overview())
+    await mountAt(MonitoringPage, '/admin/monitoring', { basePath: '/admin/monitoring' })
+    expect(wrapper?.text()).not.toContain('Pantau penglibatan')
+  })
 })
 
 describe('R1-AS-10 four Tahap bands (no "Kritikal")', () => {
