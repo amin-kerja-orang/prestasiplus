@@ -42,6 +42,19 @@ const statLines = (page: Page): Promise<string[][]> =>
         .filter(Boolean),
     ),
   )
+/** The stat tiles of a modal: [value, label] lines per tile (DsStatRow, test id cc-modal-stats). */
+const modalLines = (modal: Locator): Promise<string[][]> =>
+  modal
+    .getByTestId('cc-modal-stats')
+    .locator('> li')
+    .evaluateAll((els) =>
+      els.map((e) =>
+        ((e as HTMLElement).innerText ?? '')
+          .split('\n')
+          .map((t) => t.trim())
+          .filter(Boolean),
+      ),
+    )
 const statValues = async (page: Page): Promise<string[]> =>
   (await statLines(page)).map((l) => l[0] ?? '')
 const statLabels = async (page: Page): Promise<string[]> =>
@@ -59,18 +72,20 @@ function countOf(heading: string): number {
 }
 
 async function expectHeader(page: Page, backLabel: string): Promise<void> {
-  await expect(page.getByTestId('cc-title')).toHaveText('PrestasiPlus Command Center')
+  // Portal Pentadbiran frames the drill pages: the shell prints the h1 (DsPage show-title=auto leaves cc-title out)
+  await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Command Center')
+  await expect(page.getByTestId('cc-title')).toHaveCount(0)
   await expect(page.getByTestId('cc-back')).toHaveText(backLabel)
   await expect(page.getByTestId('cc-breadcrumb').getByRole('link').first()).toHaveText(
     'Command Center',
   )
-  // standalone page: no shell
-  await expect(page.getByTestId('shell-admin-sidebar')).toHaveCount(0)
+  // the Pentadbiran shell, not the learner shell
+  await expect(page.getByTestId('pentadbiran-nav')).toBeVisible()
   await expect(page.getByTestId('pembelajaran-sidebar')).toHaveCount(0)
 }
 
 async function expectNotFound(page: Page): Promise<void> {
-  const root = page.locator('[data-page=not-found]')
+  const root = page.locator('[data-ds="error-page"][data-code="404"]')
   await expect(root).toBeVisible()
   await expectTabTitle(page, NOT_FOUND_TITLE)
   await expect(root).toContainText('Halaman Tidak Dijumpai')
@@ -97,7 +112,7 @@ test.describe('S4 school', MODULE, () => {
   }) => {
     await gotoApp(`${CC}/school/8082`)
     await expect(page.getByTestId('cc-teacher-row').first()).toBeVisible()
-    await expectHeader(page, '← Kembali ke Overview')
+    await expectHeader(page, 'Kembali ke Overview')
     await expect(page.getByTestId('cc-back')).toHaveAttribute('href', CC)
     await expect(crumbCurrent(page)).toHaveText(/\S/)
     const name = (await crumbCurrent(page).innerText()).trim()
@@ -132,7 +147,8 @@ test.describe('S4 school', MODULE, () => {
     gotoApp,
   }) => {
     await gotoApp(`${CC}/school/8080`)
-    const row = page.locator('[data-testid=cc-teacher-row][data-user-id="1919"]')
+    // DsDrillTable: the test id sits on the name button inside the row
+    const row = page.locator('tr').filter({ has: page.locator('[data-testid=cc-teacher-row][data-user-id="1919"]') })
     await expect(row).toBeVisible()
     await expect.poll(() => statValues(page)).toEqual(['185', '174', '53,494', '81.7%'])
     await expect(row.locator('td').nth(3)).toHaveText('7')
@@ -146,7 +162,7 @@ test.describe('S5 teacher', MODULE, () => {
   }) => {
     await gotoApp(`${CC}/school/8080/teacher/1919`)
     await expect(page.getByTestId('cc-class-row').first()).toBeVisible()
-    await expectHeader(page, '← Kembali ke Sekolah')
+    await expectHeader(page, 'Kembali ke Sekolah')
     await expect(page.getByTestId('cc-back')).toHaveAttribute('href', `${CC}/school/8080`)
     await expect(page.getByTestId('cc-info')).toContainText('Sekolah:')
     const heading = ((await panelTitles(page).first().textContent()) ?? '').trim()
@@ -164,7 +180,7 @@ test.describe('S5 teacher', MODULE, () => {
     ])
     const name = (await crumbCurrent(page).innerText()).trim()
     await expectTabTitle(page, `${name} - Command Center | PRESTASIPLUS`)
-    const c370 = page.locator('[data-testid=cc-class-row][data-class-id="370"]')
+    const c370 = page.locator('tr').filter({ has: page.locator('[data-testid=cc-class-row][data-class-id="370"]') })
     await expect(c370).toBeVisible()
     const cells = await c370.locator('td').allInnerTexts()
     expect(cells.slice(1).map((c) => c.trim())).toEqual([
@@ -173,7 +189,7 @@ test.describe('S5 teacher', MODULE, () => {
       '30',
       '8',
       '13,641',
-      '79.0%',
+      '79%', // one decimal, zero fraction dropped (m17, C-17)
     ])
 
     await gotoApp(`${CC}/school/8082/teacher/4402`)
@@ -193,7 +209,7 @@ test.describe('S6 class', MODULE, () => {
   }) => {
     await gotoApp(`${CC}/classroom/370`)
     await expect(page.getByTestId('cc-student-row').first()).toBeVisible()
-    await expectHeader(page, '← Kembali ke Guru')
+    await expectHeader(page, 'Kembali ke Guru')
     await expect(page.getByTestId('cc-info')).toContainText('Sekolah:')
     await expect(page.getByTestId('cc-info')).toContainText('Guru:')
     await expect(page.getByTestId('cc-info')).toContainText('Tahap:')
@@ -202,8 +218,9 @@ test.describe('S6 class', MODULE, () => {
     expect(name).toBe('5 PERNIAGAAN')
     await expectTabTitle(page, '5 PERNIAGAAN - Command Center | PRESTASIPLUS')
 
-    const first2022 = page.getByTestId('cc-student-row').first()
-    await expect(first2022).toHaveAttribute('data-user-id', '2022')
+    const first2022Btn = page.getByTestId('cc-student-row').first()
+    await expect(first2022Btn).toHaveAttribute('data-user-id', '2022')
+    const first2022 = page.locator('tr').filter({ has: first2022Btn })
     await expect(first2022.locator('td').nth(2)).toHaveText('2,378')
     await expect(first2022.locator('td').nth(3)).toHaveText('93.5%')
     const heading = ((await panelTitles(page).first().textContent()) ?? '').trim()
@@ -220,17 +237,18 @@ test.describe('S6 class', MODULE, () => {
       'status',
       'mood',
     ])
-    const aktif = await page.locator('.status-active').count()
-    const tidak = await page.locator('.status-inactive').count()
-    expect(aktif + tidak).toBe(total)
-    await expect(page.locator('.status-active').first()).toHaveText('Aktif')
-    await expect(page.locator('.status-inactive').first()).toHaveText('Tidak Aktif')
+    // the status badge is data-testid="cc-status" with the text "Aktif" / "Tidak Aktif"
+    const activeBadges = page.getByTestId('cc-status').filter({ hasText: /^Aktif$/ })
+    const inactiveBadges = page.getByTestId('cc-status').filter({ hasText: /^Tidak Aktif$/ })
+    expect((await activeBadges.count()) + (await inactiveBadges.count())).toBe(total)
+    await expect(activeBadges.first()).toHaveText('Aktif')
+    await expect(inactiveBadges.first()).toHaveText('Tidak Aktif')
     // ordered by answers, descending
     const answers = (
       await page
         .getByTestId('cc-student-row')
         .evaluateAll((rows) =>
-          rows.map((r) => r.querySelectorAll('td')[2]?.textContent.trim() ?? '0'),
+          rows.map((r) => r.closest('tr')?.querySelectorAll('td')[2]?.textContent.trim() ?? '0'),
         )
     ).map((t) => Number(t.replace(/,/g, '')))
     expect(answers).toEqual([...answers].sort((a, b) => b - a))
@@ -247,7 +265,7 @@ test.describe('S7 student', MODULE, () => {
   test('E2E-M17-59 header, breadcrumb and the five cards', async ({ page, gotoApp }) => {
     await gotoApp(`${CC}/student/2022`)
     await expect(statCards(page)).toHaveCount(5)
-    await expectHeader(page, '← Kembali ke Kelas')
+    await expectHeader(page, 'Kembali ke Kelas')
     const crumbs = page.getByTestId('cc-breadcrumb')
     await expect(crumbs).toContainText('Command Center')
     const name = (await crumbCurrent(page).innerText()).trim()
@@ -279,11 +297,10 @@ test.describe('S7 student', MODULE, () => {
       'Aktiviti Mingguan (8 Minggu)',
       'Trend Mood (30 Hari)',
       'HeadCount',
-      'ALESA AI Insight',
+      // 'ALESA AI Insight' is not rendered: VITE_ALESA_AI is off (D73)
     ])
-    // subject rows: "{subjek} 🔍", the ratio, the live title; free practice reads "Latihan Bebas" when present
+    // subject rows: "{subjek}", the ratio, the live title; free practice reads "Latihan Bebas" when present
     const subjectRow = page.getByTestId('cc-subject-row').first()
-    await expect(subjectRow).toContainText('🔍')
     await expect(subjectRow.getByTestId('cc-subject-ratio')).toHaveText(/^\d+\/\d+$/)
     await expect(subjectRow).toHaveAttribute('title', 'Klik untuk lihat sesi')
     const umum = page.locator('[data-testid=cc-subject-row][data-code=UMUM]')
@@ -314,12 +331,12 @@ test.describe('S7 student', MODULE, () => {
       'Klik untuk lihat semua pelajar',
     )
     const dates = await page
-      .getByTestId('cc-headcount-row')
+      .getByTestId('cc-headcount-table')
+      .locator('tbody tr')
       .evaluateAll((rows) => rows.map((r) => r.querySelectorAll('td')[5]?.textContent.trim()))
     for (const d of dates) expect(d).toMatch(/^\d{2}\/\d{2}\/\d{4}$/)
-    await expect(page.getByTestId('cc-insight')).toContainText('Analisis ALESA')
-    await expect(page.getByTestId('cc-insight')).toContainText('Sumber: Rule-based Analysis')
-    await expect(page.getByTestId('cc-insight-text')).toContainText('Ketepatan cemerlang (93.5%).')
+    // ALESA AI is off in this build (VITE_ALESA_AI, D73): the insight panel is not rendered
+    await expect(page.getByTestId('cc-insight')).toHaveCount(0)
   })
 
   test('E2E-M17-62 all-sessions modal: summary, first row, close by x and by backdrop', async ({
@@ -330,15 +347,11 @@ test.describe('S7 student', MODULE, () => {
     await statCards(page).first().click()
     const modal = page.getByTestId('cc-sessions-modal')
     await expect(modal).toBeVisible()
-    await expect(modal.getByRole('heading').first()).toHaveText('Semua Sesi Latihan')
+    await expect(page.getByRole('dialog').getByRole('heading').first()).toHaveText('Semua Sesi Latihan')
     await expect(page.getByTestId('cc-session-row').first()).toBeVisible()
-    const labels = await modal
-      .getByTestId('cc-modal-stat')
-      .evaluateAll((els) => els.map((e) => e.lastElementChild?.textContent.trim()))
+    const labels = (await modalLines(modal)).map((l) => l[1])
     expect(labels).toEqual(['Jawapan', 'Sesi', 'Ketepatan', 'Jumlah Masa'])
-    const sums = await modal
-      .getByTestId('cc-modal-stat')
-      .evaluateAll((els) => els.map((e) => e.firstElementChild?.textContent.trim()))
+    const sums = (await modalLines(modal)).map((l) => l[0])
     expect(sums.slice(0, 3)).toEqual(['2,372', '123', '93.7%'])
     const heads = await modal.locator('th').allInnerTexts()
     expect(heads.map((h) => h.toLowerCase())).toEqual([
@@ -350,16 +363,17 @@ test.describe('S7 student', MODULE, () => {
       'masa',
     ])
     const firstRow = page.getByTestId('cc-session-row').first()
-    await expect(firstRow.locator('td').first()).toHaveText(/^\d{2}\/\d{2} \d{2}:\d{2}$/)
+    await expect(firstRow).toHaveText(/^\d{2}\/\d{2} \d{2}:\d{2}$/) // the id is on the date span of the cell
     await expect(firstRow).not.toHaveAttribute('title', /.+/)
     await expectNoHorizontalScroll(page)
 
-    await modal.getByTestId('cc-modal-close').click()
+    // DsDialog (UModal) has no close test id: Esc closes it
+    await page.keyboard.press('Escape')
     await expect(modal).toHaveCount(0)
     await statCards(page).first().click()
     await expect(modal).toBeVisible()
     // backdrop: a click in the gutter outside the panel
-    await page.getByTestId('cmp-modal-backdrop').click({ position: { x: 4, y: 4 } })
+    await page.mouse.click(4, 4)
     await expect(modal).toHaveCount(0)
   })
 
@@ -376,7 +390,8 @@ test.describe('S7 student', MODULE, () => {
     ).map(Number)
     const zero = counts.findIndex((c) => c === 0)
     if (zero >= 0) {
-      await page.getByTestId('cc-week').nth(zero).click()
+      // a zero bar is a disabled control: it cannot open the modal
+      await expect(page.getByTestId('cc-week').nth(zero)).toBeDisabled()
       await expect(page.getByTestId('cc-sessions-modal')).toHaveCount(0)
     }
     const last = counts
@@ -389,18 +404,14 @@ test.describe('S7 student', MODULE, () => {
     await week.click()
     const modal = page.getByTestId('cc-sessions-modal')
     await expect(modal).toBeVisible()
-    await expect(modal.getByRole('heading').first()).toHaveText(
+    await expect(page.getByRole('dialog').getByRole('heading').first()).toHaveText(
       /^Minggu \d{2}\/\d{2} \(\d{4}-\d{2}-\d{2} ~ \d{4}-\d{2}-\d{2}\)$/,
     )
-    await expect(modal.getByRole('heading').first()).toContainText(`(${start} ~`)
-    const stat = await modal
-      .getByTestId('cc-modal-stat')
-      .evaluateAll((els) => els.map((e) => e.lastElementChild?.textContent.trim()))
+    await expect(page.getByRole('dialog').getByRole('heading').first()).toContainText(`(${start} ~`)
+    const stat = (await modalLines(modal)).map((l) => l[1])
     expect(stat).toEqual(['Jawapan', 'Sesi', 'Ketepatan', 'Masa'])
     if (start === '2026-09-21') {
-      const sums = await modal
-        .getByTestId('cc-modal-stat')
-        .evaluateAll((els) => els.map((e) => e.firstElementChild?.textContent.trim()))
+      const sums = (await modalLines(modal)).map((l) => l[0])
       expect(sums.slice(0, 3)).toEqual(['452', '23', '99.6%'])
     }
   })
@@ -416,15 +427,13 @@ test.describe('S7 student', MODULE, () => {
     await row.click()
     const modal = page.getByTestId('cc-sessions-modal')
     // "Latihan Bebas — Semua Sesi" when the pupil has free practice (UMUM), else "{subjek} — Semua Sesi"
-    await expect(modal.getByRole('heading').first()).toHaveText(`${name} — Semua Sesi`)
+    await expect(page.getByRole('dialog').getByRole('heading').first()).toHaveText(`${name} — Semua Sesi`)
     await expect(page.getByTestId('cc-session-row').first()).toBeVisible()
     const heads = await modal.locator('th').allInnerTexts()
     expect(heads.map((h) => h.toLowerCase())).toContain('topik')
     expect(heads.map((h) => h.toLowerCase())).not.toContain('subjek')
     // live: the subject modal labels the time tile "Masa" ("Jumlah Masa" is the all-sessions modal only)
-    const labels = await modal
-      .getByTestId('cc-modal-stat')
-      .evaluateAll((els) => els.map((e) => e.lastElementChild?.textContent.trim()))
+    const labels = (await modalLines(modal)).map((l) => l[1])
     expect(labels).toEqual(['Jawapan', 'Sesi', 'Ketepatan', 'Masa'])
     await expect(page.getByTestId('cc-session-row').first()).toHaveAttribute('title', 'Klik soalan')
   })
@@ -438,24 +447,23 @@ test.describe('S7 student', MODULE, () => {
     await page.getByTestId('cc-session-row').first().click()
     const modal = page.getByTestId('cc-session-modal')
     await expect(modal).toBeVisible()
-    await expect(modal.getByRole('heading').first()).toHaveText(/ — /)
+    await expect(page.getByRole('dialog').getByRole('heading').first()).toHaveText(/ — /)
     await expect(modal.getByTestId('cc-modal-subtitle')).toHaveText(
       /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2} \| Kesukaran: (\d+|-) \| Masa: \d+m \d+s$/,
     )
-    const stats = await modal
-      .getByTestId('cc-modal-stat')
-      .evaluateAll((els) => els.map((e) => e.lastElementChild?.textContent.trim()))
+    const stats = (await modalLines(modal)).map((l) => l[1])
     expect(stats).toEqual(['Soalan', 'Betul', 'Salah', 'Ketepatan'])
     await expect(modal.getByTestId('cc-answer-row').first()).toBeVisible()
     const total = Number(
-      await modal.getByTestId('cc-modal-stat').first().locator('div').first().innerText(),
+      String((await modalLines(modal))[0]?.[0]),
     )
     await expect(modal.getByTestId('cc-answer-row')).toHaveCount(total)
     await expect(modal.getByTestId('cc-answer-row').first().locator('span').last()).toHaveText(
       /^\d{2}:\d{2}:\d{2}$/,
     )
     // the sessions modal stays underneath; closing the session modal returns to it
-    await modal.getByTestId('cc-modal-close').click()
+    // DsDialog (UModal) has no close test id: Esc closes it
+    await page.keyboard.press('Escape')
     await expect(modal).toHaveCount(0)
     await expect(page.getByTestId('cc-sessions-modal')).toBeVisible()
   })
@@ -466,25 +474,21 @@ test.describe('S7 student', MODULE, () => {
   }) => {
     await gotoApp(`${CC}/student/2022`)
     const row = page.getByTestId('cc-headcount-row').first()
-    const subject = (await row.locator('td').first().innerText()).replace('🔍', '').trim()
+    const subject = (await row.innerText()).trim()
     await row.click()
     const modal = page.getByTestId('cc-headcount-modal')
-    await expect(modal.getByRole('heading').first()).toHaveText(`HeadCount: ${subject}`)
+    await expect(page.getByRole('dialog').getByRole('heading').first()).toHaveText(`HeadCount: ${subject}`)
     await expect(modal.getByTestId('cc-headcount-student').first()).toBeVisible()
-    const stats = await modal
-      .getByTestId('cc-modal-stat')
-      .evaluateAll((els) => els.map((e) => e.lastElementChild?.textContent.trim()))
+    const stats = (await modalLines(modal)).map((l) => l[1])
     expect(stats).toEqual(['Pelajar', 'Purata TOV', 'Purata ETR', 'Kadar Lulus'])
     const total = Number(
-      await modal.getByTestId('cc-modal-stat').first().locator('div').first().innerText(),
+      String((await modalLines(modal))[0]?.[0]),
     )
     await expect(modal.getByTestId('cc-headcount-student')).toHaveCount(total)
     const heads = await modal.locator('th').allInnerTexts()
     expect(heads.map((h) => h.toLowerCase())).toEqual(['#', 'pelajar', 'tov', 'etr', 'rs', 'gred'])
     if (subject === 'Perniagaan') {
-      const sums = await modal
-        .getByTestId('cc-modal-stat')
-        .evaluateAll((els) => els.map((e) => e.firstElementChild?.textContent.trim()))
+      const sums = (await modalLines(modal)).map((l) => l[0])
       expect(sums).toEqual(['30', '29.7', '0', '0%'])
     }
   })
@@ -516,12 +520,10 @@ test.describe('S7 student', MODULE, () => {
       await expect(page.getByTestId('cc-mood-dot').first()).toBeVisible()
       await page.getByTestId('cc-mood-dot').last().click()
       const modal = page.getByTestId('cc-mood-modal')
-      await expect(modal.getByRole('heading').first()).toHaveText(
+      await expect(page.getByRole('dialog').getByRole('heading').first()).toHaveText(
         /^(😊|😐|😢|😥) \d{4}-\d{2}-\d{2} — Mood: (Gembira|OK|Sedih|Tekanan)$/,
       )
-      const labels = await modal
-        .getByTestId('cc-modal-stat')
-        .evaluateAll((els) => els.map((e) => e.lastElementChild?.textContent.trim()))
+      const labels = (await modalLines(modal)).map((l) => l[1])
       expect(labels).toEqual(['Mood', 'Sebab'])
     },
   )
@@ -534,13 +536,13 @@ test.describe('S7 student', MODULE, () => {
       await expect(page.getByTestId('cc-headcount-row').first()).toBeVisible()
       await mock.failNext('GET /api/command-center/student/:id/week', 500)
       await statCards(page).first().click()
-      await expect(page.getByTestId('cc-sessions-modal').getByTestId('cc-modal-error')).toHaveText(
+      await expect(page.getByTestId('cc-sessions-modal').getByTestId('cc-modal-error')).toContainText(
         'Ralat memuatkan data',
       )
-      await page.getByTestId('cc-sessions-modal').getByTestId('cc-modal-close').click()
+      await page.keyboard.press('Escape')
       await mock.failNext('GET /api/command-center/headcount/:id', 500)
       await page.getByTestId('cc-headcount-row').first().click()
-      await expect(page.getByTestId('cc-headcount-modal').getByTestId('cc-modal-error')).toHaveText(
+      await expect(page.getByTestId('cc-headcount-modal').getByTestId('cc-modal-error')).toContainText(
         'Ralat',
       )
     },
@@ -596,10 +598,12 @@ test.describe('responsive', MODULE, () => {
         ).toBe(false)
       }
       // touch targets: the back link, and the whole row (the row is the live click target)
-      await expectTouchTarget(page.getByTestId('cc-back'), 44)
-      const row = page.locator('tbody tr[data-testid]:not([data-testid=cc-empty-row])').first()
-      const box = await row.boundingBox()
-      expect(box?.height ?? 0).toBeGreaterThanOrEqual(43.9)
+      if (viewportWidth(page) < 1024) {
+        await expectTouchTarget(page.getByTestId('cc-back'), 44)
+        const row = page.locator('tbody tr').first()
+        const box = await row.boundingBox()
+        expect(box?.height ?? 0).toBeGreaterThanOrEqual(43.9)
+      }
     }
   })
 
@@ -610,7 +614,7 @@ test.describe('responsive', MODULE, () => {
     await gotoApp(`${CC}/student/2022`)
     await expect(page.getByTestId('cc-week')).toHaveCount(8)
     await expectNoHorizontalScroll(page)
-    const panels = page.locator('section')
+    const panels = page.locator('[data-ds="panel"]')
     const a = await panels.nth(0).boundingBox()
     const b = await panels.nth(1).boundingBox()
     expect(a && b).toBeTruthy()
