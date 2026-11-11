@@ -11,7 +11,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional } from '../support'
+import { expectNoHorizontalScroll, expectTabTitle, moduleTag } from '../support'
 
 const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
@@ -168,8 +168,8 @@ test.describe('M08 T5 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/prestasi/tingkatan/t5')
     await expect(page.getByTestId('stat-murid')).toContainText('3911')
     await expect(page.getByTestId('stat-ketepatan')).toContainText('79.7%')
-    await expect(page.getByTestId('pill-t5')).toHaveClass(/router-link-exact-active/)
-    await expect(page.getByTestId('pill-t4')).not.toHaveClass(/router-link-exact-active/)
+    await expect(page.getByTestId('pill-t5')).toHaveAttribute('data-active', 'true')
+    await expect(page.getByTestId('pill-t4')).toHaveAttribute('data-active', 'false')
     await page.getByTestId('pill-t4').click()
     await expect(page.getByTestId('stat-murid')).toContainText('149')
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/prestasi/tingkatan')
@@ -217,7 +217,8 @@ test.describe('M08 T5 admin', { tag: [moduleTag(8)] }, () => {
     await expect(cards.nth(1)).toContainText('0VV295')
     await expect(cards.nth(2)).toContainText('Chaos Academy')
     await expect(cards.nth(2)).toContainText('PVZ601')
-    await expect(cards.nth(0).locator('[title=Aktif]')).toHaveCount(1)
+    // Status shown as the DS badge 'Aktif' (ClassPickCard.vue, D28-D32), not the V2 tooltip dot (analisa-item-kelas.blade.php:43).
+    await expect(cards.nth(0).getByText('Aktif', { exact: true })).toHaveCount(1)
     await expectNoHorizontalScroll(page)
   })
 
@@ -264,11 +265,11 @@ test.describe('M08 T5 admin', { tag: [moduleTag(8)] }, () => {
       'Panduan Indeks Diskriminasi',
     )
     await expect(page.getByTestId('discrimination-table')).toBeVisible()
-    // §6.10: D of Q1, Q7 and Q8 = 1.000, Q5 = -0.500.
-    await expect(rowOf(page, 'discrimination-row-700001')).toContainText('1.000')
-    await expect(rowOf(page, 'discrimination-row-700005')).toContainText('-0.500')
+    // §6.10: D of Q1, Q7 and Q8 = 1.00, Q5 = -0.50 (two decimals, lib/prestasi/item-analysis.ts index2).
+    await expect(rowOf(page, 'discrimination-row-700001')).toContainText('1.00')
+    await expect(rowOf(page, 'discrimination-row-700005')).toContainText('-0.50')
 
-    await expect(page.getByTestId('switch-2001')).toHaveClass(/router-link-exact-active/)
+    await expect(page.getByTestId('switch-2001')).toHaveAttribute('data-active', 'true')
     await expectNoHorizontalScroll(page)
   })
 
@@ -423,20 +424,18 @@ test.describe('M08 T5 pelajar (account 2)', { tag: [moduleTag(8)] }, () => {
     await loginAs(2)
   })
 
-  test('S1 shows the own-school view', async ({ page, gotoApp }) => {
+  test('S1 /prestasi stays the pupil own Prestasi 360 (FR-MUR-4-13); there is no school view for a pelajar', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi')
-    await expect(page.getByTestId('prestasi-sekolah-page')).toBeVisible()
-    expect(new URL(page.url()).pathname).toBe('/prestasi/sekolah')
-    // Own school 900001 = the same figures as the Admin Sekolah anchor (§6.10): 2 kelas · 9 murid.
-    await expect(page.getByTestId('header-summary')).toHaveText(
-      'Ringkasan prestasi keseluruhan · 2 kelas · 9 murid',
-    )
+    await expect(page.getByTestId('prestasi360-page')).toBeVisible()
+    expect(new URL(page.url()).pathname).toBe('/prestasi')
+    await gotoApp('/prestasi/sekolah')
+    await expectForbidden(page)
     await expectNoHorizontalScroll(page)
   })
 
-  test('S4 is empty for a pelajar', async ({ page, gotoApp }) => {
+  test('S4 is the 403 page for a pelajar (PRESTASI_CLASS_ROLES excludes the pupil, FR-MUR-4-2)', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/kelas')
-    await expect(page.getByTestId('kelas-empty')).toContainText('Anda belum mempunyai kelas aktif.')
+    await expectForbidden(page)
   })
 
   test('S10 and S11 are the 403 page', async ({ page, gotoApp }) => {
@@ -452,26 +451,19 @@ test.describe('M08 T5 pelajar (account 2)', { tag: [moduleTag(8)] }, () => {
     await expectForbidden(page)
   })
 
-  test('S9 by URL shows the own school; another school is the 403 page', async ({
-    page,
-    gotoApp,
-  }) => {
+  test('S9 own school and another school are both the 403 page for a pelajar (ANALISA_SEKOLAH_OWN_ROLES excludes the pupil)', async ({ page, gotoApp }) => {
     await gotoApp('/analisa-item/sekolah')
-    await expect(page.getByTestId('school-card')).toBeVisible()
-    await expect(page.getByTestId('school-students')).toHaveText('9')
-    await expectNoHorizontalScroll(page)
+    await expectForbidden(page)
     await gotoApp('/analisa-item/sekolah/8880')
     await expectForbidden(page)
+    await expectNoHorizontalScroll(page)
   })
 
-  test(
-    '/analisa-item redirects the pelajar to /dashboard without a message',
-    provisional('FR-M08-09: the pelajar target is INFERRED (OD-R4)'),
-    async ({ page, gotoApp }) => {
-      await gotoApp('/analisa-item')
-      await expect.poll(() => new URL(page.url()).pathname).toBe('/dashboard')
-    },
-  )
+  test('/analisa-item stays on the pelajar own Analisa Item page (analisa-item.ts: the pupil is not redirected)', async ({ page, gotoApp }) => {
+    await gotoApp('/analisa-item')
+    await expect(page.getByTestId('analisa-item-murid-page')).toBeVisible()
+    expect(new URL(page.url()).pathname).toBe('/analisa-item')
+  })
 })
 
 test.describe('M08 T5 Admin Sekolah (account 8)', { tag: [moduleTag(8)] }, () => {
