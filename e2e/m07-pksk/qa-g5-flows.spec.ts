@@ -19,6 +19,8 @@ import { answerConfirm } from '../m04-question-bank/list-helpers'
 import { actAs, expectNoHorizontalScroll, moduleTag } from '../support'
 
 const MODULE = { tag: [moduleTag(7)] }
+// src/modules/m04-question-bank/api/studio.ts:27 (not imported: that module pulls in app aliases)
+const STUDIO_UNAVAILABLE = 'Studio hanya tersedia apabila sistem disambungkan ke pelayan sebenar.'
 const LIST = '/admin/pksk/questions'
 const ACCESS = '/admin/pksk/access'
 const tid = (page: Page, id: string) => page.getByTestId(id)
@@ -386,19 +388,13 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     loginAs,
   }) => {
     await loginAs('admin@demo.test')
+    // /admin/questions is the Studio list, server-only in the mock (studio.ts:26-27): the placeholder shows.
+    // The totals / search side of AC-23 is covered over http (Studio http-coverage gap, see the QA report).
     await gotoApp('/admin/questions?search=Bagi calon T4, apakah tindakan terbaik')
-    await expect(page.getByText('Tiada soalan dijumpai')).toBeVisible()
-    await gotoApp('/admin/questions/178460')
-    await expect(tid(page, 'question-text')).toContainText('Bagi calon T4')
-    await expect(tid(page, 'question-option')).toHaveCount(4)
+    await expect(tid(page, 'studio-unavailable')).toHaveText(STUDIO_UNAVAILABLE)
+    await gotoApp('/admin/questions/178460') // Studio editor: server-only in the mock; the by-id read is an http test
+    await expect(tid(page, 'studio-unavailable')).toHaveText(STUDIO_UNAVAILABLE)
 
-    const total = async () => {
-      await gotoApp('/admin/questions')
-      await expect(tid(page, 'questions-summary')).toContainText(/Jumlah/)
-      return (await tid(page, 'questions-summary').innerText()).match(/Jumlah:?\s*([\d.,]+)/)?.[1] ?? null
-    }
-    const before = await total()
-    expect(before).not.toBeNull()
     await gotoApp(`${LIST}/create`)
     await tid(page, 'q-bahagian').selectOption('B')
     await tid(page, 'q-domain').selectOption({ label: 'Matematik' })
@@ -410,11 +406,10 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await expect(qrows(page).first().getByTestId('q-text')).toContainText(
       'Soalan QA M04 pengecualian',
     )
-    expect(await total(), 'M04 total unchanged by a PKSK create').toBe(before)
     await gotoApp('/admin/questions?search=Soalan QA M04 pengecualian')
-    await expect(page.getByText('Tiada soalan dijumpai')).toBeVisible()
-    await gotoApp('/admin/questions/9000001')
-    await expect(tid(page, 'question-text')).toContainText('Soalan QA M04 pengecualian')
+    await expect(tid(page, 'studio-unavailable')).toHaveText(STUDIO_UNAVAILABLE)
+    await gotoApp('/admin/questions/9000001') // Studio editor: server-only in the mock (studio.ts:26-27)
+    await expect(tid(page, 'studio-unavailable')).toHaveText(STUDIO_UNAVAILABLE)
   })
 
   test('AC-23.3 rejecting a T1 Matematik question lowers the student count only; "Ting. 1" stays 383', async ({
@@ -549,7 +544,9 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await loginAs('admin@demo.test')
     await gotoApp(LIST)
     await expect(tid(page, 'pksk-questions-table')).toBeVisible()
-    await mock.networkErrorNext('GET /api/admin/pksk-questions')
+    // The filter change can issue the list request twice (change + route watch): fail both.
+    await mock.failNext('GET /api/admin/pksk-questions', 500)
+    await mock.failNext('GET /api/admin/pksk-questions', 500)
     await page.getByTestId('filter-status').selectOption('approved')
     await expect(
       tid(page, 'pksk-questions-error').or(tid(page, 'page-error')).first(),
@@ -612,7 +609,7 @@ test.describe('QA-G5 M07 access lifecycle', MODULE, () => {
     await expect(tid(page, 'user-form')).toBeVisible()
     await expect(tid(page, 'user-pksk')).not.toBeChecked()
     await tid(page, 'user-pksk').check({ force: true })
-    await tid(page, 'user-submit').click()
+    await tid(page, 'form-submit').click()
     await expect(page).not.toHaveURL(/\/edit$/)
     await actAs(page, mock, gotoApp, 'pelajar2@demo.test', '/pksk')
     await expect(tid(page, 'badge-aktif')).toHaveCount(2)
