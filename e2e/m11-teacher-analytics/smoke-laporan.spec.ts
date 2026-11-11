@@ -30,31 +30,31 @@ test.use({ mockInit: { latency: 0 } })
 const S1 = '/guru/laporan'
 const S6 = '/guru/analisis-item'
 
-/** 44px below lg; from lg the live size (pill 28, select 43, Reset 20; M03 precedent lg:min-h-0). */
+/** 44px on the touch projects; from lg no size rule applies (touch targets are asserted on mobile and tablet only). */
 async function expectTargetBelowLg(page: Page, locator: Locator): Promise<void> {
   if (!isDesktopShell(page)) return expectTouchTarget(locator)
-  const box = await locator.boundingBox()
-  expect(box!.height).toBeLessThan(44)
+  await expect(locator).toBeVisible()
 }
 
-async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
-  await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText(title)
-  // V2 guru layout default subtitle (guru/layout.blade.php:323): "Selamat datang, <name> 👩‍🏫".
-  await expect(page.getByTestId('pembelajaran-subtitle')).toContainText(subtitle)
+/** The EXPECTED shell is a parameter: the teacher sees Pembelajaran, the platform admin Pentadbiran (no role default subtitle). */
+type Shell = 'pembelajaran' | 'pentadbiran'
+
+async function expectHeader(page: Page, shell: Shell, title: string): Promise<void> {
+  await expect(page.getByTestId(`${shell}-header`).locator('h1')).toHaveText(title)
+  if (shell === 'pembelajaran') {
+    // V2 guru layout default subtitle (guru/layout.blade.php:323): "Selamat datang, <name> 👩‍🏫".
+    await expect(page.getByTestId('pembelajaran-subtitle')).toContainText('Selamat datang, ')
+  }
 }
 
-async function s1Header(page: Page): Promise<void> {
+async function s1Header(page: Page, shell: Shell = 'pembelajaran'): Promise<void> {
   await expectTabTitle(page, 'Laporan Statistik | PRESTASIPLUS')
-  await expectHeader(page, 'Laporan Statistik', 'Selamat datang, ')
+  await expectHeader(page, shell, 'Laporan Statistik')
 }
 
-async function s6Header(page: Page): Promise<void> {
+async function s6Header(page: Page, shell: Shell = 'pembelajaran'): Promise<void> {
   await expectTabTitle(page, 'Analisis Item Soalan | PRESTASIPLUS')
-  await expectHeader(
-    page,
-    'Analisis Item Soalan',
-    'Selamat datang, ',
-  )
+  await expectHeader(page, shell, 'Analisis Item Soalan')
 }
 
 const value = (page: Page, card: string) => page.getByTestId(card).getByTestId('card-value')
@@ -85,7 +85,7 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S1)
-    await s1Header(page)
+    await s1Header(page, 'pentadbiran')
     await expect(page.getByTestId('laporan-page')).toContainText('Tapis:')
     await expect(page.locator('[data-testid="filter-classroom"] option')).toHaveText([
       'Semua Kelas',
@@ -114,7 +114,7 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S1)
-    await s1Header(page)
+    await s1Header(page, 'pentadbiran')
     for (const id of ['card-login', 'card-latihan']) {
       await expect(value(page, id)).toHaveText('0%')
       await expect(page.getByTestId(id)).toContainText('0 / 0 pelajar')
@@ -456,7 +456,7 @@ test.describe('M11 S6 Analisis Item Soalan: admin', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S6)
-    await s6Header(page)
+    await s6Header(page, 'pentadbiran')
     await expect(page.getByTestId('analisis-item-page')).toContainText('Tapis:')
     await expect(page.getByTestId('analisis-item-page')).toContainText('Mata Pelajaran')
     const subjects = await page.locator('[data-testid="filter-subject"] option').allTextContents()
@@ -548,7 +548,7 @@ test.describe('M11 S6 Analisis Item Soalan: teacher', MODULE, () => {
       ])
       await expect(page.getByTestId('filter-classroom')).toHaveValue('2001')
       await expect(page.getByRole('button', { name: 'Reset', exact: true })).toBeVisible()
-      const rows = page.getByTestId('item-row')
+      const rows = page.getByTestId('item-table-card').locator('tbody tr') // DsDrillTable: the item-row id is a cell inside the tr
       await expect(rows).toHaveCount(8)
       // M08 anchors Q1-Q8: p 75, 50, 60, 25, 12.5, 12.5, 50, 50 (ordered % betul ascending)
       await expect(rows.getByTestId('item-pct')).toHaveText([
@@ -561,11 +561,11 @@ test.describe('M11 S6 Analisis Item Soalan: teacher', MODULE, () => {
         '60%',
         '75%',
       ])
-      await expect(rows.nth(0)).toHaveAttribute('data-band', 'sukar')
+      await expect(rows.nth(0).getByTestId('item-row')).toHaveAttribute('data-band', 'sukar')
       await expect(rows.nth(0).getByTestId('item-dot')).toHaveAttribute('data-band', 'sukar')
-      await expect(rows.nth(3)).toHaveAttribute('data-band', 'sederhana')
+      await expect(rows.nth(3).getByTestId('item-row')).toHaveAttribute('data-band', 'sederhana')
       await expect(rows.nth(3).getByTestId('item-dot')).toHaveAttribute('data-band', 'sederhana')
-      await expect(rows.nth(7)).toHaveAttribute('data-band', 'mudah')
+      await expect(rows.nth(7).getByTestId('item-row')).toHaveAttribute('data-band', 'mudah')
       await expect(rows.nth(7).getByTestId('item-dot')).toHaveAttribute('data-band', 'mudah')
       await expect(
         page.getByTestId('item-disc-note').filter({ hasText: 'semak semula' }),
