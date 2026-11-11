@@ -23,6 +23,7 @@ import {
   expectTouchTarget,
   moduleTag,
   provisional,
+  viewportWidth,
 } from '../support'
 
 import { expectAdminHeader, expectBarFill, expectReadable, tabTitle } from './helpers'
@@ -51,10 +52,10 @@ async function expectTierLabelsReadable(tiers: Locator): Promise<void> {
 
 test.describe('S11 / S12 / S13 / S17 headers and titles', MODULE, () => {
   const cases = [
-    { path: S11, header: 'Gamifikasi Dashboard', ready: 's11-hero' },
-    { path: S12, header: 'Tukar Syiling → Token', ready: 's12-hero' },
-    { path: S13, header: 'Cabaran Harian', ready: 's13-hero' },
-    { path: S17, header: 'Sejarah Transaksi', ready: 's17-list' },
+    { path: S11, header: 'Syiling & Ganjaran', sub: 'Kumpul syiling, tebus hadiah', ready: 's11-hero' }, // V2 gamifikasi.blade.php:3-4
+    { path: S12, header: 'Tukar Token', sub: 'Tukar syiling yang anda kumpul kepada token Kedai Hadiah', ready: 's12-hero' },
+    { path: S13, header: 'Cabaran Harian', sub: 'Selesaikan cabaran hari ini dan tuntut ganjaran syiling', ready: 's13-hero' },
+    { path: S17, header: 'Sejarah Transaksi', sub: 'Selamat datang kembali', ready: 's17-list' },
   ] as const
   test('E2E-M14-03 shell header title on S11, S12, S13 and S17', async ({
     page,
@@ -66,7 +67,7 @@ test.describe('S11 / S12 / S13 / S17 headers and titles', MODULE, () => {
     for (const c of cases) {
       await gotoApp(c.path)
       await expect(text(page, c.ready)).toBeVisible()
-      await expectAdminHeader(page, c.header)
+      await expectAdminHeader(page, c.header, c.sub)
     }
   })
 
@@ -424,16 +425,22 @@ test.describe('S13 challenges', MODULE, () => {
     await expect(text(page, 's13-hero')).toContainText(
       'Selesaikan cabaran hari ini dan tuntut ganjaran syiling',
     )
-    await expect(text(page, 's13-counter-value')).toHaveText('0/10')
+    await expect(text(page, 's13-counter-value')).toHaveText('0/15')
     await expect(text(page, 's13-counter')).toContainText('Selesai')
     await expectReadable(text(page, 's13-hero').locator('h1'))
     const cards = page.getByTestId('s13-card')
-    await expect(cards).toHaveCount(10)
+    await expect(cards).toHaveCount(15) // SEED_CHALLENGES, mock/data/catalogue.ts:107-330
+    // order = sortOrder, then id (catalogue.ts:107-330: four at 0, then 5..9, then 10..15)
     const titles = [
       'Rajin Berlatih',
       'Si Tepat',
       'Penjelajah Topik',
       'Kilat Matematik',
+      'Selesai 5 Kuiz',
+      'Ketepatan 80%',
+      '3 Topik Berbeza',
+      'Kombo 10',
+      'Belajar 15 Minit',
       'Mula Hari Ini',
       'Jawab 5 Betul',
       'Latihan 10 Minit',
@@ -466,7 +473,7 @@ test.describe('S13 challenges', MODULE, () => {
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(2)
       await gotoApp(S13)
-      await expect(text(page, 's13-counter-value')).toHaveText('7/10')
+      await expect(text(page, 's13-counter-value')).toHaveText('7/15')
       const byTitle = (t: string) => page.getByTestId('s13-card').filter({ hasText: t })
       await expect(byTitle('Si Tepat').getByTestId('s13-progress')).toHaveText('Progres: 80/80')
       await expect(byTitle('Si Tepat').getByTestId('s13-pct')).toHaveText('100%')
@@ -489,10 +496,10 @@ test.describe('S13 challenges', MODULE, () => {
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(2)
       await gotoApp(S13)
-      await expect(text(page, 's13-counter-value')).toHaveText('7/10')
+      await expect(text(page, 's13-counter-value')).toHaveText('7/15')
       await mock.advanceTime(8.5 * 3_600_000 + 25 * 60_000) // 15:40 -> 00:05 next day
       await gotoApp(S13)
-      await expect(text(page, 's13-counter-value')).toHaveText('0/10')
+      await expect(text(page, 's13-counter-value')).toHaveText('0/15')
       for (const p of await page.getByTestId('s13-pct').all()) await expect(p).toHaveText('0%')
     },
   )
@@ -635,7 +642,10 @@ test.describe('Access and responsive sweep', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(S11)
-    await expectTouchTarget(text(page, 's11-challenges-all'))
-    await expectTouchTarget(text(page, 's11-recent-all'))
+    if (viewportWidth(page) < 1024) {
+      // touch targets are asserted on the touch projects only
+      await expectTouchTarget(text(page, 's11-challenges-all'))
+      await expectTouchTarget(text(page, 's11-recent-all'))
+    }
   })
 })
