@@ -191,10 +191,9 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     // pills in order, "Semua Tingkatan" active, on the alias
     await expect(page.locator('[data-testid^="am-pill-"]')).toHaveText([
       'Semua Tingkatan',
-      'Tingkatan 4',
       'Tingkatan 5',
     ])
-    const hrefs = { all: S4, T4: `${S4}?tingkatan=T4`, T5: `${S4}?tingkatan=T5` }
+    const hrefs = { all: S4, T5: `${S4}?tingkatan=T5` }
     for (const [k, href] of Object.entries(hrefs)) {
       await expect(page.getByTestId(`am-pill-${k}`)).toHaveAttribute('href', href)
       await expect(page.getByTestId(`am-pill-${k}`)).toHaveAttribute(
@@ -286,26 +285,26 @@ test.describe('S4 populated school (E2E-M27-47, 70, 71, 73)', MODULE, () => {
     await expect(list).not.toContainText(/@|\b\d{6}-\d{2}-\d{4}\b|\b01\d-?\d{7,8}\b/)
   })
 
-  test('E2E-M27-71 P4: ?tingkatan=T4 activates the pill, adds the level to the sub-line and narrows the tally', async ({
+  test('E2E-M27-71 P4: ?tingkatan=T5 activates the pill, adds the level to the sub-line and narrows the tally', async ({
     page,
     gotoApp,
   }) => {
     await signIn(page, POPULATED)
     await open(page, gotoApp)
     const [all] = await tileValues(page)
-    await spaGoto(page, `${S4}?tingkatan=T4`)
-    await expect(page.getByTestId('am-page')).toHaveAttribute('data-level', 'T4', {
+    await spaGoto(page, `${S4}?tingkatan=T5`)
+    await expect(page.getByTestId('am-page')).toHaveAttribute('data-level', 'T5', {
       timeout: 60_000,
     })
-    await expect(page.getByTestId('am-pill-T4')).toHaveAttribute('data-active', 'true')
+    await expect(page.getByTestId('am-pill-T5')).toHaveAttribute('data-active', 'true')
     await expect(page.getByTestId('am-pill-all')).toHaveAttribute('data-active', 'false')
-    await expect(navbarSubtitle(page)).toContainText(' — Tingkatan 4')
-    const [t4, g, y, r] = (await tileValues(page)) as [number, number, number, number]
-    expect(t4).toBeLessThanOrEqual(all!)
-    expect(g + y + r).toBe(t4)
-    await expect(page.getByTestId('am-name')).toHaveCount(Math.min(t4, 25))
+    await expect(navbarSubtitle(page)).toContainText(' — Tingkatan 5')
+    const [t5, g, y, r] = (await tileValues(page)) as [number, number, number, number]
+    expect(t5).toBeLessThanOrEqual(all!)
+    expect(g + y + r).toBe(t5)
+    await expect(page.getByTestId('am-name')).toHaveCount(Math.min(t5, 25))
     const calls = await createMockHandle(page).requests('/api/amaran/schools/:id')
-    expect(calls.at(-1)?.query).toMatchObject({ tingkatan: 'T4' })
+    expect(calls.at(-1)?.query).toMatchObject({ tingkatan: 'T5' })
   })
 
   test('E2E-M27-73 the three buttons: order, labels, icons and hrefs; the CSV link is a download link', async ({
@@ -370,7 +369,7 @@ test.describe('S4 CSV and scope (E2E-M27-74, 75)', MODULE, () => {
 
 test.describe('S4 school without pupils (E2E-M27-76)', MODULE, () => {
   test(
-    'E2E-M27-76 P1 (no pupil): zeros, a bar without segments, no subject card, no rows; ?tingkatan=T4 activates the pill',
+    'E2E-M27-76 P1 (no pupil): zeros, a bar without segments, no subject card, no rows; only the "Semua Tingkatan" pill (no level has pupils)',
     provisional('PROPOSED empty state (FR-M27-79)', MODULE.tag),
     async ({ page, gotoApp }) => {
       await signIn(page, AZLAN)
@@ -386,10 +385,9 @@ test.describe('S4 school without pupils (E2E-M27-76)', MODULE, () => {
       await expect(page.getByTestId('am-error')).toHaveCount(0)
       await expect(page.locator('[data-testid="am-table"] th')).toHaveText(COLUMNS)
 
-      await page.getByTestId('am-pill-T4').click()
-      await expect(page).toHaveURL(/\/amaran\/sekolah\?tingkatan=T4$/)
-      await expect(page.getByTestId('am-pill-T4')).toHaveAttribute('data-active', 'true')
-      await expect(page.getByTestId('am-pill-all')).toHaveAttribute('data-active', 'false')
+      // FR-AS-49: the pills list only the levels that have pupils; this school has none.
+      await expect(page.locator('[data-testid^="am-pill-"]')).toHaveText(['Semua Tingkatan'])
+      await expect(page.getByTestId('am-pill-all')).toHaveAttribute('data-active', 'true')
       expect(await tileValues(page)).toEqual([0, 0, 0, 0])
     },
   )
@@ -409,7 +407,7 @@ test.describe('S4 responsive (§22; E2E-M27-70/71/73 at 375, 768, 1280)', MODULE
     const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
 
     // pills stay inside the viewport and are 44 px high
-    for (const k of ['all', 'T4', 'T5']) {
+    for (const k of ['all', 'T5']) {
       const b = page.getByTestId(`am-pill-${k}`)
       await expectTouchTarget(b)
       const bb = (await b.boundingBox())!
