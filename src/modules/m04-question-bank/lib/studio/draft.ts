@@ -75,6 +75,8 @@ export interface LeafDraft {
 export interface BranchRef {
   id: string
   raw: Record<string, unknown>
+  /** The branch's own text (its `prompt.ms`), editable above its first child; a save writes back only this field of the branch (V2: the parent part has its own Arahan). */
+  prompt: string
 }
 
 export type Kertas = '' | '1' | '2' | '3' | '4'
@@ -404,7 +406,10 @@ function partsOf(leaves: readonly LeafDraft[]): Json[] {
     else {
       const fresh = [part]
       open.set(l.group.id, fresh)
-      out.push({ ...l.group.raw, children: fresh })
+      const rawPrompt = typeof l.group.raw.prompt === 'object' && l.group.raw.prompt !== null ? (l.group.raw.prompt as Json) : {}
+      // Only a changed text is written, and only its `ms`: the rest of the stored prompt (English text...) stays.
+      const prompt = l.group.prompt === msOf(rawPrompt) ? undefined : { ...rawPrompt, ms: l.group.prompt }
+      out.push({ ...l.group.raw, ...(prompt === undefined ? {} : { prompt }), children: fresh })
     }
   }
   return out
@@ -703,7 +708,7 @@ export function hydrate(q: WireQuestion): Hydrated {
       continue
     }
     branchSeq += 1
-    const ref: BranchRef = { id: `b${String(branchSeq)}`, raw: JSON.parse(JSON.stringify(p)) as Record<string, unknown> }
+    const ref: BranchRef = { id: `b${String(branchSeq)}`, raw: JSON.parse(JSON.stringify(p)) as Record<string, unknown>, prompt: p.prompt?.ms ?? '' }
     for (const k of kids) take(k, ref)
   }
   // A save writes the question TP as the highest leaf TP. Parts without any TP inherit the stored question TP (kept as `inheritedTp`);

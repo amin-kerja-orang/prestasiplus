@@ -20,7 +20,7 @@ import NumericLeafForm from './NumericLeafForm.vue'
 import ShortTextLeafForm from './ShortTextLeafForm.vue'
 import StudioRichTextField from './StudioRichTextField.vue'
 
-const props = defineProps<{ testid: string; canRemove: boolean; disabled?: boolean; errors?: Record<string, string> }>()
+const props = defineProps<{ testid: string; canRemove: boolean; branchFirst?: boolean; disabled?: boolean; errors?: Record<string, string> }>()
 const leaf = defineModel<LeafDraft>({ required: true })
 const emit = defineEmits<{ remove: [] }>()
 
@@ -40,8 +40,11 @@ const err = (k: string): string | undefined => props.errors?.[k]
   <DsSurface level="soft" padding="md" shadow="none" :data-testid="testid">
     <DsStack gap="md">
       <DsText v-if="leaf.group !== undefined" variant="caption" tone="muted" :data-testid="`${testid}-branch`">
-        Sub-bahagian bagi bahagian ({{ String(leaf.group.raw.label ?? '') }}); bahagian induk kekal seperti tersimpan.
+        Sub-bahagian bagi bahagian ({{ typeof leaf.group.raw.label === 'string' ? leaf.group.raw.label : '' }}).
       </DsText>
+      <DsFormField v-if="leaf.group !== undefined && branchFirst === true" v-slot="{ id }" native :label="`Teks bahagian (${typeof leaf.group.raw.label === 'string' ? leaf.group.raw.label : ''})`" :for="`${testid}-branch-prompt`">
+        <UTextarea :id="id" v-model="leaf.group.prompt" :rows="3" :disabled="disabled" :data-testid="`${testid}-branch-prompt`" />
+      </DsFormField>
       <DsGrid :cols="{ base: 1, sm: 3 }" gap="md">
         <DsFormField v-slot="{ id }" native label="Label" :for="`${testid}-label`" required>
           <UInput :id="id" v-model="leaf.label" maxlength="10" placeholder="a" :disabled="disabled" :data-testid="`${testid}-label`" />

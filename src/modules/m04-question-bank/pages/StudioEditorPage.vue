@@ -487,6 +487,7 @@ async function save(): Promise<void> {
             :model-value="leaf"
             :testid="`studio-leaf-${i}`"
             :can-remove="draft.leaves.length > 1 && leaf.group === undefined"
+            :branch-first="leaf.group !== undefined && draft.leaves[i - 1]?.group?.id !== leaf.group.id"
             :disabled="partsLocked"
             :errors="fieldProblems"
             @update:model-value="draft.leaves[i] = $event"

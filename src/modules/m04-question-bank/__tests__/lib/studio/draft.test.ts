@@ -520,3 +520,26 @@ describe('nested sub-parts (a)(i) open as a group (K10)', () => {
     expect(deep.unsupported[0]).toContain('bersarang')
   })
 })
+
+describe('the branch prompt of a nested sub-part (K10)', () => {
+  const kid = (label: string) => ({ label, prompt: { ms: `Soalan ${label}` }, marks: 1, mode: 'working', key: { kind: 'points', marks: 1, points: [{ id: 'p1', code: 'P', label: 'x', marks: 1, text: { ms: 'x' } }] } })
+  const nested = [{ label: '(a)', prompt: { ms: 'Berdasarkan rajah:', en: 'Based on the figure:' }, marks: 2, children: [kid('(i)'), kid('(ii)')] }]
+  const wire = (parts: unknown[]) =>
+    ({ subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan berstruktur bersarang tentang rajah.', questionImage: null, curriculumChapterId: null, parts, tag: { unitId: null, spIds: [], tp: 3 } }) as never
+  const out = (d: StudioDraft) => (toRequestBody(d) as { parts: Record<string, unknown>[] }).parts
+
+  it('is read into the group (so the editor can show it above its first child) and an untouched tree stays byte-identical', () => {
+    const h = hydrate(wire(nested))
+    expect(h.draft.leaves[0]!.group?.prompt).toBe('Berdasarkan rajah:')
+    expect(h.draft.leaves[1]!.group).toBe(h.draft.leaves[0]!.group)
+    expect(JSON.stringify(out(h.draft))).toBe(JSON.stringify(nested))
+  })
+
+  it('an edit changes only branch.prompt.ms (the English text and every other branch field stay)', () => {
+    const h = hydrate(wire(nested))
+    h.draft.leaves[0]!.group!.prompt = 'Berdasarkan Rajah 1:'
+    const [branch] = out(h.draft)
+    expect(branch).toEqual({ ...nested[0], prompt: { ms: 'Berdasarkan Rajah 1:', en: 'Based on the figure:' } })
+    expect(Object.keys(branch!)).toEqual(Object.keys(nested[0]!))
+  })
+})

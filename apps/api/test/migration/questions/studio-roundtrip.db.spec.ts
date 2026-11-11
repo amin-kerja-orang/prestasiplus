@@ -822,6 +822,8 @@ describe('structured and subjective (essay) questions', () => {
     expect(Array.isArray(branch.children), 'the loader nests (a)(i) under the branch (a)').toBe(true)
     const parts = JSON.parse(JSON.stringify(before.parts)) as Wire[]
     const kid = (parts[0] as Wire).children[1] as Wire
+    // The branch text (V2: the parent part has its own Arahan) is edited too: only prompt.ms changes.
+    ;(parts[0] as Wire).prompt = { ...((parts[0] as Wire).prompt ?? {}), ms: `${String((parts[0] as Wire).prompt?.ms ?? '')} (disunting)`.trim() }
     kid.marks += 1
     kid.key.marks = kid.marks
     const lastPoint = kid.key.points[kid.key.points.length - 1] as Wire
@@ -842,7 +844,8 @@ describe('structured and subjective (essay) questions', () => {
     expect(after.parts, 'the edit persists').toEqual(parts)
     const a = after.parts as Wire[]
     const b = before.parts as Wire[]
-    expect(JSON.stringify({ ...a[0], children: undefined }), 'the branch is unchanged').toBe(JSON.stringify({ ...b[0], children: undefined }))
+    expect((a[0] as Wire).prompt.ms, 'the branch text edit persists').toBe((parts[0] as Wire).prompt.ms)
+    expect(JSON.stringify({ ...a[0], prompt: undefined, children: undefined }), 'every other branch field is unchanged').toBe(JSON.stringify({ ...b[0], prompt: undefined, children: undefined }))
     expect(JSON.stringify((a[0] as Wire).children[0]), 'the other child is unchanged').toBe(JSON.stringify((b[0] as Wire).children[0]))
     expect(JSON.stringify(a.slice(1)), 'the other parts are unchanged').toBe(JSON.stringify(b.slice(1)))
   })

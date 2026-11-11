@@ -62,7 +62,7 @@ function leafOf(v: unknown): LeafDraft | null {
     uid: newUid(), label: v.label, mode, prompt: v.prompt, marks: v.marks, tp: v.tp, cognitive: v.cognitive,
     options, correct: v.correct, accepted: v.accepted, numeric: { value: num.value, tolerance: num.tolerance, unit: num.unit },
     essay: essayOf(v.essay),
-    ...(isObj(v.group) && isStr(v.group.id) && isObj(v.group.raw) ? { group: { id: v.group.id, raw: v.group.raw } } : {}),
+    ...(isObj(v.group) && isStr(v.group.id) && isObj(v.group.raw) ? { group: { id: v.group.id, raw: v.group.raw, prompt: isStr(v.group.prompt) ? v.group.prompt : '' } } : {}),
   }
 }
 

@@ -452,6 +452,25 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(body.parts[0]?.key.points[1]).toEqual({ id: 'p2', code: 'P', label: 'Gas karbon', marks: 3, text: { ms: 'Gas karbon' } })
   })
 
+  it('a nested question shows the branch text above its first child and an edit writes only that prompt.ms (K10)', async () => {
+    const kid = (label: string) => ({ label, prompt: { ms: `Soalan ${label}` }, marks: 1, mode: 'working', key: { kind: 'points', marks: 1, points: [{ id: 'p1', code: 'P', label: 'x', marks: 1, text: { ms: 'x' } }] } })
+    const parts = [{ label: '(a)', prompt: { ms: 'Berdasarkan rajah:' }, marks: 2, children: [kid('(i)'), kid('(ii)')] }]
+    studio.fetchStudioQuestion.mockResolvedValue({
+      id: '620', status: 'draft', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan berstruktur bersarang tentang rajah.',
+      questionImage: null, curriculumChapterId: null, stimulusGroup: null, tag: { unitId: null, spIds: [], tp: 3 }, parts,
+    })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '620', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/620/sunting', '620')
+    expect(w.find('[data-testid="studio-unsupported"]').exists()).toBe(false)
+    expect((t(w, 'studio-leaf-0-branch-prompt').element as HTMLTextAreaElement).value).toBe('Berdasarkan rajah:')
+    expect(w.find('[data-testid="studio-leaf-1-branch-prompt"]').exists()).toBe(false)
+    await t(w, 'studio-leaf-0-branch-prompt').setValue('Berdasarkan Rajah 1:')
+    await t(w, 'studio-save-bar').find('button[type="submit"]').trigger('click')
+    await flushPromises()
+    const body = studio.updateStudioQuestion.mock.calls[0]?.[1] as { parts: unknown[] }
+    expect(body.parts).toEqual([{ ...parts[0], prompt: { ms: 'Berdasarkan Rajah 1:' } }])
+  })
+
   it('an approved question is read-only until "Edit sebagai draf" writes the draft at once', async () => {
     const approved = {
       id: '700', status: 'approved', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan yang sudah diterbitkan kepada murid.',
