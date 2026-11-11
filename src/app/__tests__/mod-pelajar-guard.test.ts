@@ -132,13 +132,14 @@ describe('Mod Pelajar for the admin (route guard)', () => {
     expect(enterModPelajar).not.toHaveBeenCalled()
   })
 
-  it('a flagged page the student cannot open (outside the student scope): no switch, the admin sees it as before', async () => {
+  it('a flagged page the student cannot open (outside the student scope): no switch, the admin gets the in-place 403', async () => {
     logIn(ADMIN)
     const r = router()
     await r.push('/kertas-subjektif/x1')
     expect(enterModPelajar).not.toHaveBeenCalled()
     expect(useSessionStore().role).toBe('admin')
     expect(r.currentRoute.value.path).toBe('/kertas-subjektif/x1')
+    expect(useRouteOutcome().value).toBe(403)
   })
 
   it('two concurrent navigations switch once and show no error flash', async () => {

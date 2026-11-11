@@ -101,19 +101,7 @@ function studentCanOpen(to: RouteLocationNormalized, session: GuardSession): boo
       isLoggedIn: true,
       role: 'student',
       mustChangePassword: false,
-      mode: undefined,
     }).kind === 'allow'
-  )
-}
-
-/**
- * A `modPelajarForAdmin` page the student could not open either (outside the student prototype scope
- * or switched off) is not reached through Mod Pelajar: the plain admin keeps seeing it as before, so
- * it is never switched into a mode that would only answer 404.
- */
-function adminKeepsStudentRoute(to: RouteLocationNormalized, session: GuardSession): boolean {
-  return (
-    to.meta.modPelajarForAdmin === true && session.role === 'admin' && !studentCanOpen(to, session)
   )
 }
 
@@ -168,11 +156,7 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     return { kind: 'redirect', to: LOGIN_PATH }
   }
 
-  if (
-    roles !== undefined &&
-    (session.role === null || !roles.includes(session.role)) &&
-    !adminKeepsStudentRoute(to, session)
-  ) {
+  if (roles !== undefined && (session.role === null || !roles.includes(session.role))) {
     // The server landing of this role is the refused path itself (the API lands a school admin on `/admin`,
     // admin only): send it to its own home, not a 403 (D106, G4 #394). Scope on or off.
     if (
