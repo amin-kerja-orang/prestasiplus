@@ -24,7 +24,7 @@ test.describe('S23 Tournament list', () => {
       await loginAs(ADMIN)
       await gotoApp('/tournament')
       await expectTabTitle(page, 'Liga & Tournament | PRESTASIPLUS')
-      await expectAdminHeader(page, 'Liga & Tournament')
+      await expectAdminHeader(page, 'Liga & Tournament', 'Senarai tournament antara sekolah') // routes/tournament.ts:20
       await expect(page.getByRole('heading', { level: 2, name: 'Liga & Tournament' })).toBeVisible()
       await expect(
         page.getByText('Bertanding antara sekolah dalam format liga, kalah mati, atau hibrid!'),
