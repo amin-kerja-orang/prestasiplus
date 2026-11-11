@@ -140,3 +140,42 @@ describe('canonical rows that look like legacy questions', () => {
     expect(await snapshot()).toBe(before)
   })
 })
+
+describe('canonical copies whose id-map entry points to another question (stage 3 conflict)', () => {
+  let wrongLegacy = ''
+  let ownQuestion = ''
+  let legacyFourBefore = ''
+
+  it('seeds (a) a copy mapped to a different legacy question and (b) a copy mapped to its own canonical question', async () => {
+    // (a) 9008 is a copy of legacy 1 (the lowest match) but an earlier run mapped it to legacy 4.
+    await canonical(9008, 'Apakah ibu negara Malaysia?', same, 0)
+    wrongLegacy = await legacyId('4')
+    await sql(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('cloud', 'exam_questions', '9008', $1)`, [wrongLegacy])
+    legacyFourBefore = JSON.stringify((await sql(`select q.*, v.stem_ms, v.updated_at as vu from questions q join question_versions v on v.question_id = q.id where q.id = $1::bigint`, [wrongLegacy])).rows)
+    // (b) 9009 is a copy of legacy 5 but is mapped to the own canonical question already loaded for 9002.
+    await canonical(9009, 'Rajah menunjukkan sebuah segi tiga. Hitung luas.', ['1', '2', '3', '4'], 0)
+    ownQuestion = (await mapOf('9002')) as string
+    await sql(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('cloud', 'exam_questions', '9009', $1)`, [ownQuestion])
+    expect(ownQuestion).toBeTruthy()
+  })
+
+  it('repoints (a), keeps (b), raises no conflict, and leaves every question row alone', async () => {
+    const questionsBefore = (await sql(`select count(*)::int as n from questions`)).rows[0]?.n as number
+    const ownBefore = JSON.stringify((await sql(`select q.*, v.stem_ms from questions q join question_versions v on v.question_id = q.id where q.id = $1::bigint`, [ownQuestion])).rows)
+    const notes = await both()
+    expect(await mapOf('9008')).toBe(await legacyId('1'))
+    expect(notes.get('canonical.dedupe_repointed_legacy')).toBe(1)
+    expect(await mapOf('9009')).toBe(ownQuestion)
+    expect(notes.get('canonical.copy_kept_own')).toBe(1)
+    expect(JSON.stringify((await sql(`select q.*, v.stem_ms, v.updated_at as vu from questions q join question_versions v on v.question_id = q.id where q.id = $1::bigint`, [wrongLegacy])).rows)).toBe(legacyFourBefore)
+    expect(JSON.stringify((await sql(`select q.*, v.stem_ms from questions q join question_versions v on v.question_id = q.id where q.id = $1::bigint`, [ownQuestion])).rows)).toBe(ownBefore)
+    expect((await sql(`select count(*)::int as n from questions`)).rows[0]?.n).toBe(questionsBefore) // no question added or deleted
+  })
+
+  it('a further run changes nothing and repoints nothing', async () => {
+    const before = await snapshot()
+    const notes = await both()
+    expect(notes.get('canonical.dedupe_repointed_legacy') ?? 0).toBe(0)
+    expect(await snapshot()).toBe(before)
+  })
+})

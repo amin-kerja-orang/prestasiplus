@@ -190,6 +190,39 @@ export function canonicalStep(q: QuestionsContext): AnyEntityStep {
         )
         if ((fixed.rowCount ?? 0) > 0) q.notes.count('canonical.dedupe_repointed', fixed.rowCount ?? 0)
       }
+      // A row that IS a copy under the current rule but already has an id-map entry to another question (KP-14: only wrong dedupes are repointed):
+      //  - entry to a different LEGACY question: a wrong dedupe of an earlier run, dropped here and registered below (legacy question untouched);
+      //  - entry to its own canonical question (`legacy_id IS NULL`): kept (it may be placed in papers; question loaders are insert-if-missing), so the row
+      //    leaves `copies`, goes through the normal insert-if-missing path (unchanged) and counts `canonical.copy_kept_own`;
+      //  - entry to a question that no longer exists: dropped, the copy mapping registers.
+      if (copies.size > 0) {
+        const existing = await ctx.db.query<{ legacy_id: string; new_id: string; qlegacy: string | null; present: boolean }>(
+          `SELECT m.legacy_id, m.new_id, lq.legacy_id AS qlegacy, (lq.id IS NOT NULL) AS present
+             FROM etl_id_map m LEFT JOIN questions lq ON lq.id = m.new_id::bigint
+            WHERE m.legacy_source = $1 AND m.entity = 'exam_questions' AND m.legacy_id = ANY($2::text[])`,
+          [ctx.source, [...copies.keys()]],
+        )
+        const drop: string[] = []
+        let repointed = 0
+        let keptOwn = 0
+        for (const r of existing.rows) {
+          const target = copies.get(r.legacy_id)
+          if (target === undefined || r.new_id === target) continue
+          if (!r.present) drop.push(r.legacy_id)
+          else if (r.qlegacy !== null) {
+            drop.push(r.legacy_id)
+            repointed += 1
+          } else {
+            copies.delete(r.legacy_id)
+            keptOwn += 1
+          }
+        }
+        if (drop.length > 0) {
+          await ctx.db.query(`DELETE FROM etl_id_map WHERE legacy_source = $1 AND entity = 'exam_questions' AND legacy_id = ANY($2::text[])`, [ctx.source, drop])
+        }
+        if (repointed > 0) q.notes.count('canonical.dedupe_repointed_legacy', repointed)
+        if (keptOwn > 0) q.notes.count('canonical.copy_kept_own', keptOwn)
+      }
       if (copies.size > 0) {
         await ctx.idMap.registerMany('exam_questions', [...copies].map(([id, legacy]) => [id, legacy] as const))
         q.notes.count('canonical.deduped_to_legacy', copies.size)
