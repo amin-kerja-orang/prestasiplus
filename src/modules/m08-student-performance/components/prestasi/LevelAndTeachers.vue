@@ -11,6 +11,7 @@ import type { SchoolPerformance } from '../../api/types'
 import {
   TONE_COLOR,
   TONE_TEXT,
+  accuracyTone,
   accuracyToneWhole,
   levelNumber,
   pctTrim,
@@ -41,14 +42,14 @@ const teacherBar = (on: number, below: number): number =>
         >
           <span class="flex items-baseline justify-between gap-3">
             <span class="text-label text-highlighted">Tingkatan {{ levelNumber(l.code) }}</span>
-            <span :class="[TONE_TEXT[accuracyToneWhole(l.accuracy)], 'tabular text-heading']">{{
+            <span :class="[TONE_TEXT[accuracyTone(l.accuracy)], 'tabular text-heading']">{{
               pctTrim(l.accuracy)
             }}</span>
           </span>
           <UProgress
             :model-value="Math.round(l.accuracy)"
             :max="100"
-            :color="TONE_COLOR[accuracyToneWhole(l.accuracy)]"
+            :color="TONE_COLOR[accuracyTone(l.accuracy)]"
             :aria-label="`Ketepatan Tingkatan ${levelNumber(l.code)}`"
           />
           <span class="flex flex-wrap gap-x-4 text-caption text-muted">

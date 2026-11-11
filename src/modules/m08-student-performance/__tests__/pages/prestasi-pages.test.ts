@@ -230,6 +230,23 @@ describe('S1 PrestasiSekolahPage', () => {
     expect(t(w, 'level-card-t4').text()).toContain('63.9%')
   })
 
+  it('C-40: the level card tone follows the unrounded value shown (49.6% is low, 50% is mid)', async () => {
+    api.fetchSchoolPerformance.mockResolvedValue({
+      ...S1,
+      levels: [
+        { code: 't4', accuracy: 49.6, classes: 13, students: 149, sessions: 11 },
+        { code: 't5', accuracy: 50, classes: 2, students: 20, sessions: 3 },
+      ],
+    })
+    const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+    const low = t(w, 'level-card-t4').find('.text-heading')
+    expect(low.text()).toBe('49.6%')
+    expect(low.classes()).toContain('text-error')
+    const mid = t(w, 'level-card-t5').find('.text-heading')
+    expect(mid.text()).toBe('50%')
+    expect(mid.classes()).toContain('text-warning')
+  })
+
   it('shows "—" and no band pill without headcount GPS, never 0', async () => {
     api.fetchSchoolPerformance.mockResolvedValue(S1)
     const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
