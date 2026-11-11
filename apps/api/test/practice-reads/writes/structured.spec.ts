@@ -576,6 +576,76 @@ describe('AC1 GET /api/practice/structured/:id', () => {
     expect(JSON.stringify(res.body)).not.toMatch(/modelAnswer|"key"|accept|y = 3/)
   })
 
+  describe('the rajah of the set (own stimulus, group stimulus) is on the detail (core DSKP rule)', () => {
+    const liveVersion = async (id: string) =>
+      (await t.db.query<{ id: string }>('select v.id::text id from question_versions v join questions q on q.id = v.question_id and v.version_no = q.live_version_no where q.id = $1', [id]))[0]?.id as string
+    const detail = async (id: string) => {
+      const res = await student.get(`/api/practice/structured/${id}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      return Detail.parse(res.body).data
+    }
+    const file = async (pub: string, key: string) =>
+      (await t.db.query<{ id: string }>(
+        `insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key) values ($1, 'question_image', 'image/png', 10, $2, $3) returning id::text id`,
+        [pub, key.padEnd(64, '1'), `str/${key}.png`],
+      ))[0]?.id as string
+
+    it('a set without a stimulus has an empty list', async () => {
+      expect((await detail(tree)).stimuli ?? []).toEqual([])
+    })
+
+    it('a set with its own picture stimulus shows it as a file token URL; its own passage shows its text', async () => {
+      const q = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzrajah hitung luas segi tiga itu.' })
+      const f = await file('strOwnPicAaaaaaaaaaaaa', 'a')
+      const pic = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, asset_file_id) values ('image', 'Rajah 1', $1::bigint) returning id::text id`, [f]))[0]?.id as string
+      const txt = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', 'Petikan', 'Petikan zzrajah.') returning id::text id`))[0]?.id as string
+      try {
+        await t.db.query('insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, 1), ($1, $3, 2)', [await liveVersion(q), pic, txt])
+        const d = await detail(q)
+        expect(d.stimuli?.map((s) => [s.kind, s.image?.url, s.text])).toEqual([
+          ['image', '/api/files/strOwnPicAaaaaaaaaaaaa', undefined],
+          ['passage', undefined, 'Petikan zzrajah.'],
+        ])
+      } finally {
+        await t.db.query('update questions set is_active = false where id = $1', [q])
+        await t.db.query('delete from question_version_stimuli where stimulus_id = any($1::bigint[])', [[pic, txt]])
+        await t.db.query('delete from stimuli where id = any($1::bigint[])', [[pic, txt]])
+        await t.db.query('delete from files where id = $1::bigint', [f])
+      }
+    })
+
+    it('a set in a stimulus group shows the group stimulus', async () => {
+      const q = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzrajah kumpulan' })
+      const f = await file('strGrpPicAaaaaaaaaaaaa', 'b')
+      const pic = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, asset_file_id) values ('image', 'Rajah 2', $1::bigint) returning id::text id`, [f]))[0]?.id as string
+      const g = (await t.db.query<{ id: string }>(`insert into stimulus_groups (scope) values ('section') returning id::text id`))[0]?.id as string
+      try {
+        await t.db.query('insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1::bigint, $2::bigint, 1)', [g, pic])
+        await t.db.query('update questions set group_id = $1::bigint, group_position = 1 where id = $2::bigint', [g, q])
+        expect((await detail(q)).stimuli?.map((s) => s.image?.url)).toEqual(['/api/files/strGrpPicAaaaaaaaaaaaa'])
+      } finally {
+        await t.db.query('update questions set is_active = false, group_id = null, group_position = null where id = $1', [q])
+        await t.db.query('delete from stimulus_groups where id = $1::bigint', [g])
+        await t.db.query('delete from stimuli where id = $1::bigint', [pic])
+        await t.db.query('delete from files where id = $1::bigint', [f])
+      }
+    })
+
+    it('a linked picture that cannot be shown is the "Gambar tiada" placeholder, never the text alone', async () => {
+      const q = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzrajah tiada gambar' })
+      const sid = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label) values ('diagram', 'Rajah 3') returning id::text id`))[0]?.id as string
+      try {
+        await t.db.query('insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, 1)', [await liveVersion(q), sid])
+        const d = await detail(q)
+        expect(d.stimuli?.map((s) => s.label)).toEqual(['Gambar tiada'])
+      } finally {
+        await t.db.query('update questions set is_active = false where id = $1', [q])
+        await t.db.query('delete from question_version_stimuli where stimulus_id = $1::bigint', [sid])
+        await t.db.query('delete from stimuli where id = $1::bigint', [sid])
+      }
+    })
+  })
+
   it('backUrl follows scope and track (FR-M05-137)', async () => {
     const math = await subjectIdOf(t.db, 'MATH')
     const backUrl = async (q: string) => Detail.parse((await student.get(`/api/practice/structured/${tree}${q}`)).body).data.backUrl

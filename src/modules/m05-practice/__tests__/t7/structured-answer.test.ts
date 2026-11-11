@@ -112,6 +112,16 @@ describe('S5-T11 structured answer: the parts tree', () => {
     expect(w.findAll('[data-testid=stimulus-group]')).toHaveLength(1)
     expect(w.text().split('Petikan tentang kadar.').length - 1).toBe(1)
   })
+
+  it('shows the linked rajah (own or group stimulus) next to the text: its picture is rendered', async () => {
+    api.fetchStructuredDetail.mockResolvedValue({
+      ...DETAIL,
+      stimuli: [{ id: '7-1', kind: 'image', label: 'Rajah 1', alt: 'Rajah 1', image: { url: '/api/files/tokenAaaaaaaaaaaaaaaaa' } }],
+    })
+    await open()
+    await settle()
+    expect(document.body.querySelector('img[src="/api/files/tokenAaaaaaaaaaaaaaaaa"]')).not.toBeNull()
+  })
 })
 
 describe('S5-T11 structured answer: autosave and restore (AC-MUR-17-2)', () => {

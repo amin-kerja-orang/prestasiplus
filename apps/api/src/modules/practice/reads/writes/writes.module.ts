@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 
 import { ThrottleModule } from '../../../../common/throttle'
 import { CurriculumModule } from '../../../curriculum'
+import { FilesModule } from '../../../files'
 import { PracticeModule } from '../../practice.module'
 import { QuestionsModule } from '../../../questions'
 import { SchoolsModule } from '../../../schools'
@@ -20,7 +21,7 @@ import { SpmTargetsController, StructuredController } from './writes.controller'
  * through `QuestionsRepository` only.
  */
 @Module({
-  imports: [ThrottleModule, PracticeModule, CurriculumModule, QuestionsModule, UsersModule, SchoolsModule],
+  imports: [ThrottleModule, PracticeModule, CurriculumModule, QuestionsModule, UsersModule, SchoolsModule, FilesModule],
   controllers: [SpmTargetsController, StructuredController],
   providers: [SpmTargetsRepository, SpmTargetsService, StructuredAttemptsRepository, StructuredListingRepository, StructuredService],
 })

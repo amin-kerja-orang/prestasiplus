@@ -28,6 +28,7 @@ import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
 import { fetchStructuredDetail, submitStructuredAttempt } from '../api/practice'
 import type { StructuredAttemptResult } from '../api/types'
+import { toStimuliData } from '../components/quiz/stimulus-adapter'
 import { marksLabel, parseVariant, safeImageSrc } from '../components/structured/structured-lib'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
@@ -140,6 +141,8 @@ const stimuli = computed<StimulusData[]>(() => {
   const text = data.value?.stimulus ?? ''
   if (text.trim() !== '') out.push({ id: 'stimulus', kind: 'passage', text })
   if (image.value) out.push({ id: 'figure', kind: 'image', src: image.value, alt: 'Rajah soalan' })
+  // The linked rajah of the set (group or own stimulus, or the "Gambar tiada" placeholder): always shown with the text.
+  out.push(...toStimuliData(data.value?.stimuli))
   return out
 })
 

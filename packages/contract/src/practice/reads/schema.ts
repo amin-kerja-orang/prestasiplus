@@ -3,7 +3,7 @@ import { listEnvelopeOf, ListMetaSchema } from '../../common/envelope'
 import { RoleCodeSchema } from '../../common/enums'
 import { IdSchema } from '../../common/ids'
 import { TimestampSchema } from '../../common/time'
-import { PracticeModeSchema, PracticeSessionIdSchema, type PracticeMode } from '../schema'
+import { PracticeModeSchema, PracticeQuizStimulusSchema, PracticeSessionIdSchema, type PracticeMode } from '../schema'
 
 /**
  * M05 practice read models (BE-13): dashboard, subject and chapter lists, revision, progress,
@@ -645,6 +645,7 @@ export const PracticeReadStructuredDetailSchema = z
     levelName: z.string(),
     stimulus: z.string(),
     stimulusImage: z.string().nullable().meta({ description: 'null when the set has no image.' }),
+    stimuli: z.array(PracticeQuizStimulusSchema).optional().meta({ description: 'The rajah, petikan or jadual of the set (group stimulus, then its own); a picture is a file token URL. A picture that cannot be shown is the placeholder "Gambar tiada". Absent in the mock.' }),
     subQuestions: z.array(z.strictObject({ id: IdSchema, label: z.string(), text: z.string(), marks: count() })),
     backUrl: z.string().min(1).meta({ description: '"/latihan-berstruktur", or the SPM variant list of FR-M05-137 (a frontend route).' }),
   })

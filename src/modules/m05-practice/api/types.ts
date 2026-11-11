@@ -558,6 +558,8 @@ export interface StructuredDetail {
   stimulus: string
   /** M04 value; `null` when the set has no image (never generated). */
   stimulusImage: string | null
+  /** The rajah, petikan or jadual of the set (its group stimulus, then its own); a missing picture is the "Gambar tiada" placeholder. */
+  stimuli?: QuizStimulus[]
   subQuestions: { id: number; label: string; text: string; marks: number }[]
   /** `/latihan-berstruktur`, or the SPM variant list of FR-M05-137. */
   backUrl: string
