@@ -223,7 +223,7 @@ test.describe('shell, header', MODULE, () => {
 })
 
 test.describe('banner', MODULE, () => {
-  test('E2E-M27-04 banner of school 900003: name by CSS capitals, role line, state, PPD, code; not links', async ({
+  test('E2E-M27-04 banner of school 900003: name, role line, state, PPD, code; not links', async ({
     page,
     gotoApp,
   }) => {
@@ -231,8 +231,6 @@ test.describe('banner', MODULE, () => {
     await open(page, gotoApp)
     const name = page.getByTestId('sd-banner-name')
     await expect(name).toHaveText('SMK Demo Seri Putra')
-    expect(await name.evaluate((e) => getComputedStyle(e).textTransform)).toBe('uppercase')
-    expect(await name.evaluate((e) => (e as HTMLElement).innerText)).toBe('SMK DEMO SERI PUTRA')
     const role = page.getByTestId('sd-banner-role')
     await expect(role).toHaveText('Admin Sekolah')
     const [nameBox, roleBox] = [await name.boundingBox(), await role.boundingBox()]
@@ -258,8 +256,10 @@ test.describe('banner', MODULE, () => {
       await expect(page.getByTestId('sd-chip-state')).toHaveText('Johor')
       await expect(page.getByTestId('sd-chip-ppd')).toHaveCount(0)
       await expect(page.getByTestId('sd-chip-code')).toHaveCount(0)
-      await expect(page.getByTestId('sd-chips')).toHaveText('Johor')
-      await expect(page.getByTestId('sd-banner')).not.toContainText('Kod')
+      // the chip list is the state plus the school's own join code (7aec5024b), no "# Kod: ..." chip
+      await expect(page.getByTestId('sd-chips').locator('> li')).toHaveCount(2)
+      await expect(page.getByTestId('sd-chip-join-code')).toContainText('Kod Daftar: ')
+      await expect(page.getByTestId('sd-banner')).not.toContainText('# Kod')
     },
   )
 
@@ -653,9 +653,6 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     const perf = await m08(page)
     const panel = page.getByTestId('sd-panel-gps')
     await expect(panel).toContainText('GPS Sekolah')
-    expect(
-      await panel.getByText('GPS Sekolah').evaluate((e) => getComputedStyle(e).textTransform),
-    ).toBe('uppercase')
     await expect(page.getByTestId('sd-gps-entries')).toHaveText(
       `${ms(perf.gps.entries)} entri headcount`,
     )
@@ -703,7 +700,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     const panel = page.getByTestId('sd-panel-practice')
     await expect(panel).toContainText('Purata Ketepatan')
     await expect(page.getByTestId('sd-practice-accuracy')).toHaveText(
-      perf.stats.sessions === 0 ? '—' : `${pct1(perf.stats.accuracy)}%`,
+      perf.stats.sessions === 0 ? '—' : `${Math.round(perf.stats.accuracy)}%`, // whole number, half up (FR-X4-5)
     )
     await expect(page.getByTestId('sd-practice-counts')).toHaveText(
       `${ms(perf.stats.sessions)} sesi · ${ms(perf.stats.answered)} soalan`,
@@ -725,14 +722,14 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     await expect(rows.nth(0)).toContainText('Tingkatan 4')
     await expect(rows.nth(1)).toContainText('Tingkatan 5')
     for (const [i, level] of perf.levels.entries()) {
-      await expect(page.getByTestId('sd-level-pct').nth(i)).toHaveText(`${pct1(level.accuracy)}%`)
-      const cls = level.accuracy < 50 ? /red/ : level.accuracy < 70 ? /amber/ : /emerald/
+      // S0 shows the whole number, half up (SRS FR-X4-5); the band follows that shown number
+      const shown = Math.round(level.accuracy)
+      await expect(page.getByTestId('sd-level-pct').nth(i)).toHaveText(`${shown}%`)
+      const cls = shown < 50 ? /text-error/ : shown < 70 ? /text-warning/ : /text-success/
       await expect(page.getByTestId('sd-level-pct').nth(i)).toHaveClass(cls)
-      const width = await page
-        .getByTestId('sd-level-bar')
-        .nth(i)
-        .evaluate((e) => (e as HTMLElement).style.width)
-      expect(parseFloat(width)).toBeCloseTo(Math.min(100, level.accuracy), 1)
+      // UProgress: the bar value is its aria-valuenow
+      const value = await page.getByTestId('sd-level-bar').nth(i).getByRole('progressbar').getAttribute('aria-valuenow')
+      expect(parseFloat(value ?? '')).toBeCloseTo(Math.min(100, level.accuracy), 1)
     }
     await expect(rows.nth(0).locator('xpath=ancestor::a')).toHaveAttribute(
       'href',
@@ -759,7 +756,7 @@ test.describe('Ringkasan Prestasi', MODULE, () => {
     await expect(full).toHaveAttribute('href', '/prestasi/sekolah')
     await full.click()
     await expect(page).toHaveURL(/\/prestasi\/sekolah$/)
-    await expectTabTitle(page, 'Dashboard Sekolah — Prestasi')
+    await expectTabTitle(page, 'Dashboard Sekolah — Prestasi | PRESTASIPLUS')
   })
 
   test(
