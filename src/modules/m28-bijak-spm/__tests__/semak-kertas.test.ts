@@ -4,7 +4,10 @@ import type { BijakBuilderReview } from '@pp/contract'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
+
+import { enterModPelajar } from '@/shells/shared/mod-pelajar'
+import { useFlashStore } from '@/stores/flash'
 
 import routes from '../routes/admin-papers'
 import StudentViewDrawer from '../admin/builder/components/StudentViewDrawer.vue'
@@ -13,6 +16,8 @@ import PaperEditorPage from '../admin/papers/PaperEditorPage.vue'
 import type { BuilderApi } from '../admin/builder/server/api'
 import { setBuilderServerForTests } from '../admin/builder/server/client'
 import type { AdminPaper, PaperEditorData } from '../domain/admin-types'
+
+vi.mock('@/shells/shared/mod-pelajar', () => ({ enterModPelajar: vi.fn() }))
 
 const h = vi.hoisted((): { server: unknown } => ({ server: undefined }))
 vi.mock('../server/client', () => ({
@@ -36,6 +41,7 @@ const review = (over: Partial<BijakBuilderReview> = {}): BijakBuilderReview => (
 })
 
 let wrapper: VueWrapper | null = null
+let currentRouter: Router | null = null
 const publish = vi.fn()
 async function render(ed: PaperEditorData, rv: BijakBuilderReview = review(), query = ''): Promise<VueWrapper> {
   h.server = { getPaperEditor: vi.fn().mockResolvedValue(ed), unpublishPaper: vi.fn() }
@@ -56,11 +62,14 @@ async function render(ed: PaperEditorData, rv: BijakBuilderReview = review(), qu
   await router.push(`/admin/spm/kertas/p1${query}`)
   wrapper = mount(PaperEditorPage, { global: { plugins: [router] }, attachTo: document.body })
   await flushPromises()
+  currentRouter = router
   return wrapper
 }
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  vi.mocked(enterModPelajar).mockReset()
+  vi.mocked(enterModPelajar).mockResolvedValue('/pelajar')
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }))
   vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
   publish.mockReset()
@@ -121,6 +130,39 @@ describe('Semak Kertas Simulasi', () => {
     expect(w.get('[data-testid="paper-unpublish"]').text()).toContain('Sembunyikan')
     expect(w.get('[data-testid="paper-view-student"]').text()).toContain('Lihat di Bijak SPM')
     expect(w.find('[data-testid="paper-publish"]').exists()).toBe(false)
+  })
+
+  describe('Lihat di Bijak SPM (C-52 Q2)', () => {
+    it('enters Mod Pelajar first, then opens /spm/bijak', async () => {
+      const w = await render(editor({ status: 'terbit' }))
+      await w.get('[data-testid="paper-view-student"]').trigger('click')
+      await flushPromises()
+      expect(enterModPelajar).toHaveBeenCalledTimes(1)
+      expect(currentRouter!.currentRoute.value.path).toBe('/spm/bijak')
+    })
+
+    it('on failure shows the error flash and does not navigate', async () => {
+      vi.mocked(enterModPelajar).mockRejectedValue(new Error('x'))
+      const show = vi.spyOn(useFlashStore(), 'show')
+      const w = await render(editor({ status: 'terbit' }))
+      await w.get('[data-testid="paper-view-student"]').trigger('click')
+      await flushPromises()
+      expect(show).toHaveBeenCalledWith({ type: 'error', message: 'Mod Pelajar tidak dapat dibuka. Sila cuba lagi.' })
+      expect(currentRouter!.currentRoute.value.path).not.toBe('/spm/bijak')
+    })
+
+    it('a double click enters Mod Pelajar once', async () => {
+      const w = await render(editor({ status: 'terbit' }))
+      const btn = w.get('[data-testid="paper-view-student"]')
+      let release: (v: string) => void = () => {}
+      vi.mocked(enterModPelajar).mockReturnValue(new Promise<string>((r) => { release = r }))
+      await btn.trigger('click')
+      await btn.trigger('click')
+      expect(enterModPelajar).toHaveBeenCalledTimes(1)
+      release('/pelajar')
+      await flushPromises()
+      expect(enterModPelajar).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('back from Tulis soalan baharu: the note points at Import & Semakan (PO decision item 9)', async () => {

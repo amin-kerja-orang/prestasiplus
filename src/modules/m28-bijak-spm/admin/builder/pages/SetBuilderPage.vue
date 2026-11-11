@@ -32,12 +32,14 @@ import { setTitleError } from '../domain/set-title'
 import { hasStimulus, hasStimulusOf } from '../domain/stimulus'
 import { movedOrder, sectionUnits, type SectionUnit } from '../domain/units'
 import { usePaperActions } from '../lib/use-paper-actions'
+import { useViewInBijak } from '../lib/use-view-in-bijak'
 import { BUILDER_PATH, BuilderError, builderMessage, type SectionPatch, type SectionPool } from '../server/api'
 import { builderServer } from '../server/client'
 
 const api = builderServer()
 const route = useRoute()
 const flash = useFlash()
+const { switching: viewSwitching, viewInBijak } = useViewInBijak()
 
 const id = computed(() => String(route.params.paper))
 const editor = ref<PaperEditorData | null>(null)
@@ -445,7 +447,7 @@ const dskpItems = computed(() => [
               class="min-h-11"
               data-testid="builder-semak"
             />
-            <UButton v-if="locked" to="/spm/bijak" color="neutral" variant="soft" :label="t.viewInBijak" data-testid="builder-view-student" />
+            <UButton v-if="locked" color="neutral" variant="soft" :label="t.viewInBijak" :loading="viewSwitching" :disabled="viewSwitching" data-testid="builder-view-student" @click="viewInBijak" />
             <UButton
               v-if="locked"
               color="warning"

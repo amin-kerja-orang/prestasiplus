@@ -4,13 +4,16 @@ import type { BijakBuilderReview } from '@pp/contract'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import SetBuilderPage from '../admin/builder/pages/SetBuilderPage.vue'
 import { BuilderError, type BuilderApi } from '../admin/builder/server/api'
 import { setBuilderServerForTests } from '../admin/builder/server/client'
 import { useFlashStore } from '@/stores/flash'
 import type { AdminPaper, PaperEditorData } from '../domain/admin-types'
+import { enterModPelajar } from '@/shells/shared/mod-pelajar'
+
+vi.mock('@/shells/shared/mod-pelajar', () => ({ enterModPelajar: vi.fn() }))
 
 function paper(over: Partial<AdminPaper> = {}): AdminPaper {
   return {
@@ -78,6 +81,7 @@ function stub(over: Record<string, ReturnType<typeof vi.fn>> = {}) {
 }
 
 let wrapper: VueWrapper | null = null
+let currentRouter: Router | null = null
 
 async function render(api: BuilderApi): Promise<VueWrapper> {
   setBuilderServerForTests(api)
@@ -86,6 +90,7 @@ async function render(api: BuilderApi): Promise<VueWrapper> {
     history: createMemoryHistory(),
     routes: [
       { path: '/admin/studio/sets', component: stubC },
+      { path: '/spm/bijak', component: stubC },
       { path: '/admin/studio/sets/:paper/builder', component: SetBuilderPage },
       { path: '/admin/spm/kertas/:id', name: 'm28.admin.papers.edit', component: stubC },
       { path: '/admin/spm/kontrak/:subjek/:kertas', name: 'm28.admin.kontrak.edit', component: stubC },
@@ -94,11 +99,14 @@ async function render(api: BuilderApi): Promise<VueWrapper> {
   await router.push('/admin/studio/sets/p1/builder')
   wrapper = mount(SetBuilderPage, { global: { plugins: [router] }, attachTo: document.body })
   await flushPromises()
+  currentRouter = router
   return wrapper
 }
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  vi.mocked(enterModPelajar).mockReset()
+  vi.mocked(enterModPelajar).mockResolvedValue('/pelajar')
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }))
 })
 afterEach(() => {
@@ -302,11 +310,46 @@ describe('SetBuilderPage', () => {
     expect(w.get('[data-testid="chip-pinned"]').text()).toContain('Disematkan')
     expect(w.get('[data-testid="chip-pinned"]').attributes('title')).toBe('Versi soalan ini dibekukan untuk kertas ini.')
     expect(w.get('[data-testid="builder-withdraw"]').text()).toContain('Tarik balik ke draf')
-    expect(w.get('[data-testid="builder-view-student"]').attributes('href')).toBe('/spm/bijak')
+    expect(w.get('[data-testid="builder-view-student"]').text()).toContain('Lihat di Bijak SPM')
     await w.get('[data-testid="builder-copy-for-edit"]').trigger('click')
     await flushPromises()
     expect(w.get('[data-testid="builder-copy-for-edit"]').text()).toContain('Salin untuk sunting')
     expect(m.copy).toHaveBeenCalledWith('p1')
+  })
+
+  describe('Lihat di Bijak SPM (C-52 Q2)', () => {
+    const live = () => stub({ getEditor: vi.fn().mockResolvedValue(editor(paper({ status: 'terbit' }))) }).api
+
+    it('enters Mod Pelajar first, then opens /spm/bijak', async () => {
+      const w = await render(live())
+      await w.get('[data-testid="builder-view-student"]').trigger('click')
+      await flushPromises()
+      expect(enterModPelajar).toHaveBeenCalledTimes(1)
+      expect(currentRouter!.currentRoute.value.path).toBe('/spm/bijak')
+    })
+
+    it('on failure shows the error flash and does not navigate', async () => {
+      vi.mocked(enterModPelajar).mockRejectedValue(new Error('x'))
+      const show = vi.spyOn(useFlashStore(), 'show')
+      const w = await render(live())
+      await w.get('[data-testid="builder-view-student"]').trigger('click')
+      await flushPromises()
+      expect(show).toHaveBeenCalledWith({ type: 'error', message: 'Mod Pelajar tidak dapat dibuka. Sila cuba lagi.' })
+      expect(currentRouter!.currentRoute.value.path).not.toBe('/spm/bijak')
+    })
+
+    it('a double click enters Mod Pelajar once', async () => {
+      const w = await render(live())
+      const btn = w.get('[data-testid="builder-view-student"]')
+      let release: (v: string) => void = () => {}
+      vi.mocked(enterModPelajar).mockReturnValue(new Promise<string>((r) => { release = r }))
+      await btn.trigger('click')
+      await btn.trigger('click')
+      expect(enterModPelajar).toHaveBeenCalledTimes(1)
+      release('/pelajar')
+      await flushPromises()
+      expect(enterModPelajar).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('V2 parity: bank search label and the 150-row cap sentence', async () => {

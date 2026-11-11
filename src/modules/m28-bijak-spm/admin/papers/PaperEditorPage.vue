@@ -26,6 +26,7 @@ import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
 import { builderCopy as bt } from '../builder/domain/copy'
 import { publishGate } from '../builder/domain/publish-gate'
 import { usePaperActions } from '../builder/lib/use-paper-actions'
+import { useViewInBijak } from '../builder/lib/use-view-in-bijak'
 import { uploadQuestionImage } from '@/api/files'
 import { BUILDER_PATH, BuilderError, builderMessage, builderPath, type ReferencePanel } from '../builder/server/api'
 import { builderServer } from '../builder/server/client'
@@ -36,6 +37,7 @@ const server = bijakAdminServer()
 const confirm = useConfirm()
 const route = useRoute()
 const flash = useFlash()
+const { switching: viewSwitching, viewInBijak } = useViewInBijak()
 
 const id = computed(() => String(route.params.id))
 /** Back from "Tulis soalan baharu" (Set Builder): the new question is waiting for review. */
@@ -370,8 +372,10 @@ const previewBlocks = computed(() => {
                 icon="i-ph-student"
                 :label="bt.viewInBijak"
                 class="min-h-11"
-                to="/spm/bijak"
+                :loading="viewSwitching"
+                :disabled="viewSwitching"
                 data-testid="paper-view-student"
+                @click="viewInBijak"
               />
               <UButton
                 color="warning"
