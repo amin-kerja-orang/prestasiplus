@@ -163,6 +163,8 @@ export function blankDraft(): StudioDraft {
 /** Switching the mode keeps the label, marks, prompt and tags, and starts the answer fields afresh. */
 export function withMode(leaf: LeafDraft, mode: LeafMode): LeafDraft {
   if (leaf.mode === mode) return leaf
+  // essay, working and drawing share the points key: flipping between them keeps the scheme (and the stored part under it).
+  if (isSchemeMode(leaf.mode) && isSchemeMode(mode)) return { ...leaf, mode }
   return { ...leaf, mode, options: mode === 'mcq' ? blankOptions() : [], correct: '', accepted: '', numeric: { value: '', tolerance: '', unit: '' }, essay: blankEssay() }
 }
 
@@ -238,6 +240,7 @@ export function draftGaps(d: StudioDraft, levelName = '', facts: GapFacts = {}):
       if (!l.options.some((o) => o.label === l.correct)) gaps.push({ ...leaf, message: `${name} mempunyai 0 pilihan betul — mesti tepat 1.` })
     } else if (isSchemeMode(l.mode)) {
       const given = l.essay.points.filter((pt) => pt.text.trim() !== '' || pt.id !== '')
+      emptiedPoints(l).forEach((i) => gaps.push({ ...leaf, message: `${name}: Poin ${String(i + 1)} tiada teks.` }))
       if (given.length === 0) gaps.push({ ...leaf, message: `${name} tiada poin skema.` })
       else if (given.reduce((n, pt) => n + (Number.isFinite(pt.marks) ? pt.marks : 0), 0) !== Math.trunc(l.marks)) gaps.push({ ...leaf, message: `${name}: jumlah markah poin tidak sama dengan markah bahagian.` })
     } else if (l.mode === 'short_text') {
@@ -367,6 +370,17 @@ export const acceptedValues = (l: Pick<LeafDraft, 'accepted'>): string[] =>
 
 type Json = Record<string, unknown>
 
+/** The stored text of a point of this leaf (its stored part), or '' when it has none. */
+const storedPointText = (l: LeafDraft, id: string): string => {
+  const key = l.essay.raw?.key as { points?: { id?: string; text?: unknown }[] } | undefined
+  const old = key?.points?.find((r) => r.id === id)
+  return old === undefined ? '' : msOf(old.text).trim()
+}
+
+/** Positions of the points whose stored text was emptied in the form (a point that never had text, as a migrated placeholder, is not one). */
+export const emptiedPoints = (l: LeafDraft): number[] =>
+  l.essay.points.flatMap((pt, i) => (pt.id !== '' && pt.text.trim() === '' && storedPointText(l, pt.id) !== '' ? [i] : []))
+
 const POINT_LABEL_MAX = 120
 const shorten = (v: string): string => ([...v].length <= POINT_LABEL_MAX ? v : [...v].slice(0, POINT_LABEL_MAX).join('').trimEnd())
 const msOf = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'object' && v !== null && typeof (v as { ms?: unknown }).ms === 'string' ? (v as { ms: string }).ms : '')
@@ -379,7 +393,8 @@ function essayToPart(l: LeafDraft, base: Json): Json {
   const raw = l.essay.raw ?? {}
   const rawKey = (raw.key ?? {}) as Json
   const rawPoints = Array.isArray(rawKey.points) ? (rawKey.points as Json[]) : []
-  const used = new Set(l.essay.points.map((pt) => pt.id).filter((id) => id !== ''))
+  // A removed point's id is never reused: seed from every stored id as well as the ones that survive.
+  const used = new Set([...l.essay.points.map((pt) => pt.id), ...rawPoints.map((r) => (typeof r.id === 'string' ? r.id : ''))].filter((id) => id !== ''))
   let n = 0
   const freshId = (): string => {
     do n += 1

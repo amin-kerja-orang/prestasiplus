@@ -436,13 +436,33 @@ describe('migrated V2 structured and essay parts open and save in the Studio (K1
     expect(partsOf(h.draft)[0]).toMatchObject({ mode: 'working', marks: 3, key: { marks: 3, points: [{ id: 'p1', marks: 3 }] } })
   })
 
+  it('flipping between Struktur/Esei, Langkah kerja and Lukisan keeps the points and the Skema; leaving the scheme modes clears them', () => {
+    const h = hydrate(wireOf(structured))
+    const a = h.draft.leaves[0]!
+    const flipped = withMode(withMode(a, 'working'), 'drawing')
+    expect(flipped.mode).toBe('drawing')
+    expect(flipped.essay).toBe(a.essay)
+    expect(JSON.stringify((toRequestBody({ ...h.draft, leaves: [flipped, h.draft.leaves[1]!] }) as { parts: unknown[] }).parts[0])).toContain('"mode":"drawing"')
+    expect(withMode(a, 'mcq').essay.points).toHaveLength(1)
+    expect(withMode(a, 'mcq').essay.points[0]!.text).toBe('')
+  })
+
+  it('flags a stored point whose text was emptied ("Poin N tiada teks"), but not a point that never had text', () => {
+    const h = hydrate(wireOf(structured))
+    h.draft.leaves[0]!.essay.points[1]!.text = ''
+    expect(draftGaps(h.draft).some((g) => g.message.includes('Poin 2 tiada teks'))).toBe(true)
+    expect(draftGaps(h.draft).some((g) => g.message.includes('Poin 1 tiada teks'))).toBe(false)
+    // part (b) holds the migrated placeholder point (no text): not a gap
+    expect(draftGaps(h.draft).some((g) => g.message.includes('(b)') && g.message.includes('tiada teks'))).toBe(false)
+  })
+
   it('adds a point with a fresh id and drops a removed one', () => {
     const h = hydrate(wireOf(structured))
     const a = h.draft.leaves[0]!
     a.essay.points.push({ uid: 'x', id: '', text: 'Habuk', marks: 0 })
     a.essay.points.splice(0, 1)
     const key = (partsOf(h.draft)[0] as { key: { points: { id: string; code: string; text: { ms: string } }[] } }).key
-    expect(key.points.map((p) => p.id)).toEqual(['p2', 'p1'])
+    expect(key.points.map((p) => p.id)).toEqual(['p2', 'p3']) // the removed p1 is never reused
     expect(key.points[1]).toMatchObject({ code: 'P', text: { ms: 'Habuk' } })
   })
 
