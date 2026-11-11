@@ -102,7 +102,13 @@ test.describe('M05 S2 subject list', { tag: [moduleTag(5)] }, () => {
     expect(empty).toBe(0)
 
     const width = viewportWidth(page)
-    const columns = await columnsOf(page, 'subject-grid')
+    // DsGrid `balanced` uses a 6/4-track system so the last row is always full (src/ds/DsGrid.vue:16):
+    // the visible columns are the cards that share the first row.
+    const columns = await tid(page, 'subject-grid').evaluate((el) => {
+      const items = Array.from(el.children) as HTMLElement[]
+      const top = items[0]!.getBoundingClientRect().top
+      return items.filter((i) => Math.abs(i.getBoundingClientRect().top - top) < 2).length
+    })
     expect(columns).toBe(width >= 1024 ? 3 : width >= 768 ? 2 : 1)
     await expectNoHorizontalScroll(page)
   })

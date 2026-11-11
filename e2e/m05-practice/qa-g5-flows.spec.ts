@@ -187,7 +187,7 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M05-36 S4 "{n} soalan chapter" equals the sum of the S5 level options for every subject', async ({
+  test('E2E-M05-36 S4 "{n} soalan chapter" equals the chosen level option of S5 for every subject', async ({
     page,
     loginAs,
     gotoApp,
@@ -206,12 +206,13 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
       // The level select is a USelect: read the options from the opened listbox.
       await tid(page, 'chapter-level-select').click()
       await expect(page.getByRole('option').first()).toBeVisible()
-      const options = await page.getByRole('option').allInnerTexts()
+      // S4 shows the chosen level's chapter questions (FR-MUR-9-5, D91); S5 opens on that level, so the
+      // selected option's count is the same figure as the S4 count.
+      const selected = await page.getByRole('option', { selected: true }).allInnerTexts()
       await page.keyboard.press('Escape')
-      const sum = options
-        .map((o) => Number((o.split('—')[1] ?? '').replace(/[^\d]/g, '')))
-        .reduce((a, b) => a + b, 0)
-      expect(sum, href).toBe(num(totals[i]))
+      expect(selected, href).toHaveLength(1)
+      const n = Number((selected[0]?.split('—')[1] ?? '').replace(/[^\d]/g, ''))
+      expect(n, href).toBe(num(totals[i]))
     }
   })
 
@@ -223,7 +224,10 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
     await loginAs('pelajar2@demo.test')
     await gotoApp('/practice/chapter/ADDMATH')
     await expect(page.getByText('Tiada bab tersedia untuk tahap ini.')).toBeVisible()
-    await expect(tid(page, 'chapter-level-select')).toHaveCount(0)
+    // D101: ADDMATH is offered at Tingkatan 4 (no chapter yet), so the select has that one option and is
+    // rendered (FR-M05-60 hides it only when there is NO option, DV-M05-07).
+    await expect(tid(page, 'chapter-level-select')).toContainText('Tingkatan 4 — 0 soalan')
+    await expect(tid(page, 'chapter-list').locator('[data-testid^=chapter-card-]')).toHaveCount(0)
   })
 })
 
@@ -383,7 +387,9 @@ test.describe('QA-G5 L22 structured flow', { tag: [moduleTag(5)] }, () => {
     await gotoApp('/latihan-berstruktur?subject_id=3&scope=spm')
     await expect(tid(page, 'structured-h1')).toHaveText('Subjektif SPM')
     await expect(tid(page, 'structured-back')).toHaveAttribute('href', '/spm/subjektif')
-    await expect(tid(page, 'filter-subject').locator('option')).toHaveCount(16)
+    await tid(page, 'filter-subject').click()
+    await expect(page.getByRole('option')).toHaveCount(16)
+    await page.keyboard.press('Escape')
     await tid(page, 'filter-submit').click()
     await expect(page).toHaveURL(/scope=spm/)
     await expect(page.locator('[data-testid=card-start]').first()).toHaveAttribute('href', /\/jawab\?scope=spm$/)
@@ -391,7 +397,9 @@ test.describe('QA-G5 L22 structured flow', { tag: [moduleTag(5)] }, () => {
     await gotoApp('/latihan-berstruktur?subject_id=1&scope=spm&track=bahasa')
     await expect(tid(page, 'structured-h1')).toHaveText('Tracking A Bahasa')
     await expect(tid(page, 'structured-back')).toHaveAttribute('href', '/spm/ramalan')
-    await expect(tid(page, 'filter-subject').locator('option')).toHaveCount(3)
+    await tid(page, 'filter-subject').click()
+    await expect(page.getByRole('option')).toHaveCount(3)
+    await page.keyboard.press('Escape')
     await expect(tid(page, 'structured-found')).toContainText('set ditemui')
     await expect(page.locator('[data-testid=card-start]').first()).toHaveAttribute(
       'href',
@@ -410,7 +418,7 @@ test.describe('QA-G5 missions and sets', { tag: [moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0, now: '2026-09-22T10:00:00+08:00' } })
 
   test(
-    'E2E-M05-59 mission 7101 as 3001: coins are 3 per correct answer, the card turns "Selesai", a second start is refused',
+    'E2E-M05-59 mission 7101 as 3001: coins are 1 per correct answer (DM-48, one rate for every mode), the card turns "Selesai", a second start is refused',
     provisional('LS-12: the live mission run was never observed'),
     async ({ page, gotoApp }) => {
       await addInitSession(page, 'murid3001@demo.test')
@@ -421,7 +429,7 @@ test.describe('QA-G5 missions and sets', { tag: [moduleTag(5)] }, () => {
       const total = Number(((await tid(page, 'quiz-progress-text').textContent()) ?? '').match(/daripada (\d+)/)?.[1])
       const right = await answerAll(page, total)
       const score = right.filter(Boolean).length
-      await expect(tid(page, 'reward-coins')).toHaveText(String(score * 3))
+      await expect(tid(page, 'reward-coins')).toHaveText(String(score))
       await tid(page, 'result-back').click()
       await expect(tid(page, 'mission-card-7101').getByTestId('mission-done')).toHaveText('Selesai ✓')
     },
@@ -533,8 +541,9 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
     expect(await hrefOf('Soalan by Chapter')).toBe('/practice/chapter')
     expect(await hrefOf('Soalan Berstruktur')).toBe('/latihan-berstruktur')
     expect(await hrefOf('Dashboard')).toBe('/dashboard')
-    expect(await hrefOf('Pembetulan')).toBe('/pembetulan')
-    expect(await hrefOf('Penguasaan')).toBe('/penguasaan')
+    // M26 screens are not built: their items are hidden (src/shells/nav/out-of-scope.ts:50-51).
+    await expect(nav.getByRole('link', { name: 'Pembetulan', exact: true })).toHaveCount(0)
+    await expect(nav.getByRole('link', { name: 'Penguasaan', exact: true })).toHaveCount(0)
     const extras = ['Target SPM', 'Misi Harian', 'Remedial']
     for (const name of extras) {
       const count = await nav.getByRole('link', { name, exact: true }).count()
@@ -566,7 +575,7 @@ test.describe('QA-G5 menus', { tag: [moduleTag(5)] }, () => {
       ['/practice/chapter/MATH', 'chapter-card-91', ['Soalan by Chapter']],
       ['/practice/revision', 'revision-list-page', []],
       ['/latihan-berstruktur', 'structured-h1', ['Soalan Berstruktur']],
-      ['/remedial/saya', 'remedial-h1', ['Remedial']],
+      ['/remedial/saya', 'remedial-page', ['Remedial']],
       ['/misi-harian', 'missions-page', ['Misi Harian']],
       ['/target-spm', 'targets-page', ['Target SPM']],
     ]
