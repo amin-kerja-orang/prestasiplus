@@ -9,6 +9,12 @@ export const ALERT_TYPES: { value: AlertType; label: string }[] = [
   { value: 'other', label: 'Lain-lain' },
 ]
 
+/**
+ * The Admin Pusat mount offers the three V2 types only (V2 admin/kirkpatrick/interventions.blade.php:119-121; SRS
+ * FN-M12-8.2.2); "Lain-lain" (`other`, ADD-05, DM-30) is for the guru and school-admin mounts. The stored value set is unchanged.
+ */
+export const ADMIN_ALERT_TYPES = ALERT_TYPES.filter((t) => t.value !== 'other')
+
 export const MOODS: { value: Mood; label: string }[] = [
   { value: 'happy', label: 'Gembira' },
   { value: 'okay', label: 'Okay' },

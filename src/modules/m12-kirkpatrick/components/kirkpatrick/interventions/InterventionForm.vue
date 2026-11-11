@@ -8,12 +8,15 @@
  */
 import { computed, reactive, ref } from 'vue'
 
+import { useRoute } from 'vue-router'
+
 import { isApiError } from '@/api'
 import { clock, formatMyt } from '@/lib/time'
 
 import { createKirkpatrickIntervention } from '../../../api'
 import type { AlertType, Mood } from '../../../api/types'
-import { ALERT_TYPES, MOODS } from './intervention-format'
+import { KIRKPATRICK_ADMIN_BASE } from '../common'
+import { ADMIN_ALERT_TYPES, ALERT_TYPES, MOODS } from './intervention-format'
 
 const emit = defineEmits<{ saved: [] }>()
 
@@ -38,7 +41,15 @@ const saving = ref(false)
 const studentError = ref('')
 const form = reactive(blank())
 
-const typeItems = ALERT_TYPES.map((t) => ({ label: t.label, value: t.value }))
+/** The mount decides the type set: only the Admin Pusat mount (`/admin/kirkpatrick`) drops "Lain-lain". */
+const route = useRoute()
+const onAdminMount = computed(() => route.path.startsWith(`${KIRKPATRICK_ADMIN_BASE}/`))
+const typeItems = computed(() =>
+  (onAdminMount.value ? ADMIN_ALERT_TYPES : ALERT_TYPES).map((t) => ({
+    label: t.label,
+    value: t.value,
+  })),
+)
 const moodItems = [
   { label: '-- Pilih --', value: NONE },
   ...MOODS.map((m) => ({ label: m.label, value: m.value })),

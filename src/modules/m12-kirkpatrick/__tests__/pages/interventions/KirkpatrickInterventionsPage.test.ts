@@ -134,7 +134,6 @@ describe('S7 form panel (AC-M12-29.1, 29.2, 29.6)', () => {
       { value: 'mood', label: 'Mood / Kesejahteraan' },
       { value: 'inactive', label: 'Tidak Aktif' },
       { value: 'declining', label: 'Prestasi Menurun' },
-      { value: 'other', label: 'Lain-lain' },
     ])
     expect(select(w, 'alert_type').props('modelValue')).toBe('mood')
     expect(t(w, 'int-date').attributes('required')).toBeDefined()
