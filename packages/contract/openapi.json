@@ -83472,6 +83472,13 @@
             ],
             "description": "null when the set has no image."
           },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeQuizStimulus"
+            },
+            "description": "The rajah, petikan or jadual of the set (group stimulus, then its own); a picture is a file token URL. A picture that cannot be shown is the placeholder \"Gambar tiada\". Absent in the mock."
+          },
           "subQuestions": {
             "type": "array",
             "items": {
