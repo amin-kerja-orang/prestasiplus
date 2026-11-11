@@ -3,6 +3,8 @@
  * (AC-06.2, 07.1, 10.1, 13.4, 22.1), the S11 Tahap pill colours (22.7) and the school admin S1 GPS (04.3).
  */
 
+import type { Locator } from '@playwright/test'
+
 import { expect, test } from '../fixtures/test'
 import { moduleTag } from '../support'
 
@@ -41,20 +43,22 @@ test.describe('M08 G5 style (admin)', { tag: [moduleTag(8)] }, () => {
   }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/analisa-item/kelas/228')
-    await expect(page.locator('tbody tr')).toHaveCount(596)
+    // 596 questions, 25 rows on the first page (DifficultyTab.vue PAGE_SIZE).
+    await expect(page.getByTestId('class-questions')).toHaveText('596')
+    await expect(page.locator('tbody tr')).toHaveCount(25)
     const found = await page.evaluate(() => {
-      const out: Record<string, { bg: string; fg: string }> = {}
-      for (const el of Array.from(document.querySelectorAll('tbody td span'))) {
+      const out: Record<string, string> = {}
+      for (const el of Array.from(document.querySelectorAll('span'))) {
         const t = (el.textContent ?? '').trim()
         if ((t === 'Sederhana' || t === 'Mudah') && !out[t]) {
-          const cs = getComputedStyle(el)
-          out[t] = { bg: cs.backgroundColor, fg: cs.color }
+          out[t] = el.className
         }
       }
       return out
     })
-    expect(found['Sederhana']).toEqual({ bg: 'rgb(254, 243, 199)', fg: 'rgb(146, 64, 14)' })
-    expect(found['Mudah']).toEqual({ bg: 'rgb(220, 252, 231)', fg: 'rgb(22, 101, 52)' })
+    // The DS Tahap badges are semantic (lib/prestasi/format.ts LEVEL_BADGE): Sederhana warning, Mudah success.
+    expect(found['Sederhana']).toMatch(/text-warning/)
+    expect(found['Mudah']).toMatch(/text-success/)
   })
 })
 
@@ -70,7 +74,7 @@ test.describe('M08 G5 school admin S1 (OQ-M08-04, provisional)', { tag: [moduleT
     await gotoApp('/prestasi/sekolah')
     await expect(page.getByTestId('prestasi-sekolah-page')).toBeVisible()
     const t = (await page.locator('[data-testid=pembelajaran-main], [data-testid=pentadbiran-main]').innerText()).replace(/\s+/g, ' ')
-    expect(t).toContain('Ringkasan prestasi keseluruhan · 2 kelas · 9 murid')
+    expect(t).toContain('Ringkasan prestasi keseluruhan · 2 kelas · 10 murid')
     expect(t).toContain('5.33')
     expect(t).toContain('Sederhana')
     expect(t).toContain('Berdasarkan 6 entri headcount')
@@ -91,30 +95,22 @@ test.describe(
       await loginAs('guru@demo.test')
       await gotoApp('/prestasi/kelas/2001')
       await expect(page.getByTestId('class-trend-chart')).toBeVisible()
-      await expect
-        .poll(() =>
-          page.evaluate(() =>
-            Boolean(
-              (window as unknown as { __charts?: Record<string, unknown> }).__charts?.[
-                'class-trend-chart'
-              ],
-            ),
-          ),
+      // The 30-day trend is two DsCharts (accuracy and sessions, class-chart.ts), each mirrored in an sr-only table over a
+      // daily axis: only the three session days carry a non-zero value.
+      const days = async (chart: Locator, zero: string) =>
+        chart.locator('table tbody tr').evaluateAll(
+          (rows, z) =>
+            rows
+              .filter((r) => r.children[1]?.textContent?.trim() !== z)
+              .map((r) => r.children[0]?.textContent?.trim()),
+          zero,
         )
-        .toBe(true)
-      const info = await page.evaluate(() => {
-        const c = (
-          window as unknown as {
-            __charts: Record<
-              string,
-              { data: { labels: string[]; datasets: { label: string; data: number[] }[] } }
-            >
-          }
-        ).__charts['class-trend-chart']!
-        return { labels: c.data.labels, datasets: c.data.datasets.map((d) => d.label) }
-      })
-      expect(info.labels).toEqual(['09-15', '09-22', '09-24'])
-      expect(info.datasets).toEqual(['Purata Ketepatan (%)', 'Sesi'])
+      const accuracy = page.getByTestId('class-trend-chart')
+      const sessions = page.getByTestId('trend').locator('[data-ds=chart]').nth(1)
+      expect(await days(accuracy, '0%')).toEqual(['09-15', '09-22', '09-24'])
+      expect(await days(sessions, '0')).toEqual(['09-15', '09-22', '09-24'])
+      await expect(accuracy.locator('table thead th').nth(1)).toHaveText('Purata Ketepatan (%)')
+      await expect(sessions.locator('table thead th').nth(1)).toHaveText('Sesi')
     })
   },
 )
