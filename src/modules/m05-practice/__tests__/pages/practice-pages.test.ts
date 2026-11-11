@@ -132,6 +132,8 @@ describe('S2 PracticeListPage', () => {
     const banner = t(w, 'chapter-banner')
     expect(banner.attributes('href')).toBe('/practice/chapter')
     expect(banner.text()).toContain('Mode Baru')
+    const badge = banner.findAll('span').find((s) => s.text() === 'Mode Baru')
+    expect(badge?.classes()).toContain('uppercase')
     expect(banner.text()).toContain('Soalan by Chapter')
     expect(banner.text()).toContain(
       'Jawab bab demi bab ikut buku teks dan DSKP.',

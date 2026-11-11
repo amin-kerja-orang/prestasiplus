@@ -58,7 +58,7 @@ watch(
           description="Jawab bab demi bab ikut buku teks dan DSKP."
         >
           <span class="mt-1 flex items-center gap-2 text-label text-highlighted">
-            <UBadge color="primary" variant="solid" size="md">Mode Baru</UBadge>
+            <UBadge color="primary" variant="solid" size="md" class="uppercase">Mode Baru</UBadge>
             Mula <UIcon name="i-ph-arrow-right-bold" class="size-4" aria-hidden="true" />
           </span>
         </DsCharacterCard>
