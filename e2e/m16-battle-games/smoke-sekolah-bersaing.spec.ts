@@ -15,16 +15,15 @@ const MODULE = { tag: [moduleTag(16)] }
 
 test.use({ mockInit: { latency: 0 } })
 
-async function expectBoard(page: Page): Promise<void> {
+async function expectBoard(page: Page, adminShell = false): Promise<void> {
   // The shell sets the tab title from its header title (useShellTabTitle), over the route meta.
   await expectTabTitle(page, 'Sekolah Bersaing | PRESTASIPLUS')
   await expect(page.getByRole('heading', { level: 1, name: 'Sekolah Bersaing' })).toBeVisible()
   // The admin shell moves the sub-line into its own header and hides the copy on the page.
-  await expect(
-    page
-      .getByText('Kedudukan sekolah teratas berdasarkan purata ketepatan latihan pelajar.')
-      .filter({ visible: true }),
-  ).toBeVisible()
+  const SUB = 'Kedudukan sekolah teratas berdasarkan purata ketepatan latihan pelajar.'
+  // Pentadbiran prints the route's own subtitle (routes/sekolah-bersaing.ts:20); the page hides its sub-line there
+  if (adminShell) await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText('Selamat datang kembali')
+  else await expect(page.getByText(SUB).filter({ visible: true })).toBeVisible()
   await expect(page.getByTestId('sb-label')).toHaveText('Papan Pemimpin')
 
   const rows = page.getByTestId('sb-row')
@@ -76,7 +75,7 @@ for (const [name, who] of [
   test(`AC-AS-45-4 ${name} sees the live board`, MODULE, async ({ page, gotoApp, loginAs }) => {
     await loginAs(who)
     await gotoApp('/sekolah-bersaing')
-    await expectBoard(page)
+    await expectBoard(page, who === ADMIN)
   })
 }
 
