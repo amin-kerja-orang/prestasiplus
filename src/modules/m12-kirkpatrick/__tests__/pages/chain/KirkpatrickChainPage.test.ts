@@ -156,15 +156,15 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
     expect(t(w2, 'chain-t4').findAll('[data-testid="chain-value"]')[0]?.text()).toBe('-')
   })
 
-  it('stacks in one column below lg and shows the arrows only from lg', async () => {
+  it('stacks in one column below md and shows the arrows only from md', async () => {
     const w = await open()
     expect(t(w, 'chain-cards').classes()).toEqual(
-      expect.arrayContaining(['flex-col', 'lg:flex-row']),
+      expect.arrayContaining(['flex-col', 'md:flex-row']),
     )
     const arrows = all(w, 'chain-arrow')
     expect(arrows).toHaveLength(3)
     for (const a of arrows) {
-      expect(a.classes()).toEqual(expect.arrayContaining(['hidden', 'lg:flex']))
+      expect(a.classes()).toEqual(expect.arrayContaining(['hidden', 'md:flex']))
     }
   })
 })
@@ -247,14 +247,14 @@ describe('S6 print page level cards (BUG-09)', () => {
     wrapper = m.wrapper
     const cards = t(m.wrapper, 'chain-cards')
     expect(cards.classes()).toEqual(expect.arrayContaining(['flex', 'flex-col']))
-    expect(cards.classes()).not.toContain('lg:flex-row')
+    expect(cards.classes()).not.toContain('md:flex-row')
     expect(m.wrapper.findAll('[data-testid="chain-arrow"]')).toHaveLength(0)
     expect(m.wrapper.findAll('[data-testid^="chain-t"]').length).toBeGreaterThanOrEqual(4)
   })
 
-  it('keeps 4 cards across from lg with arrows on the S6 screen', async () => {
+  it('keeps 4 cards across from md with arrows on the S6 screen', async () => {
     const w = await open()
-    expect(t(w, 'chain-cards').classes()).toContain('lg:flex-row')
+    expect(t(w, 'chain-cards').classes()).toContain('md:flex-row')
     expect(w.findAll('[data-testid="chain-arrow"]')).toHaveLength(3)
   })
 })

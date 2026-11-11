@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * The four level cards of S6 (FN-M12-7.2.1 ... 7.2.5; FR-M12-62 ... 66): one column below `lg` (vertical
- * chain), four from `lg` with an arrow between the cards. The level badge is success for T1, T2 and warning
+ * The four level cards of S6 (FN-M12-7.2.1 ... 7.2.5; FR-M12-62 ... 66): one column below `md` (768) (vertical
+ * chain), four from `md` with an arrow between the cards. The level badge is success for T1, T2 and warning
  * for T3, T4 as observed (words and `data-tone` carry the meaning, not colour alone). The T3 consistency
  * labels are the English ones of live (DV-M12-18 rejected). `stacked` (the print page, whose sheet is a fixed 768 px
- * column) keeps one column at every width and drops the arrows instead of 4 across from `lg` (DV-M12-37).
+ * column) keeps one column at every width and drops the arrows instead of 4 across from `md` (DV-M12-37).
  */
 import { computed } from 'vue'
 
@@ -110,7 +110,7 @@ const steps = computed<Step[]>(() => {
 <template>
   <div
     class="flex flex-col gap-3"
-    :class="stacked ? '' : 'lg:flex-row lg:items-stretch lg:gap-2'"
+    :class="stacked ? '' : 'md:flex-row md:items-stretch md:gap-2'"
     data-testid="chain-cards"
   >
     <template v-for="(s, i) in steps" :key="s.key">
@@ -122,7 +122,7 @@ const steps = computed<Step[]>(() => {
               <UBadge :color="s.color" variant="soft" :label="s.tag" />
             </div>
             <h2 class="text-label text-highlighted">{{ s.title }}</h2>
-            <p class="text-body text-muted lg:min-h-16">{{ s.sub }}</p>
+            <p class="text-body text-muted md:min-h-16">{{ s.sub }}</p>
           </div>
         </template>
         <dl class="flex flex-col">
@@ -154,7 +154,7 @@ const steps = computed<Step[]>(() => {
       </UCard>
       <div
         v-if="i < steps.length - 1 && !stacked"
-        class="hidden items-center text-dimmed lg:flex"
+        class="hidden items-center text-dimmed md:flex"
         data-testid="chain-arrow"
       >
         <UIcon name="i-ph-arrow-right" class="size-5" />
