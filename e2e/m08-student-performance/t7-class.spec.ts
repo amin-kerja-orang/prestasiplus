@@ -15,13 +15,21 @@ const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const header = (page: Page) => ({
-  title: page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1'),
-  subtitle: page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]'),
+  title: page.locator('[data-testid=pembelajaran-header] :is(h1, [data-testid=shell-title])'),
+  subtitle: page.getByTestId('pembelajaran-subtitle'),
 })
 
 /** The value of each tile of a DsStatRow, in order (the value span is the tabular number of the tile). */
 const statValues = (page: Page) =>
   page.locator('[data-testid=stat-cards] li span.tabular:not([data-ds=stat-tile-delta])')
+
+/** The risk badge of a pupil: the `student-row-{id}` testid sits on the name link, the badge in its table row. */
+const riskBadge = (page: Page, userId: number) =>
+  page.locator('[data-testid=student-table] tbody tr').filter({ has: page.getByTestId(`student-row-${userId}`) }).getByTestId('risk-badge')
+
+/** The ranking table row of a pupil: `rank-row-{id}` sits on the name span inside the row. */
+const rankRow = (page: Page, userId: number) =>
+  page.locator('[data-testid=ranking-card] tbody tr').filter({ has: page.getByTestId(`rank-row-${userId}`) })
 
 /** Items of a Nuxt UI select (opens the listbox, reads the options, closes it). */
 async function selectItems(page: Page, testid: string): Promise<string[]> {
@@ -72,7 +80,8 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('class-sub')).toContainText('· Kimia · 2026')
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/prestasi/kelas')
 
-    await expect(statValues(page)).toHaveText(['8', '42.6%', '11', '68', '6.1m', '6'])
+    // V2 shows whole percents on the class card and the student rows (TeacherController.php:817, :75, :749).
+    await expect(statValues(page)).toHaveText(['8', '43%', '11', '68', '6.1m', '6'])
 
     await expect(page.getByTestId('hc-on')).toHaveText(/^0\s*On Track \/ Above$/)
     await expect(page.getByTestId('hc-below')).toHaveText(/^1\s*Below Target$/)
@@ -83,15 +92,15 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
 
     await expect(page.getByTestId('attention-count')).toHaveText('(6)')
     await expect(page.locator('[data-testid^=attention-3]')).toHaveCount(6)
-    await expect(page.getByTestId('attention-3008')).toContainText('1 sesi · 12.5% ketepatan')
+    await expect(page.getByTestId('attention-3008')).toContainText('1 sesi · 13% ketepatan')
     await expect(page.getByTestId('attention-3008')).toHaveAttribute('href', '/prestasi/3008')
 
     await expect(page.getByTestId('class-trend-chart')).toBeVisible()
     await expect(page.locator('[data-testid^=rank-row-]')).toHaveCount(8)
-    await expect(page.getByTestId('rank-row-3001')).toContainText('88.9%')
-    await expect(page.getByTestId('rank-row-3001').getByTestId('rank-badge')).toHaveText('Below')
-    await expect(page.getByTestId('rank-row-3002').getByTestId('rank-badge')).toHaveText('N/A')
-    await expect(page.getByTestId('rank-row-3008')).toContainText('12.5%')
+    await expect(rankRow(page, 3001)).toContainText('89%')
+    await expect(rankRow(page, 3001).getByTestId('rank-badge')).toHaveText('Below')
+    await expect(rankRow(page, 3002).getByTestId('rank-badge')).toHaveText('N/A')
+    await expect(rankRow(page, 3008)).toContainText('13%')
     await expectNoHorizontalScroll(page)
   })
 
@@ -115,7 +124,7 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
     await expect(page.locator('[data-page=not-found]')).toBeVisible()
   })
 
-  test('S8 class 2001 / Kimia: cards 8 · 41.8% · 4 · 1 and the risk badges', async ({
+  test('S8 class 2001 / Kimia: cards 8 · 42.6% · 7 · 1 and the risk badges', async ({
     page,
     gotoApp,
   }) => {
@@ -127,17 +136,17 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
       'Pantau prestasi pelajar dan kenal pasti yang memerlukan perhatian',
     )
     await expect(page.getByTestId('sum-pelajar')).toContainText('8')
-    await expect(page.getByTestId('sum-ketepatan')).toContainText('41.8%')
-    await expect(page.getByTestId('sum-berisiko')).toContainText('4')
+    await expect(page.getByTestId('sum-ketepatan')).toContainText('42.6%')
+    await expect(page.getByTestId('sum-berisiko')).toContainText('7')
     await expect(page.getByTestId('sum-baik')).toContainText('1')
     await expect(page.locator('[data-testid^=student-row-]')).toHaveCount(8)
-    await expect(page.getByTestId('student-row-3007').getByTestId('risk-badge')).toHaveText(
+    await expect(riskBadge(page, 3007)).toHaveText(
       'Kritikal',
     )
-    await expect(page.getByTestId('student-row-3004').getByTestId('risk-badge')).toHaveText(
-      'Tinggi',
+    await expect(riskBadge(page, 3004)).toHaveText(
+      'Kritikal',
     )
-    await expect(page.getByTestId('student-row-3001').getByTestId('risk-badge')).toHaveText(
+    await expect(riskBadge(page, 3001)).toHaveText(
       'Rendah',
     )
     await expectNoHorizontalScroll(page)
@@ -155,7 +164,7 @@ test.describe('M08 T7 guru', { tag: [moduleTag(8)] }, () => {
       '5 MARIKH - Sejarah',
     ])
     await pickItem(page, 'filter-risiko', 'Kritikal')
-    await expect(page.locator('[data-testid^=student-row-]')).toHaveCount(2)
+    await expect(page.locator('[data-testid^=student-row-]')).toHaveCount(6)
     const q = new URL(page.url()).searchParams
     expect(q.get('classroom_id')).toBe('2001')
     expect(q.get('subject_id')).toBe('10')
@@ -239,7 +248,7 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
 
   test('S5 class 228: 93 · 77.6% · 1618 · 34882 · 10.4m · 2', async ({ page, gotoApp }) => {
     await gotoApp('/prestasi/kelas/228')
-    await expect(statValues(page)).toHaveText(['93', '77.6%', '1618', '34882', '10.4m', '2'])
+    await expect(statValues(page)).toHaveText(['93', '78%', '1618', '34882', '10.4m', '2'])
     await expectNoHorizontalScroll(page)
   })
 
@@ -255,24 +264,24 @@ test.describe('M08 T7 admin', { tag: [moduleTag(8)] }, () => {
     await expect(page.locator('[data-page=not-found]')).toBeVisible()
   })
 
-  test('S8 class 4: the select has no options for the admin; 6 pupils 0.0% 0 · 4 and the live ranges', async ({
+  test('S8 class 4: the select has no options for the admin; 51 pupils, none started, no accuracy, no risk', async ({
     page,
     gotoApp,
   }) => {
-    await gotoApp('/analitik/kelas?classroom_id=4')
+    await gotoApp('/analitik/kelas?classroom_id=4&subject_id=1')
     await expect(page.getByTestId('student-table')).toBeVisible()
     // V2 "Semua Kelas" / "Semua Subjek" lead each select; the admin has no own classes.
     expect(await selectItems(page, 'filter-kelas')).toEqual(['Semua Kelas'])
-    expect(await selectItems(page, 'filter-subjek')).toHaveLength(11)
-    await expect(page.getByTestId('sum-pelajar')).toContainText('6')
-    await expect(page.getByTestId('sum-ketepatan')).toContainText('0.0%')
+    expect(await selectItems(page, 'filter-subjek')).toHaveLength(32)
+    await expect(page.getByTestId('sum-pelajar')).toContainText('51')
+    await expect(page.getByTestId('sum-ketepatan')).toContainText('—')
     await expect(page.getByTestId('sum-berisiko')).toContainText('0')
-    await expect(page.getByTestId('sum-baik')).toContainText('4')
-    await expect(page.locator('[data-testid=student-table] tbody tr').first()).toContainText(
-      'E – B',
-    )
+    await expect(page.getByTestId('sum-baik')).toContainText('0')
+    await expect(page.locator('[data-testid^=student-row-]')).toHaveCount(25)
+    await expect(page.getByTestId('student-table').locator('[data-ds=data-table-pager]')).toContainText('daripada 51 hasil')
+    // A risk filter never lists Belum Bermula pupils.
     await pickItem(page, 'filter-risiko', 'Rendah')
-    await expect(page.locator('[data-testid^=student-row-]')).toHaveCount(4)
+    await expect(page.locator('[data-testid^=student-row-]')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 
