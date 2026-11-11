@@ -250,7 +250,7 @@ test.describe('QA-G5 M07 unknown ids are the 404 page', MODULE, () => {
     // A PKSK id in the M04 edit URL must not be treated as an M04 question to change either.
     await gotoApp(`${LIST}?search=`)
     await expect(tid(page, 'pksk-questions-table')).toBeVisible()
-    await expect(page.getByTestId('stat-value').first()).toHaveText('763')
+    await expect(page.locator('[data-ds="stat-row"] > li').first()).toContainText('763')
   })
 })
 
@@ -419,7 +419,7 @@ const SWEEP: SweepRoute[] = [
     who: 'admin@demo.test',
     ready: 'pksk-questions-table',
     prep: async (page) => {
-      await page.getByTestId('row-select').first().check()
+      await page.getByTestId('pksk-questions-table').locator('tbody tr').first().getByRole('checkbox', { name: 'Pilih baris' }).check()
       await expect(page.getByTestId('pksk-bulk-bar')).toBeVisible()
     },
   },

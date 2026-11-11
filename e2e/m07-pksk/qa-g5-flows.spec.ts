@@ -15,13 +15,8 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/test'
 import { gotoApp as gotoAppOn } from '../fixtures/mock-handle'
 import { addInitSession } from '../fixtures/mock-page'
-import {
-  acceptNextDialog,
-  actAs,
-  dismissNextDialog,
-  expectNoHorizontalScroll,
-  moduleTag,
-} from '../support'
+import { answerConfirm } from '../m04-question-bank/list-helpers'
+import { actAs, expectNoHorizontalScroll, moduleTag } from '../support'
 
 const MODULE = { tag: [moduleTag(7)] }
 const LIST = '/admin/pksk/questions'
@@ -31,8 +26,23 @@ const tid = (page: Page, id: string) => page.getByTestId(id)
 test.describe.configure({ timeout: 400_000 })
 test.use({ mockInit: { latency: 0 } })
 
-const stats = (page: Page) => tid(page, 'stat-value').allTextContents()
-const rowOf = (page: Page, id: number) => page.locator(`[data-question-id="${String(id)}"]`)
+/** Stat tiles (DsStatRow): the value is the first line of the tile text (no part testids on these pages). */
+const stats = (page: Page) =>
+  page.locator('[data-ds="stat-row"] > li').evaluateAll((els) =>
+    els.map((e) => ((e as HTMLElement).innerText.split('\n').map((t) => t.trim()).filter(Boolean)[0] ?? '')),
+  )
+/** DsDataTable rows of the S5 list / S8 access list (from md); ids sit on the first cell content. */
+const qrows = (page: Page) => page.getByTestId('pksk-questions-table').locator('tbody tr')
+const arows = (page: Page) => page.getByTestId('access-table').locator('tbody tr')
+const rowOf = (page: Page, id: number) =>
+  qrows(page).filter({ has: page.locator(`[data-question-id="${String(id)}"]`) })
+const accessRow = (page: Page, id: number) =>
+  arows(page).filter({ has: page.locator(`[data-access-id="${String(id)}"]`) })
+const tickRow = (row: ReturnType<typeof qrows>) => row.getByRole('checkbox', { name: 'Pilih baris' }).check()
+async function clickRowDelete(row: ReturnType<typeof qrows>): Promise<void> {
+  await row.getByRole('button', { name: 'Tindakan' }).click()
+  await row.page().getByRole('menuitem', { name: 'Padam' }).click()
+}
 
 /** Ticks every radio-less essay and the first option of every item (programmatic, 100+ items). */
 async function answerAll(page: Page, essay = 'Jawapan esei QA G5.'): Promise<number> {
@@ -216,12 +226,12 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await tid(page, 'form-submit').click()
     await expect(page).toHaveURL(new RegExp(`${LIST}$`))
     await expect(tid(page, 'cmp-flash')).toBeVisible()
-    const first = tid(page, 'pksk-question-row').first()
+    const first = qrows(page).first()
     await expect(first.getByTestId('q-text')).toContainText('QA G5 soalan A')
     await expect(first.getByTestId('q-status')).toHaveText('Diluluskan')
     await expect(first.getByTestId('q-bahagian')).toHaveText('A')
     await expect(first.getByTestId('q-level')).toHaveText('T4')
-    await expect(first.getByTestId('q-edit')).toHaveAttribute('href', '/admin/pksk/questions/9000001/edit')
+    await expect(first.getByRole('link', { name: 'Edit' })).toHaveAttribute('href', '/admin/pksk/questions/9000001/edit')
     expect(await stats(page)).toEqual(['764', '764', '0', '383', '381'])
 
     // Edit: prefill, then pending (student count drops back).
@@ -236,7 +246,7 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await expect(tid(page, 'q-explanation')).toHaveValue('Penjelasan QA G5.')
     await expect(tid(page, 'option-row')).toHaveCount(4)
     await expect(tid(page, 'option-text').nth(1)).toHaveValue('Bekerjasama dan berkongsi tugas')
-    await expect(tid(page, 'option-correct-label').first()).toBeHidden()
+    await expect(tid(page, 'option-correct').first()).toBeHidden()
     await tid(page, 'q-text').fill(`${TEXT} (disunting)`)
     await tid(page, 'q-status').selectOption('pending')
     await tid(page, 'form-submit').click()
@@ -248,10 +258,10 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
 
     // Bulk approve (new pending row + the row below it), then bulk reject both.
     const otherId = Number(
-      await tid(page, 'pksk-question-row').nth(1).getAttribute('data-question-id'),
+      await qrows(page).nth(1).locator('[data-question-id]').getAttribute('data-question-id'),
     )
-    await rowOf(page, 9000001).getByTestId('row-select').check()
-    await rowOf(page, otherId).getByTestId('row-select').check()
+    await tickRow(rowOf(page, 9000001))
+    await tickRow(rowOf(page, otherId))
     await expect(tid(page, 'bulk-count')).toHaveText('2 dipilih')
     await tid(page, 'bulk-approve').click()
     await expect(tid(page, 'cmp-flash')).toBeVisible()
@@ -259,29 +269,28 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await expect(rowOf(page, otherId).getByTestId('q-status')).toHaveText('Diluluskan')
     await expect(tid(page, 'pksk-bulk-bar')).toHaveCount(0)
     expect(await stats(page)).toEqual(['764', '764', '0', '383', '381'])
-    await rowOf(page, 9000001).getByTestId('row-select').check()
-    await rowOf(page, otherId).getByTestId('row-select').check()
+    await tickRow(rowOf(page, 9000001))
+    await tickRow(rowOf(page, otherId))
     await tid(page, 'bulk-reject').click()
     await expect(rowOf(page, 9000001).getByTestId('q-status')).toHaveText('Ditolak')
     await expect(rowOf(page, otherId).getByTestId('q-status')).toHaveText('Ditolak')
     expect(await stats(page)).toEqual(['764', '762', '0', '383', '381'])
     // The rejected filter lists exactly those two; approving from there restores them.
     await gotoApp(`${LIST}?status=rejected`)
-    await expect(tid(page, 'pksk-question-row')).toHaveCount(2)
-    await tid(page, 'select-all').check()
+    await expect(qrows(page)).toHaveCount(2)
+    await tid(page, 'pksk-questions-table').getByRole('checkbox', { name: 'Pilih semua' }).check()
     await tid(page, 'bulk-approve').click()
     await expect(tid(page, 'cmp-flash')).toBeVisible()
     await expect(tid(page, 'pksk-questions-empty')).toBeVisible()
     expect(await stats(page)).toEqual(['764', '764', '0', '383', '381'])
 
     // Delete with confirm: cancel keeps, accept removes; the edit URL is then a 404.
-    const dismissed = dismissNextDialog(page, { type: 'confirm', message: 'Padam soalan ini?' })
     await gotoApp(LIST)
-    await rowOf(page, 9000001).getByTestId('q-delete').click()
-    await dismissed
+    await clickRowDelete(rowOf(page, 9000001))
+    await answerConfirm(page, 'cancel', 'Padam soalan ini?')
     await expect(rowOf(page, 9000001)).toHaveCount(1)
-    void acceptNextDialog(page, { type: 'confirm', message: 'Padam soalan ini?' })
-    await rowOf(page, 9000001).getByTestId('q-delete').click()
+    await clickRowDelete(rowOf(page, 9000001))
+    await answerConfirm(page, 'ok', 'Padam soalan ini?')
     await expect(tid(page, 'cmp-flash')).toBeVisible()
     await expect(rowOf(page, 9000001)).toHaveCount(0)
     expect(await stats(page)).toEqual(['763', '763', '0', '383', '380'])
@@ -304,7 +313,7 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await tid(page, 'grant-package').selectOption({ index: 1 })
     await tid(page, 'grant-submit').click()
     await expect(tid(page, 'cmp-flash')).toBeVisible()
-    await expect(tid(page, 'access-row').first().getByTestId('a-package')).toHaveText(
+    await expect(arows(page).first().getByTestId('a-package')).toHaveText(
       'PKSK Tingkatan 4 (SBP/MRSM)',
     )
     expect(await stats(page)).toEqual(['4', '3', '4'])
@@ -325,12 +334,12 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await tid(page, 'form-submit').click()
     await expect(page).toHaveURL(new RegExp(`${LIST}$`))
     await expect(tid(page, 'cmp-flash')).toBeVisible()
-    const first = tid(page, 'pksk-question-row').first()
+    const first = qrows(page).first()
     await expect(first.getByTestId('q-text')).toContainText('QA G5 soalan A')
     await expect(first.getByTestId('q-status')).toHaveText('Diluluskan')
     await expect(first.getByTestId('q-bahagian')).toHaveText('A')
     await expect(first.getByTestId('q-level')).toHaveText('T4')
-    await expect(first.getByTestId('q-edit')).toHaveAttribute('href', '/admin/pksk/questions/9000001/edit')
+    await expect(first.getByRole('link', { name: 'Edit' })).toHaveAttribute('href', '/admin/pksk/questions/9000001/edit')
     expect(await stats(page)).toEqual(['764', '764', '0', '383', '381'])
 
     // Student with T4 access sees the new approved question counted (80 -> 81).
@@ -344,25 +353,24 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await expect(page).toHaveURL(/\/pksk$/)
 
     await actAs(page, mock, gotoApp, 'admin@demo.test', LIST)
-    void acceptNextDialog(page, { type: 'confirm', message: 'Padam soalan ini?' })
-    await rowOf(page, 9000001).getByTestId('q-delete').click()
+    await clickRowDelete(rowOf(page, 9000001))
+    await answerConfirm(page, 'ok', 'Padam soalan ini?')
     await expect(rowOf(page, 9000001)).toHaveCount(0)
     // Student count is back to 80 and the revoke closes the loop.
     await actAs(page, mock, gotoApp, 'pelajar2@demo.test', '/pksk/level/T4/domains')
     await expect(page.locator('[data-code=PKSK_INSANIAH]').getByTestId('question-count')).toHaveText('80')
 
     await actAs(page, mock, gotoApp, 'admin@demo.test', ACCESS)
-    const row = tid(page, 'access-row').first()
+    const row = arows(page).first()
     await expect(row.getByTestId('a-name')).toHaveText('Pelajar Dua Demo')
-    const notRevoked = dismissNextDialog(page, { type: 'confirm', message: 'Tarik balik akses?' })
-    await row.getByTestId('a-revoke').click()
-    await notRevoked
+    await row.getByRole('button', { name: 'Tarik' }).click()
+    await answerConfirm(page, 'cancel', 'Tarik balik akses?')
     await expect(row.getByTestId('a-status')).toHaveText('Aktif')
-    void acceptNextDialog(page, { type: 'confirm', message: 'Tarik balik akses?' })
-    await row.getByTestId('a-revoke').click()
+    await row.getByRole('button', { name: 'Tarik' }).click()
+    await answerConfirm(page, 'ok', 'Tarik balik akses?')
     await expect(tid(page, 'cmp-flash')).toBeVisible()
-    await expect(tid(page, 'access-row').first().getByTestId('a-status')).toHaveText('Ditarik')
-    await expect(tid(page, 'access-row').first().getByTestId('a-revoke')).toHaveCount(0)
+    await expect(arows(page).first().getByTestId('a-status')).toHaveText('Ditarik')
+    await expect(arows(page).first().getByRole('button', { name: 'Tarik' })).toHaveCount(0)
     expect(await stats(page)).toEqual(['3', '3', '3'])
 
     await actAs(page, mock, gotoApp, 'pelajar2@demo.test', '/pksk')
@@ -399,7 +407,7 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     for (const [i, t] of ['a', 'b', 'c', 'd'].entries()) await o.nth(i).fill(t)
     await tid(page, 'form-submit').click()
     await expect(page).toHaveURL(new RegExp(`${LIST}$`))
-    await expect(tid(page, 'pksk-question-row').first().getByTestId('q-text')).toContainText(
+    await expect(qrows(page).first().getByTestId('q-text')).toContainText(
       'Soalan QA M04 pengecualian',
     )
     expect(await total(), 'M04 total unchanged by a PKSK create').toBe(before)
@@ -423,14 +431,14 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
       .trim()
     await gotoApp(`${LIST}?search=${encodeURIComponent(text)}`)
     await expect(rowOf(page, id)).toBeVisible()
-    await rowOf(page, id).getByTestId('row-select').check()
+    await tickRow(rowOf(page, id))
     await tid(page, 'bulk-reject').click()
     await expect(rowOf(page, id).getByTestId('q-status')).toHaveText('Ditolak')
     await gotoApp('/pksk/level/T1/domains')
     await expect(page.locator('[data-code=PKSK_MATH]').getByTestId('question-count')).toHaveText('26')
     await gotoApp(LIST)
     await expect(tid(page, 'pksk-questions-table')).toBeVisible()
-    await expect(tid(page, 'stat-value').first()).toHaveText('763')
+    expect((await stats(page))[0]).toBe('763')
     const v = await stats(page)
     expect(v[3]).toBe('383')
     expect(v[1]).toBe('762')
@@ -471,7 +479,7 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await fill(XSS)
     await tid(page, 'form-submit').click()
     await expect(page).toHaveURL(new RegExp(`${LIST}$`))
-    const row = tid(page, 'pksk-question-row').first()
+    const row = qrows(page).first()
     await expect(row.getByTestId('q-text')).toContainText('<img src=x onerror=alert(1)>')
     await expect(row.locator('img')).toHaveCount(0)
     await gotoApp(`${LIST}/9000001/edit`)
@@ -483,7 +491,7 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     await fill(LONG)
     await tid(page, 'form-submit').click()
     await expect(page).toHaveURL(new RegExp(`${LIST}$`))
-    const longRow = tid(page, 'pksk-question-row').first()
+    const longRow = qrows(page).first()
     const shown = (await longRow.getByTestId('q-text').textContent())?.trim() ?? ''
     expect(shown.length, 'BR-M07-23: cut to 80 characters + "..."').toBeLessThanOrEqual(83)
     expect(shown.endsWith('...')).toBe(true)
@@ -529,7 +537,7 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
       await expectNoHorizontalScroll(page)
     }
     await gotoApp(`${LIST}?level=t1&bahagian=b`)
-    await expect(tid(page, 'pksk-question-row').first()).toBeVisible()
+    await expect(qrows(page).first()).toBeVisible()
   })
 
   test('S5 list network failure shows the error and recovers on reload', async ({
@@ -569,9 +577,9 @@ test.describe('QA-G5 M07 access lifecycle', MODULE, () => {
 
     // Expired yesterday (clock = 25/09/2026): row labelled, no "Tarik", not counted, no access.
     await grant('3', 0, '2026-09-24')
-    let first = tid(page, 'access-row').first()
+    let first = arows(page).first()
     await expect(first.getByTestId('a-status')).toHaveText('Tamat Tempoh')
-    await expect(first.getByTestId('a-revoke')).toHaveCount(0)
+    await expect(first.getByRole('button', { name: 'Tarik' })).toHaveCount(0)
     await expect(first.getByTestId('a-expires')).toHaveText('24/09/2026')
     expect(await stats(page)).toEqual(['3', '3', '3'])
     await actAs(page, mock, gotoApp, 'pelajar2@demo.test', '/pksk')
@@ -580,7 +588,7 @@ test.describe('QA-G5 M07 access lifecycle', MODULE, () => {
     // Expires today: valid through the end of the day (BR-M07-16).
     await actAs(page, mock, gotoApp, 'admin@demo.test', ACCESS)
     await grant('3', 0, '2026-09-25')
-    first = tid(page, 'access-row').first()
+    first = arows(page).first()
     await expect(first.getByTestId('a-status')).toHaveText('Aktif')
     await expect(first.getByTestId('a-expires')).toHaveText('25/09/2026')
     expect(await stats(page)).toEqual(['4', '4', '3'])
@@ -629,31 +637,31 @@ test.describe('QA-G5 M07 access lifecycle', MODULE, () => {
     await loginAs('admin@demo.test')
     await gotoApp(ACCESS)
     await expect(tid(page, 'access-row')).toHaveCount(3)
-    await expect(page.locator('[data-access-id="3"]').getByTestId('a-revoke')).toBeVisible()
+    await expect(accessRow(page, 3).getByRole('button', { name: 'Tarik' })).toBeVisible()
 
     // A second tab (same browser storage) revokes row 3 first.
     const tab = await newTab()
     await addInitSession(tab, 'admin@demo.test')
     await gotoAppOn(tab, ACCESS)
     await expect(tab.getByTestId('access-table')).toBeVisible()
-    void acceptNextDialog(tab, { type: 'confirm', message: 'Tarik balik akses?' })
-    await tab.locator('[data-access-id="3"]').getByTestId('a-revoke').click()
-    await expect(tab.locator('[data-access-id="3"]').getByTestId('a-status')).toHaveText('Ditarik')
+    await accessRow(tab, 3).getByRole('button', { name: 'Tarik' }).click()
+    await answerConfirm(tab, 'ok', 'Tarik balik akses?')
+    await expect(accessRow(tab, 3).getByTestId('a-status')).toHaveText('Ditarik')
 
     // The first tab has not reloaded: it still offers "Tarik". Give the cross-tab sync time to apply.
-    await expect(page.locator('[data-access-id="3"]').getByTestId('a-revoke')).toBeVisible()
+    await expect(accessRow(page, 3).getByRole('button', { name: 'Tarik' })).toBeVisible()
     await page.waitForTimeout(3000)
 
-    void acceptNextDialog(page, { type: 'confirm', message: 'Tarik balik akses?' })
-    await page.locator('[data-access-id="3"]').getByTestId('a-revoke').click()
+    await accessRow(page, 3).getByRole('button', { name: 'Tarik' }).click()
+    await answerConfirm(page, 'ok', 'Tarik balik akses?')
     await expect
       .poll(async () => (await mock.lastRequest('POST /api/admin/pksk-access/3/revoke'))?.status, {
         message: 'the stale revoke is answered 409',
       })
       .toBe(409)
     // The list reloads: the row is revoked, no "Tarik", and the cards are 2 / 2 / 2.
-    await expect(page.locator('[data-access-id="3"]').getByTestId('a-status')).toHaveText('Ditarik')
-    await expect(page.locator('[data-access-id="3"]').getByTestId('a-revoke')).toHaveCount(0)
+    await expect(accessRow(page, 3).getByTestId('a-status')).toHaveText('Ditarik')
+    await expect(accessRow(page, 3).getByRole('button', { name: 'Tarik' })).toHaveCount(0)
     expect(await stats(page)).toEqual(['2', '2', '2'])
     await expectNoHorizontalScroll(page)
   })
