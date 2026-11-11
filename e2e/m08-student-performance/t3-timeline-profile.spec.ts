@@ -46,8 +46,8 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/timeline')
     await expect(page.getByTestId('timeline-empty')).toContainText('Timeline Kosong')
     await expectTabTitle(page, 'Timeline Saya | PRESTASIPLUS')
-    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveText('Timeline Saya')
-    await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText(
+    await expect(page.locator('[data-testid=pentadbiran-header] :is(h1, [data-testid=shell-title])')).toHaveText('Timeline Saya')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
       'Aktiviti terkini anda — latihan, pencapaian & mata diperoleh',
     )
     await expect(page.getByTestId('timeline-page')).toBeVisible()
@@ -81,8 +81,8 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/timeline/create')
     await expect(page.getByTestId('timeline-create-page')).toBeVisible()
     await expectTabTitle(page, 'Tambah Post | PRESTASIPLUS')
-    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveText('Tambah Post')
-    await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText(
+    await expect(page.locator('[data-testid=pentadbiran-header] :is(h1, [data-testid=shell-title])')).toHaveText('Tambah Post')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
       'Kongsi pencapaian atau cerita baru',
     )
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/timeline')
@@ -126,11 +126,6 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/timeline/create')
-    const dialogs: string[] = []
-    page.on('dialog', (d) => {
-      dialogs.push(d.message())
-      void d.dismiss()
-    })
     const input = page.getByTestId('photo-input')
     await input.setInputFiles([
       png('a.png'),
@@ -141,7 +136,8 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
       png('e.png'),
     ])
     await expect(page.getByTestId('photo-preview')).toHaveCount(5)
-    expect(dialogs).toEqual(['besar.png terlalu besar (maks 2MB)'])
+    // The oversized file is refused with a warning toast (TimelineCreatePage.vue:57), not a browser dialog.
+    await expect(page.getByText('besar.png terlalu besar (maks 2MB)')).toBeVisible()
     await expect(page.getByTestId('caption-input')).toHaveCount(5)
     await expect(page.getByTestId('caption-input').nth(2)).toHaveAttribute(
       'placeholder',
@@ -244,7 +240,7 @@ test.describe('M08 T3 S16 pelajar', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('name')).toBeVisible()
     await expect(page.getByTestId('profile-posts')).toHaveCount(0)
     // bare page: no shell.
-    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveCount(0)
+    await expect(page.locator('[data-testid=pembelajaran-header] :is(h1, [data-testid=shell-title])')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 
@@ -290,8 +286,10 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('home')).toHaveAttribute('href', '/')
 
     await expect(page.getByTestId('tier-pill')).toHaveText('🥉 Bronze')
-    await expect(page.getByTestId('chip-school')).toHaveText('SK Demo')
-    await expect(page.getByTestId('chip-level')).toHaveText('Darjah 6')
+    // Admin Demo has no school (src/mock/core-data/accounts.ts:99). Its profile level comes from the activity stats
+    // (mock handlers/social.ts:219) and prints a hidden Darjah (D72): the chip must not show one.
+    await expect(page.getByTestId('chip-school')).toHaveCount(0)
+    await expect(page.getByTestId('chip-level')).not.toContainText('Darjah')
     await expect(page.getByTestId('chip-joined')).toHaveText('Ahli sejak 25 Oktober 2025')
     await expect(page.getByTestId('coin-value')).toHaveText('256')
     await expect(page.getByTestId('mini-kombo')).toContainText('1')
