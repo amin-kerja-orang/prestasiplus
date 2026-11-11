@@ -678,6 +678,39 @@ test.describe('access and badge', MODULE, () => {
     await expect(page.locator('a[href="/admin/tiket"]')).toHaveCount(0)
   })
 
+  // C-25 (444829604, D115): the account-menu link "Tiket Bantuan" follows the `tiket-bantuan` server flag.
+  // The mock session never carries `features` (absent = ON), so the flag is set through the session store.
+  for (const who of [PELAJAR, GURU]) {
+    test(`E2E-M22-37b account menu "Tiket Bantuan" shows with the flag ON, hidden with it OFF (${who})`, async ({
+      page,
+      loginAs,
+      gotoApp,
+    }) => {
+      await loginAs(who)
+      await gotoApp(who === GURU ? '/guru' : '/dashboard')
+      const setFlag = (on: boolean) =>
+        page.evaluate((v) => {
+          const app = (document.querySelector('#app') as unknown as { __vue_app__: any }).__vue_app__
+          const st = app.config.globalProperties.$pinia._s.get('session')
+          st.setSession({ ...st.auth, features: { ...(st.auth.features ?? {}), 'tiket-bantuan': v } })
+        }, on)
+      const menu = page.getByRole('menu')
+      const link = menu.getByRole('menuitem', { name: 'Tiket Bantuan' })
+      await page.getByTestId('pembelajaran-account-top').click()
+      await expect(menu.getByRole('menuitem', { name: 'Profil Saya' })).toBeVisible()
+      await expect(link).toHaveCount(1)
+      await page.keyboard.press('Escape')
+      await setFlag(false)
+      await page.getByTestId('pembelajaran-account-top').click()
+      await expect(menu.getByRole('menuitem', { name: 'Profil Saya' })).toBeVisible()
+      await expect(link).toHaveCount(0)
+      await page.keyboard.press('Escape')
+      await setFlag(true)
+      await page.getByTestId('pembelajaran-account-top').click()
+      await expect(link).toHaveCount(1)
+    })
+  }
+
   test('E2E-M22-41 the admin menu links to the queue, with no count', async ({ page, loginAs, gotoApp }) => {
     test.skip(viewportWidth(page) < 1280, 'the sidebar shows at 1280')
     await loginAs(ADMIN)
