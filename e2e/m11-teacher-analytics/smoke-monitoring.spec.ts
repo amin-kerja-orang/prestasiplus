@@ -6,7 +6,7 @@
  * steps are provisional (SRS §9, OQ-M11-01/02). The mock figures are the observed S2 anchors (SRS §6.7).
  */
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect, reloadApp, test } from '../fixtures/test'
 import {
@@ -33,9 +33,33 @@ test.use({ mockInit: { latency: 0 } })
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
-async function adminHeader(page: Page, title: string, subtitle?: string) {
-  await expect(tid(page, 'pentadbiran-header').locator('h1')).toHaveText(title)
-  if (subtitle) await expect(tid(page, 'pentadbiran-subtitle')).toHaveText(subtitle)
+/** The EXPECTED shell is a parameter (admin pages: Pentadbiran; guru pages: see the layout of the route). */
+async function header(
+  page: Page,
+  shell: 'pembelajaran' | 'pentadbiran',
+  title: string,
+  subtitle?: string,
+) {
+  await expect(tid(page, `${shell}-header`).locator('h1')).toHaveText(title)
+  if (subtitle) await expect(tid(page, `${shell}-subtitle`)).toHaveText(subtitle)
+}
+const adminHeader = (page: Page, title: string, subtitle?: string) =>
+  header(page, 'pentadbiran', title, subtitle)
+
+/** A DsStatRow cell `<prefix>-<key>` reads "<value><label> ..." (no value test id on the tile). */
+async function expectCell(page: Page, id: string, value: string) {
+  // Values hold only digits, "," "." and "%": "." in the pattern is harmless.
+  await expect(tid(page, id)).toHaveText(new RegExp('^\\s*' + value + '(?![\\d,.])'))
+}
+
+/** Cards of S3-S5 (DsStatRow `mon-stat-<key>`), checked in order. */
+async function expectStats(page: Page, keys: string[], values: string[]) {
+  for (const [i, key] of keys.entries()) await expectCell(page, `mon-stat-${key}`, values[i]!)
+}
+
+/** S2 section tabs (DsPillNav `mon-tab-nav-<key>`): the other sections stay in the DOM but hidden. */
+async function openTab(page: Page, key: 'pelajar' | 'guru' | 'mingguan' | 'perhatian' | 'cadangan') {
+  await tid(page, `mon-tab-nav-${key}`).click()
 }
 
 async function openOverview(page: Page, gotoApp: (p: string) => Promise<void>, path: string) {
@@ -58,7 +82,7 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
       await adminHeader(
         page,
         'Monitoring Penglibatan',
-        'Pantau penglibatan sekolah & pelajar dalam platform',
+        'Pemantauan penglibatan pelajar & sekolah', // V2 admin/monitoring.blade.php:8 = routes/monitoring.ts:85 (MonitoringPage.vue:123 passes another SUBTITLE to DsPage: reported)
       )
       await expect(tid(page, 'pentadbiran-header')).toBeVisible()
       await expectNoHorizontalScroll(page)
@@ -75,7 +99,9 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
     await expect(tid(page, 'mon-guide-tile')).toHaveCount(6)
     const hrefs = await tid(page, 'mon-guide-tile')
       .locator('a')
-      .evaluateAll((els) => els.map((e) => e.getAttribute('href')))
+      .evaluateAll((els) =>
+        els.map((e) => (e.getAttribute('href') ?? '').replace(/^.*(?=#)/, '')),
+      )
     expect(hrefs).toEqual([
       '#section-ringkasan',
       '#section-pelajar',
@@ -126,7 +152,7 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
     await expect(tid(page, 'mon-period')).toHaveValue('')
     await expect(tid(page, 'mon-state')).toHaveValue('')
     await expect(tid(page, 'mon-tahap')).toHaveValue('')
-    await expect(tid(page, 'mon-reset')).toHaveCount(0)
+    await expect(tid(page, 'mon-reset')).toHaveCount(0) // DsFilterBar: show-reset false, active filters are chips
     expect(await tid(page, 'mon-period').locator('option').allTextContents()).toEqual([
       'Semua Masa',
       '7 Hari',
@@ -140,8 +166,12 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
       'Rendah',
       'Tiada',
     ])
-    for (const id of ['mon-period', 'mon-state', 'mon-tahap', 'mon-apply', 'mon-refresh']) {
-      await expectTouchTarget(tid(page, id), touchMin(page))
+    // 44px on touch viewports only; the staff theme is 40px from lg (NFR-RESP-03).
+    if (page.viewportSize()!.width < 1024) {
+      for (const id of ['mon-period', 'mon-state', 'mon-tahap', 'mon-refresh']) {
+        await expectTouchTarget(tid(page, id), 44)
+      }
+      await expectTouchTarget(page.getByRole('button', { name: 'Tapis' }), 44)
     }
     await expect(tid(page, 'mon-export-pdf')).toHaveAttribute(
       'href',
@@ -154,29 +184,27 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
     await expectNoHorizontalScroll(page)
 
     await tid(page, 'mon-period').selectOption('7d')
-    await tid(page, 'mon-apply').click()
-    await expect(page).toHaveURL(/\/admin\/monitoring\?period=7d&state=&tahap=$/)
+    await page.getByRole('button', { name: 'Tapis' }).click()
+    await expect(page).toHaveURL(/\/admin\/monitoring\?.*period=7d/)
     await expect(tid(page, 'mon-period')).toHaveValue('7d')
-    await expect(tid(page, 'mon-reset')).toBeVisible()
     await expect(tid(page, 'mon-export-csv')).toHaveAttribute(
       'href',
       '/admin/monitoring/export/csv?period=7d',
     )
-    await expect(tid(page, 'mon-kpi-engaged').getByTestId('mon-kpi-value')).toHaveText('44')
-    await expect(tid(page, 'mon-kpi-answers').getByTestId('mon-kpi-value')).toHaveText('7,651')
+    await expectCell(page, 'mon-kpi-engaged', '44')
+    await expectCell(page, 'mon-kpi-answers', '7,651')
 
-    await tid(page, 'mon-reset').click()
-    await expect(page).toHaveURL(/\/admin\/monitoring$/)
+    await tid(page, 'mon-period').selectOption('')
     await tid(page, 'mon-state').selectOption('Selangor')
     await tid(page, 'mon-tahap').selectOption('Rendah')
-    await tid(page, 'mon-apply').click()
+    await page.getByRole('button', { name: 'Tapis' }).click()
     await expect(tid(page, 'mon-export-pdf')).toHaveAttribute(
       'href',
       '/admin/monitoring/export/pdf?state=Selangor&tahap=Rendah',
     )
     // 'Jumlah Sekolah' for Selangor is 25 in the mock (observed 28: M02 allocation gap, T1 `it.fails`).
-    await expect(tid(page, 'mon-kpi-schools').getByTestId('mon-kpi-value')).toHaveText('25')
-    await expect(tid(page, 'mon-table-student').getByTestId('mon-table-row')).toHaveCount(2)
+    await expectCell(page, 'mon-kpi-schools', '25')
+    await expect(tid(page, 'mon-table-student').getByTestId('mon-table-row')).toHaveCount(3) // 8087, 8102, 8107 (overview.test.ts:90)
     await expect(tid(page, 'mon-table-teacher').getByTestId('mon-table-row')).toHaveCount(10)
   })
 
@@ -187,9 +215,11 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/monitoring?period=&state=Kelantan&tahap=Cemerlang')
-    await expect(tid(page, 'mon-signals-empty')).toHaveText(
-      'Tiada pemerhatian yang perlu diberi perhatian buat masa ini.',
-    )
+    for (const section of ['#section-perhatian', '#section-cadangan']) {
+      await expect(page.locator(section).getByTestId('mon-signals-empty')).toHaveText(
+        'Tiada pemerhatian yang perlu diberi perhatian buat masa ini.',
+      )
+    }
     await expect(tid(page, 'mon-table-student').getByTestId('mon-table-count')).toHaveText(
       '0 sekolah',
     )
@@ -208,17 +238,19 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
   }) => {
     await loginAs(ADMIN)
     await openOverview(page, gotoApp, '/admin/monitoring')
-    await expect(tid(page, 'mon-kpi-value')).toHaveText([
-      '57',
-      '4,158',
-      '1,462',
-      '35.2%',
-      '472,371',
-      '323.1',
-      '522',
-      '277',
-      '53.1%',
-    ])
+    for (const [key, value] of [
+      ['schools', '57'],
+      ['students', '4,158'],
+      ['engaged', '1,462'],
+      ['engagement', '35.2%'],
+      ['answers', '472,371'],
+      ['average', '323.1'],
+      ['teachers', '522'],
+      ['teachersLoggedIn', '277'],
+      ['teacherPct', '53.1%'],
+    ] as const) {
+      await expectCell(page, `mon-kpi-${key}`, value)
+    }
     const student = tid(page, 'mon-table-student')
     await expect(student.getByTestId('mon-table-count')).toHaveText('33 sekolah')
     await expect(student.getByTestId('mon-table-row')).toHaveCount(25) // page size 25
@@ -226,12 +258,13 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
       'href',
       '/admin/monitoring/sekolah/940',
     )
-    const row6 = student.getByTestId('mon-table-row').nth(5)
+    const row6 = student.getByTestId('mon-table-row').nth(5).locator('xpath=ancestor::tr')
     await expect(row6).toContainText('184')
     await expect(row6).toContainText('174')
     await expect(row6).toContainText('94.6%')
     await expect(row6).toContainText('Cemerlang')
-    await expect(student.getByTestId('mon-legend')).toContainText('Legenda:')
+    await student.getByTestId('mon-legend').locator('summary').click()
+    await expect(student.getByTestId('mon-legend')).toContainText('Legenda')
     for (const label of [
       'Cemerlang (> 60%)',
       'Sederhana (20-60%)',
@@ -243,6 +276,8 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
     await expect(tid(page, 'mon-table-teacher').getByTestId('mon-table-count')).toHaveText(
       '13 sekolah',
     )
+    await openTab(page, 'guru')
+    await tid(page, 'mon-table-teacher').getByTestId('mon-legend').locator('summary').click()
     await expect(tid(page, 'mon-table-teacher').getByTestId('mon-legend')).toContainText(
       'Tiada Guru (0 daftar)',
     )
@@ -282,9 +317,17 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
   }) => {
     await loginAs(ADMIN)
     await openOverview(page, gotoApp, '/admin/monitoring')
+    await openTab(page, 'perhatian')
     await expect(tid(page, 'mon-best-item')).toHaveCount(3)
+    // Lists show 6 rows, "mon-list-more" expands (MonitoringSignals.vue:21).
+    await expect(tid(page, 'mon-attention-item')).toHaveCount(6)
+    await tid(page, 'mon-attention').getByRole('button', { name: /^Tunjuk semua/ }).click()
     await expect(tid(page, 'mon-attention-item')).toHaveCount(18)
-    await expect(tid(page, 'mon-suggestion-item')).toHaveCount(17)
+    await openTab(page, 'cadangan')
+    await expect(tid(page, 'mon-suggestion-item')).toHaveCount(6)
+    await tid(page, 'mon-suggestions').getByRole('button', { name: /^Tunjuk semua/ }).click()
+    await expect(tid(page, 'mon-suggestion-item')).toHaveCount(15) // overview.test.ts:306-317
+    await openTab(page, 'perhatian')
     await expect(tid(page, 'mon-attention-item').first()).toContainText('Tahap rendah.')
     await expect(tid(page, 'mon-attention-item').nth(1)).toContainText('Tahap rendah.')
     await expect(
@@ -334,11 +377,11 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
     await clock.runFor(1000)
     await expect(countdown).toHaveText(label(s0 - 1))
     await tid(page, 'mon-refresh-toggle').click()
-    await expect(tid(page, 'mon-icon-play')).toBeVisible()
+    await expect(tid(page, 'mon-refresh-toggle')).toHaveAttribute('data-icon', 'play')
     await clock.runFor(5000)
     await expect(countdown).toHaveText(label(s0 - 1))
     await tid(page, 'mon-refresh-toggle').click()
-    await expect(tid(page, 'mon-icon-pause')).toBeVisible()
+    await expect(tid(page, 'mon-refresh-toggle')).toHaveAttribute('data-icon', 'pause')
     await clock.runFor(1000)
     await expect(countdown).toHaveText(label(s0 - 2))
     await clock.runFor((s0 - 2) * 1000)
@@ -435,36 +478,37 @@ test.describe(
   },
 )
 
-test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
+test.describe('M11 S3 Detail Sekolah (admin)', MODULE, () => {
   test('SRS §12 #31/#32/#34 8080: header, cards, warning, pills, rows, teachers @m11', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/8080')
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/8080')
     await expect(tid(page, 'mon-school-header')).toBeVisible()
     await adminHeader(page, 'Detail Sekolah')
-    await expect(tid(page, 'mon-crumb-monitoring')).toHaveAttribute('href', '/guru/monitoring')
+    await expect(tid(page, 'mon-crumbs').getByRole('link').first()).toHaveAttribute('href', '/admin/monitoring')
     await expect(tid(page, 'mon-school-state')).toHaveText('Selangor')
     await expect(tid(page, 'mon-subscription')).toContainText('Active — sehingga 12 May 2027')
     await expect(tid(page, 'mon-school-tahap')).toHaveText('Cemerlang — 89.7%')
-    await expect(tid(page, 'mon-stat-value')).toHaveText(['184', '165', '53,494', '34', '34'])
+    await expectStats(page, ['students', 'engaged', 'answers', 'teachers', 'teachersLoggedIn'], ['184', '165', '53,494', '34', '34'])
     await expect(tid(page, 'mon-warning')).toContainText('19 akaun')
     await expect(tid(page, 'mon-warning')).toContainText('9 daripadanya dikecualikan')
-    await expectTabTitle(page, (await tid(page, 'mon-school-name').innerText()) + ' - Monitoring')
+    await expectTabTitle(page, (await tid(page, 'mon-school-name').innerText()) + ' - Monitoring | PRESTASIPLUS')
 
     await expect(tid(page, 'mon-pill-all')).toHaveText('Semua (184)')
     await expect(tid(page, 'mon-pill-active')).toHaveText('● Aktif (165)')
-    await expect(tid(page, 'mon-student-row')).toHaveCount(184)
+    // The pupil table is paged at 25 rows (MonitoringSchoolPage.vue); the pills carry the totals.
+    await expect(tid(page, 'mon-student-row')).toHaveCount(25)
     const a = page.locator('[data-student-id="2008"]')
-    await expect(a).toContainText('T5')
+    await expect(a.locator('xpath=ancestor::tr')).toContainText('T5')
     await expect(a.getByTestId('mon-student-link')).toHaveAttribute(
       'href',
-      '/guru/monitoring/sekolah/8080/pelajar/2008',
+      '/admin/monitoring/sekolah/8080/pelajar/2008',
     )
     await tid(page, 'mon-pill-active').click()
-    await expect(tid(page, 'mon-student-row')).toHaveCount(165)
+    await expect(tid(page, 'mon-student-row')).toHaveCount(25) // first page of 165
     await expect(tid(page, 'mon-flag').filter({ hasText: 'ditapis' })).toHaveCount(0)
     await tid(page, 'mon-pill-login').click()
     await expect(tid(page, 'mon-student-row')).toHaveCount(4)
@@ -474,13 +518,14 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     await tid(page, 'mon-pill-never').click()
     await expect(tid(page, 'mon-student-row')).toHaveCount(8)
     await tid(page, 'mon-pill-all').click()
-    await expect(tid(page, 'mon-student-row')).toHaveCount(184)
+    await expect(tid(page, 'mon-student-row')).toHaveCount(25)
     await tid(page, 'mon-student-search').fill('zzzz')
     await expect(tid(page, 'mon-student-row')).toHaveCount(0)
     await tid(page, 'mon-student-search').fill('')
 
     await expect(tid(page, 'mon-teachers')).toContainText('Senarai Guru (34)')
-    await expect(tid(page, 'mon-teacher-row')).toHaveCount(34)
+    await expect(tid(page, 'mon-teacher-row')).toHaveCount(25) // first page of 34 (cards and the heading carry 34)
+    await page.getByRole('tab', { name: /^Guru/ }).click()
     await tid(page, 'mon-tpill-never').click()
     await expect(tid(page, 'mon-teacher-row')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
@@ -491,12 +536,12 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/940')
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/940')
     await expect(tid(page, 'mon-school-header')).toBeVisible()
     await expect(tid(page, 'mon-subscription')).toHaveText('Tiada langganan')
     await expect(tid(page, 'mon-school-tahap')).toHaveText('Cemerlang — 100%')
-    await expect(tid(page, 'mon-stat-value')).toHaveText(['1', '1', '10', '0', '0'])
+    await expectStats(page, ['students','engaged','answers','teachers','teachersLoggedIn'], ['1', '1', '10', '0', '0'])
     await expect(tid(page, 'mon-warning')).toHaveCount(0)
     await expect(tid(page, 'mon-teachers')).toContainText('Senarai Guru (0)')
     await expect(tid(page, 'mon-teachers-empty')).toHaveText(
@@ -510,26 +555,22 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/8102')
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/8102')
     await expect(tid(page, 'mon-subscription')).toContainText('Cancelled — sehingga 12 May 2027')
-    await gotoApp('/guru/monitoring/sekolah/8107')
+    await gotoApp('/admin/monitoring/sekolah/8107')
     await expect(tid(page, 'mon-subscription')).toContainText('Expired — sehingga 22 May 2026')
-    await gotoApp('/guru/monitoring/sekolah/8765')
+    await gotoApp('/admin/monitoring/sekolah/8765')
     await expect(tid(page, 'mon-school-header')).toBeVisible()
     // AC-M11-18.3 / 18.4 (D9): the S3 cards equal the S2 row of 8765 (6 active, 37.5%), no contradiction.
-    const values = tid(page, 'mon-stat-value')
-    await expect(values.nth(0)).toHaveText('16')
-    await expect(values.nth(1)).toHaveText('6')
-    await expect(values.nth(2)).toHaveText('222')
+    await expectStats(page, ['students', 'engaged', 'answers'], ['16', '6', '222'])
     await expect(tid(page, 'mon-school-tahap')).toHaveText('Sederhana — 37.5%')
     // The teacher cards equal the teacher rows of the same page.
     const rows = await tid(page, 'mon-teacher-row').count()
     const loggedIn = await tid(page, 'mon-teacher-status')
       .filter({ hasText: 'Pernah login' })
       .count()
-    await expect(values.nth(3)).toHaveText(String(rows))
-    await expect(values.nth(4)).toHaveText(String(loggedIn))
+    await expectStats(page, ['teachers', 'teachersLoggedIn'], [String(rows), String(loggedIn)])
     await expect(tid(page, 'mon-warning')).toHaveCount(0)
   })
 
@@ -541,27 +582,27 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     await loginAs(GURU)
     await gotoApp('/guru/monitoring/sekolah/900001')
     await expect(tid(page, 'mon-school-header')).toBeVisible()
-    await expect(tid(page, 'mon-student-row')).toHaveCount(9)
+    await expect(tid(page, 'mon-student-row')).toHaveCount(10) // detail.test.ts:595
   })
 })
 
-test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () => {
+test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (admin)', MODULE, () => {
   test('SRS §12 #35/#37 Student A: header, cards, tabs; list, "Papar lagi" and the modal @m11', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/8080/pelajar/2008')
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/8080/pelajar/2008')
     await expect(tid(page, 'mon-student-header')).toBeVisible()
     await adminHeader(page, 'Detail Pelajar')
     await expect(tid(page, 'mon-student-meta')).toContainText('· T5')
     await expect(tid(page, 'mon-student-last')).toHaveText('Aktiviti Terakhir: 16/06/2026 14:19')
-    await expect(tid(page, 'mon-stat-value')).toHaveText(['71', '53', '18', '74.6%'])
+    await expectStats(page, ['answered','correct','wrong','accuracy'], ['71', '53', '18', '74.6%'])
     await expect(tid(page, 'mon-tab-chip')).toHaveText(['18', '0'])
     await expectTabTitle(
       page,
-      (await tid(page, 'mon-student-name').innerText()) + ' - Detail Pelajar',
+      (await tid(page, 'mon-student-name').innerText()) + ' - Detail Pelajar | PRESTASIPLUS',
     )
     await expect(tid(page, 'mon-subject-row')).toHaveCount(3)
     await expect(tid(page, 'mon-observation')).toHaveCount(2)
@@ -607,8 +648,8 @@ test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () =>
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/8080/pelajar/2008')
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/8080/pelajar/2008')
     await tid(page, 'mon-tab-wrong').click()
     await expect(tid(page, 'mon-wrong-heading')).toHaveText(
       'Jawapan Salah (18 jawapan, 18 soalan unik)',
@@ -630,11 +671,11 @@ test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () =>
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/8080/pelajar/2002')
-    await expect(tid(page, 'mon-stat-value')).toHaveText(['195', '150', '45', '76.9%'])
-    await gotoApp('/guru/monitoring/sekolah/8080/pelajar/2010')
-    await expect(tid(page, 'mon-stat-value')).toHaveText(['265', '168', '97', '63.4%'])
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/8080/pelajar/2002')
+    await expectStats(page, ['answered','correct','wrong','accuracy'], ['195', '150', '45', '76.9%'])
+    await gotoApp('/admin/monitoring/sekolah/8080/pelajar/2010')
+    await expectStats(page, ['answered','correct','wrong','accuracy'], ['265', '168', '97', '63.4%'])
     await tid(page, 'mon-tab-wrong').click()
     await expect(tid(page, 'mon-wrong-card')).toHaveCount(97)
   })
@@ -643,15 +684,17 @@ test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () =>
     'SRS §12 #55 a pupil with 0 answers renders the zero state; the S3 row links to M12 @m11',
     PROV('0-answer state is PROPOSED (FN-M11-4.2.11)'),
     async ({ page, gotoApp, loginAs }) => {
-      await loginAs(GURU)
-      await gotoApp('/guru/monitoring/sekolah/8080/pelajar/4644')
+      await loginAs(ADMIN)
+      await gotoApp('/admin/monitoring/sekolah/8080/pelajar/4644')
       await expect(tid(page, 'mon-student-header')).toBeVisible()
       await expect(tid(page, 'mon-student-last')).toHaveText('Aktiviti Terakhir: -')
-      await expect(tid(page, 'mon-stat-value')).toHaveText(['0', '0', '0', '0%'])
-      await gotoApp('/guru/monitoring/sekolah/8080')
+      const pupilName = await tid(page, 'mon-student-name').innerText()
+      await expectStats(page, ['answered','correct','wrong','accuracy'], ['0', '0', '0', '0%'])
+      await gotoApp('/admin/monitoring/sekolah/8080')
+      await tid(page, 'mon-student-search').fill(pupilName)
       await expect(
         page.locator('[data-student-id="4644"]').getByTestId('mon-student-link'),
-      ).toHaveAttribute('href', '/guru/kirkpatrick/pelajar/4644')
+      ).toHaveAttribute('href', '/admin/kirkpatrick/pelajar/4644')
     },
   )
 
@@ -660,12 +703,12 @@ test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () =>
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/940/pelajar/2008')
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/940/pelajar/2008')
     await expect(tid(page, 'mon-student-header')).toBeVisible()
-    await expect(tid(page, 'mon-crumb-school')).toHaveAttribute(
+    await expect(tid(page, 'mon-crumbs').getByRole('link').nth(1)).toHaveAttribute(
       'href',
-      '/guru/monitoring/sekolah/940',
+      '/admin/monitoring/sekolah/940',
     )
   })
 
@@ -674,16 +717,16 @@ test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () =>
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/8080/guru/2012')
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/8080/guru/2012')
     await expect(tid(page, 'mon-teacher-header')).toBeVisible()
     await adminHeader(page, 'Detail Guru')
     await expect(tid(page, 'mon-teacher-pill')).toHaveText('Pernah Login')
-    await expect(tid(page, 'mon-stat-value')).toHaveText(['184', '174', '94.6%', '10'])
-    await expect(tid(page, 'mon-teacher-student-row')).toHaveCount(184)
+    await expectStats(page, ['students','engaged','pct','attention'], ['184', '174', '94.6%', '10'])
+    await expect(tid(page, 'mon-teacher-student-row')).toHaveCount(20) // first page of 184 (MonitoringTeacherPage.vue:100)
     await expect(
       page.locator('[data-student-id="2008"]').getByTestId('mon-teacher-student-link'),
-    ).toHaveAttribute('href', '/guru/monitoring/sekolah/8080/pelajar/2008')
+    ).toHaveAttribute('href', '/admin/monitoring/sekolah/8080/pelajar/2008')
     await expect(tid(page, 'mon-suggestion-never')).toContainText('8 pelajar belum pernah login.')
     await expect(tid(page, 'mon-suggestion-low')).toContainText('3 pelajar aktif')
     await expect(tid(page, 'mon-suggestion-answered')).toContainText(
@@ -697,17 +740,17 @@ test.describe('M11 S4 Detail Pelajar and S5 Detail Guru (guru 5)', MODULE, () =>
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await openOverview(page, gotoApp, '/guru/monitoring')
+    await loginAs(ADMIN)
+    await openOverview(page, gotoApp, '/admin/monitoring')
     await tid(page, 'mon-table-student').locator('a[href$="/sekolah/8080"]').first().click()
     await expect(tid(page, 'mon-school-header')).toBeVisible()
     await page.locator('[data-student-id="2008"]').getByTestId('mon-student-link').click()
     await expect(tid(page, 'mon-student-header')).toBeVisible()
-    await tid(page, 'mon-crumb-school').click()
+    await tid(page, 'mon-crumbs').getByRole('link').nth(1).click()
     await expect(tid(page, 'mon-school-header')).toBeVisible()
-    await tid(page, 'mon-crumb-monitoring').click()
+    await tid(page, 'mon-crumbs').getByRole('link').first().click()
     await expect(tid(page, 'mon-kpis')).toBeVisible()
-    await expect(page).toHaveURL(/\/guru\/monitoring$/)
+    await expect(page).toHaveURL(/\/admin\/monitoring$/)
   })
 })
 
@@ -719,10 +762,10 @@ test.describe('M11 S2-S5 errors and role refusals', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     for (const path of [
-      '/guru/monitoring/sekolah/999999',
-      '/guru/monitoring/sekolah/8080/pelajar/99999999',
-      '/guru/monitoring/sekolah/8080/guru/99999999',
-      '/guru/monitoring/sekolah/abc',
+      '/admin/monitoring/sekolah/999999',
+      '/admin/monitoring/sekolah/8080/pelajar/99999999',
+      '/admin/monitoring/sekolah/8080/guru/99999999',
+      '/admin/monitoring/sekolah/abc',
     ]) {
       await gotoApp(path)
       await expect(page.getByText('Halaman Tidak Dijumpai')).toBeVisible()
@@ -735,10 +778,10 @@ test.describe('M11 S2-S5 errors and role refusals', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(GURU)
-    await gotoApp('/guru/monitoring/sekolah/8080/guru/2008')
+    await loginAs(ADMIN)
+    await gotoApp('/admin/monitoring/sekolah/8080/guru/2008')
     await expect(page.getByText('Halaman Tidak Dijumpai')).toBeVisible()
-    await gotoApp('/guru/monitoring/sekolah/8080/pelajar/2012')
+    await gotoApp('/admin/monitoring/sekolah/8080/pelajar/2012')
     await expect(page.getByText('Halaman Tidak Dijumpai')).toBeVisible()
   })
 
@@ -749,13 +792,15 @@ test.describe('M11 S2-S5 errors and role refusals', MODULE, () => {
     mock,
   }) => {
     await gotoApp('/guru/monitoring')
-    await expect(page).toHaveURL(/\/login$/)
+    await expect(page).toHaveURL(/\/login(?:\?|$)/)
     await mock.setUser(PELAJAR)
     await gotoApp('/guru/monitoring')
-    await expect(page).not.toHaveURL(/\/guru\/monitoring/)
+    // v2: a forbidden role gets the 403 page in place (no redirect).
+    await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     await mock.setUser(ADMIN_SEKOLAH)
     await gotoApp('/guru/monitoring/sekolah/900001')
-    await expect(page).not.toHaveURL(/\/guru\/monitoring/)
+    // v2: a forbidden role gets the 403 page in place (no redirect).
+    await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     void loginAs
   })
 
@@ -767,10 +812,12 @@ test.describe('M11 S2-S5 errors and role refusals', MODULE, () => {
     await gotoApp('/login')
     await mock.setUser(GURU)
     await gotoApp('/admin-sekolah/monitoring')
-    await expect(page).not.toHaveURL(/\/admin-sekolah\/monitoring/)
+    // v2: a forbidden role gets the 403 page in place (no redirect).
+    await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     await mock.setUser(PELAJAR)
     await gotoApp('/admin-sekolah/monitoring')
-    await expect(page).not.toHaveURL(/\/admin-sekolah\/monitoring/)
+    // v2: a forbidden role gets the 403 page in place (no redirect).
+    await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
   })
 })
 
@@ -837,16 +884,16 @@ test.describe(
         await tid(page, 'mon-table-student').getByTestId('mon-school-link').click()
         await expect(page).toHaveURL(/\/admin-sekolah\/monitoring\/sekolah\/900001$/)
         await expect(tid(page, 'mon-school-header')).toBeVisible()
-        await expect(tid(page, 'mon-crumb-monitoring')).toHaveAttribute(
+        await expect(tid(page, 'mon-crumbs').getByRole('link').first()).toHaveAttribute(
           'href',
           '/admin-sekolah/monitoring',
         )
-        await expect(tid(page, 'mon-student-row')).toHaveCount(9)
+        await expect(tid(page, 'mon-student-row')).toHaveCount(10) // detail.test.ts:595
         await expectNoHorizontalScroll(page)
 
         await gotoApp('/admin-sekolah/monitoring/sekolah/900001/pelajar/3001')
         await expect(tid(page, 'mon-student-header')).toBeVisible()
-        await expect(tid(page, 'mon-crumb-school')).toHaveAttribute(
+        await expect(tid(page, 'mon-crumbs').getByRole('link').nth(1)).toHaveAttribute(
           'href',
           '/admin-sekolah/monitoring/sekolah/900001',
         )
@@ -854,7 +901,7 @@ test.describe(
 
         await gotoApp('/admin-sekolah/monitoring/sekolah/900001/guru/5')
         await expect(tid(page, 'mon-teacher-header')).toBeVisible()
-        await expect(tid(page, 'mon-teacher-student-row')).toHaveCount(9)
+        await expect(tid(page, 'mon-teacher-student-row')).toHaveCount(10) // detail.test.ts:595
         await expectNoHorizontalScroll(page)
       },
     )
@@ -889,9 +936,9 @@ test.describe('M11 S2-S5 responsive sweep', MODULE, () => {
     await loginAs(ADMIN)
     const paths = [
       '/admin/monitoring',
-      '/guru/monitoring/sekolah/8080',
-      '/guru/monitoring/sekolah/8080/pelajar/2008',
-      '/guru/monitoring/sekolah/8080/guru/2012',
+      '/admin/monitoring/sekolah/8080',
+      '/admin/monitoring/sekolah/8080/pelajar/2008',
+      '/admin/monitoring/sekolah/8080/guru/2012',
     ]
     const anchors = [
       'mon-table-student',
@@ -928,18 +975,20 @@ test.describe('M11 S2-S5 responsive sweep', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openOverview(page, gotoApp, '/admin/monitoring')
-    const kpiCols = await tid(page, 'mon-kpis')
-      .locator('> div')
-      .first()
-      .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)
+    // DsStatRow (tile-layout.ts): tiles per row = 2 below md (768), at most 3 at md, up to the strip size at xl (1280).
+    const perRow = (tiles: Locator) =>
+      tiles.evaluateAll((els) => {
+        const tops = els.map((e) => Math.round(e.getBoundingClientRect().top))
+        return tops.filter((t) => t === tops[0]).length
+      })
     const width = page.viewportSize()!.width
-    expect(kpiCols).toBe(width >= 1280 ? 6 : width >= 1024 ? 3 : 2)
-    await gotoApp('/guru/monitoring/sekolah/8080')
-    await expect(tid(page, 'mon-school-cards')).toBeVisible()
-    const cols = await tid(page, 'mon-school-cards').evaluate(
-      (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
+    expect(await perRow(tid(page, 'mon-kpis').locator('ul[data-ds="stat-row"]').first().locator(':scope > li'))).toBe(
+      width >= 768 ? 3 : 2,
     )
-    expect(cols).toBe(width >= 1024 ? 5 : 2)
+    await gotoApp('/admin/monitoring/sekolah/8080')
+    await expect(tid(page, 'mon-school-cards')).toBeVisible()
+    const cols = await perRow(tid(page, 'mon-school-cards').locator(':scope > li'))
+    expect(cols).toBe(width >= 1280 ? 5 : width >= 768 ? 3 : 2)
     if (isMobileWidth(page)) {
       // the pupil table scrolls inside its card, not the page
       const scroller = tid(page, 'mon-student-scroller')
