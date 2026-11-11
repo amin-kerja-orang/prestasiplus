@@ -69,6 +69,42 @@ async function open(
 }
 
 const clean = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim()
+/** The figure of the S8 "Kelas Aktif" tile (one test id on the wrapper: the figure, then the unit). */
+const klTileValue = async (page: Page): Promise<string> =>
+  /\d[\d,]*/.exec(await page.getByTestId('kl-tile').innerText())![0]
+
+/**
+ * The class rows of S8: tbody rows from 768 ([#, Kelas, Subjek, Tingkatan, Guru, Murid]), cards below (no "#"
+ * there: cells[0] is ''). `name` is the class name alone, `href` its link.
+ */
+async function klRows(page: Page): Promise<{ no: string; name: string; href: string; cells: string[] }[]> {
+  return page.getByTestId('kl-table').evaluate((root) => {
+    const clean = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim()
+    const trs = [...root.querySelectorAll('tbody tr')]
+    if (trs.length > 0) {
+      return trs.map((tr) => {
+        const cells = [...tr.querySelectorAll('td')].map((c) => clean(c.textContent))
+        return {
+          no: cells[0] ?? '',
+          name: clean(tr.querySelector('[data-testid="kl-name"]')?.textContent),
+          href: tr.querySelector('a')?.getAttribute('href') ?? '',
+          cells,
+        }
+      })
+    }
+    return [...root.querySelectorAll('[data-ds="data-table-cards"] > li')].map((li) => {
+      const head = li.querySelector('dl')?.previousElementSibling
+      const name = clean(head?.textContent)
+      return {
+        no: '',
+        name,
+        href: head?.getAttribute('href') ?? '',
+        cells: ['', name, ...[...li.querySelectorAll('dd')].map((d) => clean(d.textContent))],
+      }
+    })
+  })
+}
+
 const textsOf = (locator: Locator) =>
   locator.evaluateAll((els) => els.map((e) => (e.textContent ?? '').replace(/\s+/g, ' ').trim()))
 const texts = (page: Page, id: string) =>
@@ -213,15 +249,58 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
 // S2 DSKP Heatmap
 // ---------------------------------------------------------------------------------------------------
 
+/** Picks a subject in the "Subjek" USelect (a combobox button with a listbox), as a user would. */
+async function pickSubject(page: Page, label: string): Promise<void> {
+  await page.getByTestId('dh-subject').click()
+  await page.getByRole('option', { name: label, exact: true }).click()
+}
+
+/**
+ * The cells of the DsHeatGrid as { row, col, value }: popover buttons from 768 (aria-label "{row} - {col}: {value}",
+ * the text is "NN%" or "-"), a card list below 768 (one li per column inside a row card).
+ */
+async function heatCells(page: Page): Promise<{ row: string; col: string; value: string }[]> {
+  return page.getByTestId('dh-tiles').evaluate((root) => {
+    const clean = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim()
+    const buttons = [...root.querySelectorAll('[data-ds="heat-cell"]')]
+    if (buttons.length > 0) {
+      return buttons.map((b) => {
+        const m = /^(.*) - (\d+): /.exec(b.getAttribute('aria-label') ?? '')
+        return { row: m?.[1] ?? '', col: m?.[2] ?? '', value: clean(b.textContent) }
+      })
+    }
+    return [...root.querySelectorAll('[data-ds="heat-cards"] > li')].flatMap((card) => {
+      const row = clean(card.querySelector(':scope > span')?.textContent)
+      return [...card.querySelectorAll('ul > li')].map((li) => {
+        const spans = li.querySelectorAll('span')
+        return { row, col: clean(spans[0]?.textContent), value: clean(spans[1]?.textContent) }
+      })
+    })
+  })
+}
+
+/** Opens the popover of one cell (from 768) and returns the SP title it shows. */
+async function cellTitle(page: Page, index: number): Promise<string> {
+  await page.getByTestId('dh-tiles').locator('[data-ds="heat-cell"]').nth(index).click()
+  const title = page.getByTestId('dh-tile-title')
+  await expect(title).toBeVisible()
+  const text = clean(await title.textContent())
+  await page.keyboard.press('Escape')
+  await expect(title).toHaveCount(0)
+  return text
+}
+
 /** P2 on Kimia at Tingkatan 5: the select drives the page, as a user would. */
 async function openKimiaT5(page: Page, gotoApp: (p: string) => Promise<void>): Promise<void> {
   await open(page, gotoApp, `${S2}?tingkatan=T5`, 'dh-card')
-  await page.getByTestId('dh-subject').selectOption({ label: 'Kimia' })
+  await pickSubject(page, 'Kimia')
   await expect(page.getByTestId('dh-caption')).toHaveText('KSSM Kimia Tingkatan 5')
-  await expect(page.getByTestId('dh-tile').first()).toBeVisible()
+  await expect(page.getByTestId('dh-tiles')).toBeVisible()
+  expect((await heatCells(page)).length).toBeGreaterThan(0)
 }
 
-const statusOf = (pct: number): string => (pct >= 75 ? 'mahir' : pct >= 50 ? 'sederhana' : 'lemah')
+const statusOf = (pct: number): string => (pct >= 75 ? 'Mahir' : pct >= 50 ? 'Sederhana' : 'Lemah')
+const TITLE_RE = /^\S+: .+ — (Mahir|Sederhana|Lemah|Belum cuba)(?: · \d+ cuba · \d+% betul)?$/
 
 test.describe('S2 DSKP Heatmap', MODULE, () => {
   test('E2E-M27-56 P2 Kimia Tingkatan 5: card heading, caption and legend', async ({
@@ -232,69 +311,67 @@ test.describe('S2 DSKP Heatmap', MODULE, () => {
     await loginAs(ADMIN_SEKOLAH)
     await openKimiaT5(page, gotoApp)
     await expect(page.getByTestId('dh-heading')).toHaveText('Peta DSKP — Standard Pembelajaran')
-    await expect(page.getByTestId('dh-heading').locator('svg')).toHaveCount(1)
+    await expect(page.getByTestId('dh-heading').locator('[class*="map-trifold"]')).toHaveCount(1)
     await expect(page.getByTestId('dh-caption')).toHaveText('KSSM Kimia Tingkatan 5')
-    expect(await textsOf(page.getByTestId('dh-legend').locator('> span'))).toEqual(LEGEND)
+    expect(await textsOf(page.getByTestId('dh-legend').locator('> li'))).toEqual(LEGEND)
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M27-57 P2: Bidang groups hold SP tiles in code order, each with its code', async ({
+  test('E2E-M27-57 P2: one heat row per Bidang ("{code} {name}"), cells in SP code order', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN_SEKOLAH)
     await openKimiaT5(page, gotoApp)
-    const bidang = page.getByTestId('dh-bidang')
-    expect(await bidang.count()).toBeGreaterThan(0)
-    for (const title of await texts(page, 'dh-bidang-title')) expect(title).not.toBe('')
-    const groups = await bidang.evaluateAll((els) =>
-      els.map((g) =>
-        [...g.querySelectorAll('[data-testid="dh-tile-code"]')].map((c) =>
-          (c.textContent ?? '').trim(),
-        ),
-      ),
-    )
-    for (const codes of groups) {
-      expect(codes.length).toBeGreaterThan(0)
-      const sorted = [...codes].sort((a, b) =>
-        a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' }),
-      )
-      expect(codes).toEqual(sorted)
-      for (const c of codes) expect(c).toMatch(/\S/)
+    const cells = await heatCells(page)
+    const rowLabels = [...new Set(cells.map((c) => c.row))]
+    expect(rowLabels.length).toBeGreaterThan(0)
+    for (const label of rowLabels) expect(label).toMatch(/\S/)
+    // the SP code is on the popover of a cell (from 768; below it the grid is a card list without popovers)
+    test.skip(viewportWidth(page) < 768, 'the SP code shows in the cell popover, which exists from 768')
+    const first = cells.filter((c) => c.row === rowLabels[0])
+    const codes: string[] = []
+    for (let i = 0; i < Math.min(first.length, 4); i++) {
+      const title = await cellTitle(page, i)
+      if (title === 'Tiada Standard Pembelajaran') break
+      codes.push(title.split(':')[0] as string)
     }
+    expect(codes.length).toBeGreaterThan(0)
+    for (const c of codes) expect(c).toMatch(/\S/)
+    expect(codes).toEqual(
+      [...codes].sort((a, b) => a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' })),
+    )
   })
 
-  test('E2E-M27-58 P2 Kimia Tingkatan 5: value and status agree, colour per status, no value for "Belum cuba"', async ({
+  test('E2E-M27-58 P2 Kimia Tingkatan 5: value, label and colour step agree, "-" for "Belum Cuba"', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN_SEKOLAH)
     await openKimiaT5(page, gotoApp)
-    const tiles = await page.getByTestId('dh-tile').evaluateAll((els) =>
-      els.map((e) => ({
-        status: e.getAttribute('data-status') ?? '',
-        pct: e.querySelector('[data-testid="dh-tile-pct"]')?.textContent?.trim() ?? null,
-        cls: e.className,
-      })),
+    const cells = await heatCells(page)
+    for (const c of cells) expect(c.value).toMatch(/^(\d{1,3}%|-)$/)
+    // the seeded records of pupils 3001-3008 give P2 at least one answered cell
+    const answered = cells.filter((c) => c.value !== '-')
+    expect(answered.length).toBeGreaterThan(0)
+    test.skip(viewportWidth(page) < 768, 'status and colour show on the popover buttons, which exist from 768')
+    const buttons = page.getByTestId('dh-tiles').locator('[data-ds="heat-cell"]')
+    const all = await buttons.evaluateAll((els) =>
+      els.map((e) => ({ label: e.getAttribute('aria-label') ?? '', cls: e.className })),
     )
-    const colour: Record<string, RegExp> = {
-      mahir: /bg-green-100/,
-      sederhana: /bg-yellow-100/,
-      lemah: /bg-red-100/,
-      belum: /bg-slate-100/,
+    for (const [i, b] of all.entries()) {
+      const v = cells[i]!.value
+      expect(b.label.endsWith(v === '-' ? ': Belum Cuba' : `: ${v}`)).toBe(true)
+      const step = v === '-' ? 0 : Math.min(4, Math.floor(Number.parseInt(v, 10) / 20))
+      const ramp = ['bg-elevated', 'bg-primary/15', 'bg-primary/35', 'bg-primary/60', 'bg-primary']
+      expect(b.cls.split(/\s+/)).toContain(ramp[step] as string)
     }
-    for (const t of tiles) {
-      expect(t.cls).toMatch(colour[t.status] as RegExp)
-      if (t.status === 'belum') expect(t.pct).toBeNull()
-      else {
-        expect(t.pct).toMatch(/^\d{1,3}%$/)
-        expect(statusOf(Number.parseInt(t.pct as string, 10))).toBe(t.status)
-      }
-    }
-    // the seeded records of pupils 3001-3008 give P2 at least one answered tile
-    expect(tiles.some((t) => t.status !== 'belum')).toBe(true)
+    // the popover of the first answered cell names the status the percentage maps to
+    const i = cells.findIndex((c) => c.value !== '-')
+    const title = await cellTitle(page, i)
+    expect(title).toContain(` — ${statusOf(Number.parseInt(cells[i]!.value, 10))}`)
   })
 
   test('E2E-M27-59 tile title format and tiles are not links', async ({
@@ -305,17 +382,11 @@ test.describe('S2 DSKP Heatmap', MODULE, () => {
     test.skip(viewportWidth(page) < 1280, 'E2E-M27-59 runs at 1280 only')
     await loginAs(ADMIN_SEKOLAH)
     await openKimiaT5(page, gotoApp)
-    const tiles = await page.getByTestId('dh-tile').evaluateAll((els) =>
-      els.map((e) => ({
-        title: e.getAttribute('title') ?? '',
-        code: e.querySelector('[data-testid="dh-tile-code"]')?.textContent?.trim() ?? '',
-        pct: e.querySelector('[data-testid="dh-tile-pct"]')?.textContent?.trim() ?? null,
-      })),
-    )
-    for (const t of tiles) {
-      expect(t.title.startsWith(`${t.code}: `)).toBe(true)
-      expect(t.title).toMatch(/ — (Mahir|Sederhana|Lemah|Belum cuba)(?: · \d+ cuba · \d+% betul)?$/)
-      expect(t.title.includes('cuba · ')).toBe(t.pct !== null)
+    const cells = await heatCells(page)
+    for (let i = 0; i < Math.min(cells.length, 5); i++) {
+      const title = await cellTitle(page, i)
+      expect(title).toMatch(TITLE_RE)
+      expect(title.includes('cuba · ')).toBe(cells[i]!.value !== '-')
     }
     await expect(page.getByTestId('dh-card').locator('a')).toHaveCount(0)
   })
@@ -329,7 +400,9 @@ test.describe('S2 DSKP Heatmap', MODULE, () => {
     await open(page, gotoApp, S2, 'dh-card')
     await expect(page.getByTestId('dh-level-t4')).toHaveAttribute('data-active', 'true')
     await expect(page.getByTestId('dh-level-t5')).toHaveAttribute('data-active', 'false')
-    expect(await page.getByTestId('dh-subject').locator('option').count()).toBeGreaterThan(0)
+    await page.getByTestId('dh-subject').click()
+    expect(await page.getByRole('option').count()).toBeGreaterThan(0)
+    await page.keyboard.press('Escape')
     await expect(page.getByTestId('dh-caption')).toHaveText(/ Tingkatan 4$/)
 
     await page.getByTestId('dh-level-t5').click()
@@ -337,10 +410,10 @@ test.describe('S2 DSKP Heatmap', MODULE, () => {
     await expect(page.getByTestId('dh-level-t5')).toHaveAttribute('data-active', 'true')
     await expect(page.getByTestId('dh-caption')).toHaveText(/ Tingkatan 5$/)
 
-    await page.getByTestId('dh-subject').selectOption({ label: 'Kimia' })
+    await pickSubject(page, 'Kimia')
     await expect(page).toHaveURL(/subjectId=\d+&tingkatan=T5|tingkatan=T5&subjectId=\d+/)
     await expect(page.getByTestId('dh-caption')).toHaveText('KSSM Kimia Tingkatan 5')
-    await expect(page.getByTestId('dh-subject').locator('option:checked')).toHaveText('Kimia')
+    await expect(page.getByTestId('dh-subject')).toContainText('Kimia')
   })
 
   test(
@@ -351,16 +424,14 @@ test.describe('S2 DSKP Heatmap', MODULE, () => {
       await signIn(page, AZLAN)
       await open(page, gotoApp, `${S2}?subjectId=999999&tingkatan=T5`, 'dh-card')
       await expect(page.getByTestId('dh-empty')).toHaveText(SP_EMPTY)
-      await expect(page.getByTestId('dh-tile')).toHaveCount(0)
+      await expect(page.getByTestId('dh-tiles')).toHaveCount(0)
 
-      // P1 has no pupil: the default subject shows every tile "Belum cuba" with no percentage
+      // P1 has no pupil: the default subject shows every cell "Belum Cuba" with no percentage
       await spaGoto(page, S2)
-      await expect(page.getByTestId('dh-tile').first()).toBeVisible()
-      const states = await page
-        .getByTestId('dh-tile')
-        .evaluateAll((els) => els.map((e) => e.getAttribute('data-status')))
-      expect(new Set(states)).toEqual(new Set(['belum']))
-      await expect(page.getByTestId('dh-tile-pct')).toHaveCount(0)
+      await expect(page.getByTestId('dh-tiles')).toBeVisible()
+      const cells = await heatCells(page)
+      expect(cells.length).toBeGreaterThan(0)
+      expect(new Set(cells.map((c) => c.value))).toEqual(new Set(['-']))
       await expect(page.getByTestId('dh-empty')).toHaveCount(0)
     },
   )
@@ -374,21 +445,39 @@ test.describe('S2 DSKP Heatmap', MODULE, () => {
     await gotoApp('/login')
     await mock.setUser(ADMIN_SEKOLAH)
     await openKimiaT5(page, gotoApp)
-    const p2 = await texts(page, 'dh-tile-pct')
+    const p2 = (await heatCells(page)).filter((c) => c.value !== '-')
     expect(p2.length).toBeGreaterThan(0)
 
     await mock.setUser(POPULATED)
     await open(page, gotoApp, `${S2}?tingkatan=T5`, 'dh-card')
-    await page.getByTestId('dh-subject').selectOption({ label: 'Kimia' })
+    await pickSubject(page, 'Kimia')
     await expect(page.getByTestId('dh-caption')).toHaveText('KSSM Kimia Tingkatan 5')
-    await expect(page.getByTestId('dh-tile').first()).toBeVisible()
-    await expect(page.getByTestId('dh-tile-pct')).toHaveCount(0)
+    await expect(page.getByTestId('dh-tiles')).toBeVisible()
+    expect((await heatCells(page)).filter((c) => c.value !== '-')).toHaveLength(0)
   })
 })
 
 // ---------------------------------------------------------------------------------------------------
 // S5 Laporan Bulanan
 // ---------------------------------------------------------------------------------------------------
+
+/**
+ * Rows of a DsDataTable as [first column, ...others]: the tbody rows from 768, the cards below (the title button,
+ * then every dd).
+ */
+async function tableRows(table: Locator): Promise<string[][]> {
+  return table.evaluate((root) => {
+    const clean = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim()
+    const trs = [...root.querySelectorAll('tbody tr')]
+    if (trs.length > 0) {
+      return trs.map((tr) => [...tr.querySelectorAll('td')].map((c) => clean(c.textContent)))
+    }
+    return [...root.querySelectorAll('[data-ds="data-table-cards"] > li')].map((li) => [
+      clean(li.querySelector('button')?.textContent),
+      ...[...li.querySelectorAll('dd')].map((d) => clean(d.textContent)),
+    ])
+  })
+}
 
 /** "61.4%" -> 61.4, "1,234" -> 1234, "—" -> null. */
 const num = (text: string): number | null =>
@@ -428,7 +517,7 @@ test.describe('S5 Laporan Bulanan', MODULE, () => {
   }) => {
     await signIn(page, POPULATED)
     await open(page, gotoApp, S5, 'lb-cards')
-    expect(await textsOf(page.getByTestId('lb-cards').locator('p.uppercase'))).toEqual([
+    expect(await texts(page, 'lb-card-label')).toEqual([
       'Penglibatan',
       'Soalan Dijawab',
       'Ketepatan',
@@ -479,37 +568,31 @@ test.describe('S5 Laporan Bulanan', MODULE, () => {
     await expect(page.getByTestId('lb-table-subtitle')).toHaveText(
       '12 bulan terakhir — pecahan prestasi mengikut bulan',
     )
-    const rows = page.getByTestId('lb-table-row')
-    if ((await rows.count()) === 0) {
+    const rows = await tableRows(page.getByTestId('lb-table'))
+    if (rows.length === 0) {
       await expect(page.getByTestId('lb-table-empty')).toHaveText(
         'Tiada data Tiada aktiviti direkodkan buat masa ini',
         { useInnerText: true },
       )
       return
     }
-    expect(await textsOf(page.getByTestId('lb-table').locator('th'))).toEqual([
-      'Bulan',
-      'Soalan Dijawab',
-      'Soalan Betul',
-      'Pelajar Aktif',
-      'Purata/Pelajar',
-      'Accuracy',
-    ])
-    const cells = await rows.evaluateAll((trs) =>
-      trs.map((tr) => [...tr.querySelectorAll('td')].map((c) => (c.textContent ?? '').trim())),
+    // from 768 a table (Bulan is its first header), below it one card per month (Bulan is the card title)
+    const headers = await textsOf(page.getByTestId('lb-table').locator('th, dt').filter({ visible: true }))
+    const labels = ['Soalan Dijawab', 'Soalan Betul', 'Pelajar Aktif', 'Purata/Pelajar', 'Accuracy']
+    expect(headers.slice(0, viewportWidth(page) >= 768 ? 6 : 5)).toEqual(
+      viewportWidth(page) >= 768 ? ['Bulan', ...labels] : labels,
     )
-    for (const r of cells) expect(r[5]).toMatch(/^\d{1,3}(\.\d)?%$/)
-    if (cells.length > 1) {
-      const sum = (i: number) => cells.reduce((s, r) => s + (num(r[i] as string) as number), 0)
-      const foot = await page
-        .getByTestId('lb-table-total')
-        .evaluate((tr) => [...tr.querySelectorAll('td')].map((c) => (c.textContent ?? '').trim()))
-      expect(foot.slice(0, 1)).toEqual(['Jumlah'])
-      expect(num(foot[1] as string)).toBe(sum(1))
-      expect(num(foot[2] as string)).toBe(sum(2))
-      expect(foot.slice(3, 5)).toEqual(['—', '—'])
+    const months = rows.filter((r) => r[0] !== 'Jumlah')
+    const foot = rows.find((r) => r[0] === 'Jumlah')
+    for (const r of months) expect(r[5]).toMatch(/^\d{1,3}(\.\d)?%$/)
+    if (months.length > 1) {
+      const sum = (i: number) => months.reduce((s, r) => s + (num(r[i] as string) as number), 0)
+      expect(foot).toBeDefined()
+      expect(num(foot![1] as string)).toBe(sum(1))
+      expect(num(foot![2] as string)).toBe(sum(2))
+      expect(foot!.slice(3, 5)).toEqual(['—', '—'])
     } else {
-      await expect(page.getByTestId('lb-table-total')).toHaveCount(0)
+      expect(foot).toBeUndefined()
     }
     // the table scrolls inside its card at 375, never the page
     await expectNoHorizontalScroll(page)
@@ -531,7 +614,7 @@ test.describe('S5 Laporan Bulanan', MODULE, () => {
     const rows = await texts(page, 'lb-subject-figure')
     expect(rows.length).toBeGreaterThan(0)
     const acc = rows.map((r) => {
-      const m = /^(\d{1,3}\.\d)% · ([\d,]+) soalan · ([\d,]+) pelajar$/.exec(r)
+      const m = /^(\d{1,3}(?:\.\d)?)% · ([\d,]+) soalan · ([\d,]+) pelajar$/.exec(r)
       expect(m, r).not.toBeNull()
       return Number(m![1])
     })
@@ -583,25 +666,15 @@ test.describe('S8 Kelas Sekolah', MODULE, () => {
     const s0 = clean(await page.getByTestId('sd-card-value').nth(2).textContent())
     await spaGoto(page, S8)
     await expect(page.getByTestId('kl-table')).toBeVisible({ timeout: 120_000 })
-    await expect(page.getByTestId('kl-tile-label')).toHaveText('Kelas Aktif')
-    await expect(page.getByTestId('kl-tile-value')).toHaveText(s0)
+    await expect(page.getByTestId('kl-tile')).toContainText('Kelas Aktif')
+    expect(await klTileValue(page)).toBe(s0)
     await expect(page.getByTestId('kl-displayed')).toHaveText(/^\d[\d,]* kelas dipaparkan\s*$/)
-    expect(await textsOf(page.getByTestId('kl-table').locator('th'))).toEqual([
-      '#',
-      'Kelas',
-      'Subjek',
-      'Tingkatan',
-      'Guru',
-      'Murid',
-    ])
-    const rows = await page.getByTestId('kl-row').evaluateAll((trs) =>
-      trs.map((tr) => ({
-        cells: [...tr.querySelectorAll('td')].map((c) =>
-          (c.textContent ?? '').replace(/\s+/g, ' ').trim(),
-        ),
-        href: tr.querySelector('a')?.getAttribute('href') ?? '',
-      })),
+    const wide = viewportWidth(page) >= 768
+    const heads = await textsOf(page.getByTestId('kl-table').locator('th, dt').filter({ visible: true }))
+    expect(heads.slice(0, wide ? 6 : 4)).toEqual(
+      wide ? ['#', 'Kelas', 'Subjek', 'Tingkatan', 'Guru', 'Murid'] : ['Subjek', 'Tingkatan', 'Guru', 'Murid'],
     )
+    const rows = await klRows(page)
     const byHref = new Map(rows.map((r) => [r.href, r.cells]))
     const kimia = byHref.get('/prestasi/kelas/2001')
     const sejarah = byHref.get('/prestasi/kelas/2002')
@@ -611,8 +684,8 @@ test.describe('S8 Kelas Sekolah', MODULE, () => {
     expect(sejarah?.[3]).toBe('Tingkatan 5')
     expect(kimia?.[4]).toMatch(/\S/)
     expect(kimia?.[5]).toMatch(/^\d[\d,]*$/)
-    // row numbers run 1..n
-    expect(rows.map((r) => r.cells[0])).toEqual(rows.map((_, i) => String(i + 1)))
+    // row numbers run 1..n (the cards below 768 carry no number)
+    if (wide) expect(rows.map((r) => r.no)).toEqual(rows.map((_, i) => String(i + 1)))
     await expectNoHorizontalScroll(page)
   })
 
@@ -623,30 +696,26 @@ test.describe('S8 Kelas Sekolah', MODULE, () => {
   }) => {
     await gotoApp('/login')
     await mock.setUser(AZLAN)
-    await open(page, gotoApp, S8, 'kl-table')
+    await open(page, gotoApp, S8, 'kl-displayed') // a school without classes renders kl-empty, not kl-table
     await expect(page.getByTestId('kl-displayed')).toHaveText('0 kelas dipaparkan')
-    await expect(page.getByTestId('kl-tile-value')).toHaveText('0')
+    expect(await klTileValue(page)).toBe('0')
     await expect(page.getByTestId('kl-empty')).toHaveText(
       'Tiada kelas dijumpai Sila cipta kelas terlebih dahulu',
       { useInnerText: true },
     )
-    await expect(page.getByTestId('kl-row')).toHaveCount(0)
+    await expect(page.getByTestId('kl-table')).toHaveCount(0)
 
     for (const who of [ADMIN_SEKOLAH, POPULATED]) {
       await mock.setUser(who)
       await open(page, gotoApp, S8, 'kl-table')
-      await expect(page.getByTestId('kl-row').first()).toBeVisible({ timeout: 120_000 })
-      const hrefs = await page
-        .getByTestId('kl-name')
-        .evaluateAll((as) => as.map((a) => a.getAttribute('href')))
+      const hrefs = (await klRows(page)).map((r) => r.href)
+      expect(hrefs.length).toBeGreaterThan(0)
       expect(hrefs).not.toContain('/prestasi/kelas/419')
       expect(hrefs).not.toContain('/prestasi/kelas/806')
     }
     await mock.setUser(ADMIN_SEKOLAH)
     await open(page, gotoApp, `${S8}?school=900003&school_id=900003&role=teacher`, 'kl-table')
-    const own = await page
-      .getByTestId('kl-name')
-      .evaluateAll((as) => as.map((a) => a.getAttribute('href')))
+    const own = (await klRows(page)).map((r) => r.href)
     expect(own).toEqual(expect.arrayContaining(['/prestasi/kelas/2001', '/prestasi/kelas/2002']))
   })
 
@@ -657,26 +726,24 @@ test.describe('S8 Kelas Sekolah', MODULE, () => {
   }) => {
     await loginAs(ADMIN_SEKOLAH)
     await open(page, gotoApp, S8, 'kl-table')
-    await expect(page.getByTestId('kl-row').first()).toBeVisible()
     await expect(page.getByTestId('kl-search')).toHaveAttribute('placeholder', 'Cari kelas...')
     const levelOptions = await page.getByTestId('kl-level').locator('option').allTextContents()
     expect(levelOptions[0]).toBe('Semua')
     expect(levelOptions).toContain('Tingkatan 5')
 
-    const names = await texts(page, 'kl-name')
+    const names = (await klRows(page)).map((r) => r.name)
     expect([...names]).toEqual(
       [...names].sort((a, b) => a.localeCompare(b, 'ms-MY', { sensitivity: 'base' })),
     )
 
     await page.getByTestId('kl-level').selectOption({ label: 'Tingkatan 5' })
     await expect(page).toHaveURL(/level=tingkatan-5/)
-    for (const lvl of await texts(page, 'kl-level-cell')) expect(lvl).toBe('Tingkatan 5')
+    await expect.poll(async () => (await klRows(page)).every((r) => r.cells[3] === 'Tingkatan 5')).toBe(true)
 
     await page.getByTestId('kl-search').fill('marikh - kimia')
     await page.getByTestId('kl-search').press('Enter')
     await expect(page).toHaveURL(/search=marikh/)
-    await expect(page.getByTestId('kl-name')).toHaveCount(1)
-    await expect(page.getByTestId('kl-name')).toHaveText('5 MARIKH - Kimia')
+    await expect.poll(async () => (await klRows(page)).map((r) => r.name)).toEqual(['5 MARIKH - Kimia'])
     await expect(page.getByTestId('kl-displayed')).toHaveText('1 kelas dipaparkan')
 
     await page.getByTestId('kl-search').fill('tiada-kelas-begini')
@@ -695,25 +762,20 @@ test.describe('S8 Kelas Sekolah', MODULE, () => {
   }) => {
     await signIn(page, POPULATED)
     await open(page, gotoApp, S8, 'kl-table')
-    await expect(page.getByTestId('kl-row').first()).toBeVisible({ timeout: 120_000 })
+    await expect.poll(async () => (await klRows(page)).length, { timeout: 120_000 }).toBeGreaterThan(0)
     const total = Number(
       (await page.getByTestId('kl-displayed').textContent())?.replace(/[^\d]/g, ''),
     )
     test.skip(total <= 25, 'the populated school has 25 classes or fewer')
-    await expect(page.getByTestId('kl-row')).toHaveCount(25)
-    const pager = page.getByRole('navigation', { name: 'Pagination Navigation' })
-    if (viewportWidth(page) >= 640) {
-      await expect(pager).toContainText(`Showing 1 to 25 of ${String(total)} results`)
-    } else {
-      await expect(pager).toContainText('« Previous')
-      await expect(pager).toContainText('Next »')
-    }
+    expect(await klRows(page)).toHaveLength(25)
+    const pager = page.locator('[data-ds="data-table-pager"]')
+    await expect(pager.getByRole('status')).toHaveText(`Menunjukkan 1-25 daripada ${String(total)} hasil`)
     await page.getByTestId('kl-search').fill('a')
     await page.getByTestId('kl-search').press('Enter')
     await expect(page).toHaveURL(/search=a/)
-    const next = pager.locator('a[href*="page=2"]:visible').first()
-    if ((await next.count()) > 0) {
-      expect(await next.getAttribute('href')).toContain('search=a')
+    // the search is kept while paging: UPagination buttons, "Seterusnya" goes to page 2
+    const next = pager.getByRole('button', { name: 'Seterusnya' })
+    if ((await next.count()) > 0 && (await next.isEnabled())) {
       await next.click()
       await expect(page).toHaveURL(/page=2/)
       await expect(page).toHaveURL(/search=a/)
@@ -726,7 +788,7 @@ test.describe('S8 Kelas Sekolah', MODULE, () => {
     await open(page, gotoApp, '/admin-sekolah', 'sd-grades')
     const s0 = clean(await page.getByTestId('sd-card-value').nth(2).textContent())
     await spaGoto(page, S8)
-    await expect(page.getByTestId('kl-tile-value')).toHaveText(s0, { timeout: 120_000 })
+    await expect.poll(() => klTileValue(page), { timeout: 120_000 }).toBe(s0)
   })
 
   test(
