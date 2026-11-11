@@ -196,7 +196,7 @@ export function canonicalStep(q: QuestionsContext): AnyEntityStep {
       }
       const toLoad = plans.filter((p) => !copies.has(p.idKey))
       const { fresh, questionIds } = await insertQuestionTrees(ctx, toLoad)
-      const linked = await linkCanonicalStimuli(ctx, fresh, questionIds, linksOf)
+      const linked = await linkCanonicalStimuli(ctx, toLoad, questionIds, linksOf)
       for (const [k, n] of Object.entries(linked)) if (n > 0) q.notes.count(`canonical.stimuli.${k}`, n)
       for (const p of fresh) for (const n of p.notes) q.notes.count(`canonical.${n}`)
       for (const p of fresh) q.notes.count(`canonical.status.${p.status}`)

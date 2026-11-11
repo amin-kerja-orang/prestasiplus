@@ -134,21 +134,32 @@ export async function ensureStimuli(ctx: BatchContext, ids: readonly string[], o
 }
 
 /**
- * Links the stimuli of the questions inserted by this batch. `links`: V2 exam question id to its V2 stimulus ids in V2 order.
+ * Links the stimuli of the canonical questions of this batch that show none yet (just inserted, or left unlinked by an earlier run). `links`: V2 exam question id to its V2 stimulus ids in V2 order.
  * `questionIds`: the `questionIds` of `insertQuestionTrees` (key `exam_questions<NUL><V2 id>`).
  */
 export async function linkCanonicalStimuli(
   ctx: BatchContext,
-  fresh: readonly QuestionTreePlan[],
+  plans: readonly QuestionTreePlan[],
   questionIds: ReadonlyMap<string, string>,
   links: ReadonlyMap<string, readonly string[]>,
 ): Promise<LinkOutcome> {
   const out: LinkOutcome = { created: 0, grouped: 0, groupsCreated: 0, own: 0, held: 0, empty: 0 }
-  const members = fresh.flatMap((p) => {
+  const wanted = plans.flatMap((p) => {
     const qid = questionIds.get(`${p.idEntity}\u0000${p.idKey}`)
     const sids = [...new Set(links.get(p.idKey) ?? [])]
     return qid === undefined || sids.length === 0 ? [] : [{ v2: p.idKey, qid, subject: p.subject_id, sids }]
   })
+  if (wanted.length === 0) return out
+  // Self-healing: a question inserted by this batch shows no stimulus yet; one inserted by an earlier run (or an earlier loader version) that still
+  // shows none (no group, no own stimulus) is linked now. A question that already shows a stimulus is left alone, so a re-run changes 0 rows.
+  const shown = await ctx.db.query<{ id: string }>(
+    `SELECT q.id::text AS id FROM questions q
+      WHERE q.id = ANY($1::bigint[])
+        AND (q.group_id IS NOT NULL OR EXISTS (SELECT 1 FROM question_versions v JOIN question_version_stimuli s ON s.question_version_id = v.id WHERE v.question_id = q.id AND v.version_no = 1))`,
+    [wanted.map((m) => m.qid)],
+  )
+  const done = new Set(shown.rows.map((r) => r.id))
+  const members = wanted.filter((m) => !done.has(m.qid))
   if (members.length === 0) return out
   const allSids = [...new Set(members.flatMap((m) => m.sids))]
   const { ids: stimulusOf, paths } = await ensureStimuli(ctx, allSids, out)

@@ -19,6 +19,7 @@ import { survivorSql } from './deleted'
 import { questionFileChecks, standaloneRejects } from './bank-checks'
 import { capped, entityOf, exists, reported, type CheckContext } from './check-kit'
 import { canonicalDetail, canonicalTotal, findingsDetail, findingsTotal, positionGapGroups, readCanonicalFindings, readGroupFindings } from './group-checks'
+import { readStimulusLinkFindings, stimulusLinkDetail, stimulusLinkTotal } from './stimulus-link-checks'
 import { existingLegacyTables, loadForeignKeys, readMigratableList, type ForeignKey } from './fk-graph'
 import type { StatCheck } from './types'
 
@@ -557,7 +558,8 @@ async function stimulusGroupPlanChecks({ pool, source, entities }: CheckContext)
   const gaps = await positionGapGroups(pool, source)
   const canonicalReady = (await exists(pool, ARCHIVE_SCHEMA, 'question_stimulus')) && (await exists(pool, ARCHIVE_SCHEMA, 'exam_questions')) && (await exists(pool, ARCHIVE_SCHEMA, 'question_parts'))
   const canonical = canonicalReady ? await readCanonicalFindings(pool, source) : null
-  const bad = findingsTotal(findings) + gaps.gaps + (canonical === null ? 0 : canonicalTotal(canonical))
+  const links = canonicalReady && (await exists(pool, ARCHIVE_SCHEMA, 'stimuli')) ? await readStimulusLinkFindings(pool, source) : null
+  const bad = findingsTotal(findings) + gaps.gaps + (canonical === null ? 0 : canonicalTotal(canonical)) + (links === null ? 0 : stimulusLinkTotal(links))
   return [
     {
       name,
@@ -565,7 +567,7 @@ async function stimulusGroupPlanChecks({ pool, source, entities }: CheckContext)
       expected: 0,
       actual: bad,
       status: bad === 0 ? 'ok' : 'mismatch',
-      detail: `${findingsDetail(findings)}; group_position 1..n without a gap in ${gaps.groups - gaps.gaps} of ${gaps.groups} groups of the id maps; ${canonical === null ? 'canonical stimulus tables are not available: canonical links not compared' : canonicalDetail(canonical)}`,
+      detail: `${findingsDetail(findings)}; group_position 1..n without a gap in ${gaps.groups - gaps.gaps} of ${gaps.groups} groups of the id maps; ${canonical === null ? 'canonical stimulus tables are not available: canonical links not compared' : canonicalDetail(canonical)}; ${links === null ? 'stimuli table is not available: V2 stimulus links not compared' : stimulusLinkDetail(links)}`,
     },
   ]
 }
