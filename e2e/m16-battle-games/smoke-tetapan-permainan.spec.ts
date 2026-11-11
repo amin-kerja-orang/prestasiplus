@@ -15,7 +15,8 @@ test.use({ mockInit: { latency: 0 } })
 test('E2E-S7-T03 Tetapan Permainan: the four cards save, refuse and fit', MODULE, async ({ page, gotoApp, loginAs }) => {
   await loginAs(1)
   await gotoApp('/admin/permainan')
-  await expectTabTitle(page, 'Tetapan Permainan | PRESTASIPLUS')
+  // V2 admin/permainan.blade.php:8: the title carries the emoji
+  await expectTabTitle(page, '🎮 Tetapan Permainan | PRESTASIPLUS')
 
   for (const label of ['Jumlah Bilik', 'Sedang Aktif', 'Selesai', 'Pemain Unik']) {
     await expect(page.getByTestId('gs-page').getByText(label, { exact: true })).toBeVisible()

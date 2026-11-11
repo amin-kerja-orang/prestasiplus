@@ -67,7 +67,7 @@ test.describe('M16 S6 hub', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/permainan')
     await expectTabTitle(page, 'Zona Permainan | PRESTASIPLUS')
-    await expectAdminHeader(page, 'Zona Permainan')
+    await expectAdminHeader(page, 'Zona Permainan', 'Selamat datang kembali') // route meta.header.subtitle (hub.ts:18)
     await expect(page.getByTestId('hub-h1')).toHaveText('🎮 Zona Permainan')
     await expect(page.getByTestId('hub-open-rooms-empty')).toContainText('🌙')
     await expect(page.getByTestId('hub-open-rooms-empty')).toContainText(
