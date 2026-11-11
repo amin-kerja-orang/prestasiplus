@@ -2,7 +2,7 @@
 /**
  * S20 `/leaderboard` "Papan Pendahulu" (M08-T4; FR-M08-113..118, BR-M08-28; FN-M08-7.2.*).
  *
- * - Hero (the subtitle "Siapa juara minggu ini?" stays for every period) and the period links
+ * - Hero (V2 text "Siapa kumpul syiling paling banyak?"; the shell subtitle "Siapa juara minggu ini?" stays for every period) and the period links
  *   "Semua Masa" / "Minggu Ini" / "Bulan Ini"; no or unknown `period` is the week.
  * - "Kedudukan Anda": the viewer's rank, coins, sessions and accuracy ("#-", 0, 0, 0% when unranked).
  * - Podium (top 3, order 2-1-3) and a table of at most 50 rows: # / Pelajar / Koin, Sesi from 768px,
@@ -16,6 +16,7 @@ import { useRoute } from 'vue-router'
 import { useApi } from '@/composables'
 import {
   DsDataTable,
+  DsHeroCard,
   DsIdentity,
   DsLoadError,
   DsPage,
@@ -89,6 +90,14 @@ const columns: TableColumn<Row>[] = [
 
 <template>
   <DsPage title="Papan Pendahulu" subtitle="Siapa juara minggu ini?" data-testid="leaderboard-page">
+    <!-- V2 hero (leaderboard.blade.php:53-62): trophy, "Papan Pendahulu", "Siapa kumpul syiling paling banyak?" -->
+    <DsHeroCard
+      overline="Syiling"
+      title="Papan Pendahulu"
+      subtitle="Siapa kumpul syiling paling banyak?"
+      art="trophy"
+      data-testid="leaderboard-hero"
+    />
     <DsPillNav
       :items="periodTabs"
       :active="period"
