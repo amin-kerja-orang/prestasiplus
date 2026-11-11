@@ -134,6 +134,17 @@ To enable on UAT:
 
 **Order.** The clone runs in stages with `deploy/vps/migration/slot.sh etl`. `migrate:core` (stage 1: users, schools, classes) runs before `migrate:activity` (stage 6: practice, wallets, gifts, articles and the other activity entities). Nothing enforces this order: the operator does. Both take the `etl:source:cloud` lock; exit 2 can mean "busy" (see `production-migration-slot.md`, section 2).
 
+**At the start of EACH stage (stage 1 to stage 6), before the stage runs:** copy the pre-stage dump that `backup.sh` just wrote, and its checksum, to a folder that normal retention never touches:
+
+```
+d=/var/backups/pretasiplus/staged-clone/stage-<N>
+install -d -m 700 "$d"
+f=$(ls -1t /var/backups/pretasiplus/pp-backup-*.dump | head -n1)     # the pre-stage dump, check its time stamp first
+cp -p "$f" "$f.sha256" "$d/" && (cd "$d" && sha256sum -c "$(basename "$f").sha256")
+```
+
+`backup.sh` retention only looks at the top level of `PP_BACKUP_DIR` (`find -maxdepth 1`), so the `staged-clone/` subfolder is never rotated away. The copy is a whole-database dump, so it holds personal data and, once raw data is in the database, raw `.cloud` data: it is purged with the rest (table below).
+
 **Retention decision (PO, KP-23).** The raw V2 dump and the per-stage dumps on UAT are kept until the staged clone is complete and verified, then DELETED 7 days after stage 6 finishes.
 
 **Final step, once stage 6 has passed its verification.**
@@ -146,6 +157,7 @@ To enable on UAT:
 | What | Where | Command |
 |---|---|---|
 | The raw V2 dump and each per-stage dump (directories with `manifest.json`), and any `.tar.gpg` of them | wherever the stages were extracted (`PP_STAGE_DIR`, for example `/srv/pretasiplus/stage/<dump dir>`, and the `--dump-dir` given to `rebuild-db.sh`) | `deploy/vps/migration/slot.sh wipe-dump <dump dir> [<file>.gpg]` for each one. It overwrites, deletes, and exits 3 when a path does not exist (nothing deleted). `npm run dump:wipe` is the same step for the machine that ran `dump:cloud` |
+| The copied pre-stage dumps and their `.sha256` | `/var/backups/pretasiplus/staged-clone/stage-<N>/` (N = 1 to 6) | `shred -u -n 1 -z <file>` for each file (or `rm` where shred is not possible, as `wipe-dump` does), then `rmdir` the stage folders and `staged-clone` itself |
 | The files export given to `--files-dir` (raw uploads) | the host folder of the export | delete the folder by hand once the files are in the api volume: `rm -r <files export>` after checking the path with `ls` (outside the repo) |
 | The throwaway staging cluster, if still present | `PP_STAGE_DIR/pgdata`, container `pp-stage-throwaway` | `deploy/vps/migration/slot.sh throwaway-down` |
 | `staging_cloud` (raw `.cloud` copy) in the UAT database | the database | `rebuild-db.sh` drops it at step 15 unless `--keep-staging` was used; otherwise `$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "drop schema if exists staging_cloud cascade"'`. `archive_cloud` is the minimised archive kept by decision Q12 A (12 months): it is not part of this purge unless the PO says so |
@@ -156,7 +168,7 @@ To enable on UAT:
 
 - `deploy/vps/migration/restore-point.sh raw-check` prints `RAW CHECK OK: no copy of raw .cloud data found` and exits 0 (exit 1 lists what is left, exit 2 means a check could not run: fix that first).
 - `deploy/vps/migration/slot.sh gonogo` shows the `raw data:` line with the same result, and `throwaway: none running`.
-- `ls` of each dump directory, the files export and `PP_STAGE_DIR` shows them absent (`wipe-dump` also logs `DUMP COPIES DELETED`).
+- `ls` of each dump directory, the files export, `PP_STAGE_DIR` and `/var/backups/pretasiplus/staged-clone` shows them absent (`wipe-dump` also logs `DUMP COPIES DELETED`).
 - `select count(*) from information_schema.schemata where schema_name = 'staging_cloud';` gives 0.
 - `restore-points/custody.tsv` shows the raw points with status `deleted`.
 - Record the date and the operator name in the cutover notes.
