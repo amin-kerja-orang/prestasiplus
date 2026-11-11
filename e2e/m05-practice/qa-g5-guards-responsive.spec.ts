@@ -292,7 +292,7 @@ const SWEEP: SweepRoute[] = [
   { name: 'S4', path: '/practice/chapter', who: 'pelajar2@demo.test', ready: 'chapter-subject-grid' },
   { name: 'S5', path: '/practice/chapter/MATH', who: 'pelajar2@demo.test', ready: 'chapter-subject-name' },
   { name: 'S5-ADDMATH', path: '/practice/chapter/ADDMATH', who: 'pelajar2@demo.test', ready: 'chapter-empty' },
-  { name: 'Q2', path: '/practice/chapter/MATH/1/quiz?count=5', who: 'pelajarmaju@demo.test', ready: 'quiz-title' },
+  { name: 'Q2', path: '/practice/chapter/MATH/91/quiz?count=5', who: 'pelajarmaju@demo.test', ready: 'quiz-title' },
   { name: 'S6', path: '/practice/revision', who: 'admin@demo.test', ready: 'revision-grid' },
   { name: 'S7', path: '/practice/revision/MATH', who: 'pelajarmaju@demo.test', ready: 'quiz-title' },
   { name: 'S10', path: '/latihan-berstruktur', who: 'pelajar@demo.test', ready: 'structured-grid' },
