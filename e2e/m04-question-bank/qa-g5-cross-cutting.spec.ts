@@ -92,14 +92,46 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
       .map((x) => x.trim())
     expect(s1Names).toHaveLength(31)
 
-    await gotoApp('/admin/structured-questions')
-    // RED, waiting on LEAD UI agent: it owns StructuredListPage (/admin/structured-questions) and is changing it; do not rewrite toward the current UI.
-    await expect(byId(page, 'structured-subject').locator('option')).toHaveCount(32)
-    const sNames = (await byId(page, 'structured-subject').locator('option').allInnerTexts())
-      .slice(1)
-      .map((s) => s.trim())
-    expect(sNames).toEqual([...sNames].sort((a, b) => a.localeCompare(b, 'ms')))
-    expect([...sNames].sort()).toEqual([...s1Names].sort())
+    // PO: /admin/structured-questions is retired; its Subjek filter is the Subjektif lane filter (lane-subject).
+    await gotoApp('/admin/spm/subjektif')
+    // Source rule: mock handlers/servability-lanes.ts:82-86 (active M03 subjects ordered by sort_order, data/curriculum.json subjects[].sort_order 1..31); http servability.controller.ts:104.
+    // The 31 active subjects, in sort_order (not alphabetical), are the same set as GET /api/subjects (s1Names).
+    await expect(byId(page, 'lane-subject').locator('option')).toHaveText([
+      'Semua Subjek',
+      'Bahasa Melayu',
+      'Bahasa Inggeris',
+      'Matematik',
+      'Sains',
+      'Sejarah',
+      'Pendidikan Islam',
+      'Pendidikan Moral',
+      'Matematik Tambahan',
+      'Fizik',
+      'Kimia',
+      'Biologi',
+      'Geografi',
+      'Pendidikan Seni Visual',
+      'Pendidikan Muzik',
+      'Pendidikan Jasmani & Kesihatan',
+      'Reka Bentuk & Teknologi',
+      'Sains Komputer',
+      'Bahasa Arab',
+      'Bahasa Cina',
+      'Bahasa Tamil',
+      'Prinsip Perakaunan',
+      'Ekonomi',
+      'Perniagaan',
+      'Pendidikan Al-Quran & As-Sunnah',
+      'Tasawwur Islam',
+      'Jawi',
+      'Pendidikan Syariah Islamiah',
+      'Sains Rumah Tangga',
+      'Pembuatan Pakaian Wanita',
+      'Pertanian',
+      'Sains Sukan',
+    ])
+    const laneNames = (await byId(page, 'lane-subject').locator('option').allInnerTexts()).slice(1).map((s) => s.trim())
+    expect([...laneNames].sort()).toEqual([...s1Names].sort())
 
     await gotoApp('/admin/soalan-gambar')
     await expect(byId(page, 'diagrams-subject').locator('option')).toHaveCount(32)
@@ -198,64 +230,77 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
   test.use({ mockInit: { latency: 0 } })
   test.setTimeout(150_000)
 
-  // RED, waiting on LEAD UI agent: it owns StructuredListPage (/admin/structured-questions) and is changing it; do not rewrite toward the current UI.
-  test('E2E-M04-45 S8 header copy, add link, filter options, pills alphabetical (AC-22.1, 22.2)', async ({
+  // PO: /admin/structured-questions is retired and redirects to the Subjektif lane. Retired with /admin/structured-questions (PO):
+  // the "Tambah Soalan" link, the Jumlah Soalan / Diluluskan tiles, the KBAT and Tahap filters, the subject pills and the
+  // "Menunjukkan 1-25 daripada 4,064 soalan" counter. The lane has none of them (LaneSubjektifPage.vue, LaneShell.vue).
+  test('E2E-M04-45 S8 header copy, filter options, redirect from the retired route (AC-22.1, 22.2)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/structured-questions')
-    await expect(page.getByRole('heading', { name: 'Soalan Berstruktur' }).first()).toBeVisible()
-    await expect(page.getByText('Semua soalan berstruktur SPM dalam sistem')).toBeVisible()
-    // S6-T17: the M10 create form is routed (teacher + admin), so the button opens it.
-    await expect(byId(page, 'structured-add')).toHaveAttribute('href', '/guru/soalan-berstruktur/cipta')
-    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(1)
-    await expect(byId(page, 'structured-stat-total')).toContainText('Jumlah Soalan')
-    await expect(byId(page, 'structured-stat-published')).toContainText('Diluluskan')
-    const kbat = (await byId(page, 'structured-kbat').locator('option').allInnerTexts()).map((s) =>
-      s.trim(),
-    )
-    expect(kbat).toEqual([
-      'Semua KBAT',
-      'Memahami (L2)',
-      'Mengaplikasi (L3)',
-      'Menganalisis (L4)',
-      'Menilai/Mencipta (L5)',
+    await expect(page).toHaveURL(/\/admin\/spm\/subjektif$/)
+    await expect(page.getByRole('heading', { name: 'Subjektif' }).first()).toBeVisible()
+    await expect(page.getByText('Soalan berstruktur dan esei.')).toBeVisible()
+    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
+    await expect(byId(page, 'lane-count')).toHaveText('4,064 item ·')
+    const status = (await byId(page, 'lane-status').locator('option').allInnerTexts()).map((s) => s.trim())
+    expect(status).toEqual(['Semua Status', 'Draf', 'Menunggu Semakan', 'Diluluskan', 'Diarkibkan'])
+    // Source rule: mock handlers/servability-lanes.ts:82-86 (active M03 subjects ordered by sort_order, data/curriculum.json subjects[].sort_order 1..31); http servability.controller.ts:104.
+    await expect(byId(page, 'lane-subject').locator('option')).toHaveText([
+      'Semua Subjek',
+      'Bahasa Melayu',
+      'Bahasa Inggeris',
+      'Matematik',
+      'Sains',
+      'Sejarah',
+      'Pendidikan Islam',
+      'Pendidikan Moral',
+      'Matematik Tambahan',
+      'Fizik',
+      'Kimia',
+      'Biologi',
+      'Geografi',
+      'Pendidikan Seni Visual',
+      'Pendidikan Muzik',
+      'Pendidikan Jasmani & Kesihatan',
+      'Reka Bentuk & Teknologi',
+      'Sains Komputer',
+      'Bahasa Arab',
+      'Bahasa Cina',
+      'Bahasa Tamil',
+      'Prinsip Perakaunan',
+      'Ekonomi',
+      'Perniagaan',
+      'Pendidikan Al-Quran & As-Sunnah',
+      'Tasawwur Islam',
+      'Jawi',
+      'Pendidikan Syariah Islamiah',
+      'Sains Rumah Tangga',
+      'Pembuatan Pakaian Wanita',
+      'Pertanian',
+      'Sains Sukan',
     ])
-    await expect(byId(page, 'structured-level').locator('option')).toHaveCount(12)
-    await expect(byId(page, 'structured-reset')).toHaveCount(0)
-    const pills = (await byId(page, 'structured-subject-pill').allInnerTexts()).map((s) => s.trim())
-    expect(pills.length).toBeGreaterThan(5)
-    const names = pills.map((p) => (p.split(':')[0] ?? '').trim())
-    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'ms')))
-    for (const p of pills) expect(p).toMatch(/^.+:\s*[\d,]+$/)
-    await expect(byId(page, 'structured-counter')).toContainText(
-      'Menunjukkan 1–25 daripada 4,064 soalan',
-    )
+    await expect(page.getByRole('button', { name: 'Set Semula' }).first()).toBeVisible()
   })
 
-  // RED, waiting on LEAD UI agent: it owns StructuredListPage (/admin/structured-questions) and is changing it; do not rewrite toward the current UI.
-  test('E2E-M04-47 S9: edit link goes to the M10 route, back link returns (AC-23.1, 23.3)', async ({
+  // Retired with /admin/structured-questions (PO): the KBAT pill, the "Balik ke Senarai" button and the id pill; the editor has none.
+  test('E2E-M04-47 S9: the Subjektif editor shows the question parts, links the lane back, no M10 edit link (AC-23.1, 23.3)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/structured-questions/3698')
-    await expect(byId(page, 'structured-id')).toContainText('ID: #3698')
-    await expect(byId(page, 'structured-pill-marks')).toContainText('Markah')
-    await expect(byId(page, 'structured-pill-kbat')).toContainText('KBAT:')
-    await expect(byId(page, 'structured-subs-heading')).toContainText(
-      'Bahagian Soalan (3 sub-soalan)',
-    )
-    // The M10 edit form exists only for the teacher's own submissions (g{n}): no button on an approved question.
-    await expect(byId(page, 'structured-edit')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/admin\/spm\/subjektif\/3698\/sunting$/)
+    await expect(byId(page, 'rubric-meta')).toHaveText('Soalan #3698 · Sejarah · Tingkatan 5 · 10 markah')
+    // The M10 edit form exists only for the teacher's own submissions (g{n}): no link on an approved question.
     await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
-    await expect(byId(page, 'structured-back-list')).toContainText('Balik ke Senarai')
-    await expect(byId(page, 'structured-back')).toContainText('Kembali ke senarai')
-    const lab = await byId(page, 'structured-sub-label').allInnerTexts()
-    expect(lab.map((s) => s.trim())).toEqual(['3(A)', '3(B)', '3(C)'])
+    await expect(byId(page, 'rubric-back')).toContainText('Kembali ke Subjektif')
+    await expect(byId(page, 'rubric-back')).toHaveAttribute('href', '/admin/spm/subjektif')
+    const lab = await byId(page, 'rubric-sub-number').allInnerTexts()
+    expect(lab.map((s) => s.trim())).toEqual(['a', 'b', 'c'])
     await expectNoHorizontalScroll(page)
   })
 })

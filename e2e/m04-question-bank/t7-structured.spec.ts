@@ -1,4 +1,3 @@
-// RED, waiting on LEAD UI agent: it owns StructuredListPage (/admin/structured-questions); do not rewrite toward the current UI.
 /**
  * M04-T7 developer smoke for S8 / S9 (build-plan M04-T7; QA writes the E2E ids at G5): the structured
  * list, its filters, pager and empty state, and the detail page, as the admin demo account at
@@ -12,6 +11,7 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
+  isDesktopShell,
   isInViewportX,
   isMobileWidth,
   moduleTag,
@@ -36,233 +36,203 @@ async function openList(page: Page, gotoApp: (path: string) => Promise<void>, pa
   await expect(rows(page).first()).toBeVisible()
 }
 
-test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () => {
+// PO decision: /admin/structured-questions stays retired (routes/structured.ts:11-21); the admin list of structured
+// questions is the Subjektif lane (/admin/spm/subjektif) and its editor "Skema & Rubrik" (.../:id/sunting).
+const SUBJEKTIF = '/admin/spm/subjektif'
+const editorOf = (id: number | string) => `${SUBJEKTIF}/${String(id)}/sunting`
+
+function laneRows(page: Page) {
+  return page.getByTestId('lane-subjektif').locator('tbody tr, [data-ds=data-table-cards] > li')
+}
+
+async function openLane(page: Page, gotoApp: (path: string) => Promise<void>, path = SUBJEKTIF) {
+  await gotoApp(path)
+  await expect(laneRows(page).first()).toBeVisible()
+}
+
+test.describe('M04 S8 retired route', { tag: [TAG.smoke, moduleTag(4)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('header, stats, filter, 25 rows, columns and pager at every width', async ({
+  test('/admin/structured-questions redirects to the Subjektif lane (PO: Bank Lama retired)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
-    await openList(page, gotoApp)
-    await expectTabTitle(page, 'Soalan Berstruktur')
-    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Soalan Berstruktur')
-    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
-    await expect(page.getByTestId('structured-page').getByRole('heading', { level: 1 })).toHaveText(
-      'Soalan Berstruktur',
-    )
-    await expect(page.getByText('Semua soalan berstruktur SPM dalam sistem')).toBeVisible()
-    // S6-T17: the M10 create form is routed (teacher + admin), so "Tambah Soalan" opens it.
-    const add = page.getByTestId('structured-add')
-    await expect(add).toHaveText('Tambah Soalan')
-    await expect(add).toHaveAttribute('href', '/guru/soalan-berstruktur/cipta')
-    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(1)
-    const search = page.getByTestId('structured-filter').locator('button[type=submit]')
-    // Wait for the layout to settle (fonts, grid) before measuring the hit area.
-    await expect
-      .poll(async () => (await search.boundingBox())?.height ?? 0)
-      .toBeGreaterThanOrEqual(44)
-    await expectTouchTarget(search)
-
-    await expect(page.getByTestId('structured-stat-total')).toContainText('4,064')
-    await expect(page.getByTestId('structured-stat-total')).toContainText('Jumlah Soalan')
-    await expect(page.getByTestId('structured-stat-published')).toContainText('4,064')
-    await expect(page.getByTestId('structured-by-subject')).toContainText('Agihan Mengikut Subjek')
-    await expect(page.getByTestId('structured-subject-pill')).toHaveCount(15)
-    await expect(page.getByTestId('structured-subject-pill').first()).toHaveText(
-      'Bahasa Inggeris: 774',
-    )
-
-    // Filter: 31 subjects + all, 11 levels + all, KBAT 2 to 5 + all.
-    await expect(page.getByTestId('structured-subject').locator('option')).toHaveCount(32)
-    await expect(page.getByTestId('structured-level').locator('option')).toHaveCount(12)
-    await expect(page.getByTestId('structured-kbat').locator('option')).toHaveText([
-      'Semua KBAT',
-      'Memahami (L2)',
-      'Mengaplikasi (L3)',
-      'Menganalisis (L4)',
-      'Menilai/Mencipta (L5)',
-    ])
-    await expect(page.getByTestId('structured-search')).toHaveText('Cari')
-    await expect(page.getByTestId('structured-reset')).toHaveCount(0)
-
-    // Table: 25 rows, the first three ids are the observed anchors.
-    await expect(rows(page)).toHaveCount(25)
-    await expect(rows(page).nth(0).locator('td').first()).toHaveText('4454')
-    await expect(rows(page).nth(1).locator('td').first()).toHaveText('4455')
-    await expect(rows(page).nth(2).locator('td').first()).toHaveText('4456')
-    await expect(rows(page).first().getByTestId('structured-kbat-pill')).toHaveText('L3')
-    await expect(rows(page).first().getByTestId('structured-view')).toHaveText('Lihat')
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      'Menunjukkan 1–25 daripada 4,064 soalan',
-    )
-
-    // Column visibility: Subjek, Tgk, Markah from 640, Sub-Q from 768.
-    const width = viewportWidth(page)
-    const th = (name: string) => page.locator('thead th', { hasText: new RegExp(`^${name}$`) })
-    if (width < 640) {
-      await expect(th('Subjek')).toBeHidden()
-      await expect(th('Tgk')).toBeHidden()
-      await expect(th('Markah')).toBeHidden()
-    } else {
-      await expect(th('Subjek')).toBeVisible()
-      await expect(th('Tgk')).toBeVisible()
-      await expect(th('Markah')).toBeVisible()
-    }
-    if (width < 768) await expect(th('Sub-Q')).toBeHidden()
-    else await expect(th('Sub-Q')).toBeVisible()
-
-    // Pager: mobile "« Previous / Next »", otherwise the numbered strip that fits (DV-M04-09).
-    if (isMobileWidth(page)) {
-      await expect(pager(page).getByText('Next »')).toBeVisible()
-    } else {
-      await expect(pager(page)).toContainText('Showing 1 to 25 of 4064 results')
-      const last = pager(page).getByRole('link', { name: 'Go to page 163' })
-      await expect(last).toBeVisible()
-      expect(await isInViewportX(page, last)).toBe(true)
-    }
-    await expectNoHorizontalScroll(page)
+    await gotoApp(LIST)
+    await expect(page).toHaveURL(new RegExp(`${SUBJEKTIF}$`))
+    await expect(page.getByTestId('lane-subjektif')).toBeVisible()
+    await expect(page.getByTestId('structured-page')).toHaveCount(0)
   })
 
-  test('the next link opens page 2 (26 to 50) and the filters stay in the links', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
-    await loginAs(ADMIN)
-    await openList(page, gotoApp)
-    await pager(page).getByRole('link', { name: /Next/ }).first().click()
-    await expect(page).toHaveURL(/\/admin\/structured-questions\?page=2$/)
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      'Menunjukkan 26–50 daripada 4,064 soalan',
-    )
-    await expect(rows(page)).toHaveCount(25)
-    await expectNoHorizontalScroll(page)
-  })
-
-  test('the KBAT 5 filter shows 483 rows and Reset returns to 4,064', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
-    await loginAs(ADMIN)
-    await openList(page, gotoApp)
-    await page.getByTestId('structured-kbat').selectOption({ label: 'Menilai/Mencipta (L5)' })
-    await page.getByTestId('structured-search').click()
-    await expect(page).toHaveURL(/kbat_level=5/)
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      'Menunjukkan 1–25 daripada 483 soalan',
-    )
-    await expect(rows(page).first().getByTestId('structured-kbat-pill')).toHaveText('L5')
-    const reset = page.getByTestId('structured-reset')
-    await expect(reset).toHaveText('Reset')
-    await expectNoHorizontalScroll(page)
-    await reset.click()
-    await expect(page).toHaveURL(/\/admin\/structured-questions$/)
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      'Menunjukkan 1–25 daripada 4,064 soalan',
-    )
-  })
-
-  test(
-    'a filter with no match shows the empty row and the zero counter',
-    provisional('DV-M04-12 empty copy is PROPOSED'),
-    async ({ page, loginAs, gotoApp }) => {
-      await loginAs(ADMIN)
-      await gotoApp(`${LIST}?subject_id=18`)
-      await expect(page.getByTestId('structured-empty')).toHaveText(
-        'Tiada soalan berstruktur ditemui',
-      )
-      await expect(page.getByTestId('structured-counter')).toHaveText(
-        'Menunjukkan 0 daripada 0 soalan',
-      )
-      await expect(pager(page)).toHaveCount(0)
-      await expectNoHorizontalScroll(page)
-    },
-  )
-})
-
-test.describe('M04 S9 structured detail', { tag: [TAG.smoke, moduleTag(4)] }, () => {
-  test.use({ mockInit: { latency: 0 } })
-
-  test('opens from the list "Lihat" link and shows the question with its sub-questions', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
-    await loginAs(ADMIN)
-    await openList(page, gotoApp)
-    const view = rows(page).first().getByTestId('structured-view')
-    await expectTouchTarget(view)
-    await view.click()
-    await expect(page).toHaveURL(/\/admin\/structured-questions\/4454$/)
-    await expect(page.getByTestId('structured-detail')).toBeVisible()
-    await expectTabTitle(page, 'Detail Soalan Berstruktur')
-    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Detail Soalan Berstruktur')
-    await expect(page.getByTestId('structured-id')).toHaveText('ID: #4454')
-    await expect(page.getByTestId('structured-pill-marks')).toHaveText('8 Markah')
-    await expect(page.getByTestId('structured-subs-heading')).toHaveText(
-      'Bahagian Soalan (1 sub-soalan)',
-    )
-    await expectNoHorizontalScroll(page)
-
-    // Back to the list.
-    await page.getByTestId('structured-back-list').click()
-    await expect(page).toHaveURL(/\/admin\/structured-questions$/)
-    await expect(rows(page).first()).toBeVisible()
-  })
-
-  test('the observed question 4454 shows its header, its part and both actions', async ({
+  test('/admin/structured-questions/:id redirects to the Subjektif editor of that question', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await gotoApp(`${LIST}/4454`)
-    await expect(page.getByTestId('structured-id')).toHaveText('ID: #4454')
-    await expect(page.getByTestId('structured-pill-subject')).toHaveText('Perniagaan')
-    await expect(page.getByTestId('structured-pill-level')).toHaveText('Tingkatan 5')
-    await expect(page.getByTestId('structured-pill-kbat')).toHaveText('KBAT: Mengaplikasi (L3)')
-    await expect(page.getByTestId('structured-pill-marks')).toHaveText('8 Markah')
-    await expect(page.getByTestId('structured-stimulus')).toContainText('Soalan Oleh:')
-    await expect(page.getByTestId('structured-meta')).toContainText('Visibiliti: Public')
-    await expect(page.getByTestId('structured-meta')).toContainText('Published')
-    await expect(page.getByTestId('structured-subs-heading')).toHaveText(
-      'Bahagian Soalan (1 sub-soalan)',
-    )
-    await expect(page.getByTestId('structured-sub-label')).toHaveText(['A'])
-    await expect(page.getByTestId('structured-sub-marks')).toHaveText(['8m'])
-    await expect(page.getByTestId('structured-sub').first()).toContainText('Jawapan Model')
-    // The M10 edit form exists only for the teacher's own submissions (g{n}), so an approved question has no "Edit Soalan".
-    await expect(page.getByTestId('structured-edit')).toHaveCount(0)
-    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
-    await expectTouchTarget(page.getByTestId('structured-back-list'))
-    await expect(page.getByTestId('structured-back')).toHaveAttribute('href', LIST)
+    await expect(page).toHaveURL(new RegExp(`${editorOf(4454)}$`))
+    await expect(page.getByTestId('rubric-page')).toBeVisible()
+    await expect(page.getByTestId('structured-detail')).toHaveCount(0)
+  })
+})
+
+test.describe('M04 S8 Subjektif lane (admin list of structured questions)', { tag: [TAG.smoke, moduleTag(4)] }, () => {
+  test.use({ mockInit: { latency: 0 } })
+
+  test('header, filter bar, rows and pager at every width', async ({ page, loginAs, gotoApp }) => {
+    await loginAs(ADMIN)
+    await openLane(page, gotoApp)
+    // Was 'Soalan Berstruktur' (S8); the lane title and subtitle are the route meta (routes/admin-kandungan.ts:31-35, R1-ADM-Q-23); the shell adds ' | PRESTASIPLUS'.
+    await expectTabTitle(page, 'Subjektif | PRESTASIPLUS')
+    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Subjektif')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText('Soalan berstruktur dan esei.')
+    // C-60: the lane reads the m04 structured store: 4,064 questions (the S8 anchor 'Jumlah Soalan'), 25 per page, newest first.
+    await expect(page.getByTestId('lane-count')).toHaveText('4,064 item ·')
+    await expect(page.getByTestId('lane-back')).toHaveText('← Semua laluan SPM')
+
+    // Filters: Subjek, Status (Subjektif has its own list), Cari, Tapis / Set Semula.
+    // Source rule: mock handlers/servability-lanes.ts:82-86 (active M03 subjects ordered by sort_order, data/curriculum.json subjects[].sort_order 1..31); http servability.controller.ts:104.
+    await expect(page.getByTestId('lane-subject').locator('option')).toHaveText([
+      'Semua Subjek',
+      'Bahasa Melayu',
+      'Bahasa Inggeris',
+      'Matematik',
+      'Sains',
+      'Sejarah',
+      'Pendidikan Islam',
+      'Pendidikan Moral',
+      'Matematik Tambahan',
+      'Fizik',
+      'Kimia',
+      'Biologi',
+      'Geografi',
+      'Pendidikan Seni Visual',
+      'Pendidikan Muzik',
+      'Pendidikan Jasmani & Kesihatan',
+      'Reka Bentuk & Teknologi',
+      'Sains Komputer',
+      'Bahasa Arab',
+      'Bahasa Cina',
+      'Bahasa Tamil',
+      'Prinsip Perakaunan',
+      'Ekonomi',
+      'Perniagaan',
+      'Pendidikan Al-Quran & As-Sunnah',
+      'Tasawwur Islam',
+      'Jawi',
+      'Pendidikan Syariah Islamiah',
+      'Sains Rumah Tangga',
+      'Pembuatan Pakaian Wanita',
+      'Pertanian',
+      'Sains Sukan',
+    ])
+    await expect(page.getByTestId('lane-status').locator('option')).toHaveText([
+      'Semua Status',
+      'Draf',
+      'Menunggu Semakan',
+      'Diluluskan',
+      'Diarkibkan',
+    ])
+    await expect(page.getByTestId('lane-search')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Tapis', exact: true })).toBeVisible()
+
+    // Rows: Senarai (number), Tajuk, Status, Perhatian, Tindakan with one Sunting action.
+    await expect(laneRows(page)).toHaveCount(25)
+    const first = laneRows(page).first()
+    await expect(first).toContainText('#4456 · Perniagaan · Tingkatan 5')
+    await expect(first.getByRole('link', { name: 'Sunting' })).toHaveAttribute('href', '/admin/spm/subjektif/4456/sunting')
+    // Staff page (admin): 44 px below lg, 40 from lg (C-16).
+    if (!isDesktopShell(page)) await expectTouchTarget(first.getByRole('link', { name: 'Sunting' }))
+    await expect(page.locator('[data-ds="data-table-pager"]')).toContainText('Menunjukkan 1-25 daripada 4064 hasil')
     await expectNoHorizontalScroll(page)
   })
 
-  test('the observed question 3698 shows its id, marks and three parts', async ({
+  test('the hub card total equals the lane total (C-60)', async ({ page, loginAs, gotoApp }) => {
+    await loginAs(ADMIN)
+    await gotoApp('/admin/spm')
+    await expect(page.getByTestId('kandungan-card-subjektif')).toContainText('4,064')
+  })
+
+  test('searching a stimulus lists its questions newest first; 4454 is among them', async ({ page, loginAs, gotoApp }) => {
+    await loginAs(ADMIN)
+    await openLane(page, gotoApp)
+    await page.getByTestId('lane-search').fill('Baca situasi perniagaan')
+    await page.getByRole('button', { name: 'Tapis', exact: true }).click()
+    // 763 = the Perniagaan structured questions of the dataset (the V2 'Perniagaan: 763' anchor of the old S8 pills).
+    await expect(page.getByTestId('lane-count')).toHaveText('763 item ·')
+    await expect(laneRows(page).nth(2).getByRole('link', { name: 'Sunting' })).toHaveAttribute('href', editorOf(4454))
+  })
+
+  test('a search with no match shows the empty row; Set Semula returns the list', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
-    await gotoApp(`${LIST}/3698`)
-    await expect(page.getByTestId('structured-id')).toHaveText('ID: #3698')
-    await expect(page.getByTestId('structured-pill-kbat')).toHaveText('KBAT: Mengaplikasi (L3)')
-    await expect(page.getByTestId('structured-pill-marks')).toHaveText('10 Markah')
-    await expect(page.getByTestId('structured-subs-heading')).toHaveText(
-      'Bahagian Soalan (3 sub-soalan)',
-    )
-    await expect(page.getByTestId('structured-sub-label')).toHaveText(['3(A)', '3(B)', '3(C)'])
-    await expect(page.getByTestId('structured-sub-marks')).toHaveText(['2m', '4m', '4m'])
+    await openLane(page, gotoApp)
+    await page.getByTestId('lane-search').fill('zzqxv')
+    await page.getByRole('button', { name: 'Tapis', exact: true }).click()
+    await expect(page.getByText('Tiada item untuk penapis ini.')).toBeVisible()
+    await expectNoHorizontalScroll(page)
+    await page.getByRole('button', { name: 'Set Semula' }).first().click()
+    await expect(laneRows(page).first()).toBeVisible()
+    await expect(page.getByText('Tiada item untuk penapis ini.')).toHaveCount(0)
+  })
+
+  test('the Sunting action opens the Skema & Rubrik editor of that row', async ({ page, loginAs, gotoApp }) => {
+    await loginAs(ADMIN)
+    await openLane(page, gotoApp)
+    const link = laneRows(page).first().getByRole('link', { name: 'Sunting' })
+    const href = await link.getAttribute('href')
+    await link.click()
+    await expect(page).toHaveURL(new RegExp(`${href}$`))
+    await expect(page.getByTestId('rubric-page')).toBeVisible()
+    await page.getByTestId('rubric-back').click()
+    await expect(page).toHaveURL(new RegExp(`${SUBJEKTIF}$`))
+  })
+})
+
+test.describe('M04 S9 Subjektif editor (Skema & Rubrik)', { tag: [TAG.smoke, moduleTag(4)] }, () => {
+  test.use({ mockInit: { latency: 0 } })
+
+  test('the observed question 4454 shows its header, its part and the scheme editor', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp(editorOf(4454))
+    await expectTabTitle(page, 'Sunting Subjektif | PRESTASIPLUS')
+    await expect(page.getByTestId('rubric-header')).toContainText('Skema & Rubrik Pemarkahan')
+    await expect(page.getByTestId('rubric-meta')).toHaveText('Soalan #4454 · Perniagaan · Tingkatan 5 · 8 markah')
+    await expect(page.getByTestId('rubric-status')).toHaveText('Diluluskan')
+    await expect(page.getByTestId('rubric-stimulus')).toContainText('Soalan Oleh:')
+    await expect(page.getByTestId('rubric-sub')).toHaveCount(1)
+    await expect(page.getByTestId('rubric-sub-number')).toHaveText(['a'])
+    await expect(page.getByTestId('rubric-sub').first()).toContainText('8m')
+    await expect(page.getByText('Skema (ayat penuh)')).toBeVisible()
+    await expect(page.getByText('Poin Rubrik')).toBeVisible()
+    await expect(page.getByTestId('rubric-save')).toHaveText('Simpan Skema & Rubrik')
+    await expectTouchTarget(page.getByTestId('rubric-back'))
+    await expect(page.getByTestId('rubric-back')).toHaveAttribute('href', SUBJEKTIF)
+    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('the observed question 3698 shows its marks and three parts', async ({ page, loginAs, gotoApp }) => {
+    await loginAs(ADMIN)
+    await gotoApp(editorOf(3698))
+    await expect(page.getByTestId('rubric-meta')).toHaveText('Soalan #3698 · Sejarah · Tingkatan 5 · 10 markah')
+    await expect(page.getByTestId('rubric-sub')).toHaveCount(3)
+    await expect(page.getByTestId('rubric-sub-number')).toHaveText(['a', 'b', 'c'])
     await expectNoHorizontalScroll(page)
   })
 
   test('an unknown id shows the standard 404 page', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
-    await gotoApp(`${LIST}/99999999`)
+    await gotoApp(editorOf(99999999))
     await expectTabTitle(page, 'Halaman Tidak Dijumpai | PRESTASIPLUS')
     await expect(
       page.getByRole('heading', { level: 1, name: 'Halaman Tidak Dijumpai', exact: true }),
@@ -289,7 +259,7 @@ test.describe(
       await loginAs(GURU_ACCOUNT)
       await openList(page, gotoApp, GURU_LIST)
       await expect(
-        page.getByTestId('structured-page').getByRole('heading', { level: 1 }),
+        page.getByTestId('pembelajaran-header').getByRole('heading', { level: 1 }),
       ).toHaveText('Soalan Berstruktur')
       await expect(page.getByTestId('structured-page')).toContainText(
         'Cipta & urus soalan berstruktur mengikut piawaian SPM KPM',
@@ -313,10 +283,12 @@ test.describe(
         .poll(async () => (await submit.boundingBox())?.height ?? 0)
         .toBeGreaterThanOrEqual(44)
       await expectTouchTarget(submit)
-      await expectTouchTarget(rows(page).first().getByTestId('structured-view'))
-      await expectTouchTarget(
-        page.getByTestId('structured-pager').getByRole('button', { name: 'Seterusnya' }),
-      )
+      // Teacher mount is a staff page (data-personality staff): 44 px below lg, 40 from lg (C-16); the eye link is 40 at 1280.
+      if (!isDesktopShell(page)) await expectTouchTarget(rows(page).first().getByTestId('structured-view'))
+      // 44 px on touch viewports (C-16: 44 below lg, 40 from lg); the 1280 desktop is not touch-checked.
+      const next = page.getByTestId('structured-pager').getByRole('button', { name: 'Seterusnya' })
+      if (!isDesktopShell(page)) await expectTouchTarget(next)
+      else await expect(next).toBeVisible()
       await expectNoHorizontalScroll(page)
     })
 
