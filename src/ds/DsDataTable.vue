@@ -21,6 +21,8 @@ import { useMedia } from './useMedia'
 export interface CardField {
   key: string
   label: string
+  /** Render the `#<key>-cell` slot of the table in the card (for a value the plain text cannot show, e.g. a list or a badge). */
+  slotted?: boolean
 }
 
 const props = withDefaults(

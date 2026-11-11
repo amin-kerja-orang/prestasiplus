@@ -243,6 +243,27 @@ describe('DsDataTable cards (S8-T06)', () => {
     expect(t.findAll('dt')).toHaveLength(0)
   })
 
+  it('C-46: a configured card field with slotted renders the #<key>-cell slot; an unslotted one prints the plain value', async () => {
+    setWidth(375)
+    const w = mount(DsDataTable, {
+      props: {
+        data: [{ id: 1, nama: 'Murid satu', tahap: [{ n: 'T1' }, { n: 'T2' }] }],
+        columns: [{ accessorKey: 'nama', header: 'Nama' }],
+        cardFields: [
+          { key: 'nama', label: 'Nama' },
+          { key: 'tahap', label: 'Tahap', slotted: true },
+        ],
+      },
+      slots: {
+        'tahap-cell': (p: { row: { original: { tahap: { n: string }[] } } }) =>
+          h('span', { 'data-testid': 'lv' }, p.row.original.tahap.map((x) => x.n).join(', ')),
+      },
+    })
+    await w.vm.$nextTick()
+    expect(w.findAll('[data-ds=data-table-cards] dd').map((d) => d.text())).toEqual(['Murid satu', 'T1, T2'])
+    expect(w.get('[data-testid=lv]').text()).toBe('T1, T2')
+  })
+
   it('FR-X6-4: a fallback card renders the #<key>-cell slot, not the raw value', async () => {
     setWidth(375)
     const seen: Record<string, unknown>[] = []

@@ -83,6 +83,7 @@ const cardFields: CardField[] = [
   { key: 'code', label: 'Kod' },
   { key: 'nameEn', label: 'Nama (EN)' },
   { key: 'curriculum', label: 'Kurikulum' },
+  { key: 'subjectCount', label: 'Subjek', slotted: true },
 ]
 
 const STAGE_ICON = {

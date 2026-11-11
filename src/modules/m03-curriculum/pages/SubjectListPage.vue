@@ -81,6 +81,7 @@ const cardFields: CardField[] = [
   { key: 'code', label: 'Kod' },
   { key: 'nameEn', label: 'Nama (EN)' },
   { key: 'questionCount', label: 'Soalan' },
+  { key: 'levels', label: 'Tahap', slotted: true },
 ]
 
 /** Rows whose PATCH is in flight: further clicks on them are ignored (no race). */
@@ -197,6 +198,16 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
               >
             </div>
           </div>
+        </template>
+        <!-- Card layout only (the table prints the levels inside the name cell): same data, same test id. -->
+        <template #levels-cell="{ row }">
+          <span
+            v-if="row.original.levels.length > 0"
+            class="min-w-0"
+            data-testid="subject-levels"
+            >{{ row.original.levels.map((level) => level.name).join(', ') }}</span
+          >
+          <span v-else class="text-muted">—</span>
         </template>
         <template #code-cell="{ row }">
           <UBadge
