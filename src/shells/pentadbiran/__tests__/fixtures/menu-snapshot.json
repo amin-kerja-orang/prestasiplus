@@ -260,6 +260,37 @@
       ]
     },
     {
+      "key": "spm",
+      "label": "SPM",
+      "icon": "scroll",
+      "items": [
+        {
+          "id": "KS-18",
+          "label": "Databank Soalan",
+          "to": "/admin/spm/databank",
+          "built": true
+        },
+        {
+          "id": "KS-03",
+          "label": "Latih Tubi",
+          "to": "/admin/spm/latih-tubi",
+          "built": true
+        },
+        {
+          "id": "KS-04",
+          "label": "Tracking A",
+          "to": "/admin/spm/tracking-a",
+          "built": true
+        },
+        {
+          "id": "KS-05",
+          "label": "Subjektif",
+          "to": "/admin/spm/subjektif",
+          "built": true
+        }
+      ]
+    },
+    {
       "key": "premium",
       "label": "Premium",
       "icon": "star",
@@ -914,6 +945,37 @@
           "id": "PS-03",
           "label": "Kelas Sekolah",
           "to": "/admin/classes",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "spm",
+      "label": "SPM",
+      "icon": "scroll",
+      "items": [
+        {
+          "id": "KS-18",
+          "label": "Databank Soalan",
+          "to": "/admin/spm/databank",
+          "built": true
+        },
+        {
+          "id": "KS-03",
+          "label": "Latih Tubi",
+          "to": "/admin/spm/latih-tubi",
+          "built": true
+        },
+        {
+          "id": "KS-04",
+          "label": "Tracking A",
+          "to": "/admin/spm/tracking-a",
+          "built": true
+        },
+        {
+          "id": "KS-05",
+          "label": "Subjektif",
+          "to": "/admin/spm/subjektif",
           "built": true
         }
       ]

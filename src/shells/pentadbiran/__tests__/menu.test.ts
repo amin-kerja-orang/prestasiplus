@@ -21,7 +21,8 @@ import {
   sidebarEntries,
 } from '@/shells/pembelajaran/pembelajaran-nav'
 
-import { ALL_ITEMS, FULL_ITEMS, PENTADBIRAN_FULL_MENU, PENTADBIRAN_MENU, activeItem } from '../menu'
+import { ALL_ITEMS, FULL_ITEMS, PENTADBIRAN_FULL_MENU, PENTADBIRAN_MENU, activeItem, groupOf } from '../menu'
+import { redirectsFrom, renderMenu } from '../menu/render'
 
 const labelsOf = (key: string): string[] =>
   PENTADBIRAN_FULL_MENU.find((g) => g.key === key)?.items.map((i) => i.label) ?? []
@@ -35,6 +36,7 @@ describe('Pentadbiran menu data', () => {
       'kurikulum',
       'soalan',
       'pengguna',
+      'spm',
       'premium',
       'kawalan-ciri',
       'gamifikasi',
@@ -64,6 +66,7 @@ describe('Pentadbiran menu data', () => {
       'Kurikulum',
       'Soalan',
       'Pengguna',
+      'SPM', // C-76: Databank Soalan, Latih Tubi, Tracking A, Subjektif (PRD 30 §3.1 row 6)
       'Premium',
       'Sistem', // Kawalan Ciri (PRD 30 §3.1 row 8)
       'Gamifikasi', // PG-01..06, PG-10 (T-C1, T-C2)
@@ -109,6 +112,7 @@ describe('Pentadbiran menu data', () => {
         'Import Pengguna',
         'Kelas Sekolah',
       ],
+      ['Databank Soalan', 'Latih Tubi', 'Tracking A', 'Subjektif'],
       ['PKSK Soalan', 'PKSK Akses'],
       ['Kawalan Ciri'],
       ['Overview', 'Tier Config', 'Cabaran', 'Pelajar', 'Transaksi', 'Kedai Hadiah', 'Kawalan Reward'],
@@ -211,10 +215,57 @@ describe('Pentadbiran menu data', () => {
     // Set Builder wins over Studio
     expect(activeItem('/admin/studio/sets')?.id).toBe('KS-17')
     expect(activeItem('/admin/studio')?.id).toBe('BS-08')
-    // the SPM lanes have no menu row of their own (2026-11-09): they stay on the SPM hub
-    expect(activeItem('/admin/spm/databank')?.id).toBe('KS-01')
+    // the SPM lanes have their own group rows again (C-76): the longest match beats the hub row
+    expect(activeItem('/admin/spm/databank')?.id).toBe('KS-18')
+    expect(activeItem('/admin/spm')?.id).toBe('KS-01')
     // hidden screens (routes stay) fall back to the SPM hub
     expect(activeItem('/admin/spm/soalan/mat1-pub-1/sunting')?.id).toBe('KS-01')
+  })
+})
+
+describe('Pentadbiran group SPM (C-76)', () => {
+  const LANES = [
+    ['KS-18', 'Databank Soalan', '/admin/spm/databank'],
+    ['KS-03', 'Latih Tubi', '/admin/spm/latih-tubi'],
+    ['KS-04', 'Tracking A', '/admin/spm/tracking-a'],
+    ['KS-05', 'Subjektif', '/admin/spm/subjektif'],
+  ] as const
+
+  it('sits between Pengguna and Premium with the four rows, exact labels and hrefs, in order', () => {
+    const keys = PENTADBIRAN_MENU.map((g) => g.key)
+    expect(keys.indexOf('spm')).toBe(keys.indexOf('pengguna') + 1)
+    expect(keys.indexOf('premium')).toBe(keys.indexOf('spm') + 1)
+    const g = PENTADBIRAN_MENU.find((x) => x.key === 'spm')
+    expect(g?.label).toBe('SPM')
+    expect(g?.items.map((i) => [i.id, i.label, i.to])).toEqual(LANES.map((l) => [...l]))
+  })
+
+  it('survives the dedup: static render and router-aware render keep all four rows', () => {
+    const router = createAppRouter({ history: createMemoryHistory() })
+    const routed = renderMenu(PENTADBIRAN_FULL_MENU, redirectsFrom(router.getRoutes()))
+    for (const menu of [PENTADBIRAN_MENU, routed]) {
+      const rows = menu.find((x) => x.key === 'spm')?.items.map((i) => i.to)
+      expect(rows).toEqual(LANES.map((l) => l[2]))
+    }
+  })
+
+  it('keeps the SOALAN > SPM hub row and its route unchanged', () => {
+    const soalan = PENTADBIRAN_MENU.find((x) => x.key === 'soalan')
+    expect(soalan?.items[0]).toMatchObject({ id: 'KS-01', label: 'SPM', to: '/admin/spm' })
+  })
+
+  it('a lane path and its sub-paths activate the group row; the hub path stays on the hub row', () => {
+    for (const [id, , to] of LANES) {
+      expect(activeItem(to)?.id).toBe(id)
+      expect(groupOf(id)?.key).toBe('spm')
+    }
+    expect(activeItem('/admin/spm/tracking-a/12/sunting')?.id).toBe('KS-04')
+    expect(activeItem('/admin/spm')?.id).toBe('KS-01')
+  })
+
+  it('every row resolves to a real route', () => {
+    const router = createAppRouter({ history: createMemoryHistory() })
+    for (const [, , to] of LANES) expect(router.resolve(to).matched.length, to).toBeGreaterThan(0)
   })
 })
 

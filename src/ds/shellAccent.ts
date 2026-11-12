@@ -32,6 +32,7 @@ const GROUP_ACCENT: Record<string, DsAccent> = {
   kurikulum: 'heat',
   soalan: 'friend',
   pengguna: 'action',
+  spm: 'heat',
   premium: 'trial',
   'kawalan-ciri': 'friend',
   gamifikasi: 'win',
