@@ -35,6 +35,10 @@ on:
       - '.trivyignore'
       - '.gitleaks.toml'
       - '.gitleaksignore'
+  # Merge queue: merge_group has no `paths:` support, so every job below runs in full on a queued merge (openapi-diff and
+  # dependency-review are PR-only and skip there; they were checked on the PR).
+  merge_group:
+    types: [checks_requested]
   # BE-33 (G4 minor 4): new advisories are caught weekly even when no PR touches the API (Monday 02:17 UTC).
   schedule:
     - cron: '17 2 * * 1'

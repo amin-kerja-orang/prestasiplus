@@ -16,6 +16,9 @@ on:
       - deploy/vps/nginx/**
       - docker/frontend/nginx.conf
       - .github/workflows/nginx-routing.yml
+  # Merge queue: merge_group has no `paths:` support, so the job runs in full on a queued merge.
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read

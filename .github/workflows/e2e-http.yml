@@ -11,6 +11,9 @@ name: e2e-http
 
 on:
   workflow_dispatch:
+  # Merge queue: no `paths:` support on merge_group, so the full e2e run happens on every queued merge.
+  merge_group:
+    types: [checks_requested]
   pull_request:
     branches: [feature/v3-bijak-r1]
     paths:
