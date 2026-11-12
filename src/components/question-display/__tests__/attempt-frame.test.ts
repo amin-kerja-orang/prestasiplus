@@ -83,7 +83,7 @@ describe('AttemptShell (FR-X6-5/8, AC-X6-1)', () => {
   const css = readFileSync(
     resolve(process.cwd(), 'src/ds/states.css'),
     'utf8',
-  )
+  ).replace(/\r\n/g, '\n')
 
   it('FR-X6-5: the footer adds the bottom safe-area inset to its padding', () => {
     expect(css).toMatch(/\[data-part='footer'\]\s*\{[^}]*env\(safe-area-inset-bottom/)
