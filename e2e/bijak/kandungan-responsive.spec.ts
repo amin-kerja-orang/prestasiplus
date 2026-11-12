@@ -22,7 +22,7 @@ test('Kandungan SPM hub and lanes fit the viewport', async ({ page, loginAs, got
   await expect(page.getByTestId('kandungan-card-subjektif')).toBeVisible()
   await expect(page.getByTestId('kandungan-card-latih-tubi')).toBeVisible()
   await expect(page.getByTestId('kandungan-card-tracking-a')).toBeVisible()
-  await expect(page.getByTestId('kandungan-card-kertas-subjektif')).toHaveCount(0) // S3-T06 adds the screen
+  await expect(page.getByTestId('kandungan-card-kertas-subjektif')).toBeVisible() // S3-T06 built the screen
   // Hub columns (4.R): one at 375, two at 768, three at 1280.
   const width = page.viewportSize()!.width
   const tops = await page.locator('[data-testid^="kandungan-card-"]').evaluateAll((cards) => cards.map((c) => Math.round(c.getBoundingClientRect().top)))

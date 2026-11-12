@@ -265,7 +265,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
       const entry = page.getByTestId(`history-${attemptId}`)
       await expect(entry).toBeVisible()
       await expect(entry).toContainText(title)
-      await expect(entry.getByTestId('history-status')).not.toHaveText('Sedang dijawab')
+      await expect(entry.getByTestId('history-status')).toHaveText('Dihantar') // J-2: submitted attempt (HistoryPage.vue STATUS.submitted); was a vacuous not-'Sedang dijawab'
 
       // PROVISIONAL: "newest first" is not stated in the client (it renders the server order as is);
       // the mock sorts newest first. Soft, so a different server order is reported, not hidden.

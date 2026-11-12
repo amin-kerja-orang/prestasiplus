@@ -3,6 +3,8 @@
  * group flow by hand (add a group, Naik / Turun, Buang) and the Terbitkan disabled reason.
  * Mock only; needs the scope-on build: `npm run test:e2e:bijak`.
  */
+import { mkdirSync } from 'node:fs'
+
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
@@ -25,6 +27,7 @@ const narrow = (page: Page): boolean => (page.viewportSize()?.width ?? 0) < 1024
 
 async function shot(page: Page, name: string): Promise<void> {
   const w = page.viewportSize()?.width ?? 0
+  mkdirSync(SHOTS, { recursive: true })
   await page.screenshot({ path: `${SHOTS}/${name}-${w}.png`, fullPage: true })
 }
 

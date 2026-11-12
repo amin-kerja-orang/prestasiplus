@@ -2,8 +2,9 @@
  * @api role guards against the REAL API (BE-32 AC3, slug `e2e-bijak`). Read-only: nothing is written.
  *
  * What the code does (src/app/router/guards.ts `decideAccess`, routes in src/modules/m28-bijak-spm):
- * - `/spm/bijak` has `roles: ['student','admin']` + `onForbidden: '403'`, so a teacher gets the
- *   in-place 403 page (URL unchanged, tab title "Akses Ditolak | PRESTASIPLUS"), D43.
+ * - `/spm/bijak` has `roles: ['student']` + `modPelajarForAdmin` + `onForbidden: '403'` (modules/m28-bijak-spm/routes.ts:15-24, C-52):
+ *   a teacher gets the in-place 403 page (URL unchanged, tab title "Akses Ditolak | PRESTASIPLUS"), D43; a plain admin is taken
+ *   into Mod Pelajar first (guards.ts step 2c, see e2e/bijak/admin-mod-pelajar.spec.ts).
  * - `/admin/studio/sets` (where `/admin/spm/kertas` redirects, FR-ADM-Q15.6) has `roles: ['admin']` and no `onForbidden` (default '403'), so another role gets the
  *   in-place 403 page (URL unchanged, FR-X2-4).
  * - The API is the real boundary: `GET /api/admin/papers` is `@Roles('admin')` (apps/api/src/modules/
@@ -64,7 +65,7 @@ test.describe('role guards @api', () => {
     await loginViaUi(page, user, pass)
 
     await gotoApi(page, BIJAK_PAGE)
-    // roles ['student','admin'] + onForbidden '403': the URL stays, the 403 page shows.
+    // roles ['student'] + onForbidden '403': the URL stays, the 403 page shows (a teacher; an admin would enter Mod Pelajar, C-52).
     await expect(page).toHaveTitle(FORBIDDEN_TITLE)
     expect(new URL(page.url()).pathname).toBe(BIJAK_PAGE)
     await expect(page.getByText('Akses Ditolak').first()).toBeVisible()

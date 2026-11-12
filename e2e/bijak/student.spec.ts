@@ -52,7 +52,7 @@ test.describe('Bijak SPM Murid @bijak', () => {
     // ... and after leaving to the hub and coming back.
     await gotoApp('/spm/bijak')
     await expect(page.getByTestId('bijak-hub')).toBeVisible()
-    await expect(page.getByTestId('paper-status').first()).toContainText('Sedang dijawab')
+    await expect(page.getByTestId('paper-status').first()).toContainText('Belum dihantar')
     await gotoApp(new URL(attemptUrl).pathname)
     await expect(page.getByTestId('attempt-shell')).toBeVisible()
     await expect.poll(() => pressedOptions(page)).toEqual(before)

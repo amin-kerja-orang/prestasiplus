@@ -83,7 +83,7 @@ test.describe('Bijak SPM edge cases @bijak', () => {
     // Leave to the hub (full load: local copy + mock server are the only memory).
     await gotoApp('/spm/bijak')
     await expect(page.getByTestId('bijak-hub')).toBeVisible()
-    await expect(page.getByTestId('paper-status').first()).toContainText('Sedang dijawab')
+    await expect(page.getByTestId('paper-status').first()).toContainText('Belum dihantar')
     await expect(page.getByTestId(`open-${PAPER_ID}`)).toHaveText('Sambung')
     await expectNoHorizontalScroll(page)
 
@@ -103,7 +103,7 @@ test.describe('Bijak SPM edge cases @bijak', () => {
     // No second attempt was created.
     await gotoApp('/spm/bijak/sejarah')
     await expect(page.getByTestId('history-list').locator('li')).toHaveCount(1)
-    await expect(page.getByTestId('history-status')).toHaveText('Sedang dijawab')
+    await expect(page.getByTestId('history-status')).toHaveText('Belum dihantar')
     await expectNoHorizontalScroll(page)
   })
 

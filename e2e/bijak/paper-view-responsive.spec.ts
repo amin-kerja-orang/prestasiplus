@@ -43,23 +43,39 @@ test.describe('PaperView surfaces responsive @bijak', () => {
 
   test('admin preview (24 px indent) and student view drawer @bijak', async ({ page, loginAs, gotoApp }) => {
     await loginAs('admin@demo.test')
-    // S0-T07: Pembina Kertas has no sidebar entry (Set Builder replaces it in the menu); open it by URL.
+    // KS-09 is retired (PRD 30-admin-pusat.md section 3.3): /admin/spm/kertas redirects to the Set Builder
+    // (routes/admin-papers.ts:52-53). Same entry and Mula kosong selectors as admin-publish.spec.ts:24-100.
     await gotoApp('/admin/spm/kertas')
-    await expect(page.getByTestId('papers-page')).toBeVisible()
-    await page.getByTestId('paper-new').click()
-    await page.getByTestId('new-subject').selectOption({ label: 'Matematik' })
-    await page.getByTestId('new-kertas').selectOption({ index: 1 })
-    await page.getByTestId('new-title').fill('Kertas Paparan')
-    await page.getByRole('button', { name: 'Cipta Kertas' }).click()
-    await expect(page.getByTestId('paper-editor-page')).toBeVisible()
+    await expect(page).toHaveURL(/\/admin\/studio\/sets$/)
+    await expect(page.getByTestId('set-builder-page')).toBeVisible()
+    await page.getByTestId('blank-subject').selectOption({ label: 'Matematik' })
+    await page.getByTestId('blank-kertas').selectOption({ label: 'Kertas 1' })
+    await page.getByTestId('blank-title').fill('Kertas Paparan')
+    await page.getByTestId('blank-submit').click()
+    await expect(page.getByTestId('set-builder-editor')).toBeVisible()
 
-    await page.getByTestId('add-0').click()
-    await expect(page.getByTestId('picker')).toBeVisible()
-    await page.locator('[data-testid^=pick-add-]').first().click()
+    // One single question from the bank is enough for the preview (below lg the bank is its own pane).
+    if ((page.viewportSize()?.width ?? 0) < 1024) await page.getByTestId('builder-pane-bank').click()
+    await page
+      .locator('li[data-testid^=pool-]:not([data-testid^=pool-group-])')
+      .locator('[data-testid^=pool-add-]:not([disabled])')
+      .first()
+      .click()
+    await expect(page.getByTestId('section-0-badges')).toContainText('Soalan 1 /')
+
+    // StudentViewDrawer from the builder (builder-student-view, SetBuilderPage.vue:428).
+    await page.getByTestId('builder-student-view').click()
+    const builderView = page.getByTestId('student-view')
+    await expect(builderView).toBeVisible()
+    await expect(builderView.getByText('Soalan 1').first()).toBeVisible()
+    await expect(builderView.getByText(/\[\d+ markah\]/).first()).toBeVisible()
+    await noScroll(page)
     await page.keyboard.press('Escape')
-    await expect(page.getByTestId('picker')).toBeHidden()
+    await expect(builderView).toBeHidden()
 
-    // Admin QuestionPreview: question header visible; any part indent step is 24 px.
+    // Semak Kertas Simulasi: the admin QuestionPreview ("Pratonton sebagai pelajar"), any part indent step is 24 px.
+    await page.getByTestId('builder-semak').click()
+    await expect(page.getByTestId('paper-editor-page')).toBeVisible()
     await page.getByTestId('paper-preview').click()
     const preview = page.getByTestId('student-preview')
     await expect(preview).toBeVisible()
@@ -70,8 +86,8 @@ test.describe('PaperView surfaces responsive @bijak', () => {
     await page.keyboard.press('Escape')
     await expect(preview).toBeHidden()
 
-    // StudentViewDrawer needs the saved paper.
-    await page.getByTestId('paper-save').click()
+    // The saved-paper student view on Semak Kertas (paper-student-view, PaperEditorPage.vue:344). The old
+    // "Simpan" click (paper-save) no longer exists: the Set Builder saves as it goes.
     await expect(page.getByTestId('paper-student-view')).toBeEnabled()
     await page.getByTestId('paper-student-view').click()
     const view = page.getByTestId('student-view')
