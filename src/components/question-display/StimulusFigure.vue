@@ -8,6 +8,8 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import '@/ds/states.css'
+
 import { DsCluster, DsStack, DsText } from '@/ds'
 
 import { kindFallbackCaption, qdCopy, sourceLine } from './copy'
@@ -402,31 +404,3 @@ function retry(): void {
     </DsText>
   </figure>
 </template>
-
-<style>
-/* Token-driven chrome of a sanitised HTML body (V2 table, list); no utility classes. The theme has no lines: cells are separated by a gap. */
-[data-qd='html-body'] {
-  display: block;
-}
-[data-qd='html-body'] table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 2px;
-}
-[data-qd='html-body'] th,
-[data-qd='html-body'] td {
-  padding: 0.5rem 0.75rem;
-  background: var(--ui-bg);
-  text-align: start;
-}
-[data-qd='html-body'] ul,
-[data-qd='html-body'] ol {
-  padding-inline-start: 1.25rem;
-}
-[data-qd='html-body'] ul {
-  list-style: disc;
-}
-[data-qd='html-body'] ol {
-  list-style: decimal;
-}
-</style>
