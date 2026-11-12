@@ -10,6 +10,9 @@
  *  - the question is V2-origin (`questions.legacy_source = 'cloud'`, or an `etl_id_map` cloud row, entity 'questions' or 'exam_questions',
  *    new_id = question id);
  *  - `questions.live_version_no IS NULL`, or the live version's status is not 'approved'.
+ * Skipped as well: a pin whose archive_reason is source_takedown / withdrawn / regrouped (superseded or none stay in scope), a pin whose
+ * source paper has a takedown (`source_papers.takedown_at`, the test of learner-visibility.ts), and a question with ANOTHER approved version
+ * (uq_question_versions_one_approved would abort the transaction). The apply transaction sets lock_timeout 10s and statement_timeout 120s.
  * Acted on only when also: the question is active, every V2-published placement pins the SAME version, and that version row exists.
  * Reported and skipped: an inactive question (`is_active` is never changed, and the question is left exactly as it is), a question whose
  * placements pin different versions, a pin with no version row. Nothing else is touched.
@@ -87,7 +90,12 @@ export const CANDIDATES_SQL = `
          pq.paper_ids::text[] AS paper_ids,
          pv.status AS pinned_status,
          (pv.id IS NOT NULL) AS pinned_exists,
-         (pv.stimulus_flag IN ('stimulus_missing', 'figure_only') AND pv.flag_dismissed_at IS NULL) AS open_flag
+         (pv.stimulus_flag IN ('stimulus_missing', 'figure_only') AND pv.flag_dismissed_at IS NULL) AS open_flag,
+         pv.archive_reason AS pinned_archive_reason,
+         -- the test of learner-visibility.ts NOT_SOURCE_TAKEN_DOWN_SQL, negated
+         EXISTS (SELECT 1 FROM source_papers tsp WHERE tsp.id = pv.source_paper_id AND tsp.takedown_at IS NOT NULL) AS taken_down,
+         -- uq_question_versions_one_approved: only one approved version per question
+         EXISTS (SELECT 1 FROM question_versions o WHERE o.question_id = q.id AND o.status = 'approved' AND o.version_no <> pq.pins[1]) AS other_approved
     FROM per_q pq
     JOIN questions q ON q.id = pq.question_id
     LEFT JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.live_version_no
@@ -116,6 +124,9 @@ export interface CandidateRow {
   pinned_status: string | null
   pinned_exists: boolean
   open_flag: boolean | null
+  pinned_archive_reason: string | null
+  taken_down: boolean
+  other_approved: boolean
 }
 
 export interface PlacementRow {
@@ -126,7 +137,10 @@ export interface PlacementRow {
   live_status: string | null
 }
 
-export type Outcome = 'approve' | 'inactive' | 'multi_pin' | 'pin_missing'
+export type Outcome = 'approve' | 'inactive' | 'multi_pin' | 'pin_missing' | 'withdrawn' | 'other_approved'
+
+/** Archive reasons that mean the version was taken down on purpose: never re-approved. 'superseded' (or none) stays in scope. */
+export const BLOCKED_ARCHIVE_REASONS: readonly string[] = ['source_takedown', 'withdrawn', 'regrouped']
 
 export interface Classified extends CandidateRow {
   outcome: Outcome
@@ -138,6 +152,8 @@ export function classify(c: CandidateRow): Classified {
   if (!c.is_active) return { ...c, pins, outcome: 'inactive', versionNo: null }
   if (pins.length !== 1) return { ...c, pins, outcome: 'multi_pin', versionNo: null }
   if (!c.pinned_exists) return { ...c, pins, outcome: 'pin_missing', versionNo: null }
+  if (c.taken_down || (c.pinned_archive_reason !== null && BLOCKED_ARCHIVE_REASONS.includes(c.pinned_archive_reason))) return { ...c, pins, outcome: 'withdrawn', versionNo: null }
+  if (c.other_approved) return { ...c, pins, outcome: 'other_approved', versionNo: null }
   return { ...c, pins, outcome: 'approve', versionNo: pins[0] as number }
 }
 
@@ -207,6 +223,8 @@ export interface Report {
   selected: number
   /** Selected questions by previous (pinned version) status and is_active, e.g. `draft/active`. */
   byStatusActive: Record<string, number>
+  /** Selected questions by pinned status x archive_reason (e.g. `archived/superseded`, `draft/-`). */
+  byArchiveReason: Record<string, number>
   outcomes: Record<Outcome, number>
   /** Of the `approve` questions: pinned version is not the latest, and an open stimulus flag keeps the question unserved. */
   pinnedNotLatest: number
@@ -244,8 +262,10 @@ async function latestMismatch(client: Queryable, approve: readonly Classified[])
 
 async function buildReport(client: Queryable, mode: Report['mode'], candidates: readonly Classified[]): Promise<Report> {
   const byStatusActive: Record<string, number> = {}
-  const outcomes: Record<Outcome, number> = { approve: 0, inactive: 0, multi_pin: 0, pin_missing: 0 }
+  const byArchiveReason: Record<string, number> = {}
+  const outcomes: Record<Outcome, number> = { approve: 0, inactive: 0, multi_pin: 0, pin_missing: 0, withdrawn: 0, other_approved: 0 }
   for (const c of candidates) {
+    bump(byArchiveReason, `${c.pinned_status ?? 'no-version'}/${c.pinned_archive_reason ?? '-'}${c.taken_down ? '+takedown' : ''}`)
     bump(byStatusActive, `${c.pinned_status ?? 'no-version'}/${c.is_active ? 'active' : 'inactive'}`)
     outcomes[c.outcome] += 1
   }
@@ -256,6 +276,7 @@ async function buildReport(client: Queryable, mode: Report['mode'], candidates: 
     mode,
     selected: candidates.length,
     byStatusActive,
+    byArchiveReason,
     outcomes,
     pinnedNotLatest: await latestMismatch(client, approve),
     openFlag: approve.filter((c) => c.open_flag === true).length,
@@ -308,6 +329,8 @@ const AUDIT_SQL = `
 export async function apply(client: Queryable): Promise<Report> {
   await client.query('BEGIN')
   try {
+    await client.query(`SET LOCAL lock_timeout = '10s'`)
+    await client.query(`SET LOCAL statement_timeout = '120s'`)
     const first = await candidatesOf(client)
     if (first.length > 0) {
       await client.query(`SELECT id FROM questions WHERE id = ANY($1::bigint[]) ORDER BY id FOR UPDATE`, [first.map((c) => c.question_id)])
@@ -319,7 +342,7 @@ export async function apply(client: Queryable): Promise<Report> {
       const qids = approve.map((c) => c.question_id)
       const vnos = approve.map((c) => c.versionNo as number)
       const previous = approve.map((c) => c.pinned_status ?? 'draft')
-      const details = approve.map((c) => JSON.stringify({ kp: 'KP-24', paperIds: c.paper_ids, versionNo: c.versionNo, previousStatus: c.pinned_status }))
+      const details = approve.map((c) => JSON.stringify({ kp: 'KP-24', paperIds: c.paper_ids, versionNo: c.versionNo, previousStatus: c.pinned_status, previousArchiveReason: c.pinned_archive_reason }))
       const expectN = (what: string, got: number): void => {
         if (got !== approve.length) throw new Error(`${what}: wrote ${String(got)} rows, expected ${String(approve.length)}; rolled back`)
       }
@@ -349,11 +372,12 @@ export function formatReport(r: Report, target = ''): string[] {
     `kp24-approve-v2-placed mode=${r.mode.toUpperCase()}${target === '' ? '' : ` db=${target}`}`,
     `questions selected (V2 question on a V2-published pilihan simulasi paper, no approved live version): ${String(r.selected)}`,
     `  by pinned-version status / is_active: ${Object.entries(r.byStatusActive).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${String(v)}`).join(' ') || '-'}`,
-    `  ${apply ? 'approved' : 'to approve'}: ${String(r.outcomes.approve)}; skipped inactive (stay as they are): ${String(r.outcomes.inactive)}; skipped different pins: ${String(r.outcomes.multi_pin)}; skipped pin without a version row: ${String(r.outcomes.pin_missing)}`,
+    `  ${apply ? 'approved' : 'to approve'}: ${String(r.outcomes.approve)}; skipped inactive (stay as they are): ${String(r.outcomes.inactive)}; skipped different pins: ${String(r.outcomes.multi_pin)}; skipped pin without a version row: ${String(r.outcomes.pin_missing)}; skipped withdrawn / source takedown / regrouped pin: ${String(r.outcomes.withdrawn)}; skipped because another version is approved: ${String(r.outcomes.other_approved)}`,
+    `  by pinned status / archive_reason: ${Object.entries(r.byArchiveReason).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${String(v)}`).join(' ') || '-'}`,
     `versions ${apply ? 'approved' : 'to approve'}: ${String(r.versionsToApprove)} (pinned version is not the latest: ${String(r.pinnedNotLatest)}; carrying an open stimulus flag, so still unserved: ${String(r.openFlag)})`,
     `V2-published pilihan simulasi papers: ${String(p.papers)}`,
-    `  listable for any pupil, before -> after: ${String(p.listableBefore)} -> ${String(p.listableAfter)}; newly listable: ${String(p.newlyListable)}`,
-    `  grade 11 (level_scope NULL, t5, t4_t5), before -> after: ${String(p.listableBefore11)} -> ${String(p.listableAfter11)}; newly listable: ${String(p.newlyListable11)}; fully approved but out of scope for grade 11: ${String(p.scopedOut11)}`,
+    `  listable for any pupil, before -> after: ${String(p.listableBefore)} -> ${String(p.listableAfter)}; newly listable (UPPER BOUND: the bridge mapper can still refuse a question, e.g. missing answer key or picture): ${String(p.newlyListable)}`,
+    `  grade 11 (level_scope NULL, t5, t4_t5), before -> after: ${String(p.listableBefore11)} -> ${String(p.listableAfter11)}; newly listable (upper bound): ${String(p.newlyListable11)}; fully approved but out of scope for grade 11: ${String(p.scopedOut11)}`,
     `  still hidden: ${String(p.stillHidden.inactivePlacement + p.stillHidden.skippedQuestion + p.stillHidden.otherNotApproved)} (inactive placement: ${String(p.stillHidden.inactivePlacement)}; skipped question: ${String(p.stillHidden.skippedQuestion)}; other question not approved: ${String(p.stillHidden.otherNotApproved)})`,
   ]
   if (apply) {

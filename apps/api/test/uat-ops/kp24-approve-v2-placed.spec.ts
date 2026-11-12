@@ -10,13 +10,17 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 
 describe('summarisePapers / classify (pure)', () => {
   const cand = (over: Partial<CandidateRow>): CandidateRow => ({
-    question_id: '1', is_active: true, live_version_no: null, live_status: null, pins: [1], paper_ids: ['9'], pinned_status: 'draft', pinned_exists: true, open_flag: false, ...over,
+    question_id: '1', is_active: true, live_version_no: null, live_status: null, pins: [1], paper_ids: ['9'], pinned_status: 'draft', pinned_exists: true, open_flag: false, pinned_archive_reason: null, taken_down: false, other_approved: false, ...over,
   })
   it('classifies inactive, different pins, a missing pinned version and the rest', () => {
     expect(classify(cand({})).outcome).toBe('approve')
     expect(classify(cand({ is_active: false })).outcome).toBe('inactive')
     expect(classify(cand({ pins: [1, 2] })).outcome).toBe('multi_pin')
     expect(classify(cand({ pinned_exists: false })).outcome).toBe('pin_missing')
+    for (const r of ['source_takedown', 'withdrawn', 'regrouped']) expect(classify(cand({ pinned_status: 'archived', pinned_archive_reason: r })).outcome).toBe('withdrawn')
+    expect(classify(cand({ pinned_status: 'archived', pinned_archive_reason: 'superseded' })).outcome).toBe('approve')
+    expect(classify(cand({ taken_down: true })).outcome).toBe('withdrawn')
+    expect(classify(cand({ other_approved: true })).outcome).toBe('other_approved')
   })
   it('a paper is listable after only when every placement is active and approved; scope limits grade 11', () => {
     const rows: PlacementRow[] = [
@@ -60,7 +64,7 @@ describe('kp24-approve-v2-placed (database)', () => {
     id: string
   }
   /** A question with versions 1..latest; the status of each version is given by `statuses`. */
-  async function question(o: { statuses: string[]; live?: number | null; active?: boolean; v2?: 'legacy' | 'map' | 'none' }): Promise<Q> {
+  async function question(o: { reason?: string | null; sourcePaperId?: string; statuses: string[]; live?: number | null; active?: boolean; v2?: 'legacy' | 'map' | 'none' }): Promise<Q> {
     const latest = o.statuses.length
     const v2 = o.v2 ?? 'legacy'
     const id = (
@@ -72,9 +76,9 @@ describe('kp24-approve-v2-placed (database)', () => {
     )[0]!.id
     for (const [i, status] of o.statuses.entries()) {
       await db.query(
-        `insert into question_versions (question_id, version_no, status, archive_reason, published_at, type, stem_ms, subject_id, education_level_id, number_label)
-         values ($1::bigint, $2, $3, $4, $5, 'short', 'Soalan KP24', $6::bigint, $7::bigint, $8)`,
-        [id, i + 1, status, status === 'archived' ? 'withdrawn' : null, status === 'archived' ? '2026-01-01T00:00:00Z' : null, subjectId, levelId, `KP24-${String(n)}-${String(i)}`],
+        `insert into question_versions (question_id, version_no, status, archive_reason, published_at, type, stem_ms, subject_id, education_level_id, number_label, source_paper_id)
+         values ($1::bigint, $2, $3, $4, $5, 'short', 'Soalan KP24', $6::bigint, $7::bigint, $8, $9::bigint)`,
+        [id, i + 1, status, status === 'archived' ? (o.reason === undefined ? 'superseded' : o.reason) : null, status === 'archived' ? '2026-01-01T00:00:00Z' : null, subjectId, levelId, `KP24-${String(n)}-${String(i)}`, o.sourcePaperId ?? null],
       )
     }
     if (v2 === 'map') await db.query(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('cloud', 'exam_questions', $1, $2)`, [`kp24m-${id}`, id])
@@ -144,15 +148,21 @@ describe('kp24-approve-v2-placed (database)', () => {
     const onDraftPaper = await question({ statuses: ['draft'] })
     const onV3Paper = await question({ statuses: ['draft'] })
     const split = await question({ statuses: ['draft', 'draft'] })
+    const withdrawn = await question({ statuses: ['archived'], reason: 'withdrawn' })
+    const takenReason = await question({ statuses: ['archived'], reason: 'source_takedown' })
+    const tdSource = (await db.query<{ id: string }>(`insert into source_papers (takedown_at) values (now()) returning id::text`))[0]!.id
+    const takenSource = await question({ statuses: ['draft'], sourcePaperId: tdSource })
+    const twoApproved = await question({ statuses: ['approved', 'archived'], live: null }) // v1 approved but not live, pinned v2
     const pA = await paper({ pins: [[draft.id, 1], [archived.id, 1], [mapped.id, 1], [staleLive.id, 1], [alreadyOk.id, 1], [notV2.id, 1]] })
     const pB = await paper({ pins: [[draft.id, 1], [inactive.id, 1]] }) // stays hidden: inactive placement
     await paper({ status: 'draft', pins: [[onDraftPaper.id, 1]] })
     await paper({ v2: false, pins: [[onV3Paper.id, 1]] })
+    await paper({ pins: [[withdrawn.id, 1], [takenReason.id, 1], [takenSource.id, 1], [twoApproved.id, 2]] })
     await paper({ pins: [[split.id, 1]] })
     await paper({ pins: [[split.id, 2]] })
 
     // everything but the in-scope questions must stay as it is
-    const keep = [inactive, alreadyOk, notV2, notPlaced, onDraftPaper, onV3Paper, split]
+    const keep = [inactive, alreadyOk, notV2, notPlaced, onDraftPaper, onV3Paper, split, withdrawn, takenReason, takenSource, twoApproved]
     const keepSnap = async () => JSON.stringify(await Promise.all(keep.map((k) => db.query(`select to_jsonb(q) j from questions q where id = $1::bigint`, [k.id]))))
     const keepVersions = async () => JSON.stringify(await Promise.all(keep.map((k) => db.query(`select to_jsonb(v) j from question_versions v where question_id = $1::bigint order by version_no`, [k.id]))))
     const [k1, k2] = [await keepSnap(), await keepVersions()]
@@ -164,6 +174,9 @@ describe('kp24-approve-v2-placed (database)', () => {
     expect(report.written).toEqual({ versions: 4, questions: 4, statusEvents: 4, auditEvents: 4 })
     expect(report.outcomes.multi_pin).toBe(1)
     expect(report.outcomes.inactive).toBe(1)
+    expect(report.outcomes.withdrawn).toBe(3)
+    expect(report.outcomes.other_approved).toBe(1)
+    expect(report.byArchiveReason['archived/superseded']).toBe(3)
     expect(report.verified?.listableAfter).toBe(report.papers.listableAfter)
 
     for (const q of [draft, archived, mapped]) {
@@ -194,7 +207,7 @@ describe('kp24-approve-v2-placed (database)', () => {
       [AUDIT_ACTION, draft.id],
     )
     expect(audit).toHaveLength(1)
-    expect(audit[0]!.detail).toEqual({ kp: 'KP-24', paperIds: [pA, pB], versionNo: 1, previousStatus: 'draft' })
+    expect(audit[0]!.detail).toEqual({ kp: 'KP-24', paperIds: [pA, pB], versionNo: 1, previousStatus: 'draft', previousArchiveReason: null })
     expect((await db.query<{ n: number }>(`select count(*)::int n from audit_events where action = $1`, [AUDIT_ACTION]))[0]!.n).toBe(auditBefore + 4)
 
     // idempotent
