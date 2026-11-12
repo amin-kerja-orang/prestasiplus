@@ -205,7 +205,7 @@ describe('the redirects of the old Pembina Kertas (FR-ADM-Q15.6)', () => {
     await toggle.trigger('click')
     expect(w.get('[data-testid=import-issues-list]').text()).toContain('Soalan q1')
     expect(toggle.text()).toContain('Tutup')
-    await w.unmount()
+    w.unmount()
     wrapper = null
     const plain = await render(editor())
     expect(plain.find('[data-testid=paper-import-issues]').exists()).toBe(false)

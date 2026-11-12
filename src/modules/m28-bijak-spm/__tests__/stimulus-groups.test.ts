@@ -17,7 +17,11 @@ import type { QuestionView, StimulusDef } from '../domain/types'
 import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
 
 const DrawerStub = defineComponent({
-  props: { open: Boolean, title: String, description: String },
+  props: {
+    open: Boolean,
+    title: { type: String, default: '' },
+    description: { type: String, default: '' },
+  },
   emits: ['update:open'],
   setup(p, { slots }) {
     return () =>

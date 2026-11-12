@@ -21,7 +21,11 @@ vi.mock('../lib/use-bijak', async () => {
 })
 
 const DrawerStub = defineComponent({
-  props: { open: Boolean, title: String, description: String },
+  props: {
+    open: Boolean,
+    title: { type: String, default: '' },
+    description: { type: String, default: '' },
+  },
   emits: ['update:open'],
   setup(p, { slots }) {
     return () =>
