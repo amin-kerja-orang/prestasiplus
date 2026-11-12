@@ -101,6 +101,11 @@ export function renderMarkup(text: string): string {
     .join('')
 }
 
+const HTML_TAG = /<\/?(?:table|thead|tbody|tr|th|td|p|div|ul|ol|li|br|b|i|u|s|code)(?:\s[^<>]*)?\/?>/i
+
+/** True when a stimulus/stem body carries question HTML (a V2 table, list...); plain text, `a < b` and maths do not. */
+export const hasQuestionHtml = (text: string): boolean => HTML_TAG.test(text)
+
 /** The fixed phrase that cites every stimulus of the group (D-S8-T02-1). */
 export const CITE_ALL = 'semua bahan'
 

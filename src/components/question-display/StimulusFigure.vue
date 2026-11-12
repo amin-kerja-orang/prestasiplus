@@ -11,6 +11,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { DsCluster, DsStack, DsText } from '@/ds'
 
 import { kindFallbackCaption, qdCopy, sourceLine } from './copy'
+import { hasQuestionHtml } from './lib/rich-text'
+import RichText from './RichText.vue'
 import type { StimulusData } from './types'
 
 const props = withDefaults(defineProps<{ stimulus: StimulusData; maxHeight?: boolean }>(), {
@@ -176,6 +178,10 @@ const alt = computed(
 const ratio = computed(() =>
   s.value.width && s.value.height ? `${s.value.width} / ${s.value.height}` : '4 / 3',
 )
+/** A V2 body is HTML (a table, a list): it goes through the sanitiser (`RichText markup`), never `{{ }}`. */
+const textIsHtml = computed(() => hasQuestionHtml(s.value.text ?? ''))
+/** Body under the figure: not for a real table or a picture-backed table (unchanged); a text-only table kind shows its body. */
+const showBody = computed(() => !isTable.value || (!realTable.value && !hasPicture.value && !!s.value.text))
 const paragraphs = computed(() => (s.value.text ?? '').split(/\n{2,}/).filter(Boolean))
 
 function onLoad(): void {
@@ -207,7 +213,16 @@ function retry(): void {
       data-testid="stimulus-passage"
     >
       <p v-if="stimulus.title" class="mb-2 font-semibold text-highlighted">{{ stimulus.title }}</p>
-      <p v-for="(p, i) in paragraphs" :key="i" class="mb-2 whitespace-pre-line last:mb-0">{{ p }}</p>
+      <RichText
+        v-if="textIsHtml && stimulus.text"
+        :text="stimulus.text"
+        markup
+        data-qd="html-body"
+        data-testid="stimulus-html"
+      />
+      <template v-else>
+        <p v-for="(p, i) in paragraphs" :key="i" class="mb-2 whitespace-pre-line last:mb-0">{{ p }}</p>
+      </template>
       <p v-if="stimulus.source" class="mt-2 text-caption text-muted" data-testid="stimulus-source">
         {{ sourceLine(stimulus.source) }}
       </p>
@@ -357,11 +372,18 @@ function retry(): void {
     </template>
 
     <!-- title / body under the picture (image, infographic) -->
-    <template v-if="!isPassage && !isTable && (stimulus.title || stimulus.text)">
+    <template v-if="!isPassage && showBody && (stimulus.title || stimulus.text)">
       <p v-if="stimulus.title" class="font-semibold text-highlighted" data-testid="stimulus-title">
         {{ stimulus.title }}
       </p>
-      <p v-if="stimulus.text" class="whitespace-pre-line text-body text-default">{{ stimulus.text }}</p>
+      <div
+        v-if="stimulus.text && textIsHtml"
+        class="max-w-full overflow-x-auto rounded-xl bg-muted p-3 text-body text-default"
+        data-testid="stimulus-html-scroll"
+      >
+        <RichText :text="stimulus.text" markup data-qd="html-body" data-testid="stimulus-html" />
+      </div>
+      <p v-else-if="stimulus.text" class="whitespace-pre-line text-body text-default">{{ stimulus.text }}</p>
     </template>
 
     <figcaption
@@ -380,3 +402,31 @@ function retry(): void {
     </DsText>
   </figure>
 </template>
+
+<style>
+/* Token-driven chrome of a sanitised HTML body (V2 table, list); no utility classes. The theme has no lines: cells are separated by a gap. */
+[data-qd='html-body'] {
+  display: block;
+}
+[data-qd='html-body'] table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+[data-qd='html-body'] th,
+[data-qd='html-body'] td {
+  padding: 0.5rem 0.75rem;
+  background: var(--ui-bg);
+  text-align: start;
+}
+[data-qd='html-body'] ul,
+[data-qd='html-body'] ol {
+  padding-inline-start: 1.25rem;
+}
+[data-qd='html-body'] ul {
+  list-style: disc;
+}
+[data-qd='html-body'] ol {
+  list-style: decimal;
+}
+</style>

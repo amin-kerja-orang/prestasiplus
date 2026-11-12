@@ -15,6 +15,7 @@ import StimulusFigure from './StimulusFigure.vue'
 import { DsIconChip } from '@/ds'
 
 import type { StimulusDef } from '@/modules/m28-bijak-spm/domain/types'
+import { hasQuestionHtml } from './lib/rich-text'
 import { toStimulusData } from './lib/stimulus-data'
 import RichText from './RichText.vue'
 
@@ -88,7 +89,10 @@ const figure = computed(() => toStimulusData(props.stimulus))
   <figure v-else class="flex flex-col gap-2" data-testid="stimulus" :data-stimulus="stimulus.id">
     <div v-if="stimulus.text" class="max-w-full overflow-x-auto rounded-xl bg-muted p-3 text-body text-default">
       <p v-if="stimulus.title" class="mb-2 font-semibold text-highlighted">{{ stimulus.title }}</p>
-      <p><RichText :text="stimulus.text" /></p>
+      <div v-if="hasQuestionHtml(stimulus.text)">
+        <RichText :text="stimulus.text" markup data-qd="html-body" data-testid="stimulus-html" />
+      </div>
+      <p v-else><RichText :text="stimulus.text" /></p>
       <p v-if="stimulus.source" class="mt-2 text-caption text-muted" data-testid="stimulus-source">
         {{ sourceLine(stimulus.source) }}
       </p>
