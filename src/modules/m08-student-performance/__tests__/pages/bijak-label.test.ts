@@ -130,14 +130,14 @@ describe('Prestasi360Page in http mode (S10-T01 change 4: no Bijak-only layout)'
 })
 
 describe('PrestasiKelasDetailPage: one V3 layout in every mode (S10-T07)', () => {
-  it.each(['http', 'mock'] as const)('%s mode: six stat cards, no Bijak heading, no "Tiada data" box, no join code', async (mode) => {
+  it.each(['http', 'mock'] as const)('%s mode: six stat cards, no Bijak heading, no "Tiada data" box, shows the join code', async (mode) => {
     if (mode === 'http') vi.stubEnv('VITE_API_MODE', 'http')
     api.fetchClassDashboard.mockResolvedValue(CLASS)
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(has(w, 'bijak-summary')).toBe(false)
     expect(w.text()).not.toContain('Keputusan Bijak SPM')
     expect(['murid', 'ketepatan', 'sesi', 'soalan', 'masa', 'aktif'].every((id) => has(w, `stat-${id}`))).toBe(true)
-    expect(w.text()).not.toContain('DMO101')
+    expect(w.find('[data-testid=class-code]').text()).toBe('DMO101')
   })
 
   it('http mode: a class without answers still shows the stat cards with zeros (no Bijak-only empty state)', async () => {
