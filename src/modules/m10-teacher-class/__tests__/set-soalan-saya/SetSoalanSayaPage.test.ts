@@ -108,7 +108,7 @@ describe('format helpers and routes', () => {
     expect(s33!.path).toBe('/kelas-saya')
     expect(s33!.meta).toMatchObject({
       title: 'Kelas Saya',
-      header: { title: 'Kelas Saya', subtitle: 'Sertai kelas guru anda 🏫' },
+      header: { title: 'Kelas Saya', subtitle: 'Kelas yang anda sertai, guru dan rakan sekelas anda' },
     })
   })
 })
