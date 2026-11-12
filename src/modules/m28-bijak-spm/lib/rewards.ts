@@ -16,6 +16,6 @@ export interface RewardItem {
 export function rewardItems(credited: Pick<AttemptResult, 'points' | 'coins'> | undefined): RewardItem[] {
   return [
     { id: 'mata', value: `+${credited?.points ?? 0}`, unit: 'Mata', art: 'bolt' },
-    { id: 'koin', value: `+${credited?.coins ?? 0}`, unit: 'Koin', art: 'coin' },
+    { id: 'koin', value: `+${credited?.coins ?? 0}`, unit: 'Syiling', art: 'coin' },
   ]
 }

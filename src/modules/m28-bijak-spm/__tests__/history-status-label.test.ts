@@ -49,4 +49,26 @@ describe('HistoryPage status chip', () => {
     const chip = document.body.querySelector('[data-testid=history-status]')
     expect(chip?.textContent?.trim()).toBe('Belum dihantar')
   })
+
+  it('C-71: the coin stat tile is labelled "Syiling", never "Koin"', async () => {
+    server.history.mockResolvedValue([
+      { attemptId: 'a1', paperId: 'p1', title: 'Kertas 1', subjectName: 'Matematik', kertas: 1, kind: 'pilihan', mode: 'exam', durationSeconds: 60, status: 'in_progress', startedAt: '2026-01-01T00:00:00Z' },
+    ])
+    const stub = { template: '<i/>' }
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: HistoryPage },
+        { path: '/a/:attemptId', name: 'm28.bijak.attempt', component: stub },
+        { path: '/r/:attemptId', name: 'm28.bijak.result', component: stub },
+        { path: '/:p(.*)*', component: stub },
+      ],
+    })
+    await router.push('/')
+    wrapper = mount({ template: '<RouterView />' }, { global: { plugins: [router] }, attachTo: document.body })
+    await flushPromises()
+    const tiles = document.body.textContent ?? ''
+    expect(tiles).toContain('Syiling')
+    expect(tiles).not.toContain('Koin')
+  })
 })

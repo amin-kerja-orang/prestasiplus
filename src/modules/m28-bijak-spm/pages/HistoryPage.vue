@@ -61,7 +61,7 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.coins ?? 0), 0))
         <li>
           <DsStatTile :value="`${average}%`" unit="Purata" icon="chart-line-up" accent="win" />
         </li>
-        <li><DsStatTile :value="coins" unit="Koin" art="coin" /></li>
+        <li><DsStatTile :value="coins" unit="Syiling" art="coin" /></li>
       </ul>
       <ul class="flex flex-col gap-3" data-testid="history-list">
         <li v-for="r in rows" :key="r.attemptId">
