@@ -59,15 +59,20 @@ const EXPECTED: Expected[] = [
   { group: 'Soalan', label: 'Import & Semakan', href: '/admin/spm/soalan/ekstrak' },
   { group: 'Soalan', label: 'Set Builder', href: '/admin/studio/sets' },
   { group: 'Soalan', label: 'Audit Rajah', href: '/admin/soalan-gambar' },
-  { group: 'Soalan', sub: 'Bank Lama (Legasi)', label: 'Senarai Soalan', href: '/admin/questions' },
-  { group: 'Soalan', sub: 'Bank Lama (Legasi)', label: 'Soalan Berstruktur', href: '/admin/structured-questions' },
+  // Bank Lama (Legasi) BS-01 / BS-10 retired 2026-11-09 (PO: one bank, DSKP format; shells/pentadbiran/menu.ts:9;
+  // /admin/structured-questions redirects to /admin/spm/subjektif). The rows and their sub heading are gone.
   { group: 'Pengguna', label: 'Senarai Pengguna', href: '/admin/users' },
   { group: 'Pengguna', label: 'Sekolah', href: '/admin/schools' },
   { group: 'Pengguna', label: 'Langganan Sekolah', href: '/admin/school-subscriptions' },
   { group: 'Pengguna', label: 'Import Pelajar', href: '/admin/import-students' },
   { group: 'Pengguna', label: 'Pelajar Komplimen', href: '/admin/comp-students' },
   { group: 'Pengguna', label: 'Import Pengguna', href: '/admin/users/bulk-import' },
+  // PRD 30 §3.1 row 6 (30-admin-pusat.md:185) and :227-229 (KS-03..05 "MERGE: hub lane card AND group SPM item");
+  // restored by C-76 (fbe5aa392).
   { group: 'SPM', label: 'Databank Soalan', href: '/admin/spm/databank' },
+  { group: 'SPM', label: 'Latih Tubi', href: '/admin/spm/latih-tubi' },
+  { group: 'SPM', label: 'Tracking A', href: '/admin/spm/tracking-a' },
+  { group: 'SPM', label: 'Subjektif', href: '/admin/spm/subjektif' },
   { group: 'Premium', label: 'PKSK Soalan', href: '/admin/pksk/questions' },
   { group: 'Premium', label: 'PKSK Akses', href: '/admin/pksk/access' },
   { group: 'Sistem', label: 'Kawalan Ciri', href: '/admin/feature-toggles' },
@@ -80,14 +85,14 @@ const EXPECTED: Expected[] = [
 ]
 
 /**
- * Group headings in order, with the sub heading row inside Soalan. The top shortcuts have none.
+ * Group headings in order (the Bank Lama sub heading inside Soalan is retired with BS-01/BS-10). The top shortcuts
+ * have none.
  * `Sistem` appears twice (PRD 30 §3.1 rows 8 and 13): Kawalan Ciri, then the section with Tiket Bantuan.
  */
 const HEADINGS = [
   'Analitik',
   'Kurikulum',
   'Soalan',
-  'Bank Lama (Legasi)',
   'Pengguna',
   'SPM',
   'Premium',
