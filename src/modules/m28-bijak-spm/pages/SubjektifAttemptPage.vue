@@ -399,7 +399,8 @@ const saveText = computed(
     <DsStateView v-else-if="!papers" status="loading" skeleton="list" :rows="3" data-testid="list-loading" />
     <DsEmptyState
       v-else-if="!itemCount"
-      title="Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi."
+      title="Tiada kertas tersedia buat masa ini"
+      description="Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi."
       icon="i-ph-files"
       data-testid="list-empty"
     />
@@ -411,6 +412,7 @@ const saveText = computed(
         v-for="g in groups"
         :key="g.code"
         :title="g.name"
+        :description="`${g.items.length} kertas`"
         variant="subheading"
         :data-testid="`group-${g.code}`"
       >

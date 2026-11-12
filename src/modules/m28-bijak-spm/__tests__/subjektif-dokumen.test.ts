@@ -117,6 +117,7 @@ describe('pupil list: documents beside the question papers', () => {
     // Kertas 2: Kedah (document) before Selangor (paper); then Kertas 3 (document)
     const order = [...group.querySelectorAll('[data-testid^="paper-"],[data-testid^="dokumen-"]')].map((e) => e.getAttribute('data-testid')).filter((t) => /^(paper-p\d|dokumen-\d)$/.test(t ?? ''))
     expect(order).toEqual(['dokumen-1', 'paper-p1', 'dokumen-2'])
+    expect(group.textContent).toContain('3 kertas') // C-69: papers and documents both count in the group line
     const card = text('dokumen-1')
     expect(card).toContain('Kedah')
     expect(card).toContain('Kertas 2')
@@ -142,6 +143,7 @@ describe('pupil list: documents beside the question papers', () => {
   it('shows the V2 empty copy only when there is no paper and no document', async () => {
     setKertasDokumenServerForTests({ list: () => Promise.resolve([]) } as unknown as KertasDokumenApi)
     await renderPupil('/kertas-subjektif')
+    expect(body().textContent).toContain('Tiada kertas tersedia buat masa ini')
     expect(body().textContent).toContain('Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.')
     wrapper?.unmount()
     setKertasDokumenServerForTests({ list: () => Promise.resolve([summary('1')]) } as unknown as KertasDokumenApi)

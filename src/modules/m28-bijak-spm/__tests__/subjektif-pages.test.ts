@@ -112,9 +112,9 @@ describe('screen 1: /kertas-subjektif', () => {
     server.listPapers.mockResolvedValue([])
     await render('/kertas-subjektif')
     expect(server.listPapers).toHaveBeenCalledWith(7, 'subjektif')
-    expect(document.body.textContent).toContain(
-      'Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.',
-    )
+    const empty = text('[data-testid=list-empty]')
+    expect(empty).toContain('Tiada kertas tersedia buat masa ini')
+    expect(empty).toContain('Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.')
     expect(q('[data-testid=paper-count]')).toBeNull()
   })
 
@@ -140,6 +140,9 @@ describe('screen 1: /kertas-subjektif', () => {
     expect(text('[data-testid=paper-count]')).toBe('4 kertas')
     const groups = [...document.body.querySelectorAll('[data-testid^=group-]')]
     expect(groups.map((g) => g.getAttribute('data-testid'))).toEqual(['group-SEJ', 'group-SN'])
+    // C-69: the V2 per-subject "{n} kertas" line under each subject name
+    expect(groups[0]!.textContent).toContain('3 kertas')
+    expect(groups[1]!.textContent).toContain('1 kertas')
     const ids = [...groups[0]!.querySelectorAll('[data-testid^=paper-]')]
       .map((e) => e.getAttribute('data-testid'))
       .filter((t) => /^paper-[a-z]\d$/.test(t ?? ''))
