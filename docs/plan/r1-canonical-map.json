@@ -3523,6 +3523,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/kertas-subjektif/dokumen/:id|",
+      "path": "/admin/kertas-subjektif/dokumen/:id",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/papers/SubjektifDokumenPreviewPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kertas-subjektif.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin/kertas-subjektif/:id|",
       "path": "/admin/kertas-subjektif/:id",
       "name": null,
@@ -6652,6 +6662,54 @@
       "approved_by_card": null
     },
     {
+      "key": "pentadbiran|KS-03",
+      "source": "pentadbiran",
+      "id": "KS-03",
+      "label": "Latih Tubi",
+      "route": "/admin/spm/latih-tubi",
+      "roles": [
+        "admin"
+      ],
+      "status": "redirect-to:/admin/spm/latih-tubi",
+      "sector": "S3",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "spm",
+      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KS-04",
+      "source": "pentadbiran",
+      "id": "KS-04",
+      "label": "Tracking A",
+      "route": "/admin/spm/tracking-a",
+      "roles": [
+        "admin"
+      ],
+      "status": "redirect-to:/admin/spm/tracking-a",
+      "sector": "S3",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "spm",
+      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KS-05",
+      "source": "pentadbiran",
+      "id": "KS-05",
+      "label": "Subjektif",
+      "route": "/admin/spm/subjektif",
+      "roles": [
+        "admin"
+      ],
+      "status": "redirect-to:/admin/spm/subjektif",
+      "sector": "S3",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
+      "group": "spm",
+      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
+      "approved_by_card": null
+    },
+    {
       "key": "pentadbiran|PG-01",
       "source": "pentadbiran",
       "id": "PG-01",
@@ -7504,6 +7562,21 @@
       "group": "soalan",
       "note": "KEEP: Set Builder (30 §3.3)",
       "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|KS-18",
+      "source": "pentadbiran",
+      "id": "KS-18",
+      "label": "Databank Soalan",
+      "route": "/admin/spm/databank",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S3",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
+      "group": "spm",
+      "approved_by_card": "S0-T07"
     },
     {
       "key": "pentadbiran|KS-07",
@@ -8557,6 +8630,22 @@
     {
       "name": "PaperPlacement",
       "table": "paper_placements",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/prisma/schema/exam.prisma",
+      "approved_by_card": null
+    },
+    {
+      "name": "PaperDocument",
+      "table": "paper_documents",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/prisma/schema/exam.prisma",
+      "approved_by_card": null
+    },
+    {
+      "name": "PaperDocumentPage",
+      "table": "paper_document_pages",
       "status": "canonical",
       "sector": "S3",
       "file": "apps/api/prisma/schema/exam.prisma",
@@ -12379,6 +12468,56 @@
       "status": "canonical",
       "sector": "S3",
       "file": "apps/api/src/modules/exam/builder/section-pool.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/bijak/kertas-dokumen",
+      "method": "GET",
+      "path": "/api/bijak/kertas-dokumen",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/exam/documents/documents.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/bijak/kertas-dokumen/:p",
+      "method": "GET",
+      "path": "/api/bijak/kertas-dokumen/:id",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/exam/documents/documents.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/kertas-dokumen",
+      "method": "GET",
+      "path": "/api/admin/kertas-dokumen",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/exam/documents/documents.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/kertas-dokumen/:p",
+      "method": "GET",
+      "path": "/api/admin/kertas-dokumen/:id",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/exam/documents/documents.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/kertas-dokumen/:p/terbit",
+      "method": "POST",
+      "path": "/api/admin/kertas-dokumen/:id/terbit",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/exam/documents/documents.controller.ts",
       "approved_by_card": null
     },
     {
