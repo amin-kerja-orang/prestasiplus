@@ -74,10 +74,11 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
     await expect(tid(page, 'mock-paper')).toHaveValue('1')
     await expect(tid(page, 'mock-generate')).toHaveText('🎯 Jana Mock SPM')
     await expect(page.getByLabel('Subjek').and(tid(page, 'mock-subject'))).toHaveCount(1)
-    // Fact gone in v2, left failing (S3-T03 report): DsFormField labels are not upper-cased.
+    // D115 (V3 theme is the reference): DsFormField labels are not upper-cased
+    // (src/modules/m06-spm/pages/MockExamPage.vue:87, `text-label text-default`).
     await expect.soft(page.locator('label', { hasText: 'Subjek' })).toHaveCSS(
       'text-transform',
-      'uppercase',
+      'none',
     )
 
     await tid(page, 'mock-generate').click()
@@ -104,8 +105,8 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
       '2 bulan yang lepas · Belum submit',
     )
     await expect(pending.getByTestId('mock-row-grade')).toHaveText('Belum')
-    // Fact gone in v2, left failing (S3-T03 report): every grade chip is one UBadge size.
-    await expect.soft(pending.getByTestId('mock-row-grade')).toHaveCSS('font-size', '13.6px')
+    // D115: every grade chip is one UBadge size="lg" (src/modules/m06-spm/pages/MockExamPage.vue:155-160), 14px.
+    await expect.soft(pending.getByTestId('mock-row-grade')).toHaveCSS('font-size', '14px')
     await expect(pending.getByTestId('mock-row-link')).toHaveText('Sambung →')
     await expect(pending.getByTestId('mock-row-link')).toHaveAttribute('href', '/spm-mock/317')
     const done = tid(page, 'mock-row-16')
@@ -114,7 +115,7 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
       '4 bulan yang lepas · Score: 0/30 (0.00%)',
     )
     await expect(done.getByTestId('mock-row-grade')).toHaveText('G')
-    await expect.soft(done.getByTestId('mock-row-grade')).toHaveCSS('font-size', '24px')
+    await expect.soft(done.getByTestId('mock-row-grade')).toHaveCSS('font-size', '14px')
     await expect(done.getByTestId('mock-row-link')).toHaveText('Lihat →')
     await expect(done.getByTestId('mock-row-link')).toHaveAttribute('href', '/spm-mock/16/result')
     await expectNoHorizontalScroll(page)
@@ -284,8 +285,8 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'result-percent')).toHaveText('0.00%')
     await expect(tid(page, 'result-score')).toHaveText('0 / 30 markah')
     await expect(tid(page, 'duta-title')).toHaveText('🎓 Cikgu Pakar Bahasa Melayu')
-    // Fact gone in v2, left failing (S3-T03 report): the Duta title is not upper-cased.
-    await expect.soft(tid(page, 'duta-title')).toHaveCSS('text-transform', 'uppercase')
+    // D115: the Duta title is not upper-cased (src/modules/m06-spm/components/DutaBlock.vue:35, `text-subheading`).
+    await expect.soft(tid(page, 'duta-title')).toHaveCSS('text-transform', 'none')
     await expect(tid(page, 'duta-text')).toHaveText(
       'Lemah dlm topik tertentu? Cikgu pakar ni boleh bantu anda naik ke A+ next round.',
     )
@@ -309,8 +310,8 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(page.locator('[data-testid^=review-item-]')).toHaveCount(30)
     const first = tid(page, 'review-item-1')
     await expect(first.getByTestId('review-header')).toHaveText('✗ Soalan 1 · 0/1 markah')
-    // Fact gone in v2, left failing (S3-T03 report): the review header is not upper-cased.
-    await expect.soft(first.getByTestId('review-header')).toHaveCSS('text-transform', 'uppercase')
+    // D115: the review header is not upper-cased (src/modules/m06-spm/pages/MockResultPage.vue:149, `text-overline`).
+    await expect.soft(first.getByTestId('review-header')).toHaveCSS('text-transform', 'none')
     await expect(first.getByTestId('review-text')).toHaveText(
       "Apakah maksud perkataan 'inovatif' dalam konteks sains dan teknologi?",
     )
@@ -319,8 +320,8 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(first.getByTestId('review-feedback')).toHaveText(
       /^Jawapan (betul: |yang betul ialah )A\.?$/,
     )
-    // Fact gone in v2, left failing (S3-T03 report): the feedback line is not italic.
-    await expect.soft(first.getByTestId('review-feedback')).toHaveCSS('font-style', 'italic')
+    // D115: the feedback line is not italic (src/modules/m06-spm/pages/MockResultPage.vue:162, `text-body text-muted`).
+    await expect.soft(first.getByTestId('review-feedback')).toHaveCSS('font-style', 'normal')
     const actions = tid(page, 'result-actions').getByRole('link')
     await expect(actions).toHaveText(['📝 Mock Lain'])
     await expect(actions.nth(0)).toHaveAttribute('href', '/spm-mock')
@@ -388,8 +389,13 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await loginAs(ADMIN)
     await open(page, '/spm-mock/16/result')
     const box = await tid(page, 'result-hero').boundingBox()
-    // Fact gone since c653d013f, left failing on desktop (S3-T03 report): no 880 px cap on staff pages.
-    expect.soft(box!.width).toBeLessThanOrEqual(880 + 1)
+    // D115 / c653d013f: no 880 px cap on staff pages; the hero fills the `main` content width
+    // (src/modules/m06-spm/pages/MockResultPage.vue:78, a plain UCard).
+    const mainWidth = await page.locator('main').first().evaluate((el) => {
+      const cs = getComputedStyle(el)
+      return el.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+    })
+    expect.soft(box!.width).toBeLessThanOrEqual(mainWidth + 1)
     await expectNoHorizontalScroll(page)
   })
 })

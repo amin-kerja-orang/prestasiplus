@@ -10,9 +10,10 @@
  * Quiz answers are picked blind ("A"), so only consistency is asserted, never an exact score.
  */
 
-import { expectNoHorizontalScroll, moduleTag, navigateInApp, provisional, viewportWidth } from '../support'
+import { ALESA_ON } from '../support/alesa'
+import { expectNoHorizontalScroll, expectTabTitle, moduleTag, navigateInApp, provisional, viewportWidth } from '../support'
 import { expect, test } from './fixtures'
-import { answerFrom, PELAJAR, statValues, tid } from './support'
+import { answerFrom, NOT_FOUND, PELAJAR, statValues, tid } from './support'
 
 test.describe.configure({ timeout: 360_000 })
 test.use({ mockInit: { latency: 0 } })
@@ -41,7 +42,7 @@ test.describe('QA-G5 M06 flows', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'quiz-title')).toHaveText('Matematik')
     await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
     const sessions = (await mock.requests('/api/practice/sessions')).filter((r) => r.method === 'POST')
-    expect(sessions[0]?.body).toMatchObject({ mode: 'past_year', subjectCode: 'MATH', count: 5 })
+    expect(sessions[0]?.body).toMatchObject({ mode: 'databank', subjectCode: 'MATH', count: 5 })
 
     const right = await answerFrom(page, 1, 5)
     await expect(tid(page, 'quiz-results')).toBeVisible()
@@ -170,11 +171,16 @@ test.describe('QA-G5 M06 flows', { tag: [moduleTag(6)] }, () => {
       await gotoApp('/spm-mock')
       await expect(tid(page, `mock-row-${id}`).getByTestId('mock-row-link')).toHaveText('Lihat →')
       await gotoApp('/pusat-ai/spm')
-      await tid(page, 'walk-subject').selectOption('Matematik')
-      await tid(page, 'walk-question').fill('Selesaikan 2x = 6')
-      await tid(page, 'walk-submit').click()
-      await expect(tid(page, 'walk-result')).toBeVisible({ timeout: 60_000 })
-      await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+      if (ALESA_ON) {
+        await tid(page, 'walk-subject').selectOption('Matematik')
+        await tid(page, 'walk-question').fill('Selesaikan 2x = 6')
+        await tid(page, 'walk-submit').click()
+        await expect(tid(page, 'walk-result')).toBeVisible({ timeout: 60_000 })
+        await expect(tid(page, 'walk-submit')).toHaveText('Bagi Walkthrough')
+      } else {
+        // D73: S13 is not registered while VITE_ALESA_AI is off.
+        await expectTabTitle(page, NOT_FOUND)
+      }
       expect(viewportWidth(page)).toBeGreaterThan(0)
       await expectNoHorizontalScroll(page)
     },

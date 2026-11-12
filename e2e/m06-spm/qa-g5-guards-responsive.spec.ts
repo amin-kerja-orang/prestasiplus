@@ -9,6 +9,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { ALESA_ON } from '../support/alesa'
 import { addInitSession } from '../fixtures/mock-page'
 import { expectNoHorizontalScroll, expectTabTitle, isDesktopShell, moduleTag, navigateInApp, viewportWidth } from '../support'
 import { expect, test } from './fixtures'
@@ -43,6 +44,11 @@ test.describe('QA-G5 M06 access guards', { tag: [moduleTag(6)] }, () => {
   for (const path of ROUTES) {
     test(`E2E-M06-06 a guest on ${path} is sent to /login`, async ({ page, gotoApp }) => {
       await gotoApp(path)
+      if (path === '/pusat-ai/spm' && !ALESA_ON) {
+        // D73: S13 is not registered while VITE_ALESA_AI is off, so a guest meets the 404 page.
+        await expectTabTitle(page, NOT_FOUND)
+        return
+      }
       await expect(page).toHaveURL(/\/login/)
     })
   }
@@ -72,6 +78,11 @@ test.describe('QA-G5 M06 access guards', { tag: [moduleTag(6)] }, () => {
         if (first) await gotoApp(path)
         else await navigateInApp(page, path)
         first = false
+        if (path === '/pusat-ai/spm' && !ALESA_ON) {
+          // D73: S13 is not registered while VITE_ALESA_AI is off, so every role meets the 404 page.
+          await expectTabTitle(page, NOT_FOUND)
+          continue
+        }
         await expect(page, `${who} on ${path}`).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}$`))
         await expect(tid(page, ready), `${who} on ${path}`).toBeVisible({ timeout: 30_000 })
         await expectNoHorizontalScroll(page)
@@ -184,7 +195,7 @@ test.describe('QA-G5 M06 menus', { tag: [moduleTag(6)] }, () => {
     }
   })
 
-  test('AC-M06-03.4 admin: the SPM group links (>= 1024) or the Lagi sheet (< 1024)', async ({
+  test('AC-M06-03.4 admin: Portal Pentadbiran menu, sidebar (>= 1024) or drawer (< 1024)', async ({
     page,
     loginAs,
     gotoApp,
@@ -192,28 +203,89 @@ test.describe('QA-G5 M06 menus', { tag: [moduleTag(6)] }, () => {
     await loginAs(ADMIN)
     await gotoApp('/spm-mock')
     await expect(shellTitle(page)).toBeVisible({ timeout: 60_000 })
+    // The menu is src/shells/pentadbiran/menu.ts (D113): the same menu in the sidebar from lg and in the
+    // drawer (UDashboardSidebar, opened by the menu button) below lg.
     let scope = tid(page, 'pentadbiran-sidebar')
     if (!isDesktopShell(page)) {
       await tid(page, 'pentadbiran-menu-button').click()
       scope = page.getByRole('dialog')
       await expect(scope).toBeVisible()
     }
-    await scope.getByText('Kertas & SPM', { exact: true }).first().click()
-    await expect(scope.locator('a[href="/admin/spm/soalan"]').first()).toBeVisible()
-    // Fact gone, left failing (S0, S3-T03 report): D113 makes `src/shells/pentadbiran/menu.ts` the only
-    // admin menu, and it has no link to these pupil routes (KS-03 to KS-05 carry no route).
-    for (const [name, href] of [
-      ['Databank Soalan', '/spm/tahun-lepas'],
-      ['Latih Tubi', '/spm/latih-tubi'],
-      ['Tracking A', '/spm/ramalan'],
-      ['Subjektif', '/spm/subjektif'],
-    ] as const) {
-      await expect(scope.locator(`a[href="${href}"]`).first(), name).toBeVisible()
+    // Group "Soalan" holds KS-01 "SPM" -> /admin/spm (menu.ts:126-129, fragments/s3.ts:8; PRD 30 §3.2 pos 1).
+    const spm = scope.locator('a[href="/admin/spm"]').first()
+    if (!(await spm.isVisible())) await scope.getByText('Soalan', { exact: true }).first().click()
+    await expect(spm).toBeVisible()
+    await expect(spm).toContainText('SPM')
+
+    // PENGURUSAN > group "SPM": exactly four rows in this order (PRD 30-admin-pusat.md:185 row 6; :227-229 KS-03/04/05
+    // "MERGE -> hub lane card AND group SPM item"). C-76: expected RED until the group is back in the menu.
+    const lanes: Array<[string, string]> = [
+      ['Databank Soalan', '/admin/spm/databank'],
+      ['Latih Tubi', '/admin/spm/latih-tubi'],
+      ['Tracking A', '/admin/spm/tracking-a'],
+      ['Subjektif', '/admin/spm/subjektif'],
+    ]
+    const laneLinks = scope.locator(lanes.map(([, h]) => `a[href="${h}"]`).join(', '))
+    if ((await laneLinks.first().isVisible()) === false) {
+      // The group parent is a button named "SPM" (the KS-01 row is a link, not a button).
+      await scope.getByRole('button', { name: 'SPM', exact: true }).first().click()
+    }
+    await expect(laneLinks).toHaveCount(4)
+    expect(await laneLinks.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(
+      lanes.map(([, h]) => h),
+    )
+    for (const [name, href] of lanes) {
       await expect(scope.locator(`a[href="${href}"]`).first(), name).toContainText(name)
     }
-    if (isDesktopShell(page)) {
-      await expect(scope.locator('a[href="/pusat-ai/spm"]').first()).toContainText('SPM Walkthrough')
-      await expect(scope.locator('a[href="/spm-mock"]').first()).toContainText('SPM Mock Exam')
+
+    // Absent from the admin menu:
+    const absent: Array<[string, string]> = [
+      // PRD 30 §3.1 row 6: V2 linked the SPM group to the pupil pages; V3 never links the admin to them (FD-MENU-2).
+      ['Databank Soalan pupil page', '/spm/tahun-lepas'],
+      ['Latih Tubi pupil page', '/spm/latih-tubi'],
+      ['Tracking A pupil page', '/spm/ramalan'],
+      ['Subjektif pupil page', '/spm/subjektif'],
+      // PRD 30 §3.3 row KS-02 (HIDE): Bank Soalan SPM has no sidebar entry.
+      ['KS-02 Bank Soalan SPM', '/admin/spm/soalan'],
+      // PRD 30 §3.1 row "not rendered" (Pusat AI) and §6 row 37 (D73): no SPM Walkthrough entry.
+      ['SPM Walkthrough (Pusat AI)', '/pusat-ai/spm'],
+      // No menu row exists in src/shells/pentadbiran/menu/fragments and PRD 30 §3.3 is silent on it (open question).
+      ['SPM Mock Exam', '/spm-mock'],
+    ]
+    for (const [name, href] of absent) {
+      await expect(scope.locator(`a[href="${href}"]`), name).toHaveCount(0)
+    }
+  })
+
+  // AC-M06-03.4 (hub and lanes): /admin/spm cards open the four lanes and each lane loads with its pupil link.
+  // Card ids kandungan-open-{lane} and hrefs: m28 admin/kandungan/pages/KandunganHubPage.vue:82 (UButton :to the
+  // named lane route, routes/admin-kandungan.ts:12-52); page containers: LaneDatabankPage.vue:40, LaneLatihTubiPage.vue:37,
+  // TrackingAListPage.vue:38, LaneSubjektifPage.vue:40; pupil link `lane-pupil` "lihat sisi pelajar" (FD-MENU-2):
+  // LaneShell.vue:56. Shown only when the pupil route is registered (admin/kandungan/lanes.ts:18-31); C-76 covers it.
+  test('AC-M06-03.4 admin: the /admin/spm hub links the four lanes, each lane loads with "lihat sisi pelajar"', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    const LANES: Array<[string, string, string]> = [
+      ['databank', '/admin/spm/databank', 'lane-databank'],
+      ['latih-tubi', '/admin/spm/latih-tubi', 'lane-latih-tubi'],
+      ['tracking-a', '/admin/spm/tracking-a', 'lane-tracking-a'],
+      ['subjektif', '/admin/spm/subjektif', 'lane-subjektif'],
+    ]
+    await loginAs(ADMIN)
+    await gotoApp('/admin/spm')
+    await expect(tid(page, 'kandungan-hub')).toBeVisible({ timeout: 60_000 })
+    for (const [key, href] of LANES) {
+      await expect(tid(page, `kandungan-open-${key}`), `hub card ${key}`).toHaveAttribute('href', href)
+    }
+    for (const [key, href, container] of LANES) {
+      await navigateInApp(page, href)
+      await expect(page, key).toHaveURL(new RegExp(`${href.replace(/\//g, '\\/')}$`))
+      await expect(tid(page, container), `lane ${key}`).toBeVisible({ timeout: 60_000 })
+      await expect(page, `lane ${key} is not the 404 page`).not.toHaveTitle(NOT_FOUND)
+      await expect(tid(page, 'lane-pupil'), `lane ${key} pupil link`).toContainText('lihat sisi pelajar')
+      await expectNoHorizontalScroll(page)
     }
   })
 })
@@ -356,6 +428,12 @@ test.describe('QA-G5 M06 responsive sweep', { tag: [moduleTag(6)] }, () => {
     }) => {
       await addInitSession(page, r.who)
       await gotoApp(r.path)
+      if (r.path === '/pusat-ai/spm' && !ALESA_ON) {
+        // D73: S13 is not registered while VITE_ALESA_AI is off; its off-state is the 404 page.
+        await expectTabTitle(page, NOT_FOUND)
+        await expectNoHorizontalScroll(page)
+        return
+      }
       await expect(tid(page, r.ready).first()).toBeVisible({ timeout: 60_000 })
       await expectNoHorizontalScroll(page)
       const violations = await audit(page)
