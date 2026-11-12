@@ -9,7 +9,7 @@ import type { Page } from '@playwright/test'
 import { ALESA_ON } from '../support/alesa'
 import { expect, test } from './fixtures'
 import { open } from './mock-exam-nav'
-import { shellTitle } from './support'
+import { NOT_FOUND, shellTitle } from './support'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional } from '../support'
 
 const PELAJAR = 'pelajar@demo.test'
@@ -134,6 +134,13 @@ test.describe('M06 S11-S13 shell and layout', { tag: [moduleTag(6)] }, () => {
       '/pusat-ai/spm',
     ]) {
       await open(page, path)
+      if (path === '/pusat-ai/spm' && !ALESA_ON) {
+        // D73: S13 is not registered while VITE_ALESA_AI is off; the off-state is the 404 page. That page is not an
+        // M06 screen: it has no pembelajaran-main / pentadbiran-main, so the small-text probe does not apply to it.
+        await expectTabTitle(page, NOT_FOUND)
+        await expectNoHorizontalScroll(page)
+        continue
+      }
       await expect(page.getByTestId('duta-card')).toBeVisible()
       await expectNoHorizontalScroll(page)
       expect(await smallText(page)).toEqual([])

@@ -92,7 +92,11 @@ test.describe('Bijak SPM @bijak', () => {
 
     while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
     await page.getByTestId('submit').click()
-    await expect(page.getByTestId('submit-summary')).toContainText('Belum dijawab')
+    // Exam mode: the dialog title carries the blank count and the description asks to confirm (PRD 46 section 2.8;
+    // src/modules/m28-bijak-spm/pages/AttemptPage.vue:937-948). The list keeps "Ditanda" (AttemptPage.vue:958).
+    await expect(page.getByRole('dialog')).toContainText(/Anda belum menjawab \d+ soalan\./)
+    await expect(page.getByRole('dialog')).toContainText('Hantar jawapan anda sekarang?')
+    await expect(page.getByTestId('submit-summary')).toContainText('Ditanda: 0 soalan')
     await page.getByTestId('confirm-submit').click()
 
     await expect(page.getByTestId('win-screen')).toBeVisible()
@@ -209,7 +213,7 @@ test.describe('Bijak SPM @bijak', () => {
     await page.getByTestId('match-B').first().click()
     await page.getByTestId('next').click()
     await page.getByTestId('short-text-input').fill('Perlembagaan melindungi hak rakyat.')
-    await expect(page.getByTestId('word-count')).toContainText('4 patah perkataan')
+    await expect(page.getByTestId('word-count')).toHaveText('4 / 100-200 patah perkataan')
     while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
     await page.getByTestId('submit').click()
     await page.getByTestId('confirm-submit').click()

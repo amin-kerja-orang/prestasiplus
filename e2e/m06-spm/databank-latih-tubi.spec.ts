@@ -123,7 +123,7 @@ test.describe('M06 S2 databank', { tag: [moduleTag(6)] }, () => {
         (r) => r.method === 'POST',
       )
       expect(posts).toHaveLength(1)
-      expect(posts[0]?.body).toMatchObject({ mode: 'past_year', subjectCode: 'BM', count: 10 })
+      expect(posts[0]?.body).toMatchObject({ mode: 'databank', subjectCode: 'BM', count: 10 })
 
       await expectNoHorizontalScroll(page)
       await tid(page, 'option-A').click()
@@ -291,7 +291,7 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
       await gotoApp('/spm/latih-tubi/MATH')
       // DV-M06-07: the subject is in the tab title; the v2 navbar prints the section title.
       await expectTabTitle(page, 'Latih Tubi SPM — Matematik | PRESTASIPLUS')
-      await expect(shellTitle(page)).toHaveText('Latih Tubi SPM')
+      await expect(shellTitle(page)).toHaveText('Latih Tubi SPM — Matematik')
       await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Senarai Subjek')
       await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm/latih-tubi')
       await expect(tid(page, 'config-title')).toHaveText('Matematik')
