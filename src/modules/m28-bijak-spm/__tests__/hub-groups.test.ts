@@ -90,6 +90,14 @@ describe('Kertas Pilihan', () => {
     expect(document.body.querySelector('[data-testid=paper-m1]')?.textContent).not.toContain('2025')
   })
 
+  it('a paper in progress shows "Belum dihantar" (OPT-STATUS-ATTEMPT) and no old wording', async () => {
+    server.listPapers.mockResolvedValue([{ ...paper('m1', 'MAT', 'Matematik', 1, '1449/1'), status: 'sedang' }])
+    await render()
+    const card = document.body.querySelector('[data-testid=paper-m1]')?.textContent ?? ''
+    expect(card).toContain('Belum dihantar')
+    expect(card).not.toContain('Sedang dijawab')
+  })
+
   it('with no listed paper: the exact empty text', async () => {
     server.listPapers.mockResolvedValue([])
     await render()

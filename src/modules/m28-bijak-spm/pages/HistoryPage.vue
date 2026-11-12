@@ -16,7 +16,7 @@ const server = bijakServer()
 const { data: rows, error, reload } = useApi(() => server.history(user.value))
 
 const STATUS: Record<AttemptStatus, string> = {
-  in_progress: 'Sedang dijawab',
+  in_progress: 'Belum dihantar',
   submitted: 'Dihantar',
   auto_submitted: 'Dihantar automatik',
   abandoned: 'Ditinggalkan',

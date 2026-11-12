@@ -151,7 +151,7 @@ const groups = computed(() => {
 const itemCount = computed(() => (papers.value?.length ?? 0) + (dokumen.value?.length ?? 0))
 
 function statusText(p: ListedPaper): string {
-  if (p.status === 'sedang') return 'Sedang dijawab'
+  if (p.status === 'sedang') return 'Belum dihantar'
   if (p.status === 'selesai' && p.lastScore) return `${p.lastScore.score} / ${p.lastScore.max}`
   return 'Belum cuba'
 }

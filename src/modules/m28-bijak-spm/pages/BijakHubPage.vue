@@ -76,7 +76,7 @@ const heroPaper = computed(() => {
 })
 
 function statusText(p: PaperSummary): string {
-  if (p.status === 'sedang') return 'Sedang dijawab'
+  if (p.status === 'sedang') return 'Belum dihantar'
   if (p.status === 'selesai' && p.lastScore) return `${p.lastScore.score} / ${p.lastScore.max}`
   return 'Belum cuba'
 }

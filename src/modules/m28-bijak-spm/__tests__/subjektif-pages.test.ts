@@ -118,6 +118,13 @@ describe('screen 1: /kertas-subjektif', () => {
     expect(q('[data-testid=paper-count]')).toBeNull()
   })
 
+  it('a paper in progress shows "Belum dihantar" (OPT-STATUS-ATTEMPT)', async () => {
+    server.listPapers.mockResolvedValue([{ ...row('a1', 'SEJ', 'Sejarah', 2, 'selangor'), status: 'sedang' }])
+    await render('/kertas-subjektif')
+    expect(document.body.textContent).toContain('Belum dihantar')
+    expect(document.body.textContent).not.toContain('Sedang dijawab')
+  })
+
   it('shows the title and sub-line, the count, and groups by subject (bigger group first), Kertas then negeri', async () => {
     server.listPapers.mockResolvedValue([
       row('b1', 'SN', 'Sains', 3, 'johor'),
