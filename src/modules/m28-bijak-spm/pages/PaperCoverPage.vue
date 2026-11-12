@@ -152,14 +152,14 @@ async function begin(restart: boolean): Promise<void> {
           <p>Masa berlalu setakat ini: {{ formatClock(open.elapsedSeconds) }}</p>
           <div class="mt-3 flex flex-col gap-2 sm:flex-row">
             <UButton :loading="starting" data-testid="resume" @click="begin(false)"
-              >Sambung - teruskan jawapan &amp; masa sedia ada</UButton
+              >Sambung — teruskan jawapan &amp; masa sedia ada</UButton
             >
             <UButton v-if="!unavailable" color="neutral" data-testid="restart" @click="confirmRestart = true"
-              >Mula Semula - kosongkan jawapan &amp; masa</UButton
+              >Mula Semula — kosongkan jawapan &amp; masa</UButton
             >
           </div>
           <p v-if="!unavailable" class="mt-2 text-caption">
-            "Sambung" mengekalkan semua jawapan anda. "Mula Semula" tidak boleh diundur.
+            “Sambung” mengekalkan semua jawapan anda. “Mula Semula” tidak boleh diundur.
           </p>
         </template>
       </UAlert>

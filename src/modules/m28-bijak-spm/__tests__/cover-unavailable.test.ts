@@ -65,9 +65,9 @@ describe('resume choice copy (46 section 2.6)', () => {
     server.getCover.mockResolvedValue(coverOf({ unavailable: false }))
     server.findInProgress.mockResolvedValue(OPEN)
     await mountCover()
-    expect(byTest('resume')?.textContent?.trim()).toBe('Sambung - teruskan jawapan & masa sedia ada')
-    expect(byTest('restart')?.textContent?.trim()).toBe('Mula Semula - kosongkan jawapan & masa')
-    expect(byTest('resume-choice')?.textContent).toContain('"Sambung" mengekalkan semua jawapan anda. "Mula Semula" tidak boleh diundur.')
+    expect(byTest('resume')?.textContent?.trim()).toBe('Sambung — teruskan jawapan & masa sedia ada')
+    expect(byTest('restart')?.textContent?.trim()).toBe('Mula Semula — kosongkan jawapan & masa')
+    expect(byTest('resume-choice')?.textContent).toContain('“Sambung” mengekalkan semua jawapan anda. “Mula Semula” tidak boleh diundur.')
   })
 })
 
