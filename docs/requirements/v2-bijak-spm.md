@@ -128,7 +128,7 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 - AC-01.4 Given I am a Guru, Admin Sekolah, PPD/JPN or parent, when I request a Bijak SPM student route, then access is refused (403) and no attempt is created. (Fixes N-07.)
 
 **US-02 Kertas Pilihan list**
-- AC-02.1 Given published papers, then they are grouped by subject, each card shows the set label or title, "Kertas {k}", total marks (effective marks after choose-N, e.g. 100 not 310), duration in minutes, and my status: "Belum cuba", "Sedang dijawab" (with "Sambung"), or my latest score "{s} / {m}".
+- AC-02.1 Given published papers, then they are grouped by subject, each card shows the set label or title, "Kertas {k}", total marks (effective marks after choose-N, e.g. 100 not 310), duration in minutes, and my status: "Belum cuba", "Belum dihantar" (with "Sambung"), or my latest score "{s} / {m}".
 - AC-02.2 Given filters subject and kertas, then the list narrows and the count shown equals the rows shown.
 - AC-02.3 Given a draft or withdrawn paper, then it is absent from the list and its direct URL/ID returns "not found", including for the check/answer endpoints.
 - AC-02.4 Given the library has more papers than one page, then pagination uses BM labels (D33).
@@ -211,7 +211,7 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 - AC-13.1 Given I tap "Hantar", then a dialog states how many questions are unanswered and flagged and asks "Hantar jawapan anda sekarang?"; I can go back to a listed question.
 - AC-13.2 Given I confirm, then the submit request carries the complete local answer set and an idempotency key, and the server grades the **union of saved and submitted** answers; no answer typed before the tap may be missing from grading. (Fixes N-01.)
 - AC-13.3 Given a double tap or a retried request, then exactly one submission is recorded and the result is the same.
-- AC-13.4 Given I submit while offline, then I am told it will be sent when the connection returns, the attempt stays "Sedang dijawab" locally, and nothing is shown as final until the server accepts it.
+- AC-13.4 Given I submit while offline, then I am told it will be sent when the connection returns, the attempt stays "Belum dihantar" locally, and nothing is shown as final until the server accepts it.
 - AC-13.5 Given the submission succeeds, then I land on this attempt's Semakan, not on a new blank sitting.
 - AC-13.6 Given Mod Latihan, then there is no Hantar for the whole paper; "Selesai" ends the practice and shows the summary (US-14).
 
@@ -246,7 +246,7 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 - AC-17.4 Given no per-day limit is configured, then there is no limit; a configured limit shows a BM message with the time left [SKEMA/Default none].
 
 **US-18 History**
-- AC-18.1 Given "Sejarah Bijak SPM", then my attempts are listed newest first with date, subject, "Kertas {k}", start type (Kertas Pilihan / Jana Kertas), mode, status (Dijawab, Dihantar, Dihantar automatik, Ditinggalkan), score "{s} / {m}", and duration.
+- AC-18.1 Given "Sejarah Bijak SPM", then my attempts are listed newest first with date, subject, "Kertas {k}", start type (Kertas Pilihan / Jana Kertas), mode, status (Belum dihantar, Dihantar, Dihantar automatik, Ditinggalkan), score "{s} / {m}", and duration.
 - AC-18.2 Given any submitted row, then it opens its Semakan exactly as submitted; an unsubmitted row offers "Sambung".
 - AC-18.3 Given Mod Pelajar test data, then it never appears in a real student's or teacher's lists.
 - AC-18.4 Given the shared SPM history, then Bijak SPM rows carry the label "Bijak SPM" (not "Tahun Lepas"). (Fixes N-10.)
@@ -465,7 +465,7 @@ Requires the `v2-dskp-integration` feature (dependency B13). Terms: unit, TP, `k
 | NFR-07 | Accessibility | Follows the v2 design-system baseline (D29, D33): keyboard operation of the whole sitting (answer, flag, navigate, submit), visible focus, labels for every control, `aria-live` for save state and timer warnings (not every second), reduced-motion respected, maths with a text form, figures with alt text, ordering controls usable without drag. |
 | NFR-08 | Localisation | All UI in Bahasa Melayu (exact .cloud copy kept where marked in the stories); content may be BM, BI, Arabic or Jawi per question (QB AC-26.x); Asia/Kuala_Lumpur time; numbers and units formatted for Malaysia; the elapsed-time display never wraps at 60 minutes (fixes N-16). |
 | NFR-09 | Reliability and time | Server time is authoritative for deadlines; device clock skew up to [Default 5 min] never costs marks; auto-close runs within [Default 1 min] of deadline + grace; a failed marking job never awards 0 silently (it shows "Belum dimarkah" and queues retry). |
-| NFR-10 | Observability | Metrics: saves ok/fail/queued, submit latency, auto-close counts, marking latency, queue depth, publish-gate failures by rule; alerts on save failure rate and stuck "Sedang dijawab" past deadline + grace. |
+| NFR-10 | Observability | Metrics: saves ok/fail/queued, submit latency, auto-close counts, marking latency, queue depth, publish-gate failures by rule; alerts on save failure rate and stuck "Belum dihantar" past deadline + grace. |
 | NFR-11 | Data retention | Attempts and responses kept [Default] 5 years; photos of working [Default] 12 months after the attempt; audit 5 years (QB NFR-12). |
 | NFR-12 | Consistency of counts | Every count and total shown (cards, hub, history, analytics, "x / y") is computed from the same data it describes (CLAUDE.md §6 D11/D12 spirit). |
 | NFR-13 | Generation speed and determinism (US-34 to US-37) | Jana Kertas answers (paper or refusal) in <= 3 s p90 for a 40-question, 100-mark paper with all constraints on, against a pool of [Default] 5,000 eligible questions per subject. A refusal always names the first failing constraint. The same blueprint version and pool never produce a paper that violates a hard constraint (AC-34.8). |
