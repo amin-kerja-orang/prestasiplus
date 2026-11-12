@@ -22,7 +22,7 @@ import {
 import { ApiError } from '../../common/errors/api-error'
 import { QuestionsRepository } from '../questions'
 import { SpmCatalogService, type SpmSubject, type SubjectMeta } from './catalog.service'
-import { BAHASA_CODES, READINESS_ORDER, SUBJEKTIF_CODES, SUBJEKTIF_TERAS_CODES, TRACKING_YEAR } from './config'
+import { BAHASA_CODES, READINESS_ORDER, SUBJEKTIF_CODES, SUBJEKTIF_TERAS_CODES } from './config'
 import { SpmHistoryService } from './history.service'
 import { SpmPorts } from './ports'
 import { countOf, SpmPoolService, type PoolCell } from './pool.service'
