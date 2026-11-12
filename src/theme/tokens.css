@@ -741,6 +741,30 @@
   ):focus-visible {
   outline: none;
 }
+/* Admin shell account avatar (DsAdminShell): the 44px hit area stays invisible; the 32px face carries the
+   ring (2px gap in the page colour, then 2px primary), faint on hover and solid on keyboard focus. The
+   button's own outline is dropped so the ring is the one indicator (G-3b: rings live in the theme). */
+[data-ds='account-avatar']:focus-visible {
+  outline: none;
+}
+
+/* The old raw button had no press scale; neutralise the UButton one on this button only. */
+[data-ds='account-avatar']:active {
+  scale: none;
+}
+
+[data-ds='account-avatar-face'] {
+  box-shadow: 0 0 0 2px transparent, 0 0 0 4px transparent;
+}
+
+[data-ds='account-avatar']:hover [data-ds='account-avatar-face'] {
+  box-shadow: 0 0 0 2px var(--ui-bg), 0 0 0 4px color-mix(in srgb, var(--ui-primary) 40%, transparent);
+}
+
+[data-ds='account-avatar']:focus-visible [data-ds='account-avatar-face'] {
+  box-shadow: 0 0 0 2px var(--ui-bg), 0 0 0 4px var(--ui-primary);
+}
+
 /* Option lists (select, select menu, input menu): thin themed scrollbar instead of the browser's
    grey bar with arrow buttons. */
 [data-slot='content'] [data-slot='viewport'] {

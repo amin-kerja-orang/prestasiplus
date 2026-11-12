@@ -143,7 +143,7 @@
    `focus-visible:ring-inset` class: they show exactly ONE indicator, the inset 2px ring (R1, 2026-11-09).
    DS composites that draw their own box-shadow ring (stat tile, native select, pill nav, media card; see
    src/ds/states.css) are excluded too: ring plus outline read as a doubled ring. */
-[data-personality] :where(a[href], button, select, textarea, input, summary, [role='button'], [role='tab'], [role='link'], [tabindex]:not([tabindex='-1'])):not([class*='focus-visible:ring-inset'], [data-ds='stat-tile'], [data-ds='native-select'], [data-ds='pill-nav'] *, [data-ds='media-card'] *):focus-visible {
+[data-personality] :where(a[href], button, select, textarea, input, summary, [role='button'], [role='tab'], [role='link'], [tabindex]:not([tabindex='-1'])):not([class*='focus-visible:ring-inset'], [data-ds='stat-tile'], [data-ds='account-avatar'], [data-ds='native-select'], [data-ds='pill-nav'] *, [data-ds='media-card'] *):focus-visible {
   outline: 2px solid var(--ui-primary);
   outline-offset: 2px;
 }

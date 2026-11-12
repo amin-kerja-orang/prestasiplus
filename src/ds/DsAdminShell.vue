@@ -303,19 +303,24 @@ const accountMenu = computed(() =>
                   :ui="adminAccountMenuUi"
                 >
                   <!-- Avatar only (PO 2026-11-09): the name and role head the dropdown. -->
-                  <button
-                    type="button"
-                    class="group ml-1 grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline-none staff:lg:size-10"
+                  <UButton
+                    square
+                    size="sm"
+                    variant="link"
+                    color="neutral"
+                    class="ml-1 shrink-0 rounded-full"
                     :aria-label="`Menu akaun: ${accountName || 'Akaun'}`"
                     :title="accountName || 'Akaun'"
+                    data-ds="account-avatar"
                     data-testid="pentadbiran-account"
                   >
                     <span
-                      class="grid size-8 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on ring-2 ring-transparent ring-offset-2 ring-offset-default transition group-hover:ring-primary/40 group-focus-visible:ring-primary"
+                      class="grid size-8 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on transition"
+                      data-ds="account-avatar-face"
                       aria-hidden="true"
                       >{{ initials }}</span
                     >
-                  </button>
+                  </UButton>
                   <template #content-top>
                     <div class="flex items-center gap-2.5 px-3 pt-3 pb-2" data-testid="pentadbiran-account-head">
                       <span
