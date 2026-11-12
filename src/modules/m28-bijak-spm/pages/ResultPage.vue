@@ -410,7 +410,7 @@ const home = computed(() => landingPath.value || '/dashboard')
         <UCard v-for="q in b.items" :key="q.questionId" :data-testid="`result-q-${q.number}`">
           <details>
             <summary
-              class="flex cursor-pointer flex-wrap items-center justify-between gap-2 text-body text-highlighted"
+              class="flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-2 text-body text-highlighted"
             >
               <span>
                 Soalan {{ q.number }}
