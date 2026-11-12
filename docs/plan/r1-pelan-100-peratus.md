@@ -48,6 +48,7 @@ Setiap baris mesti lulus dengan bukti sebenar (output ujian, laporan recon, tang
 | KP-21 | Label mod Studio untuk bahagian V2 "working" dan "drawing" | Diluluskan 11 Nov (PO melalui mandor): "Langkah kerja" dan "Lukisan" (V2 tiada nama mod; perkataan V3). |
 | KP-22 | Cara klon V2 baharu ke UAT | Diputuskan 11 Nov (PO melalui mandor): BERPERINGKAT mengikut sektor (1 pengguna/sekolah/kelas, 2 soalan+gambar, 3 berstruktur/kanonik, 4 kertas+dokumen, 5 Terbit, 6 latihan/dompet/hadiah/artikel), titik pulih sebelum setiap peringkat, semakan sendiri selepas setiap peringkat (verify sektor, smoke, semakan fungsi UAT), go/no-go; gagal = pulih peringkat itu sahaja dan berhenti; jangan padam dan isi semula semua. PO luluskan setiap peringkat dalam sesi LEAD. |
 | KP-23 | Penyimpanan data mentah V2 di UAT (dump mentah + dump peringkat) | Diputuskan 11 Nov (PO melalui mandor): simpan sehingga klon berperingkat siap dan disahkan; PADAM 7 hari selepas peringkat 6 selesai. Tetapkan PP_RAW_PURGE_BY ke tarikh itu sebaik peringkat 6 siap; langkah pembersihan dalam runbook. |
+| KP-24 | Soalan V2 dalam kertas V2 yang diterbitkan | Diputuskan 12 Nov (PO melalui mandor; pelaksanaan perlu kelulusan PO dalam sesi migrasi): soalan V2 yang diletakkan dalam kertas Pilihan V2 yang diterbitkan diluluskan secara automatik (versi yang dipin menjadi versi hidup yang diluluskan); soalan tidak aktif KEKAL tidak aktif. Mengatasi larangan "tukar status V2" KP-14 untuk kes ini sahaja; soalan lain tidak disentuh. |
 
 ## 3. Fasa dan jadual
 
