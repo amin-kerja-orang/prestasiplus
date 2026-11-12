@@ -78,9 +78,22 @@ describe('V2 HTML stimulus body (StimulusView)', () => {
 })
 
 describe('hasQuestionHtml', () => {
-  it('detects known tags only', () => {
-    expect(hasQuestionHtml(TABLE)).toBe(true)
-    expect(hasQuestionHtml('a < b and c > d')).toBe(false)
-    expect(hasQuestionHtml('$x<y$')).toBe(false)
+  const plain = ['x<p>q', 'a<p>b', 'x<p>q>0', 'a<br>b', 'jika x<td>y', 'a<b and c>d', 'x < 3', '2<x<5', 'x<3 dan y>5', 'jika p>q maka q<p', '<b>teks</b> biasa', '$x<y$', 'a < b and c > d']
+  it.each(plain)('plain: %s', (t) => {
+    expect(hasQuestionHtml(t)).toBe(false)
+    const w = mount(StimulusFigure, { props: { stimulus: { id: 's1', kind: 'passage', text: t } } })
+    expect(w.find('[data-testid=stimulus-html]').exists()).toBe(false)
+    expect(w.find('[data-testid=stimulus-passage] p').text()).toBe(t)
+  })
+
+  it.each([TABLE, '<p>x &lt; 3</p>', '<ul><li>a</li></ul>'])('structural: %s', (t) => {
+    expect(hasQuestionHtml(t)).toBe(true)
+  })
+
+  it('renders <p>x &lt; 3</p> and a list', () => {
+    const p = mount(StimulusFigure, { props: { stimulus: { id: 's1', kind: 'passage', text: '<p>x &lt; 3</p>' } } })
+    expect(p.find('[data-testid=stimulus-html] p').text()).toBe('x < 3')
+    const l = mount(StimulusFigure, { props: { stimulus: { id: 's1', kind: 'passage', text: '<ul><li>a</li></ul>' } } })
+    expect(l.findAll('ul > li').map((x) => x.text())).toEqual(['a'])
   })
 })

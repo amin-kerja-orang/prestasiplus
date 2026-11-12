@@ -101,9 +101,9 @@ export function renderMarkup(text: string): string {
     .join('')
 }
 
-const HTML_TAG = /<\/?(?:table|thead|tbody|tr|th|td|p|div|ul|ol|li|br|b|i|u|s|code)(?:\s[^<>]*)?\/?>/i
+const HTML_TAG = /<\/(?:table|thead|tbody|tr|th|td|ul|ol|li|p|div)\s*>/i
 
-/** True when a stimulus/stem body carries question HTML (a V2 table, list...); plain text, `a < b` and maths do not. */
+/** True when a body carries structural question HTML. Only a CLOSING tag counts (V2 bodies are parser-produced, so tags are paired); an opening-tag look-alike such as `x<p>q` or `a<br>b` stays literal. */
 export const hasQuestionHtml = (text: string): boolean => HTML_TAG.test(text)
 
 /** The fixed phrase that cites every stimulus of the group (D-S8-T02-1). */
