@@ -4,7 +4,7 @@
  * `PracticeError` the handler turns into the HTTP answer. No write happens here.
  */
 
-import type { Prng } from '@/mock/determinism'
+import { fnv1a32, mulberry32, type Prng } from '@/mock/determinism'
 import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import type { Question } from '@/modules/m04-question-bank/mock'
@@ -218,20 +218,24 @@ export function planStart(
       const target = LATIH_TUBI_TARGETS[s.id]
       const count =
         countIn(req.count, target !== undefined ? [target, ...COUNT_OPTIONS] : [...LATIH_TUBI_COUNTS, ...COUNT_OPTIONS])
-      // The draw uses the rule of the config counts (Q-PRACTICE over the offered levels, `practiceLevelCount` and
-      // `difficultyCounts`), so a count the page enables can be served (the API counts and draws the same servable set).
-      const offered = s.educationLevelIds.filter((l) => offeredPracticeLevelIds().includes(l))
+      // C-75: the draw reads the SPM pool (Q-SPM-POOL, BR-M06-02), the same set M06 S4 counts through
+      // `questions.spmPool(...).total`, so a count the page enables can be served (the API draws the pool too).
+      // A level outside the pool (10/11) or not offered yields nothing for that level.
+      const offered = s.educationLevelIds.filter(
+        (l) =>
+          offeredPracticeLevelIds().includes(l) && (SPM_LEVEL_IDS as readonly number[]).includes(l),
+      )
       const levels = levelId !== null ? [levelId] : offered
       const rows =
         levels.length === 0
           ? []
-          : questions.practiceQuery({
-              subjectId: s.id,
-              educationLevelIds: levels,
-              ...(difficulty !== null ? { difficultyLevel: difficulty } : {}),
-              limit: count,
-              seed: sessionSeed,
-            })
+          : questions
+              .spmPool({
+                subjectId: s.id,
+                educationLevelIds: levels,
+                ...(difficulty !== null ? { difficultyLevel: difficulty } : {}),
+              })
+              .sample(count, mulberry32(fnv1a32(sessionSeed)))
       if (rows.length === 0) throw notEnough()
       Object.assign(plan, {
         subjectId: s.id,
