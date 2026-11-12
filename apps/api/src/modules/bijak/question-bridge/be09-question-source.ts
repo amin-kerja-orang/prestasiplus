@@ -64,9 +64,43 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
   }
 
   /** BE-15 `getMany`: structure only (never content or keys). */
-  async getMany(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
-    const mapped = await this.load(questionIds, true)
-    return new Map([...mapped].map(([id, m]) => [id, infoOf(m.bundle, m.groupId)]))
+  async getMany(questionIds: readonly string[], pins?: readonly PinRef[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
+    const refused = new Map<string, BridgeRefusal>()
+    const mapped = await this.load(questionIds, true, pins?.length ? refused : undefined)
+    const out = new Map([...mapped].map(([id, m]) => [id, infoOf(m.bundle, m.groupId)]))
+    if (pins?.length) for (const [id, info] of await this.placedWithMissingPicture(refused, pins)) if (!out.has(id)) out.set(id, info)
+    return out
+  }
+
+  /**
+   * KP-15: a question a published paper places that the eligibility read refused ONLY because a picture file is missing
+   * (`file_missing`; its live version is approved, or it would not have been read) is judged by the version the paper pinned, the
+   * way the start serves it (placeholder). Every other refusal, and a question without an approved live version, stays out. One
+   * pinned read per layer, a layer being the n-th distinct pinned version of the ids (nearly always one layer for the whole list).
+   */
+  private async placedWithMissingPicture(
+    refused: ReadonlyMap<string, BridgeRefusal>,
+    pins: readonly PinRef[],
+  ): Promise<Map<string, BijakQuestionInfo>> {
+    const versionsOf = new Map<string, Set<number>>()
+    for (const pin of pins) {
+      if (refused.get(pin.questionId)?.code !== 'file_missing') continue
+      versionsOf.set(pin.questionId, (versionsOf.get(pin.questionId) ?? new Set()).add(pin.versionNo))
+    }
+    const layers: Map<string, number>[] = []
+    for (const [id, versions] of versionsOf) [...versions].forEach((v, i) => (layers[i] ??= new Map()).set(id, v))
+    const out = new Map<string, BijakQuestionInfo>()
+    const wanted = new Map([...versionsOf].map(([id, versions]) => [id, versions.size]))
+    const got = new Map<string, number>()
+    for (const layer of layers) {
+      const served = await this.load([...layer.keys()], false, undefined, layer)
+      for (const [id, m] of served) {
+        got.set(id, (got.get(id) ?? 0) + 1)
+        if (!out.has(id)) out.set(id, infoOf(m.bundle, m.groupId))
+      }
+    }
+    for (const id of [...out.keys()]) if (got.get(id) !== wanted.get(id)) out.delete(id)
+    return out
   }
 
   /**

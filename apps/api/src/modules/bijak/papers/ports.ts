@@ -69,8 +69,13 @@ export interface BijakPool {
 }
 
 export interface BijakQuestionSource {
-  /** Info per id; an id that does not exist is absent from the map. */
-  getMany(ids: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>>
+  /**
+   * Info per id; an id that does not exist is absent from the map.
+   * `pins` (KP-15): the (question, pinned version) pairs a published paper places. A question that is unservable ONLY because a picture
+   * file is missing is then judged by its pinned version, as the start serves it (with the image placeholder), and is not absent. No other
+   * rule changes: a question without an approved live version, or refused for any other reason, stays absent.
+   */
+  getMany(ids: readonly string[], pins?: readonly PinRef[]): Promise<ReadonlyMap<string, BijakQuestionInfo>>
   /**
    * Info of the version a paper froze, also for a question the bank no longer serves (archived): the cover and the card keep their
    * marks after "Arkib" (H-A13). Optional: a source without it leaves the marks of a withdrawn question at 0.

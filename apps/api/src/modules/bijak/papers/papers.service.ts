@@ -220,7 +220,9 @@ export class PapersService {
   private async infoFor(papers: readonly PaperWithTree[]): Promise<Info> {
     const ids = new Set<string>()
     for (const p of papers) for (const s of p.sections) for (const pl of s.placements) ids.add(idToString(pl.questionId))
-    return ids.size === 0 ? new Map() : this.ports.questionSource.getMany([...ids])
+    // KP-15: one batched read for the whole list, with the pins, so a question missing only a picture file does not hide its paper
+    // (the start reads the same way, `attempt-source.ts`). A generated (jana) paper is an automatic draw: it keeps hiding the question.
+    return ids.size === 0 ? new Map() : this.ports.questionSource.getMany([...ids], papers.filter((p) => p.kind !== 'jana').flatMap((p) => this.pinsOf(p)))
   }
 
   /**

@@ -22,8 +22,8 @@ import type {
 export class BankPaperQuestionSource implements PaperQuestionSource {
   constructor(private readonly bank: Pick<PaperQuestionSource, 'getMany' | 'takenDownPins'> & Partial<Pick<PaperQuestionSource, 'getPinned'>>) {}
 
-  getMany(questionIds: readonly string[]): ReturnType<PaperQuestionSource['getMany']> {
-    return this.bank.getMany(questionIds) as Promise<ReadonlyMap<string, BijakQuestionInfo>>
+  getMany(questionIds: readonly string[], pins?: readonly PinRef[]): ReturnType<PaperQuestionSource['getMany']> {
+    return this.bank.getMany(questionIds, pins) as Promise<ReadonlyMap<string, BijakQuestionInfo>>
   }
 
   /** Pinned info for a question a paper froze (H-A13): the cover and card keep their marks after "Arkib". A bank without it gives an empty map. */

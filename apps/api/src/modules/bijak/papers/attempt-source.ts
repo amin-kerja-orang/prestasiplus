@@ -101,11 +101,13 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
 
     const questionIds = paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId)))
     if (questionIds.length === 0) return { ok: false, reason: 'not_eligible' }
-    const info = await this.ports.questionSource.getMany([...new Set(questionIds)])
     // `info` only knows the LIVE version (H-A13). REQ-B-058: a NEW sitting is also refused when the version a placement PINNED has been
     // taken down (archived "withdrawn" / "source_takedown") while a later version is live; a `superseded` pin is still served. A sitting
     // already open is not affected: `start` resumes it on `not_eligible` and its pinned version is read as before.
+    // KP-15: the pins go to the read so a question missing only a picture file stays placed (the list and the cover ask the same way).
     const pins = paper.sections.flatMap((s) => s.placements.map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })))
+    // A generated (jana) paper is an automatic draw: it keeps hiding the question (no pins to the read).
+    const info = await this.ports.questionSource.getMany([...new Set(questionIds)], paper.kind === 'jana' ? undefined : pins)
     if (placesUnservable(pins, info, await this.ports.questionSource.takenDownPins(pins))) return { ok: false, reason: 'not_eligible' }
 
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
