@@ -128,7 +128,9 @@ describe('UserListPage (M02 S1)', () => {
   it('shows the 7 stat cards, the rows and the pager total', async () => {
     const w = await render()
     const counts = w
-      .findAll('[data-testid^="users-stat-"]:not([data-testid="users-stats"])')
+      .findAll(
+        '[data-testid^="users-stat-"]:not([data-testid="users-stats"]):not([data-testid$="-value"]):not([data-testid$="-label"]):not([data-testid$="-sub"])',
+      )
       .map((n) => n.text())
     expect(counts).toHaveLength(7)
     const expected = ['4533', '551', '38', '6', '16', '5', '2']
