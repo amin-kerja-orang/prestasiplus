@@ -12,7 +12,7 @@ import { DsFloatScore, DsFriendAvatar, DsSpeechBubble, DsWinScreen, type WinStic
 
 import type { QuizStimulus } from '../../api/types'
 import { resultMessage, scoreBand } from './quiz-lib'
-import { StimulusGroup } from '../../lib/question-display'
+import { RichText, StimulusGroup } from '../../lib/question-display'
 import { toStimuliData } from './stimulus-adapter'
 import type { QuizAnswerRecord, QuizLabels } from './quiz-types'
 
@@ -259,7 +259,7 @@ onMounted(() => win.value?.focus())
                 >{{ i + 1 }}</span
               >
               <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <p class="text-body break-words text-highlighted">{{ answer.questionText }}</p>
+                <p class="text-body break-words text-highlighted"><RichText :text="answer.questionText" /></p>
                 <div v-if="answer.stimuli && answer.stimuli.length > 0" class="flex flex-col gap-2" data-testid="review-stimulus">
                   <UButton
                     color="neutral"
@@ -281,15 +281,15 @@ onMounted(() => win.value?.focus())
                 </div>
                 <p class="text-body text-default">
                   <span class="text-muted">Jawapan anda:{{ ' ' }}</span>
-                  <span class="break-words text-highlighted">{{ answer.selectedLabel }}</span>
+                  <span class="break-words text-highlighted"><RichText :text="answer.selectedLabel" /></span>
                   <span class="sr-only">{{ answer.isCorrect ? ' (betul)' : ' (salah)' }}</span>
                 </p>
                 <p v-if="!answer.isCorrect" class="text-body text-default">
                   <span class="text-muted">Jawapan betul:{{ ' ' }}</span>
-                  <span class="break-words text-highlighted">{{ answer.correctLabel }}</span>
+                  <span class="break-words text-highlighted"><RichText :text="answer.correctLabel" /></span>
                 </p>
                 <p v-if="answer.explanation" class="text-body text-default">
-                  <span class="text-muted">Penjelasan:</span> {{ answer.explanation }}
+                  <span class="text-muted">Penjelasan:</span> <RichText :text="answer.explanation" />
                 </p>
                 <UButton
                   color="neutral"

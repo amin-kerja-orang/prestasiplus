@@ -160,6 +160,36 @@ describe('QuizRunner start', () => {
     expect(t(w, 'question-text').text()).toBe('Apakah <b>ibu kota</b> Malaysia?')
     expect(t(w, 'question-text').find('b').exists()).toBe(false)
   })
+
+  it('renders $latex$ in the question text and options with KaTeX; plain text stays unchanged', async () => {
+    const base = session()
+    const [q1, q2] = base.questions
+    api.start.mockResolvedValue(
+      session({
+        questions: [
+          {
+            ...q1!,
+            questionText: 'Ungkapkan $x^2$ dalam asas lima.',
+            options: [
+              { id: 0, label: 'A', text: '$x^2$' },
+              { id: 1, label: 'B', text: 'Kuala Lumpur' },
+            ],
+          },
+          q2!,
+        ],
+      }),
+    )
+    const w = await render()
+    const stem = t(w, 'question-text')
+    expect(stem.find('.katex').exists()).toBe(true)
+    expect(stem.text()).not.toContain('$x^2$')
+    expect(stem.text()).toContain('Ungkapkan')
+    expect(stem.text()).toContain('dalam asas lima.')
+    expect(t(w, 'option-A').find('.katex').exists()).toBe(true)
+    expect(t(w, 'option-A').text()).not.toContain('$')
+    expect(t(w, 'option-B').find('.katex').exists()).toBe(false)
+    expect(t(w, 'option-B').text()).toContain('Kuala Lumpur')
+  })
 })
 
 describe('QuizRunner start errors', () => {
@@ -596,6 +626,43 @@ describe('QuizRunner results', () => {
     await items[1]?.get('[data-testid=review-report]').trigger('click')
     expect(t(w, 'report-stub').attributes('data-question')).toBe('11')
     expect(t(w, 'report-stub').attributes('data-source')).toBe('latihan')
+  })
+
+  it('renders $latex$ in the review question, answers and explanation with KaTeX', async () => {
+    api.start.mockResolvedValue(
+      session({
+        questions: [
+          {
+            ...session().questions[0]!,
+            questionText: 'Ungkapkan $x^2$ dalam asas lima.',
+            options: [
+              { id: 0, label: 'A', text: '$11200_5$' },
+              { id: 1, label: 'B', text: '$y^3$' },
+            ],
+          },
+        ],
+      }),
+    )
+    api.submit.mockResolvedValue({
+      results: {
+        score: 0,
+        total: 1,
+        gamification: { coinsEarned: 0, streakCount: 0, pointsEarned: 0, totalBalance: 0 },
+      },
+    })
+    api.check.mockResolvedValue({ isCorrect: false, correctOptionId: 1, feedback: '', explanation: 'Guna $z^2$.' })
+    const w = await render({ start: { mode: 'random', subjectCode: 'BM', count: 1 } })
+    await t(w, 'option-A').trigger('click')
+    await t(w, 'btn-check').trigger('click')
+    await flushPromises()
+    await t(w, 'btn-next').trigger('click')
+    await flushPromises()
+    await t(w, 'review-toggle').trigger('click')
+    const item = w.get('[data-testid=review-item]')
+    expect(item.findAll('.katex').length).toBeGreaterThanOrEqual(4)
+    expect(item.text()).not.toContain('$')
+    expect(item.text()).toContain('Jawapan anda:')
+    expect(item.text()).toContain('Penjelasan:')
   })
 
   it('"Ulang Lagi" starts a new session with the same request', async () => {
