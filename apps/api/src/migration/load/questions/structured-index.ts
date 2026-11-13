@@ -71,16 +71,37 @@ export interface StructuredRunOptions extends Omit<QuestionsOptions, 'pool'> {
   coreAsOf?: string
   /** `--files-dir`: the V2 storage export (with SHA256SUMS); the run then ends with the picture pass (repair mode). */
   filesDir?: string
+  /**
+   * `--pictures-only` (needs `--files-dir`): run ONLY the picture release pass, which reads `archive_cloud` and the held state of the target, so
+   * it still works after `staging_cloud` is dropped (KP-23). Used to release questions held for a picture once the file was repaired in the export.
+   */
+  picturesOnly?: boolean
 }
 
 export async function runStructured(options: StructuredRunOptions): Promise<{ report: RunReport; questions: QuestionsContext }> {
-  const { mode, batchSize, gitSha, coreAsOf, filesDir, ...rest } = options
+  const { mode, batchSize, gitSha, coreAsOf, filesDir, picturesOnly, ...rest } = options
+  if (picturesOnly === true && filesDir === undefined) throw new PreflightError('--pictures-only needs --files-dir.')
   if (mode === 'apply') await assertApplyAllowed(options.pool, options.env)
   await assertNotSyntheticInProduction(options.pool, options.env)
-  await assertStructuredPreflight({ pool: options.pool, env: options.env, source: options.source, asOf: options.asOf, coreAsOf })
+  // The structured preflight checks the staged dump the loaders read; the picture pass alone reads archive_cloud and the target only.
+  if (picturesOnly !== true) await assertStructuredPreflight({ pool: options.pool, env: options.env, source: options.source, asOf: options.asOf, coreAsOf })
   const questions = new QuestionsContext({ ...rest, pageSize: rest.pageSize ?? batchSize })
   if (filesDir !== undefined) {
     questions.files = await openMigrationFiles({ dir: filesDir, env: options.env, mode, source: options.source, capOverrides: { question_image: QUESTION_IMAGE_ETL_CAP } })
+  }
+  if (picturesOnly === true) {
+    const files = questions.files
+    if (files === undefined) throw new PreflightError('--pictures-only needs --files-dir.')
+    const steps = [filesStep(questions, files, { releaseOnly: true })]
+    const inputHash = hashInput([
+      ...(await tableFingerprints(options.pool, ['archive_cloud.questions'])),
+      `source=${options.source}`,
+      'steps=question_files:pictures-only',
+      `files=${files.manifestHash}`,
+    ])
+    const runner = new Runner({ pool: options.pool, env: options.env })
+    const report = await runner.run({ mode, steps, inputHash, gitSha, batchSize })
+    return { report, questions }
   }
   const steps = buildStructuredSteps(questions)
   const inputHash = hashInput([

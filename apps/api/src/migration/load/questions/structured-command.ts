@@ -18,7 +18,7 @@ import { filesMissingCsv } from './files-step'
 import { runStructured } from './structured-index'
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
-const KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'core-as-of', 'batch-size', 'out-dir', 'files-dir'])
+const KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'core-as-of', 'batch-size', 'out-dir', 'files-dir', 'pictures-only'])
 
 function flagValue(args: CommandArgs, name: string): string | undefined {
   const v = args.flags.get(name)
@@ -39,6 +39,8 @@ export interface StructuredArgs {
   outDir: string
   /** `--files-dir`: the V2 storage export; the run then ends with the picture pass (releases the questions held for a picture). */
   filesDir?: string
+  /** `--pictures-only` (with `--files-dir`): run only the picture release pass (works after staging_cloud is dropped). */
+  picturesOnly?: boolean
 }
 
 export function parseStructuredArgs(args: CommandArgs, prepare: (dir: string) => string = prepareOutputDir): StructuredArgs {
@@ -56,16 +58,26 @@ export function parseStructuredArgs(args: CommandArgs, prepare: (dir: string) =>
     throw e
   }
   const filesDir = flagValue(args, 'files-dir')
-  return { asOf: date('as-of', flagValue(args, 'as-of')) ?? mytDay(new SystemClock().now()), coreAsOf: date('core-as-of', flagValue(args, 'core-as-of')), batchSize, outDir, ...(filesDir === undefined ? {} : { filesDir }) }
+  const picturesOnly = args.flags.get('pictures-only')
+  if (picturesOnly !== undefined && picturesOnly !== true) throw new ApplyGuardError('--pictures-only takes no value.')
+  if (picturesOnly === true && filesDir === undefined) throw new ApplyGuardError('--pictures-only needs --files-dir.')
+  return {
+    asOf: date('as-of', flagValue(args, 'as-of')) ?? mytDay(new SystemClock().now()),
+    coreAsOf: date('core-as-of', flagValue(args, 'core-as-of')),
+    batchSize,
+    outDir,
+    ...(filesDir === undefined ? {} : { filesDir }),
+    ...(picturesOnly === true ? { picturesOnly: true } : {}),
+  }
 }
 
 export const migrateStructured: MigrateCommand = {
   name: 'migrate:structured',
   summary: 'loads the V2 structured, subjective and canonical-only questions from archive_cloud (after migrate:all and migrate:questions; dry-run by default)',
   async run(args: CommandArgs, ctx: CliContext): Promise<number> {
-    const { asOf, coreAsOf, batchSize, outDir, filesDir } = parseStructuredArgs(args)
+    const { asOf, coreAsOf, batchSize, outDir, filesDir, picturesOnly } = parseStructuredArgs(args)
     const { report, questions } = await withSourceLock(ctx.pool, 'cloud', () =>
-      runStructured({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, coreAsOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env), progress: ctx.out, filesDir }),
+      runStructured({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, coreAsOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env), progress: ctx.out, filesDir, picturesOnly }),
     )
     ctx.out(`migrate:structured ${report.mode}: run ${report.runId} ${report.status}`)
     ctx.out('entity | source | eligible | loaded | rejected | status')
