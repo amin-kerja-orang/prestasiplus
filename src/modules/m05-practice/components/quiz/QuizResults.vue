@@ -259,7 +259,7 @@ onMounted(() => win.value?.focus())
                 >{{ i + 1 }}</span
               >
               <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <p class="text-body break-words text-highlighted"><RichText :text="answer.questionText" /></p>
+                <p class="text-body break-words text-highlighted"><RichText :text="answer.questionText ?? ''" /></p>
                 <div v-if="answer.stimuli && answer.stimuli.length > 0" class="flex flex-col gap-2" data-testid="review-stimulus">
                   <UButton
                     color="neutral"

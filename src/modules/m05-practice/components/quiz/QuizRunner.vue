@@ -497,7 +497,7 @@ const feedbackExplanation = computed(() =>
                 :dir="current.textDirection || 'ltr'"
                 data-testid="question-text"
               >
-                <RichText :text="current.questionText" />
+                <RichText :text="current.questionText ?? ''" />
               </h2>
 
               <div v-if="referenceHref" data-testid="question-reference">
@@ -551,7 +551,7 @@ const feedbackExplanation = computed(() =>
                     loading="lazy"
                     class="mb-1 max-h-40 max-w-full rounded-md object-contain"
                     data-testid="option-image"
-                  /><RichText :text="option.text" /></DsQuizOption
+                  /><RichText :text="option.text ?? ''" /></DsQuizOption
                 >
               </div>
 
