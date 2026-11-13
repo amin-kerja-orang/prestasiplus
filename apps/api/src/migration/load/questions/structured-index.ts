@@ -82,7 +82,9 @@ export async function runStructured(options: StructuredRunOptions): Promise<{ re
   const { mode, batchSize, gitSha, coreAsOf, filesDir, picturesOnly, ...rest } = options
   if (picturesOnly === true && filesDir === undefined) throw new PreflightError('--pictures-only needs --files-dir.')
   if (mode === 'apply') await assertApplyAllowed(options.pool, options.env)
-  await assertNotSyntheticInProduction(options.pool, options.env)
+  // The synthetic-data guard reads staging_cloud.users; after the KP-23 drop there is no staged data, so a pictures-only run skips it.
+  const staged = (await options.pool.query<{ ok: boolean }>(`SELECT to_regclass('staging_cloud.users') IS NOT NULL AS ok`)).rows[0]?.ok === true
+  if (picturesOnly !== true || staged) await assertNotSyntheticInProduction(options.pool, options.env)
   // The structured preflight checks the staged dump the loaders read; the picture pass alone reads archive_cloud and the target only.
   if (picturesOnly !== true) await assertStructuredPreflight({ pool: options.pool, env: options.env, source: options.source, asOf: options.asOf, coreAsOf })
   const questions = new QuestionsContext({ ...rest, pageSize: rest.pageSize ?? batchSize })
