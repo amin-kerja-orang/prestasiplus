@@ -62,6 +62,12 @@ describe('tiers and challenges', () => {
     expect(isPlatformChallenge({ created_by: null, classroom_id: '3' })).toBe(false)
   })
 
+  it('treats a teacher-only type (misi_harian, the guru Misi Harian screen) as a teacher challenge even without author or class', () => {
+    expect(isPlatformChallenge({ created_by: null, classroom_id: null, challenge_type: 'misi_harian' })).toBe(false)
+    expect(isPlatformChallenge({ created_by: null, classroom_id: null, challenge_type: ' Misi_Harian ' })).toBe(false)
+    expect(isPlatformChallenge({ created_by: null, classroom_id: null, challenge_type: 'bilangan_kuiz' })).toBe(true)
+  })
+
   it('reads the target from the numeric target_value column: a whole number from 1 to 1,000,000', () => {
     expect(challengeTarget('5')).toBe(5)
     expect(challengeTarget(' 12.00 ')).toBe(12)

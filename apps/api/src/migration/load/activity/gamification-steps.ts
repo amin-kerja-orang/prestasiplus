@@ -143,7 +143,7 @@ async function teacherChallengeIds(pool: pg.Pool, ids: readonly string[]): Promi
   const out = new Set<string>()
   if (ids.length === 0) return out
   const res = await pool.query<StagedRow>(
-    `SELECT id::text AS id, created_by::text AS created_by, classroom_id::text AS classroom_id
+    `SELECT id::text AS id, created_by::text AS created_by, classroom_id::text AS classroom_id, challenge_type::text AS challenge_type
      FROM ${quoteIdent(STAGING_SCHEMA)}.${quoteIdent('challenges')} WHERE id = ANY($1::bigint[])`,
     [[...new Set(ids)]],
   )

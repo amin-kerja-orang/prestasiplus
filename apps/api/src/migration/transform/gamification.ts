@@ -58,8 +58,20 @@ export function challengeMetric(title: string, type: string): string | null {
   return Object.hasOwn(DEFAULT_METRIC_BY_TYPE, type) ? DEFAULT_METRIC_BY_TYPE[type as keyof typeof DEFAULT_METRIC_BY_TYPE] : null
 }
 
-/** A platform challenge has no author and no class; the others are teacher challenges (no v2 target, GAP-11). */
+/**
+ * `.cloud` challenge types that only a teacher creates: `misi_harian` is written by the "Misi Harian" screen of a guru
+ * (`TeacherDailyController::storeMisi`, /guru/misi-harian), which can leave `created_by` and `classroom_id` empty.
+ * Such a row is a teacher challenge whatever those columns say (cutover 13 Nov 2026, smoke X3).
+ */
+export const TEACHER_CHALLENGE_TYPES: ReadonlySet<string> = new Set(['misi_harian'])
+
+/**
+ * A platform challenge has no author, no class and is not of a teacher-only type; the others are teacher challenges
+ * (no v2 target, GAP-11), excluded with their completions.
+ */
 export function isPlatformChallenge(row: Staged): boolean {
+  const type = enumKey(row.challenge_type)
+  if (type !== null && TEACHER_CHALLENGE_TYPES.has(type)) return false
   return text(row.created_by) === null && text(row.classroom_id) === null
 }
 
