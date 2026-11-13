@@ -63,6 +63,8 @@ done
 expect "api health reaches the api" 200 "$(code "$B/api/health")"
 expect "XFF is overwritten by the peer address" "127.0.0.1" "$(curlx -D- -o /dev/null -H 'X-Forwarded-For: 6.6.6.6' "$B/api/health" | tr -d '\r' | sed -n 's/^X-Seen-XFF: //Ip')"
 expect "http redirects to the fixed host" "301 https://$PP_DOMAIN:18443/x" "$(curl --noproxy '*' -s -o /dev/null -w '%{http_code} %{redirect_url}' -H 'Host: evil.test' http://127.0.0.1:18080/x)"
+expect "https www redirects to the fixed host" "301 https://$PP_DOMAIN:18443/x" "$(curl --noproxy '*' -sk --resolve "www.$PP_DOMAIN:18443:127.0.0.1" -o /dev/null -w '%{http_code} %{redirect_url}' "https://www.$PP_DOMAIN:18443/x")"
+expect "https unknown host gets no handshake" 000 "$(curl --noproxy '*' -sk --resolve "evil.test:18443:127.0.0.1" -o /dev/null -w '%{http_code}' "https://evil.test:18443/x")"
 expect "SPA has HSTS" 1 "$(curlx -D- -o /dev/null "$B/deep/link" | grep -ci '^strict-transport-security')"
 expect "SPA has the CSP (report-only)" 1 "$(curlx -D- -o /dev/null "$B/deep/link" | grep -ci '^content-security-policy-report-only')"
 expect "metrics 404 carries HSTS (nginx-answered)" 1 "$(curlx -D- -o /dev/null "$B/api/metrics" | grep -ci '^strict-transport-security')"

@@ -42,6 +42,23 @@ server {
   ssl_reject_handshake on;
 }
 
+# ---- 443: www -> the configured host (K6, fixed after live on 13 Nov 2026) ----
+# The certificate of PP_DOMAIN lists www as a SAN; port 80 already redirects every host name above.
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name www.${PP_DOMAIN};
+
+  ssl_certificate     /etc/letsencrypt/live/${PP_DOMAIN}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${PP_DOMAIN}/privkey.pem;
+  include /etc/nginx/pp-snippets/tls.conf;
+
+  location / {
+    # Fixed host (not $host), same rule as the port-80 redirect.
+    return 301 https://${PP_DOMAIN}$request_uri;
+  }
+}
+
 # ---- 443: the application ----
 server {
   listen 443 ssl;
