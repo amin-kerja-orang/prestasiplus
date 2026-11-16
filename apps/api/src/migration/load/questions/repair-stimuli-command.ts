@@ -48,7 +48,9 @@ export const migrateRepairStimuli: MigrateCommand = {
   summary: 'repairs loaded stimuli that still hold V2 <img>/<table> HTML: copies the pictures, sets asset_file_id / table_data (dry-run by default; needs --files-dir)',
   async run(args: CommandArgs, ctx: CliContext): Promise<number> {
     const { filesDir, batchSize, outDir } = parseRepairArgs(args)
-    await assertNotSyntheticInProduction(ctx.pool, ctx.env)
+    // The repair reads no staged rows. After the cutover staging_cloud is dropped (KP-23), so the synthetic-dump check only runs while it exists.
+    const staged = (await ctx.pool.query<{ ok: boolean }>(`SELECT to_regclass('staging_cloud.users') IS NOT NULL AS ok`)).rows[0]?.ok === true
+    if (staged) await assertNotSyntheticInProduction(ctx.pool, ctx.env)
     const mode = args.mode
     const files = await openMigrationFiles({ dir: filesDir, env: ctx.env, mode, source: 'cloud', capOverrides: { question_image: QUESTION_IMAGE_ETL_CAP } })
     const notes = new CoreNotes()
