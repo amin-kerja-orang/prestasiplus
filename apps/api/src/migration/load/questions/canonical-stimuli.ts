@@ -119,6 +119,15 @@ export interface EnsuredStimuli {
   paths: Map<string, string[]>
   /** V2 stimulus id to the V3 ids of its extra stimuli, in order (`planInlineMedia`: the text, a second picture, ...). */
   extras: Map<string, string[]>
+  /** V2 stimulus id to how many of its extras come before it in the body (`MediaPlan.primaryAt`). */
+  before: Map<string, number>
+}
+
+/** The stimuli of one V2 stimulus in reading order: the extras that precede it, the stimulus itself, the other extras. */
+export function inReadingOrder(e: Pick<EnsuredStimuli, 'extras' | 'before'>, sid: string, v3: string): string[] {
+  const x = e.extras.get(sid) ?? []
+  const b = Math.min(e.before.get(sid) ?? 0, x.length)
+  return [...x.slice(0, b), v3, ...x.slice(b)]
 }
 
 interface Fresh {
@@ -141,6 +150,7 @@ export async function ensureStimuli(ctx: BatchContext, ids: readonly string[], o
   const known = await ctx.idMap.resolveMany('canonical_stimuli', ids)
   const paths = new Map<string, string[]>()
   const extras = new Map<string, string[]>()
+  const before = new Map<string, number>()
   const res = await ctx.db.query<StimulusRow>(
     `SELECT s.id::text AS id, k.slug::text AS kind, s.body::text AS body, s.caption::text AS caption, ma.path::text AS path
        FROM ${A}.stimuli s LEFT JOIN staging_cloud.stimulus_kinds k ON k.id = s.stimulus_kind_id LEFT JOIN ${A}.media_assets ma ON ma.id = s.asset_id
@@ -162,6 +172,7 @@ export async function ensureStimuli(ctx: BatchContext, ids: readonly string[], o
       for (const piece of [plan.primary, ...plan.extras]) if (piece.image !== null) needed.push(piece.image.path)
     }
     if (needed.length > 0) paths.set(r.id, needed)
+    if (plan?.ok === true && plan.primaryAt > 0) before.set(r.id, plan.primaryAt)
     if (known.has(r.id)) {
       if (plan?.ok === true && plan.extras.length > 0) {
         const keys = plan.extras.map((_, i) => `${r.id}#${i + 1}`)
@@ -203,7 +214,7 @@ export async function ensureStimuli(ctx: BatchContext, ids: readonly string[], o
     for (const [v2, v3] of primaries) known.set(v2, v3)
     for (const f of fresh.filter((x) => x.n > 0)) extras.set(f.v2, [...(extras.get(f.v2) ?? []), newIds[fresh.indexOf(f)] as string])
   }
-  return { ids: known, paths, extras }
+  return { ids: known, paths, extras, before }
 }
 
 /**
@@ -235,7 +246,8 @@ export async function linkCanonicalStimuli(
   const members = wanted.filter((m) => !done.has(m.qid))
   if (members.length === 0) return out
   const allSids = [...new Set(members.flatMap((m) => m.sids))]
-  const { ids: stimulusOf, paths, extras } = await ensureStimuli(ctx, allSids, out)
+  const ensured = await ensureStimuli(ctx, allSids, out)
+  const { ids: stimulusOf, paths } = ensured
 
   const counts = await ctx.db.query<{ stimulus_id: string; n: number }>(
     `SELECT u.stimulus_id::text AS stimulus_id, count(DISTINCT u.exam_question_id)::int AS n FROM (
@@ -260,8 +272,7 @@ export async function linkCanonicalStimuli(
   }
   /** The stimulus, then its extras (the text, a second picture, ...); an extra with no free position holds the question (never dropped silently). */
   const addOwnWithExtras = (qid: string, sid: string, v3: string): void => {
-    addOwn(qid, v3)
-    for (const x of extras.get(sid) ?? []) if (!addOwn(qid, x)) holdQuestion([SLOT_HOLD_PATH], qid)
+    for (const x of inReadingOrder(ensured, sid, v3)) if (!addOwn(qid, x) && x !== v3) holdQuestion([SLOT_HOLD_PATH], qid)
   }
   const grouped = new Set<string>()
   const byStimulus = new Map<string, typeof members>()
@@ -298,7 +309,7 @@ export async function linkCanonicalStimuli(
         [groupId, subjects.size === 1 ? ([...subjects][0] ?? null) : null],
       )
       // The stimulus and its extras take positions 1..3 of the group (the schema allows three); an extra beyond that holds the whole group below.
-      const inGroup = [v3, ...(extras.get(sid) ?? [])]
+      const inGroup = inReadingOrder(ensured, sid, v3)
       for (const [i, id] of inGroup.slice(0, 3).entries()) {
         await ctx.db.query(`INSERT INTO stimulus_group_stimuli (group_id, stimulus_id, position) VALUES ($1::bigint, $2::bigint, $3::smallint)`, [groupId, id, i + 1])
       }

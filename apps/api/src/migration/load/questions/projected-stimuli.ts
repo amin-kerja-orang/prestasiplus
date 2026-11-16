@@ -18,7 +18,7 @@ import { quoteIdent, toJson } from '../../kit/sql'
 import { text } from '../../transform/common'
 import { plainFromHtml } from '../../transform/question-bank'
 import type { QuestionTreePlan } from './bank-writer'
-import { ensureStimuli, hold, MAX_OWN_STIMULI, SLOT_HOLD_PATH, stimulusText, type LinkOutcome } from './canonical-stimuli'
+import { ensureStimuli, hold, inReadingOrder, MAX_OWN_STIMULI, SLOT_HOLD_PATH, stimulusText, type LinkOutcome } from './canonical-stimuli'
 
 const A = quoteIdent(ARCHIVE_SCHEMA)
 
@@ -98,7 +98,8 @@ export async function linkProjectedStimuli(
   }
   if (wanted.size === 0) return out
 
-  const { ids: stimulusOf, paths, extras } = await ensureStimuli(ctx, [...new Set([...wanted.values()].flat())], out)
+  const ensured = await ensureStimuli(ctx, [...new Set([...wanted.values()].flat())], out)
+  const { ids: stimulusOf, paths } = ensured
   const rows: { qid: string; stimulus_id: string; position: number }[] = []
   const heldPaths = new Map<string, Set<string>>()
   for (const [legacyId, sids] of wanted) {
@@ -109,17 +110,14 @@ export async function linkProjectedStimuli(
     for (const sid of sids) {
       const v3 = stimulusOf.get(sid)
       if (v3 === undefined) continue
-      position += 1
-      rows.push({ qid, stimulus_id: v3, position })
-      out.own += 1
       const need = [...(paths.get(sid) ?? [])]
-      for (const x of extras.get(sid) ?? []) {
+      for (const id of inReadingOrder(ensured, sid, v3)) {
         if (position >= MAX_OWN_STIMULI) {
           need.push(SLOT_HOLD_PATH)
           break
         }
         position += 1
-        rows.push({ qid, stimulus_id: x, position })
+        rows.push({ qid, stimulus_id: id, position })
         out.own += 1
       }
       for (const path of need) heldPaths.set(path, (heldPaths.get(path) ?? new Set()).add(qid))

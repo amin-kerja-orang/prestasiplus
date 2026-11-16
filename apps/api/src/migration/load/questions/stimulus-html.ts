@@ -21,7 +21,7 @@ export const PICTURE_KINDS: readonly string[] = ['image', 'diagram', 'graph', 'm
 export type MediaCause = 'other_img' | 'path' | 'table' | 'markup' | 'bilingual'
 
 export interface InlineImage {
-  /** Path inside the V2 storage export (`stimuli/<uuid>/<file>`), decoded. */
+  /** Path inside the V2 storage export (`stimuli/<uuid>/<file>` or `exam-media/...`), decoded. */
   path: string
   /** Position of the picture among the pictures of the body (0 = first): part of the `files` legacy key. */
   index: number
@@ -41,7 +41,11 @@ export interface StimulusPiece {
   altText: string | null
 }
 
-export type MediaPlan = { ok: true; primary: StimulusPiece; extras: StimulusPiece[] } | { ok: false; cause: MediaCause }
+/**
+ * `primaryAt`: how many extras come BEFORE the row in the body (the text that precedes the first picture or table). Linked in this order the stimuli read
+ * as the body does: `extras[0..primaryAt)`, the row, then the other extras.
+ */
+export type MediaPlan = { ok: true; primary: StimulusPiece; extras: StimulusPiece[]; primaryAt: number } | { ok: false; cause: MediaCause }
 
 type Segment =
   | { type: 'text'; text: string }
@@ -49,12 +53,13 @@ type Segment =
   | { type: 'table'; grid: TableGrid | null }
 
 const TOKEN = /<table(?:\s[^<>]*)?>[\s\S]*?<\/table\s*>|<img(?:[\s/][^<>]*)?>/gi
-const STRICT_IMG = /<img\b[^>]*\/storage\/stimuli\//i
+const STRICT_IMG = /<img\b[^>]*\/storage\/(?:stimuli|exam-media)\//i
 const ANY_MEDIA = /<(?:img|table)\b/i
 const RESIDUAL = /<\/?(?:table|thead|tbody|tfoot|tr|td|th|caption|img)\b/i
 const SRC = /\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i
 const ALT = /\salt\s*=\s*(?:"([^"]*)"|'([^']*)')/i
-const STORAGE = /^\/storage\/(stimuli\/[^/\\?#]+\/[^/\\?#]+)$/
+/** V2 public storage: `stimuli/<uuid>/<file>` and `exam-media/<...>` (one or more safe segments; `..` is refused later by `normaliseRelativePath`). */
+const STORAGE = /^\/storage\/((?:stimuli|exam-media)\/(?:[^/\\?#]+\/)*[^/\\?#]+)$/
 
 /** True when the body holds an inline picture of V2 storage or a raw table (the rows the repair command selects). */
 export function hasInlineMedia(html: string | null | undefined): boolean {
@@ -176,8 +181,9 @@ export function planInlineMedia(input: { kind: string; ms: string | null; en: st
       ok: true,
       primary: { kind: input.kind, bodyMs: joined((p) => p.bodyMs), bodyEn: joined((p) => p.bodyEn), tableData: null, image: null, altText: null },
       extras: pieces.filter((p) => p.kind !== 'passage').map(extraKind),
+      primaryAt: 0,
     }
   }
   const at = pieces.findIndex((p) => p.kind !== 'passage')
-  return { ok: true, primary: pieces[at] as StimulusPiece, extras: pieces.filter((_, i) => i !== at).map(extraKind) }
+  return { ok: true, primary: pieces[at] as StimulusPiece, extras: pieces.filter((_, i) => i !== at).map(extraKind), primaryAt: at }
 }

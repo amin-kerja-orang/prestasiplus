@@ -156,13 +156,16 @@ export async function readCanonicalFindings(pool: pg.Pool, source: LegacySource)
                   WHERE m.legacy_source = $1 AND m.entity = 'exam_questions'),
       expd AS (SELECT DISTINCT l.qid, s.new_id::bigint AS stim FROM v2links v JOIN loaded l ON l.eq = v.eq
                  JOIN etl_id_map s ON s.legacy_source = $1 AND s.entity = 'canonical_stimuli' AND s.legacy_id = v.sid::text),
+      -- the extra stimuli of a split V2 stimulus (inline picture or table: loader and repair) are stimuli V2 links in effect, not foreign ones
+      extra AS (SELECT DISTINCT l.qid, x.new_id::bigint AS stim FROM v2links v JOIN loaded l ON l.eq = v.eq
+                 JOIN etl_id_map x ON x.legacy_source = $1 AND x.entity = 'canonical_stimulus_extras' AND split_part(x.legacy_id, '#', 1) = v.sid::text),
       act AS (SELECT DISTINCT x.qid, x.stim FROM (
                 SELECT ver.question_id AS qid, qvs.stimulus_id AS stim FROM question_version_stimuli qvs JOIN question_versions ver ON ver.id = qvs.question_version_id AND ver.version_no = 1
                 UNION ALL SELECT q.id, gs.stimulus_id FROM questions q JOIN stimulus_group_stimuli gs ON gs.group_id = q.group_id) x
                WHERE x.qid IN (SELECT qid FROM expd)),
       per AS (SELECT e.qid, count(*)::int AS exp_n,
                      (SELECT count(*) FROM act a WHERE a.qid = e.qid)::int AS act_n,
-                     (SELECT count(*) FROM act a WHERE a.qid = e.qid AND NOT EXISTS (SELECT 1 FROM expd d WHERE d.qid = a.qid AND d.stim = a.stim))::int AS foreign_n,
+                     (SELECT count(*) FROM act a WHERE a.qid = e.qid AND NOT EXISTS (SELECT 1 FROM expd d WHERE d.qid = a.qid AND d.stim = a.stim) AND NOT EXISTS (SELECT 1 FROM extra x WHERE x.qid = a.qid AND x.stim = a.stim))::int AS foreign_n,
                      (EXISTS (SELECT 1 FROM questions q WHERE q.id = e.qid AND q.group_id IS NOT NULL))::int AS in_group
                 FROM expd e GROUP BY e.qid),
       cg AS (SELECT sg.id AS gid FROM etl_id_map m JOIN stimulus_groups sg ON sg.id = m.new_id::bigint WHERE m.legacy_source = $1 AND m.entity = 'canonical_stimulus_groups'),

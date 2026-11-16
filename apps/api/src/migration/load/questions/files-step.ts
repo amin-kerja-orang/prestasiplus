@@ -175,7 +175,7 @@ async function inlineUnits(q: QuestionsContext): Promise<Map<string, PathUnit>> 
   const res = await q.pool.query<{ id: string; body: string | null; path: string | null }>(
     `SELECT s.id::text AS id, s.body::text AS body, ma.path::text AS path
        FROM archive_cloud.stimuli s LEFT JOIN archive_cloud.media_assets ma ON ma.id = s.asset_id
-      WHERE s.body::text ILIKE '%storage%stimuli%' ORDER BY s.id`,
+      WHERE (s.body::text ILIKE '%storage%stimuli%' OR s.body::text ILIKE '%storage%exam-media%') ORDER BY s.id`,
   )
   const out = new Map<string, PathUnit>()
   for (const r of res.rows) {

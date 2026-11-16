@@ -11,6 +11,7 @@ import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runQuestions } from '../../../src/migration/load/questions'
+import { readCanonicalFindings } from '../../../src/migration/verify/group-checks'
 import { runStructured } from '../../../src/migration/load/questions/structured-index'
 import { makePng } from '../../files/fixtures'
 import { addArchive, AS_OF, bootQuestions, type QuestionsHarness } from './helpers'
@@ -103,12 +104,15 @@ beforeAll(async () => {
     [5104, img(5)], // picture missing from the export (unlisted)
     [5105, table], // table
     [5106, `${img(6)}`], // shared by two questions (a group)
+    [5107, `<p>Teks sebelum rajah.</p>${img(7)}`], // text THEN picture: the text is linked first
+    [5108, 'Petikan biasa.'],
   ]
   for (const [id, b] of bodies) await sql(`insert into archive_cloud.stimuli (id, stimulus_kind_id, body) values ($1, 91, $2)`, [id, html(b)])
   for (const [i, v2] of [9401, 9402, 9403, 9404, 9405].entries()) await canonical(v2, i + 1, `Soalan rajah ${i + 1}.`)
+  await canonical(9408, 8, 'Soalan susunan.')
   await canonical(9406, 6, 'Soalan kumpulan A.')
   await canonical(9407, 7, 'Soalan kumpulan B.')
-  await sql(`insert into archive_cloud.question_stimulus (id, exam_question_id, stimulus_id, position) values (1, 9401, 5101, 1), (2, 9402, 5102, 1), (3, 9403, 5103, 1), (4, 9404, 5104, 1), (5, 9405, 5105, 1), (6, 9406, 5106, 1), (7, 9407, 5106, 1)`)
+  await sql(`insert into archive_cloud.question_stimulus (id, exam_question_id, stimulus_id, position) values (1, 9401, 5101, 1), (2, 9402, 5102, 1), (3, 9403, 5103, 1), (4, 9404, 5104, 1), (5, 9405, 5105, 1), (6, 9406, 5106, 1), (7, 9407, 5106, 1), (8, 9408, 5107, 1), (9, 9408, 5108, 2)`)
 }, 300_000)
 afterAll(async () => {
   await h?.close()
@@ -130,9 +134,9 @@ describe('canonical stimuli with inline pictures and tables', () => {
 
     // image + text: the picture first, the text as a passage stimulus after it
     const mixed = await stimuliOf(9402)
-    expect(mixed.map((s) => [s.kind, s.pos])).toEqual([['image', 1], ['passage', 2]])
-    expect(mixed[0]?.file).not.toBeNull()
-    expect(mixed[1]).toMatchObject({ body_ms: 'Perhatikan rajah berikut.', file: null })
+    expect(mixed.map((s) => [s.kind, s.pos])).toEqual([['passage', 1], ['image', 2]])
+    expect(mixed[1]?.file).not.toBeNull()
+    expect(mixed[0]).toMatchObject({ body_ms: 'Perhatikan rajah berikut.', file: null })
     expect((await stateOf(9402))?.is_active).toBe(true)
 
     // two images: two picture stimuli, each with its own file
@@ -153,6 +157,13 @@ describe('canonical stimuli with inline pictures and tables', () => {
     expect(grp).toHaveLength(1)
     expect(grp[0]?.kind).toBe('image')
     expect(grp[0]?.file).not.toBeNull()
+
+    // reading order of the body, and the other stimulus of the question after both parts
+    expect((await stimuliOf(9408)).map((s) => [s.kind, s.pos])).toEqual([['passage', 1], ['image', 2], ['passage', 3]])
+
+    // verify: the extra stimuli are not a stimulus V2 does not link
+    const found = await readCanonicalFindings(h.pool, 'cloud')
+    expect(found).toMatchObject({ foreignLink: 0, noStimulus: 0 })
 
     // no stimulus keeps markup
     expect((await sql(`select count(*)::int as n from stimuli where body_ms ~* '<(img|table)'`)).rows[0]?.n).toBe(0)

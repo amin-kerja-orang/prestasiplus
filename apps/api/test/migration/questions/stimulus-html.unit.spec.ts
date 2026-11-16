@@ -43,6 +43,14 @@ describe('planInlineMedia', () => {
     expect(okPlan(plan(img('a.png'), { kind: 'passage' })).primary.kind).toBe('image')
   })
 
+  it('accepts a picture of /storage/exam-media/ too (one or more segments), and counts it as inline media', () => {
+    const html = '<img src="/storage/exam-media/2025/set 1/rajah%201.png" alt="R">'
+    expect(hasInlineMedia(html)).toBe(true)
+    const p = okPlan(plan(html))
+    expect(p.primary).toMatchObject({ kind: 'image', image: { path: 'exam-media/2025/set 1/rajah 1.png', index: 0 } })
+    expect(plan('<img src="/storage/other/a.png">')).toEqual({ ok: false, cause: 'other_img' })
+  })
+
   it('decodes a percent-encoded file name', () => {
     const p = okPlan(plan(`<img src="/storage/stimuli/${UUID}/rajah%201.png">`))
     expect(p.primary.image?.path).toBe(`stimuli/${UUID}/rajah 1.png`)
@@ -52,6 +60,8 @@ describe('planInlineMedia', () => {
     const p = okPlan(plan(`<p>Perhatikan rajah berikut.</p>${img('a.png')}`))
     expect(p.primary).toMatchObject({ kind: 'image', bodyMs: null, image: { path: `stimuli/${UUID}/a.png`, index: 0 } })
     expect(p.extras).toEqual([expect.objectContaining({ kind: 'passage', bodyMs: 'Perhatikan rajah berikut.', image: null })])
+    expect(p.primaryAt).toBe(1) // one extra (the text) comes BEFORE the picture in the body: it is linked before it
+    expect(okPlan(plan(`${img('a.png')}<p>Nota.</p>`)).primaryAt).toBe(0)
   })
 
   it('two images: the first keeps the row, the second is an image stimulus of its own (index 1)', () => {
@@ -82,6 +92,7 @@ describe('planInlineMedia', () => {
     const p = okPlan(plan(`Teks.${img('a.png')}`, { kind: 'diagram', hasAsset: true }))
     expect(p.primary).toMatchObject({ kind: 'diagram', bodyMs: 'Teks.', image: null })
     expect(p.extras).toEqual([expect.objectContaining({ kind: 'image', image: { path: `stimuli/${UUID}/a.png`, index: 0 } })])
+    expect(p.primaryAt).toBe(0)
   })
 
   it('the English column follows the Malay layout; a different layout is refused as bilingual', () => {

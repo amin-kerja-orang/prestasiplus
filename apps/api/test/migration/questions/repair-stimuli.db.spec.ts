@@ -55,6 +55,11 @@ function writeExport(dir: string, present: number[]): void {
     writeFileSync(join(dir, 'stimuli', U(n), 'rajah.png'), bytes)
     sums.push(`${createHash('sha256').update(bytes).digest('hex')}  stimuli/${U(n)}/rajah.png`)
   }
+  // a picture of /storage/exam-media/ (the first stimulus uses it)
+  const em = makePng({ width: 20, height: 2 })
+  mkdirSync(join(dir, 'exam-media', 'set a'), { recursive: true })
+  writeFileSync(join(dir, 'exam-media', 'set a', 'rajah.png'), em)
+  sums.push(`${createHash('sha256').update(em).digest('hex')}  exam-media/set a/rajah.png`)
   writeFileSync(join(dir, 'SHA256SUMS'), `${sums.join('\n')}\n`)
 }
 
@@ -78,13 +83,16 @@ beforeAll(async () => {
     const r = await runQuestions({ pool: h.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, coreAsOf: AS_OF, mode, batchSize: 2 })
     expect(r.report.status).toBe('succeeded')
   }
-  await own(1, await stimulus('passage', img(1))) // image only
-  await own(2, await stimulus('passage', `Perhatikan rajah.${img(2)}`)) // image + text
+  await own(1, await stimulus('passage', '<img src="/storage/exam-media/set%20a/rajah.png">')) // image only, from exam-media
+  const s2 = await stimulus('passage', `Perhatikan rajah.${img(2)}`)
+  await sql(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('cloud', 'canonical_stimuli', '7002', $1)`, [s2])
+  await own(2, s2) // text THEN image, with a V2 id
   await own(3, await stimulus('passage', `${img(3)}${img(4)}`)) // two images
   await own(4, await stimulus('passage', img(5))) // picture not in the export
   await own(5, await stimulus('table', TABLE)) // table
   await own(6, await stimulus('passage', 'Teks biasa.'), await stimulus('passage', 'Teks dua.'), await stimulus('passage', `${img(8)}Nota.`)) // no room for the extra
   await own(7, await stimulus('passage', 'Petikan biasa sahaja.')) // untouched
+  await own(9, await stimulus('passage', `Teks A.${img(1)}`), await stimulus('passage', 'Teks B.')) // a later link is shifted, not overwritten
   // a group of two questions shows one picture stimulus
   const g = (await sql(`insert into stimulus_groups (label, scope) values (null, 'section') returning id::text as id`)).rows[0]?.id as string
   await sql(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1::bigint, $2::bigint, 1)`, [g, await stimulus('passage', img(6))])
@@ -110,7 +118,7 @@ describe('repair of loaded stimuli', () => {
     const dry = await run('dry-run')
     expect(dry.status).toBe('succeeded')
     expect(await snapshot()).toBe(before)
-    expect(dry.fixed).toBe(6)
+    expect(dry.fixed).toBe(7)
     expect(dry.rejected).toBe(1)
     expect(dry.notes.get('failed.unlisted')).toBe(1)
     expect(dry.notes.get('fixed.table')).toBe(1)
@@ -119,7 +127,7 @@ describe('repair of loaded stimuli', () => {
   it('apply fixes every case, holds the unusable picture, and refuses without a dry-run on the same input', async () => {
     const applied = await run('apply')
     expect(applied.status).toBe('succeeded')
-    expect(applied.fixed).toBe(6)
+    expect(applied.fixed).toBe(7)
 
     const a = await ownOf(1)
     expect(a).toMatchObject([{ kind: 'image', body_ms: null }])
@@ -127,8 +135,12 @@ describe('repair of loaded stimuli', () => {
     expect((await sql(`select purpose, mime from files where id = $1::bigint`, [a[0]?.file])).rows[0]).toMatchObject({ purpose: 'question_image', mime: 'image/png' })
 
     const b = await ownOf(2)
-    expect(b.map((s) => [s.kind, s.pos, s.body_ms])).toEqual([['image', 1, null], ['passage', 2, 'Perhatikan rajah.']])
-    expect(b[0]?.file).not.toBeNull()
+    expect(b.map((s) => [s.kind, s.pos, s.body_ms])).toEqual([['passage', 1, 'Perhatikan rajah.'], ['image', 2, null]])
+    expect(b[1]?.file).not.toBeNull()
+    // the extra is known to the id map under the loader's key (verify and rollback recognise it)
+    expect((await sql(`select count(*)::int as n from etl_id_map where entity = 'canonical_stimulus_extras' and legacy_id = '7002#1'`)).rows[0]?.n).toBe(1)
+    // the question that shows a repaired row first keeps its other stimulus after both parts
+    expect((await ownOf(9)).map((s) => [s.kind, s.pos, s.body_ms])).toEqual([['passage', 1, 'Teks A.'], ['image', 2, null], ['passage', 3, 'Teks B.']])
 
     const c = await ownOf(3)
     expect(c.map((s) => [s.kind, s.pos])).toEqual([['image', 1], ['image', 2]])

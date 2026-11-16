@@ -60,7 +60,7 @@ export async function candidatesDigest(pool: Pick<pg.Pool, 'query'>): Promise<{ 
 async function readCandidates(pool: Pick<pg.Pool, 'query'>, after: number, limit: number): Promise<Candidate[]> {
   const res = await pool.query<Candidate>(
     `SELECT s.id::text AS id, s.kind, s.body_ms, s.body_en, s.asset_file_id::text AS asset FROM stimuli s
-      WHERE s.id > $1::bigint AND (s.body_ms ILIKE '%<table%' OR s.body_en ILIKE '%<table%' OR s.body_ms ILIKE '%<img%/storage/stimuli/%' OR s.body_en ILIKE '%<img%/storage/stimuli/%')
+      WHERE s.id > $1::bigint AND (s.body_ms ILIKE '%<table%' OR s.body_en ILIKE '%<table%' OR s.body_ms ILIKE '%<img%/storage/stimuli/%' OR s.body_en ILIKE '%<img%/storage/stimuli/%' OR s.body_ms ILIKE '%<img%/storage/exam-media/%' OR s.body_en ILIKE '%<img%/storage/exam-media/%')
       ORDER BY s.id LIMIT $2`,
     [after, limit],
   )
@@ -119,12 +119,17 @@ async function fail(rc: RepairContext, ctx: BatchContext, r: Candidate, cause: s
 const activeCount = async (ctx: BatchContext, ids: readonly string[]): Promise<number> =>
   Number((await ctx.db.query<{ n: string }>(`SELECT count(*)::text AS n FROM questions WHERE id = ANY($1::bigint[]) AND is_active`, [ids])).rows[0]?.n)
 
+async function v2IdOf(ctx: BatchContext, v3: string): Promise<string | null> {
+  const m = await ctx.db.query<{ legacy_id: string }>(`SELECT legacy_id FROM etl_id_map WHERE legacy_source = 'cloud' AND entity = 'canonical_stimuli' AND new_id = $1::text LIMIT 1`, [v3])
+  const v2 = m.rows[0]?.legacy_id
+  return v2 !== undefined && /^[0-9]{1,18}$/.test(v2) ? v2 : null
+}
+
 async function legacyKey(ctx: BatchContext, v3: string, index: number): Promise<{ column: string; legacyId: string }> {
   // The V2 stimulus id when the id map has it (the same key a fresh `migrate:questions` run gives the file), else the V3 id under its own column.
-  const m = await ctx.db.query<{ legacy_id: string }>(`SELECT legacy_id FROM etl_id_map WHERE legacy_source = 'cloud' AND entity = 'canonical_stimuli' AND new_id = $1::text LIMIT 1`, [v3])
   const suffix = index === 0 ? '' : `.${index + 1}`
-  const v2 = m.rows[0]?.legacy_id
-  return v2 !== undefined && /^[0-9]{1,18}$/.test(v2) ? { column: `body${suffix}`, legacyId: v2 } : { column: `body_ms${suffix}`, legacyId: v3 }
+  const v2 = await v2IdOf(ctx, v3)
+  return v2 !== null ? { column: `body${suffix}`, legacyId: v2 } : { column: `body_ms${suffix}`, legacyId: v3 }
 }
 
 async function repairOne(rc: RepairContext, ctx: BatchContext, r: Candidate, copied: Map<string, { ok: true; fileId: string | null } | { ok: false; cause: string }>): Promise<boolean> {
@@ -170,27 +175,36 @@ async function repairOne(rc: RepairContext, ctx: BatchContext, r: Candidate, cop
       [JSON.stringify(plan.extras.map((p, i) => ({ id: ids[i], kind: p.kind, body_ms: p.bodyMs, body_en: p.bodyEn, alt_text: p.altText, table_data: p.tableData, asset_file_id: assetOf(p) })))],
     )
     rc.notes.count('stimuli.extras_created', plan.extras.length)
+    // The loader's id-map key, so verify (group-checks) and migrate:rollback know the extras; a row without a V2 id (not loaded by the canonical loader) has none.
+    const v2 = await v2IdOf(ctx, r.id)
+    if (v2 !== null) await ctx.idMap.registerMany('canonical_stimulus_extras', ids.map((id, i) => [`${v2}#${i + 1}`, id] as const))
     const noRoom = new Set<string>()
-    const versions = await ctx.db.query<{ v: string; q: string; m: number }>(
-      `SELECT vs.question_version_id::text AS v, v.question_id::text AS q, (SELECT max(x.position) FROM question_version_stimuli x WHERE x.question_version_id = vs.question_version_id)::int AS m
+    const e = ids.length
+    // Links in reading order (the body's order): the extras before the row, the row, the other extras; later links move down by the number of extras.
+    // A question or group that would pass 3 stimuli gets none of them and is held.
+    const relink = async (table: 'question_version_stimuli' | 'stimulus_group_stimuli', owner: string, ownerId: string, at: number, max: number): Promise<boolean> => {
+      if (max + e > MAX_SLOTS) return false
+      const later = await ctx.db.query<{ id: string; position: number }>(`SELECT id::text AS id, position::int AS position FROM ${table} WHERE ${owner} = $1::bigint AND position > $2 ORDER BY position DESC`, [ownerId, at])
+      for (const l of later.rows) await ctx.db.query(`UPDATE ${table} SET position = $2::smallint WHERE id = $1::bigint`, [l.id, l.position + e])
+      await ctx.db.query(`UPDATE ${table} SET position = $3::smallint WHERE ${owner} = $1::bigint AND stimulus_id = $2::bigint`, [ownerId, r.id, at + plan.primaryAt])
+      for (const [i, id] of ids.entries()) {
+        await ctx.db.query(`INSERT INTO ${table} (${owner}, stimulus_id, position) VALUES ($1::bigint, $2::bigint, $3::smallint)`, [ownerId, id, at + (i < plan.primaryAt ? i : i + 1)])
+      }
+      return true
+    }
+    const versions = await ctx.db.query<{ v: string; q: string; at: number; m: number }>(
+      `SELECT vs.question_version_id::text AS v, v.question_id::text AS q, vs.position::int AS at, (SELECT max(x.position) FROM question_version_stimuli x WHERE x.question_version_id = vs.question_version_id)::int AS m
          FROM question_version_stimuli vs JOIN question_versions v ON v.id = vs.question_version_id WHERE vs.stimulus_id = $1::bigint`,
       [r.id],
     )
-    for (const l of versions.rows) {
-      for (const [i, id] of ids.entries()) {
-        if (l.m + i + 1 > MAX_SLOTS) noRoom.add(l.q)
-        else await ctx.db.query(`INSERT INTO question_version_stimuli (question_version_id, stimulus_id, position) VALUES ($1::bigint, $2::bigint, $3::smallint)`, [l.v, id, l.m + i + 1])
-      }
-    }
-    const groups = await ctx.db.query<{ g: string; m: number }>(
-      `SELECT gs.group_id::text AS g, (SELECT max(x.position) FROM stimulus_group_stimuli x WHERE x.group_id = gs.group_id)::int AS m FROM stimulus_group_stimuli gs WHERE gs.stimulus_id = $1::bigint`,
+    for (const l of versions.rows) if (!(await relink('question_version_stimuli', 'question_version_id', l.v, l.at, l.m))) noRoom.add(l.q)
+    const groups = await ctx.db.query<{ g: string; at: number; m: number }>(
+      `SELECT gs.group_id::text AS g, gs.position::int AS at, (SELECT max(x.position) FROM stimulus_group_stimuli x WHERE x.group_id = gs.group_id)::int AS m FROM stimulus_group_stimuli gs WHERE gs.stimulus_id = $1::bigint`,
       [r.id],
     )
     for (const l of groups.rows) {
-      for (const [i, id] of ids.entries()) {
-        if (l.m + i + 1 > MAX_SLOTS) {
-          for (const q of (await ctx.db.query<{ id: string }>(`SELECT id::text AS id FROM questions WHERE group_id = $1::bigint`, [l.g])).rows) noRoom.add(q.id)
-        } else await ctx.db.query(`INSERT INTO stimulus_group_stimuli (group_id, stimulus_id, position) VALUES ($1::bigint, $2::bigint, $3::smallint)`, [l.g, id, l.m + i + 1])
+      if (!(await relink('stimulus_group_stimuli', 'group_id', l.g, l.at, l.m))) {
+        for (const q of (await ctx.db.query<{ id: string }>(`SELECT id::text AS id FROM questions WHERE group_id = $1::bigint`, [l.g])).rows) noRoom.add(q.id)
       }
     }
     // A part holds one stimulus only: its extras cannot be shown there.
