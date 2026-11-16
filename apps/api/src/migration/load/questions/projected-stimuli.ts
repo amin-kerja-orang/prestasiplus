@@ -18,7 +18,7 @@ import { quoteIdent, toJson } from '../../kit/sql'
 import { text } from '../../transform/common'
 import { plainFromHtml } from '../../transform/question-bank'
 import type { QuestionTreePlan } from './bank-writer'
-import { ensureStimuli, hold, MAX_OWN_STIMULI, stimulusText, type LinkOutcome } from './canonical-stimuli'
+import { ensureStimuli, hold, MAX_OWN_STIMULI, SLOT_HOLD_PATH, stimulusText, type LinkOutcome } from './canonical-stimuli'
 
 const A = quoteIdent(ARCHIVE_SCHEMA)
 
@@ -71,7 +71,7 @@ export async function linkProjectedStimuli(
   fresh: readonly QuestionTreePlan[],
   questionIds: ReadonlyMap<string, string>,
 ): Promise<LinkOutcome> {
-  const out: LinkOutcome = { created: 0, grouped: 0, groupsCreated: 0, own: 0, held: 0, empty: 0 }
+  const out: LinkOutcome = { created: 0, grouped: 0, groupsCreated: 0, own: 0, held: 0, empty: 0, inlineSplit: 0, extras: 0, inlineUnusable: 0 }
   const planOf = new Map(fresh.map((p) => [p.idKey, p] as const))
   const links = await projectedStimulusIds(ctx, source, [...planOf.keys()])
   if (links.length === 0) return out
@@ -98,7 +98,7 @@ export async function linkProjectedStimuli(
   }
   if (wanted.size === 0) return out
 
-  const { ids: stimulusOf, paths } = await ensureStimuli(ctx, [...new Set([...wanted.values()].flat())], out)
+  const { ids: stimulusOf, paths, extras } = await ensureStimuli(ctx, [...new Set([...wanted.values()].flat())], out)
   const rows: { qid: string; stimulus_id: string; position: number }[] = []
   const heldPaths = new Map<string, Set<string>>()
   for (const [legacyId, sids] of wanted) {
@@ -112,8 +112,17 @@ export async function linkProjectedStimuli(
       position += 1
       rows.push({ qid, stimulus_id: v3, position })
       out.own += 1
-      const path = paths.get(sid)
-      if (path !== undefined) heldPaths.set(path, (heldPaths.get(path) ?? new Set()).add(qid))
+      const need = [...(paths.get(sid) ?? [])]
+      for (const x of extras.get(sid) ?? []) {
+        if (position >= MAX_OWN_STIMULI) {
+          need.push(SLOT_HOLD_PATH)
+          break
+        }
+        position += 1
+        rows.push({ qid, stimulus_id: x, position })
+        out.own += 1
+      }
+      for (const path of need) heldPaths.set(path, (heldPaths.get(path) ?? new Set()).add(qid))
     }
   }
   if (rows.length > 0) {

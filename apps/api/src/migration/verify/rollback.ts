@@ -355,7 +355,7 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
       [source],
     )
     await db.query(
-      `DELETE FROM stimuli s WHERE s.id IN (SELECT new_id::bigint FROM etl_id_map WHERE legacy_source = $1 AND entity IN ('question_stimuli', 'canonical_stimuli'))
+      `DELETE FROM stimuli s WHERE s.id IN (SELECT new_id::bigint FROM etl_id_map WHERE legacy_source = $1 AND entity IN ('question_stimuli', 'canonical_stimuli', 'canonical_stimulus_extras'))
           AND NOT EXISTS (SELECT 1 FROM stimulus_group_stimuli x WHERE x.stimulus_id = s.id)
           AND NOT EXISTS (SELECT 1 FROM question_version_stimuli x WHERE x.stimulus_id = s.id)
           AND NOT EXISTS (SELECT 1 FROM question_parts x WHERE x.stimulus_id = s.id)`,

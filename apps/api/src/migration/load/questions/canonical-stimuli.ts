@@ -15,6 +15,7 @@ import type { BatchContext } from '../../kit/runner'
 import { toJson } from '../../kit/sql'
 import { text } from '../../transform/common'
 import { plainFromHtml } from '../../transform/question-bank'
+import { planInlineMedia } from './stimulus-html'
 import { allocIds } from './steps'
 import type { QuestionTreePlan } from './bank-writer'
 
@@ -28,10 +29,22 @@ const KIND_OF: Readonly<Record<string, string>> = {
   image: 'image', cartoon: 'image', video: 'image',
 }
 
-/** Plain text of a V2 stimulus body (`{html}`, `{ms}`, `{text}`, a rich document or a string); null when it holds none. */
+/** The raw HTML strings of a V2 stimulus body (`{html}`, `{ms}`, `{text}`, a rich document or a string), joined by a newline; null when it holds none. */
+export function stimulusHtml(raw: string | null | undefined): string | null {
+  const parts = htmlParts(raw)
+  const joined = parts.filter((p) => p.trim() !== '').join('\n')
+  return joined === '' ? null : joined
+}
+
+/** Plain text of a V2 stimulus body; null when it holds none. */
 export function stimulusText(raw: string | null | undefined): string | null {
+  const plain = htmlParts(raw).map((p) => plainFromHtml(p).text.trim()).filter((p) => p !== '').join('\n')
+  return plain === '' ? null : plain
+}
+
+function htmlParts(raw: string | null | undefined): string[] {
   const t = text(raw)
-  if (t === null) return null
+  if (t === null) return []
   let value: unknown = t
   if (/^[[{"]/.test(t)) {
     try {
@@ -58,8 +71,7 @@ export function stimulusText(raw: string | null | undefined): string | null {
     }
   }
   walk(value, 0)
-  const plain = parts.map((p) => plainFromHtml(p).text.trim()).filter((p) => p !== '').join('\n')
-  return plain === '' ? null : plain
+  return parts
 }
 
 interface StimulusRow {
@@ -77,6 +89,10 @@ export interface LinkOutcome {
   own: number
   held: number
   empty: number
+  /** Stimuli split by `planInlineMedia` (inline picture or table), the extra stimuli it made, and the bodies it could not use (held). */
+  inlineSplit: number
+  extras: number
+  inlineUnusable: number
 }
 
 const HOLD = `jsonb_build_array(jsonb_build_object('code', 'legacy_image_unresolved', 'target', 'question', 'path', $2::text))`
@@ -91,46 +107,103 @@ export async function hold(ctx: BatchContext, questionIds: readonly string[], pa
   await ctx.db.query(`UPDATE questions SET is_active = false WHERE id = ANY($1::bigint[])`, [questionIds])
 }
 
-/** Creates the V3 stimuli of `ids` that the id map does not know yet; returns the id map (V2 stimulus id to V3 id) and the picture path of each. */
-export async function ensureStimuli(ctx: BatchContext, ids: readonly string[], out: LinkOutcome): Promise<{ ids: Map<string, string>; paths: Map<string, string> }> {
+/** Held-path marker of a stimulus whose HTML cannot be turned into pieces (`inline:<cause>`): no picture pass releases it, the repair command does. */
+export const inlineHoldPath = (cause: string): string => `inline:${cause}`
+/** Held-path marker of a question that has no room for the extra stimuli of an inline picture or table (a question shows at most 3). */
+export const SLOT_HOLD_PATH = 'stimulus-slot'
+
+export interface EnsuredStimuli {
+  /** V2 stimulus id to V3 id. */
+  ids: Map<string, string>
+  /** V2 stimulus id to every picture path it needs, V3 stimulus and its extras together (the media asset first), or a hold marker. */
+  paths: Map<string, string[]>
+  /** V2 stimulus id to the V3 ids of its extra stimuli, in order (`planInlineMedia`: the text, a second picture, ...). */
+  extras: Map<string, string[]>
+}
+
+interface Fresh {
+  v2: string
+  n: number
+  kind: string
+  body: string | null
+  bodyEn: string | null
+  caption: string | null
+  alt: string | null
+  table: unknown
+}
+
+/**
+ * Creates the V3 stimuli of `ids` that the id map does not know yet; returns the id map (V2 stimulus id to V3 id), the picture paths and the extra
+ * stimuli of each. A body with inline pictures or a table is split by `planInlineMedia` (see stimulus-html.ts): the row takes the first picture or
+ * table, the rest are extra stimuli (id map `canonical_stimulus_extras`, key `<V2 id>#<n>`); the picture of each is held until the picture pass copies it.
+ */
+export async function ensureStimuli(ctx: BatchContext, ids: readonly string[], out: LinkOutcome): Promise<EnsuredStimuli> {
   const known = await ctx.idMap.resolveMany('canonical_stimuli', ids)
-  const paths = new Map<string, string>()
-  const missing = ids.filter((i) => !known.has(i))
+  const paths = new Map<string, string[]>()
+  const extras = new Map<string, string[]>()
   const res = await ctx.db.query<StimulusRow>(
     `SELECT s.id::text AS id, k.slug::text AS kind, s.body::text AS body, s.caption::text AS caption, ma.path::text AS path
        FROM ${A}.stimuli s LEFT JOIN staging_cloud.stimulus_kinds k ON k.id = s.stimulus_kind_id LEFT JOIN ${A}.media_assets ma ON ma.id = s.asset_id
       WHERE s.id = ANY($1::bigint[])`,
     [ids],
   )
-  const fresh: { v2: string; kind: string; body: string | null; caption: string | null; alt: string | null }[] = []
+  const fresh: Fresh[] = []
   for (const r of res.rows) {
-    const path = text(r.path)
-    if (path !== null) paths.set(r.id, path)
-    if (known.has(r.id)) continue
-    const body = stimulusText(r.body)
+    const mediaPath = text(r.path)
+    const slug = (text(r.kind) ?? '').toLowerCase()
+    const kind = KIND_OF[slug] ?? (mediaPath !== null ? 'image' : 'passage')
     const caption = text(r.caption)
-    if (body === null && caption === null && path === null) {
+    const plan = planInlineMedia({ kind, ms: stimulusHtml(r.body), en: null, hasAsset: mediaPath !== null })
+    const needed: string[] = mediaPath === null ? [] : [mediaPath]
+    if (plan !== null && !plan.ok) {
+      out.inlineUnusable += 1
+      needed.push(inlineHoldPath(plan.cause))
+    } else if (plan !== null) {
+      for (const piece of [plan.primary, ...plan.extras]) if (piece.image !== null) needed.push(piece.image.path)
+    }
+    if (needed.length > 0) paths.set(r.id, needed)
+    if (known.has(r.id)) {
+      if (plan?.ok === true && plan.extras.length > 0) {
+        const keys = plan.extras.map((_, i) => `${r.id}#${i + 1}`)
+        const have = await ctx.idMap.resolveMany('canonical_stimulus_extras', keys)
+        extras.set(r.id, keys.flatMap((k) => (have.has(k) ? [have.get(k) as string] : [])))
+      }
+      continue
+    }
+    if (plan?.ok === true) {
+      const pieces = [plan.primary, ...plan.extras]
+      for (const [n, piece] of pieces.entries()) {
+        fresh.push({ v2: r.id, n, kind: piece.kind, body: piece.bodyMs, bodyEn: piece.bodyEn, caption: n === 0 ? caption : null, alt: (n === 0 ? caption : null) ?? piece.altText, table: piece.tableData })
+      }
+      out.inlineSplit += 1
+      continue
+    }
+    const body = stimulusText(r.body)
+    if (body === null && caption === null && mediaPath === null) {
       out.empty += 1
       continue
     }
-    const slug = (text(r.kind) ?? '').toLowerCase()
-    const kind = KIND_OF[slug] ?? (path !== null ? 'image' : 'passage')
-    fresh.push({ v2: r.id, kind, body, caption, alt: caption })
+    fresh.push({ v2: r.id, n: 0, kind, body, bodyEn: null, caption, alt: caption, table: null })
   }
-  void missing
   if (fresh.length > 0) {
     const newIds = await allocIds(ctx.db, 'stimuli', fresh.length)
     await ctx.db.query(
-      `INSERT INTO stimuli (id, kind, body_ms, caption, alt_text, reusable)
+      `INSERT INTO stimuli (id, kind, body_ms, body_en, caption, alt_text, table_data, reusable)
        OVERRIDING SYSTEM VALUE
-       SELECT x.id, x.kind, x.body, x.caption, x.alt, true FROM jsonb_to_recordset($1::jsonb) AS x(id bigint, kind text, body text, caption text, alt text)`,
-      [toJson(fresh.map((f, i) => ({ id: newIds[i], kind: f.kind, body: f.body, caption: f.caption, alt: f.alt })))],
+       SELECT x.id, x.kind, x.body, x.body_en, x.caption, x.alt, x.table_data, true
+         FROM jsonb_to_recordset($1::jsonb) AS x(id bigint, kind text, body text, body_en text, caption text, alt text, table_data jsonb)`,
+      [toJson(fresh.map((f, i) => ({ id: newIds[i], kind: f.kind, body: f.body, body_en: f.bodyEn, caption: f.caption, alt: f.alt, table_data: f.table })))],
     )
-    await ctx.idMap.registerMany('canonical_stimuli', fresh.map((f, i) => [f.v2, newIds[i] as string] as const))
-    out.created += fresh.length
-    for (const [i, f] of fresh.entries()) known.set(f.v2, newIds[i] as string)
+    const primaries = fresh.flatMap((f, i) => (f.n === 0 ? [[f.v2, newIds[i] as string] as const] : []))
+    await ctx.idMap.registerMany('canonical_stimuli', primaries)
+    const extraRows = fresh.flatMap((f, i) => (f.n > 0 ? [[`${f.v2}#${f.n}`, newIds[i] as string] as const] : []))
+    if (extraRows.length > 0) await ctx.idMap.registerMany('canonical_stimulus_extras', extraRows)
+    out.created += primaries.length
+    out.extras += extraRows.length
+    for (const [v2, v3] of primaries) known.set(v2, v3)
+    for (const f of fresh.filter((x) => x.n > 0)) extras.set(f.v2, [...(extras.get(f.v2) ?? []), newIds[fresh.indexOf(f)] as string])
   }
-  return { ids: known, paths }
+  return { ids: known, paths, extras }
 }
 
 /**
@@ -143,7 +216,7 @@ export async function linkCanonicalStimuli(
   questionIds: ReadonlyMap<string, string>,
   links: ReadonlyMap<string, readonly string[]>,
 ): Promise<LinkOutcome> {
-  const out: LinkOutcome = { created: 0, grouped: 0, groupsCreated: 0, own: 0, held: 0, empty: 0 }
+  const out: LinkOutcome = { created: 0, grouped: 0, groupsCreated: 0, own: 0, held: 0, empty: 0, inlineSplit: 0, extras: 0, inlineUnusable: 0 }
   const wanted = plans.flatMap((p) => {
     const qid = questionIds.get(`${p.idEntity}\u0000${p.idKey}`)
     const sids = [...new Set(links.get(p.idKey) ?? [])]
@@ -162,7 +235,7 @@ export async function linkCanonicalStimuli(
   const members = wanted.filter((m) => !done.has(m.qid))
   if (members.length === 0) return out
   const allSids = [...new Set(members.flatMap((m) => m.sids))]
-  const { ids: stimulusOf, paths } = await ensureStimuli(ctx, allSids, out)
+  const { ids: stimulusOf, paths, extras } = await ensureStimuli(ctx, allSids, out)
 
   const counts = await ctx.db.query<{ stimulus_id: string; n: number }>(
     `SELECT u.stimulus_id::text AS stimulus_id, count(DISTINCT u.exam_question_id)::int AS n FROM (
@@ -177,19 +250,24 @@ export async function linkCanonicalStimuli(
 
   const ownLinks: { qid: string; stimulus_id: string; position: number }[] = []
   const ownCount = new Map<string, number>()
-  const addOwn = (qid: string, v3: string): void => {
+  const addOwn = (qid: string, v3: string): boolean => {
     const n = (ownCount.get(qid) ?? 0) + 1
-    if (n > MAX_OWN_STIMULI) return
+    if (n > MAX_OWN_STIMULI) return false
     ownCount.set(qid, n)
     ownLinks.push({ qid, stimulus_id: v3, position: n })
     out.own += 1
+    return true
+  }
+  /** The stimulus, then its extras (the text, a second picture, ...); an extra with no free position holds the question (never dropped silently). */
+  const addOwnWithExtras = (qid: string, sid: string, v3: string): void => {
+    addOwn(qid, v3)
+    for (const x of extras.get(sid) ?? []) if (!addOwn(qid, x)) holdQuestion([SLOT_HOLD_PATH], qid)
   }
   const grouped = new Set<string>()
   const byStimulus = new Map<string, typeof members>()
   const heldPaths = new Map<string, Set<string>>()
-  const holdQuestion = (path: string | undefined, qid: string): void => {
-    if (path === undefined) return
-    heldPaths.set(path, (heldPaths.get(path) ?? new Set()).add(qid))
+  const holdQuestion = (list: readonly string[] | undefined, qid: string): void => {
+    for (const path of list ?? []) heldPaths.set(path, (heldPaths.get(path) ?? new Set()).add(qid))
   }
   for (const m of members) {
     for (const sid of m.sids) {
@@ -199,13 +277,14 @@ export async function linkCanonicalStimuli(
         grouped.add(m.qid)
         byStimulus.set(sid, [...(byStimulus.get(sid) ?? []), m])
       } else {
-        addOwn(m.qid, v3)
+        addOwnWithExtras(m.qid, sid, v3)
         holdQuestion(paths.get(sid), m.qid)
       }
     }
   }
 
   const touched: string[] = []
+  const slotFull = new Set<string>()
   for (const [sid, list] of byStimulus) {
     const v3 = stimulusOf.get(sid) as string
     let groupId = (await ctx.idMap.resolve('canonical_stimulus_groups', sid)) ?? null
@@ -218,7 +297,12 @@ export async function linkCanonicalStimuli(
         `INSERT INTO stimulus_groups (id, label, scope, subject_id) OVERRIDING SYSTEM VALUE VALUES ($1::bigint, NULL, 'section', $2::bigint)`,
         [groupId, subjects.size === 1 ? ([...subjects][0] ?? null) : null],
       )
-      await ctx.db.query(`INSERT INTO stimulus_group_stimuli (group_id, stimulus_id, position) VALUES ($1::bigint, $2::bigint, 1)`, [groupId, v3])
+      // The stimulus and its extras take positions 1..3 of the group (the schema allows three); an extra beyond that holds the whole group below.
+      const inGroup = [v3, ...(extras.get(sid) ?? [])]
+      for (const [i, id] of inGroup.slice(0, 3).entries()) {
+        await ctx.db.query(`INSERT INTO stimulus_group_stimuli (group_id, stimulus_id, position) VALUES ($1::bigint, $2::bigint, $3::smallint)`, [groupId, id, i + 1])
+      }
+      if (inGroup.length > 3) slotFull.add(groupId)
       await ctx.idMap.register('canonical_stimulus_groups', sid, groupId)
       out.groupsCreated += 1
     } else {
@@ -227,7 +311,10 @@ export async function linkCanonicalStimuli(
     }
     const room = Math.max(0, MAX_GROUP_MEMBERS - have)
     const joined = list.slice(0, room)
-    for (const m of list.slice(room)) addOwn(m.qid, v3)
+    for (const m of list.slice(room)) {
+      addOwnWithExtras(m.qid, sid, v3)
+      holdQuestion(paths.get(sid), m.qid)
+    }
     if (joined.length === 0) continue
     await ctx.db.query(
       `UPDATE questions q SET group_id = $1::bigint, group_position = 2000 + x.i, updated_at = now()
@@ -236,11 +323,11 @@ export async function linkCanonicalStimuli(
     )
     touched.push(groupId)
     out.grouped += joined.length
-    const path = paths.get(sid)
-    if (path !== undefined) {
+    const groupPaths = [...(paths.get(sid) ?? []), ...(slotFull.has(groupId) ? [SLOT_HOLD_PATH] : [])]
+    if (groupPaths.length > 0) {
       // A group whose picture is not copied yet is held as a whole: the members already in it as well.
       const all = await ctx.db.query<{ id: string }>(`SELECT id::text AS id FROM questions WHERE group_id = $1::bigint`, [groupId])
-      heldPaths.set(path, new Set([...(heldPaths.get(path) ?? []), ...all.rows.map((r) => r.id)]))
+      for (const path of groupPaths) heldPaths.set(path, new Set([...(heldPaths.get(path) ?? []), ...all.rows.map((r) => r.id)]))
     }
   }
 

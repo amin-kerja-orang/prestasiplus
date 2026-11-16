@@ -21,6 +21,8 @@ import { createHash } from 'node:crypto'
 import type { AnyEntityStep, BatchContext, BatchResult } from '../../kit/runner'
 import type { MigrationFiles } from '../activity/files'
 import type { QuestionsContext } from './context'
+import { stimulusHtml } from './canonical-stimuli'
+import { planInlineMedia } from './stimulus-html'
 
 const byKey = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
@@ -35,6 +37,11 @@ interface PathUnit {
   /** The V2 table and column the path is read from (the key of the `files` row). */
   table: string
   column: string
+  /**
+   * Inline pictures of V2 stimulus HTML (`etl-stimulus-inline-img`): the V2 stimulus and the piece (0 = the stimulus row, n = its n-th extra stimulus,
+   * see stimulus-html.ts) that show this path. Only these stimuli take the file; a question's other stimuli (its text, another picture) never do.
+   */
+  targets?: { v2: string; piece: number }[]
 }
 
 /** ETL-only cap for question pictures: V2 diagrams exceed the 2 MB upload rule (design 8.2, OC-5). */
@@ -75,8 +82,15 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles, options: F
           WHERE ma.path IS NOT NULL AND btrim(ma.path) <> '' GROUP BY ma.path`,
       )
       const have = new Set(res.rows.map((r) => r.path))
-      const units = [...res.rows.map((r) => ({ path: r.path, firstId: r.first_id, count: r.n, table: 'questions', column: 'image_path' })), ...media.rows.filter((r) => !have.has(r.path)).map((r) => ({ path: r.path, firstId: r.first_id, count: r.n, table: 'media_assets', column: 'path' }))]
-      list = units.map((r) => ({ key: createHash('sha256').update(r.path).digest('hex').slice(0, 24), path: r.path, firstId: r.firstId, count: r.count, table: r.table, column: r.column })).sort((a, b) => byKey(a.key, b.key))
+      const inline = !hasMedia ? new Map<string, PathUnit>() : await inlineUnits(q)
+      const units: (Omit<PathUnit, 'key'>)[] = [...res.rows.map((r) => ({ path: r.path, firstId: r.first_id, count: r.n, table: 'questions', column: 'image_path' })), ...media.rows.filter((r) => !have.has(r.path)).map((r) => ({ path: r.path, firstId: r.first_id, count: r.n, table: 'media_assets', column: 'path' }))]
+      const named = new Set(units.map((u) => u.path))
+      for (const u of units) {
+        const extra = inline.get(u.path)
+        if (extra?.targets !== undefined) u.targets = extra.targets
+      }
+      for (const u of inline.values()) if (!named.has(u.path)) units.push(u)
+      list = units.map((r) => ({ key: createHash('sha256').update(r.path).digest('hex').slice(0, 24), path: r.path, firstId: r.firstId, count: r.count, table: r.table, column: r.column, ...(r.targets === undefined ? {} : { targets: r.targets }) })).sort((a, b) => byKey(a.key, b.key))
     }
     return list
   }
@@ -132,7 +146,14 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles, options: F
         const ids = [...new Set(heldByPath.get(u.path) ?? [])]
         heldByPath.delete(u.path)
         if (ids.length === 0) continue
-        await ctx.db.query(
+        if (u.targets !== undefined) {
+          const mine: string[] = []
+          for (const t of u.targets) {
+            const id = t.piece === 0 ? await ctx.idMap.resolve('canonical_stimuli', t.v2) : await ctx.idMap.resolve('canonical_stimulus_extras', `${t.v2}#${t.piece}`)
+            if (id !== null) mine.push(id)
+          }
+          await ctx.db.query(`UPDATE stimuli SET asset_file_id = $2::bigint, updated_at = now() WHERE id = ANY($1::bigint[]) AND asset_file_id IS NULL`, [mine, out.fileId])
+        } else await ctx.db.query(
           `UPDATE stimuli s SET asset_file_id = $2::bigint, updated_at = now()
             WHERE s.asset_file_id IS NULL AND s.id IN (
               SELECT qvs.stimulus_id FROM question_version_stimuli qvs JOIN question_versions v ON v.id = qvs.question_version_id
@@ -141,25 +162,55 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles, options: F
               SELECT gs.stimulus_id FROM stimulus_group_stimuli gs JOIN questions qq ON qq.group_id = gs.group_id WHERE qq.id = ANY($1::bigint[]))`,
           [ids, out.fileId],
         )
-        await ctx.db.query(
-          `UPDATE question_versions v SET import_issues = NULLIF(coalesce((
-               SELECT jsonb_agg(i) FROM jsonb_array_elements(v.import_issues) i
-                WHERE NOT (i->>'code' = 'legacy_image_unresolved' AND i->>'target' = 'question' AND i->>'path' = $2)), '[]'::jsonb), '[]'::jsonb)
-            WHERE v.version_no = 1 AND v.question_id = ANY($1::bigint[])`,
-          [ids, u.path],
-        )
-        // Re-activate when no hold remains (a question that is also held for markup, personal data or another picture stays inactive).
-        await ctx.db.query(
-          `UPDATE questions qq SET is_active = true
-            WHERE qq.id = ANY($1::bigint[]) AND NOT EXISTS (
-              SELECT 1 FROM question_versions v, jsonb_array_elements(coalesce(v.import_issues, '[]'::jsonb)) i
-               WHERE v.question_id = qq.id AND v.version_no = 1
-                 AND i->>'code' IN ('legacy_image_unresolved', 'html_image', 'html_math', 'html_residual', 'pii_suspect'))`,
-          [ids],
-        )
+        await liftHold(ctx.db, ids, u.path)
         q.notes.count('files.questions_released', ids.length)
       }
       return { inserted: copied, unchanged }
     },
   }
+}
+
+/** The inline pictures of the V2 stimulus bodies (`<img src="/storage/stimuli/..">`), one unit per path, with the stimuli that show it. */
+async function inlineUnits(q: QuestionsContext): Promise<Map<string, PathUnit>> {
+  const res = await q.pool.query<{ id: string; body: string | null; path: string | null }>(
+    `SELECT s.id::text AS id, s.body::text AS body, ma.path::text AS path
+       FROM archive_cloud.stimuli s LEFT JOIN archive_cloud.media_assets ma ON ma.id = s.asset_id
+      WHERE s.body::text ILIKE '%storage%stimuli%' ORDER BY s.id`,
+  )
+  const out = new Map<string, PathUnit>()
+  for (const r of res.rows) {
+    const plan = planInlineMedia({ kind: 'passage', ms: stimulusHtml(r.body), en: null, hasAsset: r.path !== null && r.path.trim() !== '' })
+    if (plan === null || !plan.ok) continue
+    for (const [piece, p] of [plan.primary, ...plan.extras].entries()) {
+      if (p.image === null) continue
+      const unit: PathUnit = out.get(p.image.path) ?? { key: '', path: p.image.path, firstId: r.id, count: 0, table: 'stimuli', column: p.image.index === 0 ? 'body' : `body.${p.image.index + 1}`, targets: [] }
+      unit.count += 1
+      unit.targets?.push({ v2: r.id, piece })
+      out.set(p.image.path, unit)
+    }
+  }
+  return out
+}
+
+/**
+ * Lifts the `legacy_image_unresolved` hold of `path` from the questions `ids` (version 1) and re-activates each question that has no other hold
+ * (markup, personal data or another picture keep it inactive). The one rule of the picture pass and of the stimulus repair.
+ */
+export async function liftHold(db: { query: BatchContext['db']['query'] }, ids: readonly string[], path: string): Promise<void> {
+  await db.query(
+    `UPDATE question_versions v SET import_issues = NULLIF(coalesce((
+         SELECT jsonb_agg(i) FROM jsonb_array_elements(v.import_issues) i
+          WHERE NOT (i->>'code' = 'legacy_image_unresolved' AND i->>'target' = 'question' AND i->>'path' = $2)), '[]'::jsonb), '[]'::jsonb)
+      WHERE v.version_no = 1 AND v.question_id = ANY($1::bigint[]) AND jsonb_typeof(v.import_issues) = 'array'`,
+    [ids, path],
+  )
+  // Re-activate when no hold remains (a question that is also held for markup, personal data or another picture stays inactive).
+  await db.query(
+    `UPDATE questions qq SET is_active = true
+      WHERE qq.id = ANY($1::bigint[]) AND NOT EXISTS (
+        SELECT 1 FROM question_versions v, jsonb_array_elements(coalesce(v.import_issues, '[]'::jsonb)) i
+         WHERE v.question_id = qq.id AND v.version_no = 1
+           AND i->>'code' IN ('legacy_image_unresolved', 'html_image', 'html_math', 'html_residual', 'pii_suspect'))`,
+    [ids],
+  )
 }
