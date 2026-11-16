@@ -384,8 +384,8 @@ cmd_wipe_dump() {
 cmd_etl() {
   local c="${1:-}"; [ $# -eq 0 ] || shift
   case "$c" in
-    staging:profile|migrate:all|migrate:delta|migrate:core|migrate:activity|migrate:verify|migrate:rollback|migrate:questions|migrate:structured|migrate:papers|migrate:terbit|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise) ;;
-    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:core | migrate:activity | migrate:verify | migrate:rollback | migrate:questions | migrate:structured | migrate:papers | migrate:terbit | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise (migrate:core and migrate:activity run alone take the same etl:source:cloud lock (exit 2 when busy); slot.sh also holds PP_LOCK_FILE; run core (stage 1) before activity (stage 6): nothing enforces the order)" 2 ;;
+    staging:profile|migrate:all|migrate:delta|migrate:core|migrate:activity|migrate:verify|migrate:rollback|migrate:questions|migrate:structured|migrate:papers|migrate:terbit|migrate:link-questions|migrate:export-question-reports|migrate:archive-minimise|migrate:repair-stimuli) ;;
+    *) pp_die "etl COMMAND: staging:profile | migrate:all | migrate:delta | migrate:core | migrate:activity | migrate:verify | migrate:rollback | migrate:questions | migrate:structured | migrate:papers | migrate:terbit | migrate:link-questions | migrate:export-question-reports | migrate:archive-minimise | migrate:repair-stimuli (migrate:core and migrate:activity run alone take the same etl:source:cloud lock (exit 2 when busy); slot.sh also holds PP_LOCK_FILE; run core (stage 1) before activity (stage 6): nothing enforces the order)" 2 ;;
   esac
   local a apply=0 envs=(NODE_ENV=production "PP_MIGRATE_TARGET_DB=$target_db") argv=() files_host="" files_seen=0 out_given=0 i=0
   local args=("$@")
