@@ -24,6 +24,9 @@ import type { QuestionsContext } from './context'
 import { stimulusHtml } from './canonical-stimuli'
 import { planInlineMedia } from './stimulus-html'
 
+/** SET fragment: a `passage` stimulus with no text (either language) and no table that now shows a picture is an `image` (a blank passage is never served). */
+const PICTURE_KIND_SQL = `kind = CASE WHEN kind = 'passage' AND coalesce(btrim(body_ms), '') = '' AND coalesce(btrim(body_en), '') = '' AND table_data IS NULL THEN 'image' ELSE kind END`
+
 const byKey = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
 interface PathUnit {
@@ -140,7 +143,7 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles, options: F
           if (id !== null) planned.push(id)
         }
         if (planned.length > 0) {
-          await ctx.db.query(`UPDATE stimuli SET asset_file_id = $2::bigint, updated_at = now() WHERE id = ANY($1::bigint[]) AND asset_file_id IS NULL`, [planned, out.fileId])
+          await ctx.db.query(`UPDATE stimuli SET asset_file_id = $2::bigint, ${PICTURE_KIND_SQL}, updated_at = now() WHERE id = ANY($1::bigint[]) AND asset_file_id IS NULL`, [planned, out.fileId])
         }
         // 2. the held questions of this path: their own stem stimulus or their group stimulus take the file, then the hold is lifted
         const ids = [...new Set(heldByPath.get(u.path) ?? [])]
@@ -152,9 +155,9 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles, options: F
             const id = t.piece === 0 ? await ctx.idMap.resolve('canonical_stimuli', t.v2) : await ctx.idMap.resolve('canonical_stimulus_extras', `${t.v2}#${t.piece}`)
             if (id !== null) mine.push(id)
           }
-          await ctx.db.query(`UPDATE stimuli SET asset_file_id = $2::bigint, updated_at = now() WHERE id = ANY($1::bigint[]) AND asset_file_id IS NULL`, [mine, out.fileId])
+          await ctx.db.query(`UPDATE stimuli SET asset_file_id = $2::bigint, ${PICTURE_KIND_SQL}, updated_at = now() WHERE id = ANY($1::bigint[]) AND asset_file_id IS NULL`, [mine, out.fileId])
         } else await ctx.db.query(
-          `UPDATE stimuli s SET asset_file_id = $2::bigint, updated_at = now()
+          `UPDATE stimuli s SET asset_file_id = $2::bigint, ${PICTURE_KIND_SQL}, updated_at = now()
             WHERE s.asset_file_id IS NULL AND s.id IN (
               SELECT qvs.stimulus_id FROM question_version_stimuli qvs JOIN question_versions v ON v.id = qvs.question_version_id
                WHERE v.version_no = 1 AND v.question_id = ANY($1::bigint[])

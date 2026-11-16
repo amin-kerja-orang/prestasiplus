@@ -187,4 +187,25 @@ describe('repair of loaded stimuli', () => {
     expect((await run('apply')).status).toBe('succeeded')
     expect(await snapshot()).toBe(settled)
   })
+
+  it('a passage row that has an asset and only inline pictures becomes an image; with text it stays a passage; a second run changes nothing', async () => {
+    const asset = (await ownOf(1))[0]?.file as string
+    const only = await stimulus('passage', img(1))
+    const mixed = await stimulus('passage', `Teks tinggal.${img(2)}`)
+    await sql(`update stimuli set asset_file_id = $1::bigint where id = any($2::bigint[])`, [asset, [only, mixed]])
+    const v7 = (await sql(`select id from question_versions where question_id = $1::bigint and version_no = 1`, [await qid(7)])).rows[0]?.id
+    await sql(`insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2::bigint, 2), ($1, $3::bigint, 3)`, [v7, only, mixed])
+    const tableBefore = (await ownOf(5))[0]
+    expect((await run('dry-run')).status).toBe('succeeded')
+    expect((await run('apply')).status).toBe('succeeded')
+    const rows = (await sql(`select id::text as id, kind, body_ms, asset_file_id::text as file from stimuli where id = any($1::bigint[]) order by id`, [[only, mixed]])).rows
+    expect(rows[0]).toMatchObject({ kind: 'image', body_ms: null, file: asset })
+    expect(rows[1]).toMatchObject({ kind: 'passage', body_ms: 'Teks tinggal.', file: asset })
+    expect((await ownOf(5))[0]).toEqual(tableBefore)
+    expect((await sql(`select count(*)::int as n from stimuli where kind = 'passage' and asset_file_id is not null and coalesce(btrim(body_ms), '') = '' and coalesce(btrim(body_en), '') = ''`)).rows[0]?.n).toBe(0)
+    const settled = await snapshot()
+    expect((await run('dry-run')).fixed).toBe(0)
+    expect((await run('apply')).status).toBe('succeeded')
+    expect(await snapshot()).toBe(settled)
+  })
 })

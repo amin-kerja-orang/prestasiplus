@@ -87,7 +87,7 @@ beforeAll(async () => {
   root = mkdtempSync(join(tmpdir(), 'stim-inline-'))
   env = { ...h.runEnv, FILE_STORAGE_DIR: join(root, 'storage') }
   mkdirSync(env.FILE_STORAGE_DIR as string)
-  writeExport(join(root, 'export'), [1, 2, 3, 4, 6, 7])
+  writeExport(join(root, 'export'), [1, 2, 3, 4, 6, 7, 8, 9])
   await sql(`insert into archive_cloud.source_papers (id, natural_key, subject_id, year) values (9901, 'sp-inline', 1, 2025)`)
   await sql(`insert into archive_cloud.exam_papers (id, title, subject_id, kertas, duration_minutes, created_at, updated_at) values (9801, 'Kertas', 1, '1', 90, '2025-05-01', '2025-05-01')`)
   await addArchive(h.pool, [{ id: 1, body: 'Soalan biasa tanpa rujukan.' }])
@@ -108,6 +108,12 @@ beforeAll(async () => {
     [5108, 'Petikan biasa.'],
   ]
   for (const [id, b] of bodies) await sql(`insert into archive_cloud.stimuli (id, stimulus_kind_id, body) values ($1, 91, $2)`, [id, html(b)])
+  // a V2 `passage` that is only its media asset (blank body), and one that has text beside its asset (V2 ids 5109, 5110)
+  await sql(`insert into archive_cloud.media_assets (id, path, kind) values (981, 'stimuli/${U(8)}/rajah.png', 'image'), (982, 'stimuli/${U(9)}/rajah.png', 'image')`)
+  await sql(`insert into archive_cloud.stimuli (id, stimulus_kind_id, body, asset_id) values (5109, 91, null, 981), (5110, 91, $1, 982)`, [html('Petikan beserta rajah.')])
+  await canonical(9409, 9, 'Soalan aset sahaja.')
+  await canonical(9410, 10, 'Soalan aset dan teks.')
+  await sql(`insert into archive_cloud.question_stimulus (id, exam_question_id, stimulus_id, position) values (10, 9409, 5109, 1), (11, 9410, 5110, 1)`)
   for (const [i, v2] of [9401, 9402, 9403, 9404, 9405].entries()) await canonical(v2, i + 1, `Soalan rajah ${i + 1}.`)
   await canonical(9408, 8, 'Soalan susunan.')
   await canonical(9406, 6, 'Soalan kumpulan A.')
@@ -167,6 +173,21 @@ describe('canonical stimuli with inline pictures and tables', () => {
 
     // no stimulus keeps markup
     expect((await sql(`select count(*)::int as n from stimuli where body_ms ~* '<(img|table)'`)).rows[0]?.n).toBe(0)
+  })
+
+  it('a passage that is only its media asset becomes an image; one with text keeps passage; a table is untouched', async () => {
+    const only = await stimuliOf(9409)
+    expect(only).toHaveLength(1)
+    expect(only[0]).toMatchObject({ kind: 'image', body_ms: null })
+    expect(only[0]?.file).not.toBeNull()
+    expect((await stateOf(9409))?.is_active).toBe(true)
+    const withText = await stimuliOf(9410)
+    expect(withText).toHaveLength(1)
+    expect(withText[0]).toMatchObject({ kind: 'passage', body_ms: 'Petikan beserta rajah.' })
+    expect(withText[0]?.file).not.toBeNull()
+    expect((await stimuliOf(9405))[0]).toMatchObject({ kind: 'table', file: null })
+    // no served-blank passage: no passage with a picture and no text
+    expect((await sql(`select count(*)::int as n from stimuli where kind = 'passage' and asset_file_id is not null and coalesce(btrim(body_ms), '') = '' and coalesce(btrim(body_en), '') = '' and table_data is null`)).rows[0]?.n).toBe(0)
   })
 
   it('a picture that is not in the export holds the question (never dropped) and shows no picture', async () => {

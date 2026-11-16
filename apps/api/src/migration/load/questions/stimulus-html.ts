@@ -177,9 +177,13 @@ export function planInlineMedia(input: { kind: string; ms: string | null; en: st
 
   if (input.hasAsset) {
     const joined = (pick: (p: StimulusPiece) => string | null): string | null => pieces.filter((p) => p.kind === 'passage').map(pick).filter((t): t is string => t !== null).join('\n') || null
+    const bodyMs = joined((p) => p.bodyMs)
+    const bodyEn = joined((p) => p.bodyEn)
+    // a row whose only content is its picture is a picture, never a blank passage (the serving rule hides a blank passage)
+    const kind = input.kind === 'passage' && bodyMs === null && bodyEn === null ? 'image' : input.kind
     return {
       ok: true,
-      primary: { kind: input.kind, bodyMs: joined((p) => p.bodyMs), bodyEn: joined((p) => p.bodyEn), tableData: null, image: null, altText: null },
+      primary: { kind, bodyMs, bodyEn, tableData: null, image: null, altText: null },
       extras: pieces.filter((p) => p.kind !== 'passage').map(extraKind),
       primaryAt: 0,
     }

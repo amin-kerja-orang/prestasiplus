@@ -95,6 +95,15 @@ describe('planInlineMedia', () => {
     expect(p.primaryAt).toBe(0)
   })
 
+  it('a passage row with an asset whose only content is inline pictures becomes an image; with text it stays a passage', () => {
+    const only = okPlan(plan(img('a.png'), { hasAsset: true }))
+    expect(only.primary).toMatchObject({ kind: 'image', bodyMs: null, bodyEn: null })
+    expect(only.extras).toEqual([expect.objectContaining({ kind: 'image' })])
+    const text = okPlan(plan(`Teks.${img('a.png')}`, { hasAsset: true }))
+    expect(text.primary).toMatchObject({ kind: 'passage', bodyMs: 'Teks.' })
+    expect(okPlan(plan(img('a.png'), { hasAsset: true, kind: 'diagram' })).primary.kind).toBe('diagram')
+  })
+
   it('the English column follows the Malay layout; a different layout is refused as bilingual', () => {
     const both = okPlan(plan(`Soalan ${img('a.png')}`, { en: `Question ${img('a.png')}` }))
     expect(both.extras).toEqual([expect.objectContaining({ kind: 'passage', bodyMs: 'Soalan', bodyEn: 'Question' })])
