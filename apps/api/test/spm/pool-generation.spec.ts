@@ -100,3 +100,70 @@ describe('Latih Tubi cells (pure)', () => {
     expect(calls).toBe(2)
   })
 })
+
+describe('Latih Tubi cells after a question event (pure): stale value served, refresh behind', () => {
+  const setup = () => {
+    const pending: { resolve: (rows: { levelId: string; tp: number; n: number }[]) => void; reject: (e: Error) => void }[] = []
+    const repo = {
+      unitCountsByLevelTp: () =>
+        new Promise<{ levelId: string; tp: number; n: number }[]>((resolve, reject) => {
+          pending.push({ resolve, reject })
+        }),
+    }
+    const cache = new OverviewCache({ now: () => new Date(0) } as never, {} as never)
+    const pool = new SpmPoolService(repo as never, { get: () => '600' } as never, { now: () => new Date(0) } as never, cache)
+    return { pending, cache, pool }
+  }
+  const tick = () => new Promise<void>((r) => setTimeout(r, 0))
+
+  it('a cold read waits; after an event the old value is served at once and ONE refresh runs behind it', async () => {
+    const { pending, cache, pool } = setup()
+    const cold = pool.latihTubiCount('1')
+    pending[0]?.resolve([{ levelId: '4', tp: 1, n: 2 }])
+    expect(await cold).toBe(2)
+
+    cache.invalidate()
+    // Five readers after the event: none waits, all see the old count, and only one statement starts.
+    const readers = await Promise.all([1, 2, 3, 4, 5].map(() => pool.latihTubiCount('1')))
+    expect(readers).toEqual([2, 2, 2, 2, 2])
+    expect(pending).toHaveLength(2)
+
+    pending[1]?.resolve([{ levelId: '4', tp: 1, n: 9 }])
+    await tick()
+    expect(await pool.latihTubiCount('1')).toBe(9)
+    expect(pending).toHaveLength(2) // the new value is current: no further statement
+  })
+
+  it('a failed refresh keeps the stale count and the next read tries again', async () => {
+    const { pending, cache, pool } = setup()
+    const cold = pool.latihTubiCount('1')
+    pending[0]?.resolve([{ levelId: '4', tp: 1, n: 2 }])
+    await cold
+    cache.invalidate()
+    expect(await pool.latihTubiCount('1')).toBe(2)
+    pending[1]?.reject(new Error('db down'))
+    await tick()
+    expect(await pool.latihTubiCount('1')).toBe(2)
+    expect(pending).toHaveLength(3) // retried
+    pending[2]?.resolve([{ levelId: '4', tp: 1, n: 4 }])
+    await tick()
+    expect(await pool.latihTubiCount('1')).toBe(4)
+  })
+
+  it('events during a slow refresh do not discard it: it is stored (still marked old) and replaced by the next refresh', async () => {
+    const { pending, cache, pool } = setup()
+    const cold = pool.latihTubiCount('1')
+    pending[0]?.resolve([{ levelId: '4', tp: 1, n: 2 }])
+    await cold
+    cache.invalidate()
+    await pool.latihTubiCount('1') // starts refresh #1 (generation g+1)
+    cache.invalidate() // another event while it runs
+    pending[1]?.resolve([{ levelId: '4', tp: 1, n: 5 }])
+    await tick()
+    expect(await pool.latihTubiCount('1')).toBe(5) // the newer-than-before value is served (and a refresh for the latest generation starts)
+    expect(pending).toHaveLength(3)
+    pending[2]?.resolve([{ levelId: '4', tp: 1, n: 6 }])
+    await tick()
+    expect(await pool.latihTubiCount('1')).toBe(6)
+  })
+})

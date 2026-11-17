@@ -1,6 +1,7 @@
 import { Inject, Injectable, Optional } from '@nestjs/common'
 import type { ServabilityActivity } from '@pp/contract'
 
+import { bankScanGate } from '../../../../common/concurrency/bank-scan-gate'
 import { idFromString, idToString } from '../../../../db/ids'
 import { Prisma } from '../../../../db/generated/client'
 import { PrismaService } from '../../../../db/prisma.service'
@@ -127,12 +128,12 @@ export class OverviewRepository {
    * card, the details and the drawable pool agree. The login count (`QUESTION_COUNT_SQL`) keeps counting group members.
    */
   async bankMatrix(): Promise<BankCell[]> {
-    const rows = await this.db.$queryRaw<{ subject_id: bigint | null; level_id: bigint | null; tp: number | null; mcq: boolean; n: number }[]>`
+    const rows = await bankScanGate.run(() => this.db.$queryRaw<{ subject_id: bigint | null; level_id: bigint | null; tp: number | null; mcq: boolean; n: number }[]>`
       SELECT v.subject_id, v.education_level_id AS level_id, v.difficulty_tp AS tp, (v.type = 'mcq') AS mcq, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
        WHERE q.is_active AND v.status = 'approved' AND ${this.groupCond('latih_tubi_spm')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${BANK_VISIBLE_SQL}
-       GROUP BY 1, 2, 3, 4`
+       GROUP BY 1, 2, 3, 4`)
     return rows.map((r) => ({
       subjectId: r.subject_id === null ? null : idToString(r.subject_id),
       levelId: r.level_id === null ? null : idToString(r.level_id),
@@ -157,7 +158,8 @@ export class OverviewRepository {
     let from = 0
     for (const to of NEWEST_WINDOWS) {
       const range = Prisma.sql`${from === 0 ? Prisma.empty : Prisma.sql`AND q.id < ${top} - ${from}::bigint`} ${to === null ? Prisma.empty : Prisma.sql`AND q.id >= ${top} - ${to}::bigint`}`
-      const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${scope.from} WHERE ${scope.where} AND q.id < ${top} ${range} ORDER BY q.id DESC LIMIT ${limit - ids.length}`
+      const want = limit - ids.length
+      const rows = await bankScanGate.run(() => this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${scope.from} WHERE ${scope.where} AND q.id < ${top} ${range} ORDER BY q.id DESC LIMIT ${want}`)
       ids.push(...rows.map((r) => idToString(r.id)))
       if (ids.length >= limit) break
       if (to !== null) from = to

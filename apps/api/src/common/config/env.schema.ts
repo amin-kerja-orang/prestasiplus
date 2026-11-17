@@ -161,6 +161,14 @@ export const EnvSchema = z.object({
   // REQ-B-022(a): compute the admin servability overview once at start (not awaited; a failure only logs). Unset: on in production, off elsewhere.
   // Empty = unset (the shipped .env.api.example carries `SERVABILITY_OVERVIEW_WARM=`; a copied example must boot): same rule as CLIENT_IP_HEADER (REQ-B-053).
   SERVABILITY_OVERVIEW_WARM: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['true', 'false']).optional()),
+  // Bank-wide reads (perf). All optional; blank = unset = the default named here.
+  // At most this many bank-wide statements (draw scans, subject counts, bank matrix, newest-question windows) run at once in one API process, so the
+  // database pool (10) keeps connections for the short transactions (start, check answer, submit). Default 3. Extra statements wait, none is refused.
+  BANK_SCAN_CONCURRENCY: aiInt(1, 50),
+  // Seconds the grouped bank counts of the pupil dashboard and practice cards are reused (stale ones are served while one refresh runs). Default 60; 0 = never reuse.
+  OVERVIEW_BANK_TTL_SECONDS: aiInt(0, 86_400),
+  // Seconds the SPM hub counts (Latih Tubi cells, Databank count) of a subject are reused (stale ones are served while one refresh runs). Default 300; 0 = never reuse.
+  SPM_POOL_CACHE_SECONDS: aiInt(0, 86_400),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
   MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
   // BE-17 (classes). Throttles per user and the public origin of the join link (QR payload); the code applies the defaults when unset.

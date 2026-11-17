@@ -6,7 +6,7 @@
  * so a Bijak or Kuiz report is filed with the default source `spm`.
  */
 import { BIJAK_ATTEMPTS_MESSAGES, QUESTION_REPORT_MESSAGES, SessionSchema } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { prngStream } from '../../src/db/prng'
 import { BijakPapersPorts } from '../../src/modules/bijak/papers'
@@ -193,7 +193,8 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
 
   it('9. Kertas Pilihan hides the paper for a pupil with no open sitting and keeps the card for the pupil who has one', async () => {
     const other = await loginAs(t, OTHER_PUPIL)
-    expect(((await other.get('/api/bijak/papers')).body as { data: { id: string }[] }).data.map((p) => p.id)).not.toContain(paperId)
+    // the paper list is shared between pupils: after the Arkib event it serves the old list once and refreshes behind
+    await vi.waitFor(async () => expect(((await other.get('/api/bijak/papers')).body as { data: { id: string }[] }).data.map((p) => p.id)).not.toContain(paperId))
     const student = await loginAs(t, STUDENT)
     const mine = ((await student.get('/api/bijak/papers')).body as { data: { id: string; status: string }[] }).data.find((p) => p.id === paperId)
     expect(mine).toMatchObject({ id: paperId, status: 'sedang' })

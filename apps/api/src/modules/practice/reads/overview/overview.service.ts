@@ -41,13 +41,24 @@ export interface Reader {
 
 type PracticeReadChapterSubjectDetail = z.infer<typeof PracticeReadChapterSubjectDetailSchema>
 
-/** Tuning of the service. `bankTtlMs`: how long the grouped bank counts are reused (0 = never; tests set 0). */
+/**
+ * Tuning of the service. `bankTtlMs`: how long the grouped bank counts are reused (0 = never; tests set 0).
+ * `recentTtlMs`: how long the "latest questions" panel of one form is reused; unset = the bank TTL, at most 60 s (so a test with `bankTtlMs: 0` reads fresh).
+ */
 export interface OverviewOptions {
   bankTtlMs: number
+  recentTtlMs?: number
 }
 export const OVERVIEW_OPTIONS = Symbol('OVERVIEW_OPTIONS')
 /** The bank counts are global and change only when staff publish; a few seconds of reuse keeps the dashboard under the card budget on a 130k-question bank (AC5). */
 export const DEFAULT_OVERVIEW_OPTIONS: OverviewOptions = { bankTtlMs: 60_000 }
+/** The options of the running API: `OVERVIEW_BANK_TTL_SECONDS` (blank, invalid or negative = the default 60 s; 0 = never reuse). */
+export function overviewOptionsFrom(seconds: string | undefined): OverviewOptions {
+  const n = Number.parseInt((seconds ?? '').trim(), 10)
+  return Number.isInteger(n) && n >= 0 ? { bankTtlMs: n * 1000 } : DEFAULT_OVERVIEW_OPTIONS
+}
+/** The reuse time of the "latest questions" panel when `recentTtlMs` is not set: the bank TTL, never above this. */
+export const RECENT_TTL_MAX_MS = 60_000
 
 /** FR-MUR-2-8: five rows, read from a window of the newest candidates (the MCQ shape is checked on the window only). */
 const RECENT_LIMIT = 5
@@ -293,6 +304,50 @@ export class OverviewService {
   private async recentQuestions(who: Reader): Promise<PracticeReadDashboard['recentQuestions']> {
     const form = await this.formLevelId(who.userId)
     if (form === 'none') return []
+    const ttl = this.options.recentTtlMs ?? Math.min(this.options.bankTtlMs, RECENT_TTL_MAX_MS)
+    if (ttl <= 0) return this.loadRecentQuestions(form)
+    // The list depends on the pupil's FORM only (`form` is null for a role without one), so it is shared by every pupil of a form: at most six entries.
+    const key = form ?? 'all'
+    const nowMs = performance.now()
+    const hit = this.recentMemo.get(key)
+    if (hit) {
+      // Stale-while-revalidate, as the bank counts: past the TTL the old list is still served at once and ONE refresh runs behind it.
+      if (nowMs - hit.at >= ttl && hit.settled && !this.recentRefreshing.has(key)) this.refreshRecent(key, form)
+      return hit.list
+    }
+    // Cold: concurrent first readers of one form share one read (single flight); a failure is not remembered.
+    const list = this.loadRecentQuestions(form)
+    const entry = { at: nowMs, list, settled: false }
+    this.recentMemo.set(key, entry)
+    list.then(
+      () => {
+        entry.settled = true
+      },
+      () => {
+        if (this.recentMemo.get(key) === entry) this.recentMemo.delete(key)
+      },
+    )
+    return list
+  }
+
+  /** Per process memo of the "latest questions" list by form (`recentQuestions`); the same staleness rule as `bankMemo`. */
+  private readonly recentMemo = new Map<string, { at: number; list: Promise<PracticeReadDashboard['recentQuestions']>; settled: boolean }>()
+  private readonly recentRefreshing = new Set<string>()
+
+  /** One background re-read of a form's list; a failure keeps the stale list and is logged. */
+  private refreshRecent(key: string, form: string | null): void {
+    this.recentRefreshing.add(key)
+    this.loadRecentQuestions(form)
+      .then((rows) => {
+        this.recentMemo.set(key, { at: performance.now(), list: Promise.resolve(rows), settled: true })
+      })
+      .catch((err: unknown) => this.logger.warn(`dashboard: latest questions refresh failed: ${err instanceof Error ? err.message : String(err)}`))
+      .finally(() => {
+        this.recentRefreshing.delete(key)
+      })
+  }
+
+  private async loadRecentQuestions(form: string | null): Promise<PracticeReadDashboard['recentQuestions']> {
     // D105: the dashboard lists figure questions and whole stimulus groups, so it reads the figure-capable shape of `filterOf` (every INCLUDE
     // surface, `ALL_GROUP_SURFACES`), not the card's `this.surfaces` (text-only until the Latih Tubi screen lists figures).
     const servableFilter = filterOf('latih_tubi_spm', {}, ALL_GROUP_SURFACES)

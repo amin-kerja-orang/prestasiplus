@@ -158,6 +158,7 @@ export class BijakPapersPorts {
   private questionsSet = false
   private progressSet = false
   private servedSet = false
+  private generationOf: () => number = () => 0
 
   get questionSource(): BijakQuestionSource {
     return this.questions
@@ -178,6 +179,19 @@ export class BijakPapersPorts {
     if (this.poolsSet) throw new Error('BijakPapersPorts: the pool source is already set')
     this.pools = provider
     this.poolsSet = true
+  }
+
+  /**
+   * Number of question events so far (approve, withdraw, archive, create, remove, activate: `OverviewCache.generation`). The paper list reuses what it
+   * read about the placed questions until this moves. Default: never moves (a standalone papers app has no question events).
+   */
+  get questionGeneration(): () => number {
+    return this.generationOf
+  }
+
+  /** `BijakIntegrationModule` plugs the question events in. */
+  provideQuestionGeneration(generation: () => number): void {
+    this.generationOf = generation
   }
 
   /** BE-09: replace the PoC fixture by the question bank. */

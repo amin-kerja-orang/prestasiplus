@@ -3,7 +3,7 @@
  * counts once, an incomplete group counts 0, and the cached count is dropped when a question event happens (ruling 8, "+1 on next load").
  * The SPM Mock paper 1 pool (`poolFilter`, single MCQ leaf outside any group) is unchanged.
  */
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { GROUP_SURFACES, QuestionsRepository, QuestionsService, servabilityFilterOf } from '../../src/modules/questions'
 import { databankFilter, latihTubiFilter, SpmPoolService } from '../../src/modules/spm/pool.service'
@@ -211,7 +211,7 @@ describe('Latih Tubi breakdowns count units like the total', () => {
 })
 
 describe('Databank count cache', () => {
-  it('[CI] AC-MUR-13-10 the cached count rises by 1 on the next load after a question event', async () => {
+  it('[CI] AC-MUR-13-10 the cached count rises by 1 after a question event: the next load serves the old count and refreshes behind', async () => {
     const id = await subjectId('PERNIAGA')
     for (let i = 0; i < 3; i++) await addQuestion(t.db, { subject: 'PERNIAGA', level: 'T4' })
     expect(await pool.databankCount(id)).toBe(3)
@@ -219,7 +219,8 @@ describe('Databank count cache', () => {
     await addQuestion(t.db, { subject: 'PERNIAGA', level: 'T4' }) // approved in SQL: no event yet
     expect(await pool.databankCount(id)).toBe(3)
     questions.invalidateOverview() // the call every approve / publish makes (QuestionsService.setStatus)
-    expect(await pool.databankCount(id)).toBe(4)
-    expect(await pool.count(id)).toBe(4)
+    expect(await pool.databankCount(id)).toBe(3) // served at once from the old value; one refresh runs behind it
+    await vi.waitFor(async () => expect(await pool.databankCount(id)).toBe(4))
+    await vi.waitFor(async () => expect(await pool.count(id)).toBe(4))
   })
 })

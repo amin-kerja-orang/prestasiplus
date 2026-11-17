@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { BijakProgressSource, PaperProgress } from '../../src/modules/bijak/papers'
 import { BijakPapersAttemptSource } from '../../src/modules/bijak/papers'
+import { PapersService } from '../../src/modules/bijak/papers'
 import { bootPapersApp, expectError, loginAs, type Client, type PapersTestApp } from './helpers'
 
 /** S3-T07, AC-PA-36 clause (b): the Bijak list and every by-id open follow `papers.level_scope` by the pupil's form (`users.grade`). */
@@ -29,6 +30,7 @@ describe('Bijak papers follow level_scope by the pupil form (S3-T07)', () => {
 
   const setGrade = (grade: number | null) => t.db.query(`update users set grade = $1 where id = $2`, [grade, pupil.userId])
   const listed = async (): Promise<string[]> => {
+    t.app.get(PapersService).resetListCache() // the spec edits papers straight in the database
     const res = await pupil.get('/api/bijak/papers')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     return (res.body.data as { code: string }[]).map((p) => p.code).sort()

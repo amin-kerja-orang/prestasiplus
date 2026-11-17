@@ -5,6 +5,7 @@
 import { BijakKuizCheckResultSchema, BijakKuizPaperPageSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { PapersService } from '../../src/modules/bijak/papers'
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, START, STUDENT } from './helpers'
 
 let t: IntegrationApp
@@ -35,7 +36,10 @@ async function paper(title: string, levelScope: string | null, opts: { kind?: st
   })
   return row.id.toString()
 }
-const listed = async (who: Client): Promise<string[]> => ((await who.get('/api/bijak/papers')).body.data as { id: string }[]).map((p) => p.id)
+const listed = async (who: Client): Promise<string[]> => {
+  t.app.get(PapersService).resetListCache() // the spec inserts papers straight in the database
+  return ((await who.get('/api/bijak/papers')).body.data as { id: string }[]).map((p) => p.id)
+}
 const start = (who: Client, paperId: string, restart = false) => who.post('/api/bijak/attempts', { paperId, mode: 'exam', ...(restart ? { restart } : {}) })
 const kuizPage = (who: Client, id: string) => who.get(`/api/bijak/kuiz/papers/${id}`)
 

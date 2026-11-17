@@ -75,7 +75,7 @@ export class SpmPoolService {
     @Inject(CLOCK) private readonly clock: Clock,
     /**
      * N4 / ruling 8: the question events (approve, Terbit, Tarik balik, create, remove, activate) already call `OverviewCache.invalidate()`
-     * in `QuestionsService`; its `generation` moves with each, so a cached count is dropped on the next load ("+1 on next load").
+     * in `QuestionsService`; its `generation` moves with each, so a cached count is refreshed behind the stale one on the next load (see `memo`).
      */
     @Inject(OverviewCache) private readonly events: OverviewCache,
   ) {}
@@ -90,18 +90,20 @@ export class SpmPoolService {
   }
 
   /**
-   * The one cache rule of the three counts below. A value of the CURRENT generation (no question event since) is served as it is; once it is older than the
-   * TTL it is still served at once and ONE refresh runs behind it (stale-while-revalidate), so a pupil never waits for a count that is only old, not changed.
-   * After a question event (a new generation) or with no value yet (cold) the read computes and waits, so a change shows on the next load. Concurrent
-   * computes of one key and generation share one statement. `fresh` skips the cache. A TTL of 0 turns the cache off.
+   * The one cache rule of the three counts below. A cached value is ALWAYS served at once, never waited for, once there is one. When it is
+   * older than the TTL, or a question event moved `generation` since it was computed (a count a publish may have changed), ONE refresh runs
+   * behind it (stale-while-revalidate), so a pupil never waits for a bank-wide count and a publish does not stall the 19 subjects at once.
+   * The new count shows on the load after the refresh finishes (a few seconds, instead of "+1 on the next load" which blocked on every subject).
+   * Only a cold start (no value yet) computes and waits. Concurrent computes of one key and generation share one statement. `fresh` skips the
+   * cache. A TTL of 0 turns the cache off.
    */
   private memo<T>(store: Map<string, Memo<T>>, flights: Map<string, Promise<T>>, key: string, fresh: boolean | undefined, load: () => Promise<T>): Promise<T> {
     const ttl = this.ttlMs()
     const now = this.clock.now().getTime()
     const generation = this.generation()
     const hit = store.get(key)
-    if (!fresh && ttl > 0 && hit && hit.generation === generation) {
-      if (hit.until <= now) this.refreshBehind(store, flights, key, generation, load)
+    if (!fresh && ttl > 0 && hit) {
+      if (hit.generation !== generation || hit.until <= now) this.refreshBehind(store, flights, key, generation, load)
       return Promise.resolve(hit.value)
     }
     // Single-flight: concurrent reads of one key share one statement, but never across a question event (the flight key holds the generation).
@@ -125,8 +127,11 @@ export class SpmPoolService {
     if (flights.has(flight)) return
     const run = this.inBackground(async () => {
       const value = await load()
-      // A question event during the refresh moved the generation: this value is already old, the next read computes its own.
-      if (this.generation() === generation) store.set(key, { until: this.clock.now().getTime() + this.ttlMs(), value, generation })
+      // Keep it unless a newer-generation value got stored meanwhile. If a question event moved the generation during the refresh the stored
+      // value is still marked old (its own generation), so the next read starts another refresh; it is never discarded, or a busy publisher
+      // would keep the hub on a value that never gets replaced.
+      const kept = store.get(key)
+      if (kept === undefined || kept.generation <= generation) store.set(key, { until: this.clock.now().getTime() + this.ttlMs(), value, generation })
       return value
     })
     flights.set(flight, run)

@@ -10,7 +10,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-import type { BijakProgressSource, PaperProgress } from '../../src/modules/bijak/papers'
+import { PapersService, type BijakProgressSource, type PaperProgress } from '../../src/modules/bijak/papers'
 import { seedJanaPaper } from '../support/jana-paper'
 import golden from './golden-mock.json'
 import { NOT_SERVING } from '../support/serve-blueprints'
@@ -38,6 +38,7 @@ describe('Bijak papers API (BE-15)', () => {
   })
 
   const papers = async (): Promise<BijakPaperSummary[]> => {
+    t.app.get(PapersService).resetListCache() // the spec edits papers straight in the database
     const res = await student.get('/api/bijak/papers')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     return envelopeOf(z.array(BijakPaperSummarySchema)).parse(res.body).data

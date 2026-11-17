@@ -7,7 +7,7 @@ import { GamificationModule, GamificationPorts } from '../../gamification'
 import { PracticeModule } from '../../practice'
 import { PracticeAggregateService } from '../../practice/aggregate'
 import { PracticePorts } from '../../practice/ports'
-import { QuestionsBijakPoolSource, QuestionsModule } from '../../questions'
+import { OverviewCache, QuestionsBijakPoolSource, QuestionsModule } from '../../questions'
 import { PerformanceModule, PerformancePorts } from '../../reports/performance'
 import { WalletModule } from '../../wallet'
 import { BijakAttemptsModule } from '../attempts'
@@ -67,6 +67,7 @@ export class BijakIntegrationModule implements OnModuleInit {
     @Inject(GamificationPorts) private readonly gamificationPorts: GamificationPorts,
     @Inject(PracticeFactsAdapter) private readonly practiceFacts: PracticeFactsAdapter,
     @Inject(ConfigService) private readonly config: ConfigService,
+    @Inject(OverviewCache) private readonly overviewCache: OverviewCache,
   ) {}
 
   /** `BIJAK_POC_QUESTIONS` was removed by R1-B07; a deployment that still sets it to true is told once and nothing else changes. */
@@ -80,6 +81,7 @@ export class BijakIntegrationModule implements OnModuleInit {
   onModuleInit(): void {
     this.attemptPorts.providePaperSource(this.paperSource)
     this.papersPorts.provideProgress(this.progress)
+    this.papersPorts.provideQuestionGeneration(() => this.overviewCache.generation)
     this.papersPorts.provideServed(this.progress)
     this.attemptPorts.provideAggregate(this.aggregate)
     this.attemptPorts.provideReward(this.bijakReward)

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import type {
   BijakBlueprintContract,
   BijakCoverUnavailableReason,
@@ -9,6 +9,7 @@ import type {
 } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
+import { SwrSlot } from '../../questions/serving/overview-cache'
 import { idFromString, idToString } from '../../../db/ids'
 import { effectiveMarks } from './exam-core.adapter'
 import { paperNotFound } from './errors'
@@ -18,6 +19,21 @@ import { levelScopeAllows, mytYear, paperCodeOf, referencePanels, ruleOf, sectio
 import { bijakCodeOf } from './subject-codes'
 
 type Info = ReadonlyMap<string, BijakQuestionInfo>
+
+/** What `listPapers` shares between pupils: the listable published papers and what is known about the questions they place. */
+interface ListBase {
+  all: PaperWithTree[]
+  subjects: ReadonlyMap<string, SubjectRef>
+  /** The live, servable questions placed on those papers (with the pins of a published paper). */
+  info: Info
+  /** `pinKey`s of the pinned versions that are taken down. */
+  down: ReadonlySet<string>
+  /** `info` plus the pinned info of placed questions the bank no longer serves (marks stay after "Arkib"). */
+  marked: Info
+}
+
+/** How long the pupil-independent part of the paper list is reused before one refresh runs behind it. */
+export const PAPERS_LIST_TTL_MS = 60_000
 
 /**
  * A paper a user may sit, with the placed question ids in order: what the attempts card (BE-16)
@@ -70,20 +86,55 @@ export class PapersService {
     // only), or when the pupil already has a sitting on it (kept so the result and Semakan stay reachable after a re-scope or promotion).
     // Both surfaces: the cover and start apply the same level rule to every `pilihan` paper.
     const grade = await this.repo.gradeOf(userId)
-    const all = (await this.repo.listPublishedPilihan(surface)).filter((p) => paperCodeOf(p) !== '' && p.sections.length > 0)
+    // Everything that does not depend on the pupil (the published papers, their subjects, the verdict of every placed question) is read
+    // once for all pupils (`listBase`, reused for `PAPERS_LIST_TTL_MS`); only the pupil's progress and level filter are per request.
+    const { all, subjects, info, down, marked } = await this.listBase(surface)
     const sat = await this.ports.progressSource.progressFor(userId, all.map((p) => idToString(p.id)))
     const papers = all.filter((p) => levelScopeAllows(p.levelScope, grade) || sat.has(idToString(p.id)))
     if (papers.length === 0) return []
     const progress = sat
-    const [subjects, info] = await Promise.all([this.repo.subjectsByIds(papers.map((p) => p.subjectId)), this.infoFor(papers)])
     // H-A13: a published paper that places a question the bank no longer serves (archived) cannot start a new sitting
     // (the attempt source answers 403 with a BM line), so it is not offered, like a paper without a code or a section.
     // Lead decision: a pupil who has ANY sitting on it, open or submitted, keeps the card, so the result and Semakan stay reachable.
     // REQ-B-058: a pinned version that is taken down refuses a new sitting too, so the paper is not offered either (one read for the whole list).
-    const down = await this.takenDownOf(papers)
     const listed = papers.filter((p) => progress.has(idToString(p.id)) || !placesUnservable(this.pinsOf(p), info, down))
-    const marked = await this.withPinned(info, listed)
     return listed.map((p) => this.summary(p, subjects, marked, progress))
+  }
+
+  private readonly logger = new Logger(PapersService.name)
+  private readonly listBases = new Map<string, SwrSlot<ListBase>>()
+
+  /**
+   * The pupil-independent half of the list (`PAPERS_LIST_TTL_MS`, 60 s). It hydrates every question placed on
+   * every published paper (about 2,000 placements: seconds), so it is shared. Stale-while-revalidate with a single flight: the first reader of a
+   * surface computes it, later readers share that read, and past the TTL (or after a question event moved `questionGeneration`: approve, withdraw,
+   * archive...) the old value is served at once while ONE refresh runs behind it. A new or withdrawn paper shows within the TTL; starting a sitting
+   * re-checks the live pins (`attempt-source.ts`), so a stale card cannot start a sitting on a question the bank no longer serves.
+   */
+  /** Drops the shared list so the next read is a cold one (a test that edits papers straight in the database; a publish hook may use it too). */
+  resetListCache(): void {
+    this.listBases.clear()
+  }
+
+  private async listBase(surface: BijakPaperSurface): Promise<ListBase> {
+    let slot = this.listBases.get(surface)
+    if (slot === undefined) {
+      slot = new SwrSlot<ListBase>({
+        ttlMs: PAPERS_LIST_TTL_MS,
+        settleMs: 0,
+        now: () => this.clock.now().getTime(),
+        onError: (e) => this.logger.warn(`papers list refresh failed: ${e instanceof Error ? e.message : String(e)}`),
+      })
+      this.listBases.set(surface, slot)
+    }
+    return (await slot.get(() => this.computeListBase(surface), () => Promise.resolve(String(this.ports.questionGeneration())))).value
+  }
+
+  private async computeListBase(surface: BijakPaperSurface): Promise<ListBase> {
+    const all = (await this.repo.listPublishedPilihan(surface)).filter((p) => paperCodeOf(p) !== '' && p.sections.length > 0)
+    const [subjects, info, down] = await Promise.all([this.repo.subjectsByIds(all.map((p) => p.subjectId)), this.infoFor(all), this.takenDownOf(all)])
+    const marked = await this.withPinned(info, all)
+    return { all, subjects, info, down, marked }
   }
 
   async getCover(userId: string, paperId: string): Promise<BijakPaperCover> {

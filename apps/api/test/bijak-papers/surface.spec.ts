@@ -2,6 +2,7 @@ import { BijakPaperSummarySchema, envelopeOf, type BijakPaperSummary } from '@pp
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { PapersService } from '../../src/modules/bijak/papers'
 import { bootPapersApp, loginAs, type Client, type PapersTestApp } from './helpers'
 
 /**
@@ -26,6 +27,7 @@ describe('Bijak papers list by surface (S3-T06)', () => {
   })
 
   const list = async (query = ''): Promise<BijakPaperSummary[]> => {
+    t.app.get(PapersService).resetListCache() // the spec edits papers straight in the database
     const res = await student.get(`/api/bijak/papers${query}`)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     return envelopeOf(z.array(BijakPaperSummarySchema)).parse(res.body).data

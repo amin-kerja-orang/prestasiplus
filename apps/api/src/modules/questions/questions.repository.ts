@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { QuestionSchemeRulesSchema, type QuestionSchemeRules } from '@pp/contract'
 
+import { bankScanGate } from '../../common/concurrency/bank-scan-gate'
 import { ApiError } from '../../common/errors/api-error'
 import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
@@ -214,6 +215,8 @@ const GURU_STRUCTURED_SERVED_SQL: Prisma.Sql[] = [
 export const ELIGIBLE_IDS_MAX = 5000
 /** Largest draw one `sampleIds` call returns (a guard; real draws are tens of ids). */
 const SAMPLE_MAX = 50_000
+/** First window of the cheap scan of a draw: `max(3 * n, this)` ids; it widens x4 while the draw is short (the scan costs the same at any window, the by-id check does not). */
+const SAMPLE_FIRST_WINDOW = 100
 /** Ids per `eligibleAmong` statement (one bind parameter array, chunked only for very long lists). */
 const AMONG_CHUNK = 5000
 
@@ -492,13 +495,13 @@ export class QuestionsRepository {
       const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
       own.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`sg.education_level_id IN (${Prisma.join(keys)})`)
     }
-    const rows = await this.db.$queryRaw<{ level_id: bigint | null; tp: number | null; n: number }[]>`
+    const rows = await bankScanGate.run(() => this.db.$queryRaw<{ level_id: bigint | null; tp: number | null; n: number }[]>`
       SELECT u.level_id, u.tp, count(*)::int AS n FROM (
         SELECT DISTINCT ON (CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)
                CASE WHEN ${Prisma.join(own, ' AND ')} THEN sg.education_level_id ELSE v.education_level_id END AS level_id, v.difficulty_tp AS tp
           ${from} LEFT JOIN stimulus_groups sg ON sg.id = q.group_id WHERE ${where}
          ORDER BY CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END, q.group_position ASC NULLS LAST, q.id ASC
-      ) u GROUP BY 1, 2`
+      ) u GROUP BY 1, 2`)
     return rows.map((r) => ({ levelId: r.level_id === null ? null : idToString(r.level_id), tp: r.tp, n: r.n }))
   }
 
@@ -699,7 +702,7 @@ export class QuestionsRepository {
     const { mcqShape, singleMcqLeaf, ...plain } = filter
     const page = async (cursor: string | undefined, rows: number): Promise<string[]> => {
       const { from, where } = this.scope({ ...plain, status: 'approved', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) }, true)
-      const r = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${rows}`
+      const r = await bankScanGate.run(() => this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${rows}`)
       return r.map((x) => idToString(x.id))
     }
     if (!mcqShape && !singleMcqLeaf) return page(after, size)
@@ -757,38 +760,55 @@ export class QuestionsRepository {
   }
 
   /**
-   * Up to `n` eligible ids drawn in SQL: ordered by `hashtextextended(id, seed)` (then id) with a LIMIT, so memory and rows
-   * returned stay O(n). Deterministic for a seed (same seed, same ids; a larger `n` keeps the smaller draw as its prefix).
+   * Up to `n` eligible ids drawn in SQL, ordered by `hashtextextended(id, seed)` (then id). Deterministic for a seed (same seed, same
+   * ids; a larger `n` keeps the smaller draw as its prefix).
    *
-   * With `mcqShape` or `singleMcqLeaf` the draw is BEST EFFORT: the per-row shape check runs only on a hash-ordered window of
-   * the candidates (3n, then 12n, then 48n, capped at 50,000 rows) and the result may be SHORTER than `n` when too few of the
-   * window pass (callers treat a short draw as "not enough questions"). It never scans the whole subject with that check.
+   * TWO PHASES, so the cost does not grow with the eligibility rules. Phase 1 reads a hash-ordered window of CANDIDATES under the cheap,
+   * indexed predicates only (live version, active, bank row, not PKSK, not Darjah, subject, level, type, ...): no per-row sub-select. Phase 2 keeps
+   * the candidates that pass the whole definition, by id, through `eligibleAmong` (every learner macro, `spmPool`, `wholeGroups` and the
+   * shape check). A window that does not fill the draw is read again ONE FOUR TIMES WIDER (the first `n` ids of the same order, so only the new
+   * tail is checked) until the draw is full, the candidates run out (a window that comes back short) or `SAMPLE_MAX` rows were read.
+   *
+   * Same ids as a single scan of the whole definition ordered by the same hash: the candidates are that order with the not-eligible rows
+   * still in it, and dropping rows from an ordered list keeps the order of the rest. A draw that the old window (3n rows, shape check on
+   * those only) could not fill now fills, because the window follows the pass rate. `SAMPLE_MAX` caps the rows read, so a draw whose
+   * eligible ids are all deeper than that in the order is short (the old scan had no such limit but returned at most `SAMPLE_MAX` ids).
    */
   async sampleIds(filter: SampleFilter, n: number, seed: number): Promise<string[]> {
     if (!Number.isSafeInteger(n) || n <= 0) return []
     const limit = Math.min(n, SAMPLE_MAX)
     const { mcqShape, singleMcqLeaf, ...plain } = filter
-    const { from, where } = this.scope({ ...plain, status: 'approved', active: true }, true)
+    // What phase 2 enforces: the whole filter. What phase 1 may use: the part of it that is cheap per row.
+    const whole: SampleFilter = { ...plain, ...(mcqShape ? { mcqShape } : {}), ...(singleMcqLeaf ? { singleMcqLeaf } : {}) }
+    const { spmPool: _spmPool, wholeGroups: _wholeGroups, ...cheap } = plain
+    void _spmPool
+    void _wholeGroups
+    const { from, where } = this.scope({ ...cheap, status: 'approved', active: true })
     const key = Math.trunc(seed)
-    if (!mcqShape && !singleMcqLeaf) {
-      const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-        SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${limit}`
-      return rows.map((r) => idToString(r.id))
-    }
-    // The shape check is per row (sub-selects): run it on a hash-ordered window only, and widen x4 while the window falls short
-    // and the window was full (a short window means the eligible set is exhausted: widening cannot help).
-    let window = Math.min(limit * 3, SAMPLE_MAX)
-    let out: string[] = []
-    for (let round = 0; round < 3; round++) {
-      const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-        SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${window}`
+    const out: string[] = []
+    const checked = new Set<string>()
+    let window = Math.min(Math.max(limit * 3, SAMPLE_FIRST_WINDOW), SAMPLE_MAX)
+    for (;;) {
+      const size = window
+      // With a subject the matching rows are few: collect them first, then top-N sort them in memory in one process (no parallel sort of
+      // the whole live set, no spill). Without a subject the set is the whole bank: keep the single ordered scan. Same ids either way.
+      const rows = await bankScanGate.run(() =>
+        filter.subjectId
+          ? this.db.$queryRaw<{ id: bigint }[]>`WITH c AS MATERIALIZED (SELECT q.id ${from} WHERE ${where}) SELECT id FROM c ORDER BY hashtextextended(id::text, ${key}::bigint), id LIMIT ${size}`
+          : this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${size}`,
+      )
       const candidates = rows.map((r) => idToString(r.id))
-      const passing = new Set(await this.eligibleAmong(candidates, { ...plain, ...(mcqShape ? { mcqShape } : {}), ...(singleMcqLeaf ? { singleMcqLeaf } : {}) }))
-      out = candidates.filter((id) => passing.has(id)).slice(0, limit)
-      if (out.length >= limit || candidates.length < window || window >= SAMPLE_MAX) break
-      window = Math.min(window * 4, SAMPLE_MAX)
+      const fresh = candidates.filter((id) => !checked.has(id))
+      for (const id of fresh) checked.add(id)
+      const passing = new Set(await this.eligibleAmong(fresh, whole))
+      for (const id of fresh) {
+        if (!passing.has(id)) continue
+        out.push(id)
+        if (out.length >= limit) return out
+      }
+      if (candidates.length < size || size >= SAMPLE_MAX) return out
+      window = Math.min(size * 4, SAMPLE_MAX)
     }
-    return out
   }
 
   /** `sampleIds` with the seed taken from one draw of `rng` (never Math.random). */
