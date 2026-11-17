@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { PAPERS_LIST_TTL_MS, PapersService } from '../../src/modules/bijak/papers'
+import { PAPERS_LIST_MAX_STALE_MS, PAPERS_LIST_TTL_MS, PapersService } from '../../src/modules/bijak/papers'
 import { BijakPapersPorts } from '../../src/modules/bijak/papers/ports'
 
 /**
@@ -139,6 +139,23 @@ describe('listPapers shares the pupil-independent read', () => {
     t.service['repo'].listPublishedPilihan = () => Promise.reject(new Error('db down'))
     expect(await ids(t)).toEqual(['7'])
     await flush()
+    expect(await ids(t)).toEqual(['7'])
+  })
+
+  it('refreshes failing for 10 minutes drop the old list: the next read goes cold and sees the database again', async () => {
+    const t = build()
+    await ids(t)
+    const repo = t.service['repo'] as unknown as { listPublishedPilihan: () => Promise<unknown[]> }
+    const working = repo.listPublishedPilihan
+    repo.listPublishedPilihan = () => Promise.reject(new Error('db down'))
+    t.advance(PAPERS_LIST_TTL_MS + 1)
+    expect(await ids(t)).toEqual(['7']) // stale served, the refresh fails; the list is only a minute old: kept
+    await flush()
+    t.advance(PAPERS_LIST_MAX_STALE_MS)
+    expect(await ids(t)).toEqual(['7']) // served stale once more; this refresh fails past the maximum age and drops it
+    await flush()
+    await expect(ids(t)).rejects.toThrow('db down') // cold read: the failure is now visible, nothing stale is served
+    repo.listPublishedPilihan = working
     expect(await ids(t)).toEqual(['7'])
   })
 })

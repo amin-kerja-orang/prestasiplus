@@ -34,6 +34,8 @@ interface ListBase {
 
 /** How long the pupil-independent part of the paper list is reused before one refresh runs behind it. */
 export const PAPERS_LIST_TTL_MS = 60_000
+/** A list that could not be refreshed for this long is dropped, so the next read goes cold instead of serving it for ever. */
+export const PAPERS_LIST_MAX_STALE_MS = 10 * 60_000
 
 /**
  * A paper a user may sit, with the placed question ids in order: what the attempts card (BE-16)
@@ -104,6 +106,11 @@ export class PapersService {
   private readonly logger = new Logger(PapersService.name)
   private readonly listBases = new Map<string, SwrSlot<ListBase>>()
 
+  /** Drops the shared list so the next read is a cold one (a test that edits papers straight in the database; a publish hook may use it too). */
+  resetListCache(): void {
+    this.listBases.clear()
+  }
+
   /**
    * The pupil-independent half of the list (`PAPERS_LIST_TTL_MS`, 60 s). It hydrates every question placed on
    * every published paper (about 2,000 placements: seconds), so it is shared. Stale-while-revalidate with a single flight: the first reader of a
@@ -111,20 +118,21 @@ export class PapersService {
    * archive...) the old value is served at once while ONE refresh runs behind it. A new or withdrawn paper shows within the TTL; starting a sitting
    * re-checks the live pins (`attempt-source.ts`), so a stale card cannot start a sitting on a question the bank no longer serves.
    */
-  /** Drops the shared list so the next read is a cold one (a test that edits papers straight in the database; a publish hook may use it too). */
-  resetListCache(): void {
-    this.listBases.clear()
-  }
-
   private async listBase(surface: BijakPaperSurface): Promise<ListBase> {
     let slot = this.listBases.get(surface)
     if (slot === undefined) {
-      slot = new SwrSlot<ListBase>({
+      const created: SwrSlot<ListBase> = new SwrSlot<ListBase>({
         ttlMs: PAPERS_LIST_TTL_MS,
         settleMs: 0,
         now: () => this.clock.now().getTime(),
-        onError: (e) => this.logger.warn(`papers list refresh failed: ${e instanceof Error ? e.message : String(e)}`),
+        onError: (e) => {
+          this.logger.warn(`papers list refresh failed: ${e instanceof Error ? e.message : String(e)}`)
+          // The old list stays while refreshes fail, but not for ever: past the maximum stale age the next read goes cold.
+          const kept = created.peek()
+          if (kept && this.clock.now().getTime() - kept.computedAt.getTime() >= PAPERS_LIST_MAX_STALE_MS) created.evict()
+        },
       })
+      slot = created
       this.listBases.set(surface, slot)
     }
     return (await slot.get(() => this.computeListBase(surface), () => Promise.resolve(String(this.ports.questionGeneration())))).value

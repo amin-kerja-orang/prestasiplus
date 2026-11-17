@@ -59,6 +59,11 @@ export function overviewOptionsFrom(seconds: string | undefined): OverviewOption
 }
 /** The reuse time of the "latest questions" panel when `recentTtlMs` is not set: the bank TTL, never above this. */
 export const RECENT_TTL_MAX_MS = 60_000
+/** A shared list that could not be refreshed for this long is dropped, so the next read goes cold instead of serving it for ever. */
+export const RECENT_MAX_STALE_MS = 10 * 60_000
+
+/** The stored questions of the latest list could not be loaded: the reader gets an empty list this once, but it is never memoised or kept. */
+class RecentUnavailable extends Error {}
 
 /** FR-MUR-2-8: five rows, read from a window of the newest candidates (the MCQ shape is checked on the window only). */
 const RECENT_LIMIT = 5
@@ -305,7 +310,7 @@ export class OverviewService {
     const form = await this.formLevelId(who.userId)
     if (form === 'none') return []
     const ttl = this.options.recentTtlMs ?? Math.min(this.options.bankTtlMs, RECENT_TTL_MAX_MS)
-    if (ttl <= 0) return this.loadRecentQuestions(form)
+    if (ttl <= 0) return this.tolerate(this.loadRecentQuestions(form))
     // The list depends on the pupil's FORM only (`form` is null for a role without one), so it is shared by every pupil of a form: at most six entries.
     const key = form ?? 'all'
     const nowMs = performance.now()
@@ -313,7 +318,7 @@ export class OverviewService {
     if (hit) {
       // Stale-while-revalidate, as the bank counts: past the TTL the old list is still served at once and ONE refresh runs behind it.
       if (nowMs - hit.at >= ttl && hit.settled && !this.recentRefreshing.has(key)) this.refreshRecent(key, form)
-      return hit.list
+      return this.tolerate(hit.list)
     }
     // Cold: concurrent first readers of one form share one read (single flight); a failure is not remembered.
     const list = this.loadRecentQuestions(form)
@@ -327,7 +332,16 @@ export class OverviewService {
         if (this.recentMemo.get(key) === entry) this.recentMemo.delete(key)
       },
     )
-    return list
+    return this.tolerate(list)
+  }
+
+  /** A pupil's dashboard must not fail because the stored questions of the list did not load: an empty list for that read only (never memoised). */
+  private tolerate(list: Promise<PracticeReadDashboard['recentQuestions']>): Promise<PracticeReadDashboard['recentQuestions']> {
+    return list.catch((err: unknown) => {
+      if (!(err instanceof RecentUnavailable)) throw err
+      this.logger.warn(`dashboard: latest questions unavailable (${err.message})`)
+      return []
+    })
   }
 
   /** Per process memo of the "latest questions" list by form (`recentQuestions`); the same staleness rule as `bankMemo`. */
@@ -341,7 +355,12 @@ export class OverviewService {
       .then((rows) => {
         this.recentMemo.set(key, { at: performance.now(), list: Promise.resolve(rows), settled: true })
       })
-      .catch((err: unknown) => this.logger.warn(`dashboard: latest questions refresh failed: ${err instanceof Error ? err.message : String(err)}`))
+      .catch((err: unknown) => {
+        this.logger.warn(`dashboard: latest questions refresh failed: ${err instanceof Error ? err.message : String(err)}`)
+        // The old list stays while refreshes fail, but not for ever: past the maximum stale age the next read goes cold.
+        const kept = this.recentMemo.get(key)
+        if (kept && performance.now() - kept.at >= RECENT_MAX_STALE_MS) this.recentMemo.delete(key)
+      })
       .finally(() => {
         this.recentRefreshing.delete(key)
       })
@@ -368,8 +387,7 @@ export class OverviewService {
     ids.splice(RECENT_LIMIT)
     // A stored question that fails to load (a bad stored key fails closed in the bank) must not take the dashboard down.
     const records = await this.questions.getMany(ids, 'live').catch((err: unknown) => {
-      this.logger.warn(`dashboard: latest questions unavailable (${err instanceof Error ? err.message : String(err)})`)
-      return []
+      throw new RecentUnavailable(err instanceof Error ? err.message : String(err))
     })
     const [subjects, levels, figures] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels(), this.figureUrls(records)])
     const subjectName = new Map(subjects.map((s) => [idToString(s.id), s.name]))

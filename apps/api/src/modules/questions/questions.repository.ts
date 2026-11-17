@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { QuestionSchemeRulesSchema, type QuestionSchemeRules } from '@pp/contract'
 
-import { bankScanGate } from '../../common/concurrency/bank-scan-gate'
+import { bankScan } from '../../common/concurrency/bank-scan-gate'
 import { ApiError } from '../../common/errors/api-error'
 import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
@@ -495,7 +495,7 @@ export class QuestionsRepository {
       const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
       own.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`sg.education_level_id IN (${Prisma.join(keys)})`)
     }
-    const rows = await bankScanGate.run(() => this.db.$queryRaw<{ level_id: bigint | null; tp: number | null; n: number }[]>`
+    const rows = await bankScan<{ level_id: bigint | null; tp: number | null; n: number }>(this.db, Prisma.sql`
       SELECT u.level_id, u.tp, count(*)::int AS n FROM (
         SELECT DISTINCT ON (CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)
                CASE WHEN ${Prisma.join(own, ' AND ')} THEN sg.education_level_id ELSE v.education_level_id END AS level_id, v.difficulty_tp AS tp
@@ -702,7 +702,7 @@ export class QuestionsRepository {
     const { mcqShape, singleMcqLeaf, ...plain } = filter
     const page = async (cursor: string | undefined, rows: number): Promise<string[]> => {
       const { from, where } = this.scope({ ...plain, status: 'approved', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) }, true)
-      const r = await bankScanGate.run(() => this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${rows}`)
+      const r = await bankScan<{ id: bigint }>(this.db, Prisma.sql`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${rows}`)
       return r.map((x) => idToString(x.id))
     }
     if (!mcqShape && !singleMcqLeaf) return page(after, size)
@@ -792,11 +792,10 @@ export class QuestionsRepository {
       const size = window
       // With a subject the matching rows are few: collect them first, then top-N sort them in memory in one process (no parallel sort of
       // the whole live set, no spill). Without a subject the set is the whole bank: keep the single ordered scan. Same ids either way.
-      const rows = await bankScanGate.run(() =>
-        filter.subjectId
-          ? this.db.$queryRaw<{ id: bigint }[]>`WITH c AS MATERIALIZED (SELECT q.id ${from} WHERE ${where}) SELECT id FROM c ORDER BY hashtextextended(id::text, ${key}::bigint), id LIMIT ${size}`
-          : this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${size}`,
-      )
+      const ordered = filter.subjectId
+        ? Prisma.sql`WITH c AS MATERIALIZED (SELECT q.id ${from} WHERE ${where}) SELECT id FROM c ORDER BY hashtextextended(id::text, ${key}::bigint), id LIMIT ${size}`
+        : Prisma.sql`SELECT q.id ${from} WHERE ${where} ORDER BY hashtextextended(q.id::text, ${key}::bigint), q.id LIMIT ${size}`
+      const rows = await bankScan<{ id: bigint }>(this.db, ordered)
       const candidates = rows.map((r) => idToString(r.id))
       const fresh = candidates.filter((id) => !checked.has(id))
       for (const id of fresh) checked.add(id)

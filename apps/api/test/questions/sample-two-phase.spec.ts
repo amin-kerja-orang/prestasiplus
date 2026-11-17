@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { bankScan } from '../../src/common/concurrency/bank-scan-gate'
 import { Prisma } from '../../src/db/generated/client'
 import { QuestionsRepository } from '../../src/modules/questions'
 import { filterOf } from '../../src/modules/questions/serving'
@@ -169,5 +170,23 @@ describe('sampleIds two-phase draw equals the single scan (database)', () => {
     }
     expect(await repo.sampleIds(latihTubi(subjects.TPNONE!), 10, 1)).toEqual([])
     expect(await repo.sampleIds({ subjectId: subjects.TPNONE!, type: 'mcq' }, 10, 1)).toEqual([])
+  })
+
+  it('a gated statement past BANK_SCAN_STATEMENT_TIMEOUT_MS is cancelled by Postgres and answered as the retryable 429; the connection is left clean', async () => {
+    const saved = process.env.BANK_SCAN_STATEMENT_TIMEOUT_MS
+    process.env.BANK_SCAN_STATEMENT_TIMEOUT_MS = '100'
+    try {
+      const started = Date.now()
+      const err = await bankScan(t.db.prisma, Prisma.sql`SELECT pg_sleep(5)::text AS x`).catch((e: unknown) => e)
+      expect(Date.now() - started).toBeLessThan(3000)
+      expect(err).toMatchObject({ code: 'RATE_LIMITED', retryAfter: 5 })
+    } finally {
+      if (saved === undefined) delete process.env.BANK_SCAN_STATEMENT_TIMEOUT_MS
+      else process.env.BANK_SCAN_STATEMENT_TIMEOUT_MS = saved
+    }
+    // the timeout was local to the batch transaction: a later plain statement on the pool is not limited
+    const [row] = await t.db.query<{ v: string }>(`select current_setting('statement_timeout') as v`)
+    expect(row?.v).toBe('0')
+    expect(await bankScan<{ x: string }>(t.db.prisma, Prisma.sql`SELECT pg_sleep(0.2)::text AS x`)).toHaveLength(1)
   })
 })

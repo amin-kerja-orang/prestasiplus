@@ -140,3 +140,78 @@ describe('overviewOptionsFrom', () => {
     expect(overviewOptionsFrom('300').bankTtlMs).toBe(300_000)
   })
 })
+
+/** The real `loadRecentQuestions` over stub collaborators, with `getMany` failing or working on demand. */
+function realBuild() {
+  const state = { getManyFails: true, getManyCalls: 0 }
+  const questions = {
+    scopeSql: () => ({}),
+    eligibleAmong: (ids: string[]) => Promise.resolve(ids),
+    getMany: (ids: string[]) => {
+      state.getManyCalls++
+      if (state.getManyFails) return Promise.reject(new Error('bad stored key'))
+      return Promise.resolve(
+        ids.map((id) => ({ id, groupId: null, createdAt: new Date('2026-01-01T00:00:00Z'), version: { subjectId: null, difficultyTp: 1, stemMs: `Soalan ${id}`, educationLevelId: null } })),
+      )
+    },
+  }
+  const repo = { newestIdsOf: () => Promise.resolve(['1', '2']) }
+  const curriculum = { subjects: () => Promise.resolve([]), levels: () => Promise.resolve([]) }
+  const make = (ttl: number) => {
+    const svc = new (OverviewService as unknown as new (...args: unknown[]) => OverviewService)(repo, curriculum, questions, {}, {}, {}, {}, {}, {}, {}, { bankTtlMs: ttl }, {})
+    const priv = svc as unknown as { formLevelId: (id: string) => Promise<string | null | 'none'>; recentQuestions: (who: { userId: string }) => Promise<{ id: string }[]> }
+    vi.spyOn(priv, 'formLevelId').mockResolvedValue('T4')
+    return (): Promise<{ id: string }[]> => priv.recentQuestions({ userId: 'a' })
+  }
+  return { state, make }
+}
+
+describe('dashboard latest questions: an error is never remembered as an empty list', () => {
+  let now = 1_000_000
+  beforeEach(() => {
+    now = 1_000_000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  it('a getMany failure on a cold read gives that reader an empty list, but the next read tries again (nothing cached)', async () => {
+    const t = realBuild()
+    const read = t.make(60_000)
+    expect(await read()).toEqual([])
+    expect(t.state.getManyCalls).toBe(1)
+    t.state.getManyFails = false
+    expect((await read()).map((r) => r.id)).toEqual(['1', '2'])
+    expect(t.state.getManyCalls).toBe(2)
+  })
+
+  it('a getMany failure on the refresh keeps the good stale list instead of replacing it with an empty one', async () => {
+    const t = realBuild()
+    t.state.getManyFails = false
+    const read = t.make(60_000)
+    expect((await read()).map((r) => r.id)).toEqual(['1', '2'])
+    t.state.getManyFails = true
+    now += 61_000
+    expect((await read()).map((r) => r.id)).toEqual(['1', '2']) // stale served, refresh runs behind and fails
+    await flush()
+    expect((await read()).map((r) => r.id)).toEqual(['1', '2']) // still the good list
+    expect(t.state.getManyCalls).toBeGreaterThanOrEqual(3)
+  })
+
+  it('after 10 minutes of failing refreshes the stale list is dropped and the next read goes cold', async () => {
+    const t = realBuild()
+    t.state.getManyFails = false
+    const read = t.make(60_000)
+    await read()
+    t.state.getManyFails = true
+    now += 61_000
+    await read()
+    await flush() // a refresh failed, the list is only 61 s old: kept
+    expect((await read()).map((r) => r.id)).toEqual(['1', '2'])
+    now += 10 * 60_000
+    await read() // served stale once more while a refresh runs and fails past the maximum age
+    await flush()
+    expect(await read()).toEqual([]) // dropped: this read was cold, and it failed softly with an empty list
+    t.state.getManyFails = false
+    expect((await read()).map((r) => r.id)).toEqual(['1', '2'])
+  })
+})

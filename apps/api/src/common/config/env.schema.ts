@@ -163,8 +163,14 @@ export const EnvSchema = z.object({
   SERVABILITY_OVERVIEW_WARM: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['true', 'false']).optional()),
   // Bank-wide reads (perf). All optional; blank = unset = the default named here.
   // At most this many bank-wide statements (draw scans, subject counts, bank matrix, newest-question windows) run at once in one API process, so the
-  // database pool (10) keeps connections for the short transactions (start, check answer, submit). Default 3. Extra statements wait, none is refused.
+  // database pool (10) keeps connections for the short transactions (start, check answer, submit). Default 3. Extra statements wait (bounded by the next two keys).
   BANK_SCAN_CONCURRENCY: aiInt(1, 50),
+  // Longest a bank-wide statement waits for a slot, in ms; past it the request is answered 429 + Retry-After. Default 20000. A value that is not an integer in range stops boot.
+  BANK_SCAN_MAX_WAIT_MS: aiInt(1, 600_000),
+  // Most bank-wide statements that may wait for a slot at once; a newcomer past it is answered 429 + Retry-After at once. Default 200. Invalid stops boot.
+  BANK_SCAN_MAX_QUEUE: aiInt(1, 100_000),
+  // Server-side statement_timeout of a bank-wide statement, in ms: Postgres cancels it and the request is answered 429 + Retry-After. Default 30000. Invalid stops boot.
+  BANK_SCAN_STATEMENT_TIMEOUT_MS: aiInt(1, 600_000),
   // Seconds the grouped bank counts of the pupil dashboard and practice cards are reused (stale ones are served while one refresh runs). Default 60; 0 = never reuse.
   OVERVIEW_BANK_TTL_SECONDS: aiInt(0, 86_400),
   // Seconds the SPM hub counts (Latih Tubi cells, Databank count) of a subject are reused (stale ones are served while one refresh runs). Default 300; 0 = never reuse.

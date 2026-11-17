@@ -109,3 +109,86 @@ describe('bankScanConcurrency', () => {
     expect(bankScanConcurrency(' 2 ')).toBe(2)
   })
 })
+
+describe('Bulkhead bounds', () => {
+  const overloaded = (reason: string) => new Error(`overloaded:${reason}`)
+
+  it('a waiter that waited past maxWaitMs is rejected with the overload error and leaves the queue', async () => {
+    const b = new Bulkhead(() => 1, { maxWaitMs: () => 20, overloaded })
+    const a = gated()
+    const running = b.run(a.job('a'))
+    const waiter = b.run(async () => 'late')
+    await tick()
+    expect(b.queued).toBe(1)
+    await expect(waiter).rejects.toThrow('overloaded:wait_timeout')
+    expect(b.queued).toBe(0)
+    expect(b.running).toBe(1) // the running job is untouched
+    a.finish()
+    await running
+    expect(b.running).toBe(0)
+  })
+
+  it('a full queue rejects a newcomer at once; the waiters already queued are not affected', async () => {
+    const b = new Bulkhead(() => 1, { maxQueue: () => 2, overloaded })
+    const a = gated()
+    const first = b.run(a.job('a'))
+    const w1 = b.run(async () => 'w1')
+    const w2 = b.run(async () => 'w2')
+    await expect(b.run(async () => 'w3')).rejects.toThrow('overloaded:queue_full')
+    expect(b.queued).toBe(2)
+    a.finish()
+    expect(await first).toBe('a')
+    expect(await Promise.all([w1, w2])).toEqual(['w1', 'w2'])
+    expect(b.running).toBe(0)
+  })
+
+  it('a rejected waiter takes no slot and a timeout does not break the order of the others', async () => {
+    const b = new Bulkhead(() => 1, { maxWaitMs: () => 1000, overloaded })
+    const a = gated()
+    const started: string[] = []
+    const first = b.run(a.job('a'))
+    const w1 = b.run(async () => started.push('w1'))
+    const w2 = b.run(async () => started.push('w2'))
+    const w3 = b.run(async () => started.push('w3'))
+    await tick()
+    expect(b.queued).toBe(3)
+    a.finish()
+    await Promise.all([first, w1, w2, w3])
+    expect(started).toEqual(['w1', 'w2', 'w3'])
+    expect(b.running).toBe(0)
+    expect(b.queued).toBe(0)
+  })
+
+  it('a waiter in the middle that times out is skipped; the ones before and after keep their order and the slot count stays right', async () => {
+    let wait = 1000
+    const b = new Bulkhead(() => 1, { maxWaitMs: () => wait, overloaded })
+    const a = gated()
+    const started: string[] = []
+    const first = b.run(a.job('a'))
+    const w1 = b.run(async () => started.push('w1'))
+    wait = 15
+    const mid = b.run(async () => started.push('mid'))
+    wait = 1000
+    const w3 = b.run(async () => started.push('w3'))
+    await expect(mid).rejects.toThrow('overloaded:wait_timeout')
+    expect(b.queued).toBe(2)
+    a.finish()
+    await Promise.all([first, w1, w3])
+    expect(started).toEqual(['w1', 'w3'])
+    expect(b.running).toBe(0)
+    // the gate still works afterwards
+    expect(await b.run(async () => 'after')).toBe('after')
+  })
+
+  it('a job that throws after a wait timeout elsewhere still frees its slot for the next waiter', async () => {
+    const b = new Bulkhead(() => 1, { maxWaitMs: () => 1000, overloaded })
+    const a = gated()
+    const first = b.run(a.job('a'))
+    const next = b.run(async () => 'next')
+    await tick()
+    a.fail(new Error('boom'))
+    await expect(first).rejects.toThrow('boom')
+    expect(await next).toBe('next')
+    expect(b.running).toBe(0)
+  })
+})
