@@ -91,7 +91,12 @@ const thresholds = {
   throttled_429: ['count==0'], // a 429 means a rate limit was hit, not the capacity of the server
   checks: ['rate>0.99'],
 }
-for (const k of KINDS) thresholds[`http_req_duration{kind:${k}}`] = [`p(95)<${num(`LT_P95_${k.toUpperCase()}_MS`, THRESHOLDS_MS[k])}`]
+for (const k of KINDS) {
+  thresholds[`http_req_duration{kind:${k}}`] = [`p(95)<${num(`LT_P95_${k.toUpperCase()}_MS`, THRESHOLDS_MS[k])}`]
+  // Always-true thresholds: they only make k6 keep the per-kind request count and error rate for the summary.
+  thresholds[`http_reqs{kind:${k}}`] = ['count>=0']
+  thresholds[`http_req_failed{kind:${k}}`] = ['rate>=0']
+}
 
 export const options = {
   scenarios: {
@@ -104,6 +109,8 @@ export const options = {
     },
   },
   thresholds,
+  // A real browser keeps its session cookie between page loads; k6 would clear the jar at every iteration.
+  noCookiesReset: true,
   summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
 }
 
@@ -339,8 +346,9 @@ export function handleSummary(data) {
   const kinds = {}
   for (const k of KINDS) {
     const name = `http_req_duration{kind:${k}}`
-    const count = data.metrics[name] && data.metrics[name].values ? data.metrics[name].values.count : undefined
-    kinds[k] = { requests: count === undefined ? 0 : count, p50_ms: round(val(data, name, 'med')), p95_ms: round(val(data, name, 'p(95)')), p99_ms: round(val(data, name, 'p(99)')), max_ms: round(val(data, name, 'max')) }
+    const count = val(data, `http_reqs{kind:${k}}`, 'count')
+    const errRate = val(data, `http_req_failed{kind:${k}}`, 'rate')
+    kinds[k] = { requests: count === null ? 0 : count, error_rate: errRate === null ? null : Math.round(errRate * 10000) / 10000, p50_ms: round(val(data, name, 'med')), p95_ms: round(val(data, name, 'p(95)')), p99_ms: round(val(data, name, 'p(99)')), max_ms: round(val(data, name, 'max')) }
   }
   const failed = val(data, 'http_req_failed', 'rate')
   const cnt = (n) => {
